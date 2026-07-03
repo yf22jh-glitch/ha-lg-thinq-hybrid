@@ -51,6 +51,15 @@
       },
       "energy_month": {
         "name": "Energy month"
+      },
+      "washer_energy": {
+        "name": "Washer energy"
+      },
+      "dryer_energy": {
+        "name": "Dryer energy"
+      },
+      "styler_energy": {
+        "name": "Energy"
       }
     },
     "binary_sensor": {

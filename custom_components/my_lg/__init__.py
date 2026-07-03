@@ -100,9 +100,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         if info.get("deviceType") not in SUPPORTED_DEVICE_TYPES:
             continue  # everything else stays on official lg_thinq
         coordinator = PatDeviceCoordinator(hass, entry, api, device)
-        # PAT is the official low-risk API; seed initial state so entities show
-        # values immediately. (The no-eager-poll rule applies to wideq only.)
-        await coordinator.async_config_entry_first_refresh()
+        # Seed initial state (PAT is the official low-risk API). Non-fatal: an
+        # offline appliance must not fail the whole entry — it recovers via MQTT
+        # push / the next fallback poll. (No-eager-poll rule applies to wideq only.)
+        await coordinator.async_refresh()
         data.coordinators[coordinator.device_id] = coordinator
 
     if not data.coordinators:

@@ -51,6 +51,15 @@
       },
       "energy_month": {
         "name": "이번달 에너지"
+      },
+      "washer_energy": {
+        "name": "세탁 누적에너지"
+      },
+      "dryer_energy": {
+        "name": "건조 누적에너지"
+      },
+      "styler_energy": {
+        "name": "누적에너지"
       }
     },
     "binary_sensor": {
