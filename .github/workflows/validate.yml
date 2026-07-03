@@ -25,6 +25,10 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # 'brands' requires listing in the home-assistant/brands repo, which
+          # is only needed for HACS default-store inclusion, not custom-repo
+          # installs. Ignore it so CI stays meaningful.
+          ignore: brands
 
   imports:
     name: Import against latest Home Assistant
