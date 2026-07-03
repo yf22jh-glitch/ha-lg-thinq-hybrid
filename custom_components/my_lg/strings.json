@@ -60,11 +60,31 @@
       },
       "styler_energy": {
         "name": "Energy"
+      },
+      "pm1": {
+        "name": "PM1"
+      },
+      "pm2_5": {
+        "name": "PM2.5"
+      },
+      "pm10": {
+        "name": "PM10"
+      },
+      "total_pollution": {
+        "name": "Air quality"
+      },
+      "odor": {
+        "name": "Odor"
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "Water tank full"
+      }
+    },
+    "event": {
+      "notification": {
+        "name": "Notification"
       }
     }
   }

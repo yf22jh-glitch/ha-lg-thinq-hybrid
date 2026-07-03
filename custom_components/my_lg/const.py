@@ -31,22 +31,42 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.HUMIDIFIER,
     Platform.BINARY_SENSOR,
+    Platform.FAN,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SWITCH,
+    Platform.EVENT,
 ]
 
 # --- ThinQ device types (thinqconnect deviceType strings) ---
 DEVICE_TYPE_AIR_CONDITIONER = "DEVICE_AIR_CONDITIONER"
 DEVICE_TYPE_DEHUMIDIFIER = "DEVICE_DEHUMIDIFIER"
+DEVICE_TYPE_HUMIDIFIER = "DEVICE_HUMIDIFIER"
+DEVICE_TYPE_AIR_PURIFIER = "DEVICE_AIR_PURIFIER"
 DEVICE_TYPE_WASHTOWER = "DEVICE_WASHTOWER"
 DEVICE_TYPE_STYLER = "DEVICE_STYLER"
+DEVICE_TYPE_DISH_WASHER = "DEVICE_DISH_WASHER"
+DEVICE_TYPE_REFRIGERATOR = "DEVICE_REFRIGERATOR"
+DEVICE_TYPE_KIMCHI_REFRIGERATOR = "DEVICE_KIMCHI_REFRIGERATOR"
+DEVICE_TYPE_WATER_PURIFIER = "DEVICE_WATER_PURIFIER"
+DEVICE_TYPE_OVEN = "DEVICE_OVEN"
+DEVICE_TYPE_COOKTOP = "DEVICE_COOKTOP"
 
-# Whitelist: only these device types are set up by this integration.
-# Everything else stays on the official lg_thinq integration.
-# (Stage 3.5+ adds washtower / styler.)
+# Whitelist: device types this integration sets up. Stage 5 = all our devices
+# (my_lg fully replaces both the official lg_thinq and the smartthinq fork).
 SUPPORTED_DEVICE_TYPES: set[str] = {
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_HUMIDIFIER,
+    DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_WASHTOWER,
     DEVICE_TYPE_STYLER,
+    DEVICE_TYPE_DISH_WASHER,
+    DEVICE_TYPE_REFRIGERATOR,
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+    DEVICE_TYPE_WATER_PURIFIER,
+    DEVICE_TYPE_OVEN,
+    DEVICE_TYPE_COOKTOP,
 }
 
 # --- MQTT push message types (thinqconnect) ---

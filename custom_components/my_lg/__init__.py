@@ -12,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import (
     async_create_clientsession,
     async_get_clientsession,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import (
     CONF_ACCESS_TOKEN,
@@ -104,14 +105,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         # offline appliance must not fail the whole entry — it recovers via MQTT
         # push / the next fallback poll. (No-eager-poll rule applies to wideq only.)
         await coordinator.async_refresh()
+        await coordinator.async_load_profile()  # push codes + capabilities
         data.coordinators[coordinator.device_id] = coordinator
 
     if not data.coordinators:
         _LOGGER.warning("my_lg: no supported devices found (Stage 1 = air conditioners)")
 
-    # On a water-tank push, refresh wideq promptly so the level sensor updates
-    # fast (rate-limited). wideq_coordinator is set by _setup_wideq below.
+    # Dispatch DEVICE_PUSH notifications to that device's event entity, and on a
+    # water-tank push also refresh wideq promptly (rate-limited).
     def _on_push(device_id: str, code: str) -> None:
+        async_dispatcher_send(hass, f"{DOMAIN}_push_{device_id}", code)
         if code in WATER_PUSH_CODES and data.wideq_coordinator is not None:
             hass.async_create_task(data.wideq_coordinator.async_request_refresh())
 

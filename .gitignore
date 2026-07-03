@@ -24,3 +24,7 @@ venv/
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+# wideq 자격증명 (민감 — 절대 커밋 금지)
+lg_wideq_creds.json
+lg_pat_creds.json

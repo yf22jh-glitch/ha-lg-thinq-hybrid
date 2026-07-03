@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     PERCENTAGE,
     UnitOfEnergy,
     UnitOfPower,
@@ -25,6 +26,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import MyLgConfigEntry
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
+    DEVICE_TYPE_AIR_PURIFIER,
+    DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
     DOMAIN,
@@ -67,6 +70,76 @@ AC_SENSORS: tuple[MyLgSensorDescription, ...] = (
         value_fn=lambda c: c.get("filterInfo", "filterRemainPercent"),
     ),
 )
+
+
+def _pm(key: str, tkey: str, field: str, dclass: SensorDeviceClass) -> MyLgSensorDescription:
+    return MyLgSensorDescription(
+        key=key,
+        translation_key=tkey,
+        device_class=dclass,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c, f=field: c.get("airQualitySensor", f),
+    )
+
+
+_HUMIDITY = MyLgSensorDescription(
+    key="humidity",
+    translation_key="humidity",
+    device_class=SensorDeviceClass.HUMIDITY,
+    native_unit_of_measurement=PERCENTAGE,
+    state_class=SensorStateClass.MEASUREMENT,
+    value_fn=lambda c: c.get("airQualitySensor", "humidity"),
+)
+_TOTAL_POLLUTION = MyLgSensorDescription(
+    key="total_pollution",
+    translation_key="total_pollution",
+    state_class=SensorStateClass.MEASUREMENT,
+    value_fn=lambda c: c.get("airQualitySensor", "totalPollution"),
+)
+
+AIR_PURIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _pm("pm1", "pm1", "PM1", SensorDeviceClass.PM1),
+    _pm("pm2_5", "pm2_5", "PM2", SensorDeviceClass.PM25),
+    _pm("pm10", "pm10", "PM10", SensorDeviceClass.PM10),
+    _HUMIDITY,
+    _TOTAL_POLLUTION,
+    MyLgSensorDescription(
+        key="odor",
+        translation_key="odor",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c: c.get("airQualitySensor", "odor"),
+    ),
+    MyLgSensorDescription(
+        key="filter_remaining",
+        translation_key="filter_remaining",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c: c.get("filterInfo", "filterRemainPercent"),
+    ),
+)
+
+HUMIDIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _pm("pm1", "pm1", "PM1", SensorDeviceClass.PM1),
+    _pm("pm2_5", "pm2_5", "PM2", SensorDeviceClass.PM25),
+    _pm("pm10", "pm10", "PM10", SensorDeviceClass.PM10),
+    _HUMIDITY,
+    _TOTAL_POLLUTION,
+    MyLgSensorDescription(
+        key="current_temperature",
+        translation_key="current_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c: c.get("airQualitySensor", "temperature"),
+    ),
+)
+
+PAT_SENSORS_BY_TYPE: dict[str, tuple[MyLgSensorDescription, ...]] = {
+    DEVICE_TYPE_AIR_CONDITIONER: AC_SENSORS,
+    DEVICE_TYPE_AIR_PURIFIER: AIR_PURIFIER_SENSORS,
+    DEVICE_TYPE_HUMIDIFIER: HUMIDIFIER_SENSORS,
+}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -187,11 +260,10 @@ async def async_setup_entry(
     data = entry.runtime_data
     entities: list[SensorEntity] = []
     for coordinator in data.coordinators.values():
-        # PAT sensors for air conditioners.
-        if coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER:
-            for desc in AC_SENSORS:
-                if desc.value_fn(coordinator) is not None:
-                    entities.append(MyLgSensor(coordinator, desc))
+        # PAT sensors (create only for fields the device actually reports).
+        for desc in PAT_SENSORS_BY_TYPE.get(coordinator.device_type, ()):
+            if desc.value_fn(coordinator) is not None:
+                entities.append(MyLgSensor(coordinator, desc))
         # wideq-backed sensors (only if wideq is configured).
         if data.wideq_coordinator is not None:
             for wdesc in WIDEQ_SENSORS_BY_TYPE.get(coordinator.device_type, ()):

@@ -60,11 +60,31 @@
       },
       "styler_energy": {
         "name": "누적에너지"
+      },
+      "pm1": {
+        "name": "PM1"
+      },
+      "pm2_5": {
+        "name": "PM2.5"
+      },
+      "pm10": {
+        "name": "PM10"
+      },
+      "total_pollution": {
+        "name": "공기질"
+      },
+      "odor": {
+        "name": "냄새"
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "물탱크 가득참"
+      }
+    },
+    "event": {
+      "notification": {
+        "name": "알림"
       }
     }
   }

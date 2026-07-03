@@ -50,6 +50,7 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_type: str = info.get("deviceType", "")
         self.alias: str = info.get("alias") or self.device_id
         self.model: str = info.get("modelName", "")
+        self.profile: dict | None = None
 
         super().__init__(
             hass,
@@ -91,3 +92,30 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return default
             node = node[key]
         return node
+
+    async def async_load_profile(self) -> None:
+        """Fetch the device profile once (defines push codes & capabilities)."""
+        try:
+            self.profile = await self.api.async_get_device_profile(self.device_id)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("%s: profile load failed: %s", self.alias, err)
+            self.profile = None
+
+    def push_codes(self) -> list[str]:
+        """All DEVICE_PUSH notification codes this device can emit (recursive)."""
+        codes: list[str] = []
+
+        def _walk(node: Any) -> None:
+            if isinstance(node, dict):
+                notif = node.get("notification")
+                if isinstance(notif, dict) and isinstance(notif.get("push"), list):
+                    codes.extend(notif["push"])
+                for key, value in node.items():
+                    if key != "notification":
+                        _walk(value)
+            elif isinstance(node, list):
+                for item in node:
+                    _walk(item)
+
+        _walk(self.profile)
+        return sorted(set(codes))
