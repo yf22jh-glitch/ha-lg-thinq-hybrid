@@ -55,7 +55,7 @@ jobs:
           python-version: "3.14"
       - name: Import-test synced wideq
         run: |
-          pip install --upgrade homeassistant thinqconnect
+          pip install --upgrade homeassistant thinqconnect xmltodict
           export PYTHONPATH="$PWD/custom_components"
           python - <<'PY'
           import importlib

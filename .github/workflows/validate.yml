@@ -40,16 +40,18 @@ jobs:
           # HA 2026.7+ requires Python 3.14; on 3.13 pip silently resolves to an
           # older HA (2026.2), so the "latest" test would be misleading.
           python-version: "3.14"
-      - name: Install latest Home Assistant + thinqconnect
-        run: pip install --upgrade homeassistant thinqconnect
+      - name: Install latest Home Assistant + deps
+        run: pip install --upgrade homeassistant thinqconnect xmltodict
       - name: Import all integration modules
         run: |
           export PYTHONPATH="$PWD/custom_components"
           python - <<'PY'
           import importlib
           for m in [
-              "my_lg", "my_lg.const", "my_lg.coordinator", "my_lg.mqtt",
-              "my_lg.entity", "my_lg.config_flow", "my_lg.climate", "my_lg.sensor",
+              "my_lg", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
+              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.wideq_client", "my_lg.entity",
+              "my_lg.config_flow", "my_lg.climate", "my_lg.sensor", "my_lg.humidifier",
+              "my_lg.binary_sensor", "my_lg.wideq.core_async", "my_lg.wideq.factory",
           ]:
               importlib.import_module(m)
               print("import OK:", m)
