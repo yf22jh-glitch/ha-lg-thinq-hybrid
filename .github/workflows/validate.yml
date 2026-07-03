@@ -1,0 +1,51 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Daily — catches breakage when a new Home Assistant version is released,
+    # before it lands on the user's instance.
+    - cron: "0 6 * * *"
+
+jobs:
+  hassfest:
+    name: hassfest (HA manifest/structure)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+
+  imports:
+    name: Import against latest Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install latest Home Assistant + thinqconnect
+        run: pip install --upgrade homeassistant thinqconnect
+      - name: Import all integration modules
+        run: |
+          export PYTHONPATH="$PWD/custom_components"
+          python - <<'PY'
+          import importlib
+          for m in [
+              "my_lg", "my_lg.const", "my_lg.coordinator", "my_lg.mqtt",
+              "my_lg.entity", "my_lg.config_flow", "my_lg.climate", "my_lg.sensor",
+          ]:
+              importlib.import_module(m)
+              print("import OK:", m)
+          print("ALL IMPORTS OK against HA", __import__("homeassistant.const", fromlist=["__version__"]).__version__)
+          PY

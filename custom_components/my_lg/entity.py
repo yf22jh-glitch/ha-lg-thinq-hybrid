@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.helpers.device_registry import DeviceInfo
+try:
+    # HA 2023.8+ location; used by official integrations.
+    from homeassistant.helpers.device_registry import DeviceInfo
+except ImportError:  # pragma: no cover - fallback for older/newer reorgs
+    from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
