@@ -27,9 +27,11 @@ from . import MyLgConfigEntry
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
+    DEVICE_TYPE_COOKTOP,
     DEVICE_TYPE_DISH_WASHER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+    DEVICE_TYPE_OVEN,
     DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
@@ -201,6 +203,79 @@ WATER_PURIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
     _text("sterilizing_state", "runState", "sterilizingState"),
 )
 
+def _mins(h, m):
+    if h is None and m is None:
+        return None
+    return (h or 0) * 60 + (m or 0)
+
+
+def _named(key: str, name: str, value_fn, **kw) -> MyLgSensorDescription:
+    return MyLgSensorDescription(key=key, name=name, value_fn=value_fn, **kw)
+
+
+OVEN_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _named("oven_status", "Status", lambda c: c.get_zone("UPPER", "runState", "currentState")),
+    _named(
+        "oven_target_temp", "Target temperature",
+        lambda c: c.get_zone("UPPER", "temperature", "targetTemperature"),
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    _named(
+        "oven_remaining", "Remaining",
+        lambda c: _mins(c.get_zone("UPPER", "timer", "remainHour"), c.get_zone("UPPER", "timer", "remainMinute")),
+        native_unit_of_measurement="min",
+    ),
+)
+
+
+def _zone(loc: str, label: str) -> tuple[MyLgSensorDescription, ...]:
+    return (
+        _named(f"{loc.lower()}_state", f"{label} state",
+               lambda c, l=loc: c.get_zone(l, "cookingZone", "currentState")),
+        _named(f"{loc.lower()}_power", f"{label} power level",
+               lambda c, l=loc: c.get_zone(l, "power", "powerLevel"),
+               state_class=SensorStateClass.MEASUREMENT),
+    )
+
+
+COOKTOP_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    *_zone("LEFT_FRONT", "Left front"),
+    *_zone("RIGHT_FRONT", "Right front"),
+    *_zone("LEFT_REAR", "Left rear"),
+    *_zone("RIGHT_REAR", "Right rear"),
+)
+
+WASHTOWER_PAT_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _named("washer_status", "Washer status", lambda c: c.get("washer", "runState", "currentState")),
+    _named("washer_remaining", "Washer remaining",
+           lambda c: _mins(c.get("washer", "timer", "remainHour"), c.get("washer", "timer", "remainMinute")),
+           native_unit_of_measurement="min"),
+    _named("washer_total", "Washer total time",
+           lambda c: _mins(c.get("washer", "timer", "totalHour"), c.get("washer", "timer", "totalMinute")),
+           native_unit_of_measurement="min"),
+    _named("washer_cycles", "Washer cycles", lambda c: c.get("washer", "cycle", "cycleCount"),
+           state_class=SensorStateClass.TOTAL_INCREASING),
+    _named("dryer_status", "Dryer status", lambda c: c.get("dryer", "runState", "currentState")),
+    _named("dryer_remaining", "Dryer remaining",
+           lambda c: _mins(c.get("dryer", "timer", "remainHour"), c.get("dryer", "timer", "remainMinute")),
+           native_unit_of_measurement="min"),
+    _named("dryer_total", "Dryer total time",
+           lambda c: _mins(c.get("dryer", "timer", "totalHour"), c.get("dryer", "timer", "totalMinute")),
+           native_unit_of_measurement="min"),
+)
+
+STYLER_PAT_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _named("styler_status", "Status", lambda c: c.get("runState", "currentState")),
+    _named("styler_remaining", "Remaining",
+           lambda c: _mins(c.get("timer", "remainHour"), c.get("timer", "remainMinute")),
+           native_unit_of_measurement="min"),
+    _named("styler_total", "Total time",
+           lambda c: _mins(c.get("timer", "totalHour"), c.get("timer", "totalMinute")),
+           native_unit_of_measurement="min"),
+)
+
 PAT_SENSORS_BY_TYPE: dict[str, tuple[MyLgSensorDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: AC_SENSORS,
     DEVICE_TYPE_AIR_PURIFIER: AIR_PURIFIER_SENSORS,
@@ -209,6 +284,10 @@ PAT_SENSORS_BY_TYPE: dict[str, tuple[MyLgSensorDescription, ...]] = {
     DEVICE_TYPE_KIMCHI_REFRIGERATOR: KIMCHI_SENSORS,
     DEVICE_TYPE_DISH_WASHER: DISHWASHER_SENSORS,
     DEVICE_TYPE_WATER_PURIFIER: WATER_PURIFIER_SENSORS,
+    DEVICE_TYPE_OVEN: OVEN_SENSORS,
+    DEVICE_TYPE_COOKTOP: COOKTOP_SENSORS,
+    DEVICE_TYPE_WASHTOWER: WASHTOWER_PAT_SENSORS,
+    DEVICE_TYPE_STYLER: STYLER_PAT_SENSORS,
 }
 
 

@@ -60,29 +60,37 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config_entry=entry,
         )
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self):
         """Low-frequency REST fallback (MQTT push handles realtime)."""
         try:
             status = await self.api.async_get_device_status(self.device_id)
         except Exception as err:  # noqa: BLE001 - surface as UpdateFailed
             raise UpdateFailed(f"{self.alias}: {err}") from err
+        # Oven/cooktop status is a top-level list of cavities/zones — replace.
+        if isinstance(status, list):
+            return status
         if not isinstance(status, dict):
             raise UpdateFailed(f"{self.alias}: unexpected status {status!r}")
         # Merge onto any state we already have (keeps push-only fields).
-        merged = deep_merge(dict(self.data or {}), status)
-        return merged
+        base = dict(self.data) if isinstance(self.data, dict) else {}
+        return deep_merge(base, status)
 
     @property
     def value(self):
         """Return the current merged status dict (never None once set up)."""
         return self.data or {}
 
-    def handle_mqtt_status(self, report: dict[str, Any]) -> None:
+    def handle_mqtt_status(self, report) -> None:
         """Apply an MQTT DEVICE_STATUS report (delta) onto current state."""
-        if not isinstance(report, dict) or not report:
+        if not report:
             return
-        merged = deep_merge(dict(self.data or {}), report)
-        self.async_set_updated_data(merged)
+        if isinstance(report, list):  # oven/cooktop cavity/zone list
+            self.async_set_updated_data(report)
+            return
+        if not isinstance(report, dict):
+            return
+        base = dict(self.data) if isinstance(self.data, dict) else {}
+        self.async_set_updated_data(deep_merge(base, report))
 
     def get(self, *path: str, default=None):
         """Read a nested value by resource-group path, e.g. get('temperature', 'targetTemperature')."""
@@ -92,6 +100,25 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return default
             node = node[key]
         return node
+
+    def get_zone(self, location: str, *path: str, default=None):
+        """Read from oven/cooktop status: a top-level list where each item has
+        item['location']['locationName']. e.g. get_zone('UPPER','runState','currentState').
+        """
+        items = self.data
+        if isinstance(items, list):
+            for item in items:
+                if (
+                    isinstance(item, dict)
+                    and item.get("location", {}).get("locationName") == location
+                ):
+                    node: Any = item
+                    for key in path:
+                        if not isinstance(node, dict) or key not in node:
+                            return default
+                        node = node[key]
+                    return node
+        return default
 
     def get_location(self, group: str, location: str, field: str, default=None):
         """Read a field from a location-keyed list group (fridge/oven/cooktop).
