@@ -1,0 +1,118 @@
+"""MQTT push manager: subscribe device events and route DEVICE_STATUS reports."""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
+from homeassistant.core import HomeAssistant
+
+from .const import PUSH_TYPE_DEVICE_STATUS
+from .coordinator import PatDeviceCoordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+# Client registration body used by thinqconnect (verified against the SDK).
+CLIENT_BODY = {
+    "type": "MQTT",
+    "service-code": "SVC202",
+    "device-type": "607",
+    "allowExist": True,
+}
+
+
+def _extract_payload(args: tuple, kwargs: dict) -> bytes | None:
+    """Find the JSON payload among the callback args (thinqconnect passes bytes)."""
+    for value in (*args, *kwargs.values()):
+        if isinstance(value, (bytes, bytearray)):
+            return bytes(value)
+        if isinstance(value, str) and value.strip().startswith("{"):
+            return value.encode()
+    return None
+
+
+class MyLgMqtt:
+    """Own the ThinQMQTTClient and dispatch pushes to coordinators."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api,
+        client_id: str,
+        coordinators: dict[str, PatDeviceCoordinator],
+    ) -> None:
+        self.hass = hass
+        self.api = api
+        self.client_id = client_id
+        self.coordinators = coordinators
+        self._client = None
+        self._event_subscribed: list[str] = []
+
+    async def async_start(self) -> bool:
+        """Register, subscribe whitelisted devices, and connect. Best-effort."""
+        from thinqconnect import ThinQMQTTClient
+
+        try:
+            self._client = ThinQMQTTClient(self.api, self.client_id, self._on_message)
+            await self._client.async_init()
+            await self._client.async_prepare_mqtt()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("my_lg MQTT prepare failed (falling back to REST): %s", err)
+            self._client = None
+            return False
+
+        for device_id in self.coordinators:
+            # DEVICE_STATUS (realtime state) requires an *event* subscription.
+            try:
+                await self.api.async_post_event_subscribe(device_id)
+                self._event_subscribed.append(device_id)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("event subscribe %s: %s", device_id[:8], err)
+            # DEVICE_PUSH notifications; account-shared, may already be subscribed.
+            try:
+                await self.api.async_post_push_subscribe(device_id)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("push subscribe %s: %s", device_id[:8], err)
+
+        try:
+            await self._client.async_connect_mqtt()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("my_lg MQTT connect failed (falling back to REST): %s", err)
+            return False
+
+        _LOGGER.info("my_lg MQTT connected (%d devices)", len(self._event_subscribed))
+        return True
+
+    def _on_message(self, *args: Any, **kwargs: Any) -> None:
+        """Runs in the MQTT client thread — hop to the event loop."""
+        payload = _extract_payload(args, kwargs)
+        if payload is None:
+            return
+        try:
+            message = json.loads(payload.decode())
+        except (ValueError, UnicodeDecodeError):
+            return
+
+        if message.get("pushType") != PUSH_TYPE_DEVICE_STATUS:
+            # DEVICE_PUSH (notifications) handled in later stages.
+            return
+        coordinator = self.coordinators.get(message.get("deviceId"))
+        if coordinator is None:
+            return
+        report = message.get("report") or {}
+        self.hass.loop.call_soon_threadsafe(coordinator.handle_mqtt_status, report)
+
+    async def async_stop(self) -> None:
+        """Clean up: delete our event subscriptions and deregister the client."""
+        for device_id in self._event_subscribed:
+            try:
+                await self.api.async_delete_event_subscribe(device_id)
+            except Exception:  # noqa: BLE001
+                pass
+        self._event_subscribed.clear()
+        try:
+            await self.api.async_delete_client_register(payload=CLIENT_BODY)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("deregister client: %s", err)
+        self._client = None

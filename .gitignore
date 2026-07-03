@@ -1,0 +1,26 @@
+# --- 내부 조사 산출물(민감: deviceId/토큰 인접) — 레포에 올리지 않음 ---
+lg_pat_dump.json
+lg_wideq_dump.json
+lg_mqtt_capture.json
+lg_*_now.json
+DESIGN.md
+LG_ENTITY_INVENTORY.md
+PAT_DATA_SUMMARY.md
+WIDEQ_DATA_SUMMARY.md
+WASHTOWER_COMPARE.md
+STYLER_COMPARE.md
+
+# --- 작업/에이전트 부산물 ---
+.claude/
+scratchpad/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

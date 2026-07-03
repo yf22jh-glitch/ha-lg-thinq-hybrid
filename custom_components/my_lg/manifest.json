@@ -1,0 +1,12 @@
+{
+  "domain": "my_lg",
+  "name": "LG ThinQ Hybrid (my_lg)",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/yf22jh-glitch/ha-lg-thinq-hybrid",
+  "issue_tracker": "https://github.com/yf22jh-glitch/ha-lg-thinq-hybrid/issues",
+  "codeowners": ["@yf22jh-glitch"],
+  "iot_class": "cloud_push",
+  "requirements": ["thinqconnect>=1.0.13"],
+  "dependencies": []
+}

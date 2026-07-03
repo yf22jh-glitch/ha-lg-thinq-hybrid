@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LG ThinQ Hybrid",
+        "description": "LG ThinQ PAT(Personal Access Token)를 입력하세요.",
+        "data": {
+          "access_token": "PAT 액세스 토큰",
+          "country": "국가 코드"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "입력한 인증정보로 LG ThinQ에 연결할 수 없습니다."
+    },
+    "abort": {
+      "already_configured": "LG ThinQ Hybrid가 이미 설정되어 있습니다."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "폴링 간격",
+        "description": "wideq 폴링 간격(초). LG 차단을 막기 위해 최소값이 강제됩니다.",
+        "data": {
+          "ac_active_interval": "에어컨 활성 간격 (최소 60초)",
+          "appliance_active_interval": "가전 활성 간격 (최소 300초)",
+          "idle_interval": "유휴 baseline 간격 (최소 600초)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "humidity": { "name": "습도" },
+      "current_temperature": { "name": "현재 온도" },
+      "filter_remaining": { "name": "필터 잔여량" }
+    }
+  }
+}

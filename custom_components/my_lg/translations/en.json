@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LG ThinQ Hybrid",
+        "description": "Enter your LG ThinQ Personal Access Token (PAT).",
+        "data": {
+          "access_token": "PAT access token",
+          "country": "Country code"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach LG ThinQ with those credentials."
+    },
+    "abort": {
+      "already_configured": "LG ThinQ Hybrid is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling intervals",
+        "description": "wideq polling intervals (seconds). Minimums are enforced to avoid triggering LG's rate limit.",
+        "data": {
+          "ac_active_interval": "Air conditioner active interval (min 60s)",
+          "appliance_active_interval": "Appliance active interval (min 300s)",
+          "idle_interval": "Idle baseline interval (min 600s)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "humidity": { "name": "Humidity" },
+      "current_temperature": { "name": "Current temperature" },
+      "filter_remaining": { "name": "Filter remaining" }
+    }
+  }
+}
