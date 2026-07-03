@@ -6,7 +6,9 @@
         "description": "Enter your LG ThinQ Personal Access Token (PAT).",
         "data": {
           "access_token": "PAT access token",
-          "country": "Country code"
+          "country": "Country code",
+          "wideq_token": "wideq refresh token (optional — enables AC power/energy)",
+          "wideq_client_id": "wideq client id (optional)"
         }
       }
     },
@@ -32,9 +34,24 @@
   },
   "entity": {
     "sensor": {
-      "humidity": { "name": "Humidity" },
-      "current_temperature": { "name": "Current temperature" },
-      "filter_remaining": { "name": "Filter remaining" }
+      "humidity": {
+        "name": "Humidity"
+      },
+      "current_temperature": {
+        "name": "Current temperature"
+      },
+      "filter_remaining": {
+        "name": "Filter remaining"
+      },
+      "energy_current": {
+        "name": "Power"
+      },
+      "energy_today": {
+        "name": "Energy today"
+      },
+      "energy_month": {
+        "name": "Energy month"
+      }
     }
   }
 }

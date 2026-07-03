@@ -6,7 +6,9 @@
         "description": "LG ThinQ PAT(Personal Access Token)를 입력하세요.",
         "data": {
           "access_token": "PAT 액세스 토큰",
-          "country": "국가 코드"
+          "country": "국가 코드",
+          "wideq_token": "wideq 리프레시 토큰 (선택 — 에어컨 전력/에너지 활성화)",
+          "wideq_client_id": "wideq client id (선택)"
         }
       }
     },
@@ -32,9 +34,24 @@
   },
   "entity": {
     "sensor": {
-      "humidity": { "name": "습도" },
-      "current_temperature": { "name": "현재 온도" },
-      "filter_remaining": { "name": "필터 잔여량" }
+      "humidity": {
+        "name": "습도"
+      },
+      "current_temperature": {
+        "name": "현재 온도"
+      },
+      "filter_remaining": {
+        "name": "필터 잔여량"
+      },
+      "energy_current": {
+        "name": "소비 전력"
+      },
+      "energy_today": {
+        "name": "오늘 에너지"
+      },
+      "energy_month": {
+        "name": "이번달 에너지"
+      }
     }
   }
 }

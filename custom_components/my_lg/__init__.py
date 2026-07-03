@@ -8,21 +8,40 @@ from dataclasses import dataclass, field
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import (
+    async_create_clientsession,
+    async_get_clientsession,
+)
 
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_CLIENT_ID,
     CONF_COUNTRY,
+    CONF_LANGUAGE,
+    CONF_WIDEQ_CLIENT_ID,
+    CONF_WIDEQ_TOKEN,
+    DEFAULT_AC_ACTIVE_INTERVAL,
     DEFAULT_COUNTRY,
+    DEFAULT_IDLE_INTERVAL,
+    DEFAULT_LANGUAGE,
+    DEVICE_TYPE_AIR_CONDITIONER,
     DOMAIN,
+    OPT_AC_ACTIVE_INTERVAL,
+    OPT_IDLE_INTERVAL,
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
+    WIDEQ_MAX_CALLS_PER_HOUR,
+    WIDEQ_MIN_CALL_SPACING,
 )
 from .coordinator import PatDeviceCoordinator
+from .coordinator_wideq import WideqCoordinator
 from .mqtt import MyLgMqtt
+from .rate_limiter import GlobalRateLimiter
+from .wideq_client import WideqClient
 
 _LOGGER = logging.getLogger(__name__)
+
+POWER_ON = "POWER_ON"
 
 
 @dataclass
@@ -32,6 +51,8 @@ class MyLgData:
     api: object
     coordinators: dict[str, PatDeviceCoordinator] = field(default_factory=dict)
     mqtt: MyLgMqtt | None = None
+    wideq_client: WideqClient | None = None
+    wideq_coordinator: WideqCoordinator | None = None
 
 
 MyLgConfigEntry = ConfigEntry  # ConfigEntry[MyLgData] at type-check time
@@ -78,10 +99,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     await mqtt.async_start()
     data.mqtt = mqtt
 
+    # wideq (optional): AC realtime power/energy and other PAT-missing fields.
+    if entry.data.get(CONF_WIDEQ_TOKEN):
+        _setup_wideq(hass, entry, data)
+
     entry.runtime_data = data
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
     return True
+
+
+def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) -> None:
+    """Build the wideq client + single low-rate coordinator (AC energy, etc.)."""
+    session = async_create_clientsession(hass)
+    client = WideqClient(
+        session,
+        entry.data[CONF_WIDEQ_TOKEN],
+        entry.data.get(CONF_COUNTRY, DEFAULT_COUNTRY),
+        entry.data.get(CONF_LANGUAGE, DEFAULT_LANGUAGE),
+        entry.data.get(CONF_WIDEQ_CLIENT_ID),
+    )
+    limiter = GlobalRateLimiter(WIDEQ_MAX_CALLS_PER_HOUR, WIDEQ_MIN_CALL_SPACING)
+
+    ac_coordinators = [
+        c
+        for c in data.coordinators.values()
+        if c.device_type == DEVICE_TYPE_AIR_CONDITIONER
+    ]
+
+    def active_fn() -> bool:
+        return any(
+            c.get("operation", "airConOperationMode") == POWER_ON
+            for c in ac_coordinators
+        )
+
+    opts = entry.options
+    data.wideq_client = client
+    data.wideq_coordinator = WideqCoordinator(
+        hass,
+        entry,
+        client,
+        limiter,
+        active_fn,
+        opts.get(OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL),
+        opts.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL),
+    )
+    # No first_refresh: wideq must not eager-poll on setup (restart-burst
+    # avoidance). The first poll fires one interval after entities subscribe.
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool:
@@ -90,6 +154,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
     data: MyLgData | None = getattr(entry, "runtime_data", None)
     if data and data.mqtt:
         await data.mqtt.async_stop()
+    if data and data.wideq_client:
+        await data.wideq_client.async_close()
     return unload_ok
 
 

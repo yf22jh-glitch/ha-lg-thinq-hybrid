@@ -11,7 +11,14 @@ CONF_ACCESS_TOKEN = "access_token"
 CONF_COUNTRY = "country"
 CONF_CLIENT_ID = "client_id"
 
+# Optional wideq (LG internal API) credentials — enables fields the PAT API
+# cannot provide (AC realtime power/energy, dehumidifier water tank, etc.).
+CONF_WIDEQ_TOKEN = "wideq_token"
+CONF_WIDEQ_CLIENT_ID = "wideq_client_id"
+CONF_LANGUAGE = "language"
+
 DEFAULT_COUNTRY = "KR"
+DEFAULT_LANGUAGE = "ko-KR"
 
 # client_id prefix — MUST differ from the official lg_thinq integration
 # ("home-assistant-...") so the two do not kick each other off the AWS IoT

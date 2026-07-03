@@ -22,6 +22,10 @@ from .const import (
     CONF_ACCESS_TOKEN,
     CONF_CLIENT_ID,
     CONF_COUNTRY,
+    CONF_LANGUAGE,
+    CONF_WIDEQ_CLIENT_ID,
+    CONF_WIDEQ_TOKEN,
+    DEFAULT_LANGUAGE,
     DEFAULT_AC_ACTIVE_INTERVAL,
     DEFAULT_APPLIANCE_ACTIVE_INTERVAL,
     DEFAULT_COUNTRY,
@@ -76,19 +80,29 @@ class MyLgConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.debug("validation failed: %s", err)
                 errors["base"] = "cannot_connect"
             else:
+                data = {
+                    CONF_ACCESS_TOKEN: token,
+                    CONF_COUNTRY: country,
+                    CONF_CLIENT_ID: client_id,
+                    CONF_LANGUAGE: DEFAULT_LANGUAGE,
+                }
+                # Optional wideq credentials (Stage 2+: AC power/energy, etc.).
+                if user_input.get(CONF_WIDEQ_TOKEN, "").strip():
+                    data[CONF_WIDEQ_TOKEN] = user_input[CONF_WIDEQ_TOKEN].strip()
+                    if user_input.get(CONF_WIDEQ_CLIENT_ID, "").strip():
+                        data[CONF_WIDEQ_CLIENT_ID] = user_input[
+                            CONF_WIDEQ_CLIENT_ID
+                        ].strip()
                 return self.async_create_entry(
-                    title=f"LG ThinQ Hybrid ({count} devices)",
-                    data={
-                        CONF_ACCESS_TOKEN: token,
-                        CONF_COUNTRY: country,
-                        CONF_CLIENT_ID: client_id,
-                    },
+                    title=f"LG ThinQ Hybrid ({count} devices)", data=data
                 )
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_ACCESS_TOKEN): str,
                 vol.Required(CONF_COUNTRY, default=DEFAULT_COUNTRY): str,
+                vol.Optional(CONF_WIDEQ_TOKEN, default=""): str,
+                vol.Optional(CONF_WIDEQ_CLIENT_ID, default=""): str,
             }
         )
         return self.async_show_form(
