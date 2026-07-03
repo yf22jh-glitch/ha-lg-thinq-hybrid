@@ -14,8 +14,12 @@ permissions:
   contents: write
   pull-requests: write
 
+# NOTE: track af950833, NOT ollo69. Verified 2026-07-03: ollo69's core_async
+# has a stale V2_APP_VER (5.0.1200) that LG's KR OAuth rejects (TokenError),
+# while af950833 keeps it current (5.1.2600) and authenticates. af950833 is the
+# fork actually maintained for KR accounts.
 env:
-  UPSTREAM_REPO: ollo69/ha-smartthinq-sensors
+  UPSTREAM_REPO: af950833/ha-smartthinq-sensors
   UPSTREAM_PATH: custom_components/smartthinq_sensors/wideq
   VENDOR_PATH: custom_components/my_lg/wideq
 
