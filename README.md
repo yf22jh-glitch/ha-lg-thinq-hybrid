@@ -14,7 +14,11 @@
 | 2 | 에어컨 실시간 전력·누적에너지 (wideq 단일 저부하 폴링) | ✅ |
 | 3 | 제습기 (PAT 제어 + 물탱크 wideq + WATER_IS_FULL push) | ✅ |
 | 3.5 | 워시타워·스타일러 상세 (wideq: 코스·spin·물온도·잠금·에너지 등) | ✅ |
-| 4 | 대시보드 전환 + 구 `smartthinq_sensors` 제거 | 예정(운영) |
+| 5 | **전 기기(16종) 커버** — 공청기·가습기·냉장고·식세기·정수기·오븐·쿡탑 + 완료알림 event | ✅ |
+| 4 | 실 HA 설치 + 대시보드 전환 + 공식·구 fork 제거 | 예정(운영) |
+
+Stage 5로 공식 `lg_thinq` + 구 `smartthinq` 둘 다 대체 가능(전 기기 PAT + 필요 필드 wideq).
+미구현(추후, write payload 실검증 필요): 냉장고 온도 설정(Number), 세탁/스타일러 운전 제어.
 
 ### wideq (선택)
 Stage 2부터 공식 PAT가 못 주는 값(에어컨 실시간 전력 등)을 위해 **wideq**(LG 내부 API)를 벤더링해 쓴다. 통합 설정 시 **wideq refresh token**(선택)을 넣으면 활성화된다. 폴링은 `refresh_devices()` 1콜/주기로 전 기기 snapshot을 받아 저부하(기본 120초 = 약 30콜/시)로 유지하며, 재시작 시 즉시 폴링하지 않는다.
