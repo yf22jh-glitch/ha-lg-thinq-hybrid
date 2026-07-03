@@ -93,6 +93,18 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             node = node[key]
         return node
 
+    def get_location(self, group: str, location: str, field: str, default=None):
+        """Read a field from a location-keyed list group (fridge/oven/cooktop).
+
+        e.g. status['temperature'] = [{'locationName':'FRIDGE','targetTemperature':3}, ...]
+        """
+        items = self.get(group)
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict) and item.get("locationName") == location:
+                    return item.get(field, default)
+        return default
+
     async def async_load_profile(self) -> None:
         """Fetch the device profile once (defines push codes & capabilities)."""
         try:

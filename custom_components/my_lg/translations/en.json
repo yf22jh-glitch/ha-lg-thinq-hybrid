@@ -75,16 +75,95 @@
       },
       "odor": {
         "name": "Odor"
+      },
+      "fridge_temp": {
+        "name": "Fridge temperature"
+      },
+      "freezer_temp": {
+        "name": "Freezer temperature"
+      },
+      "fresh_air_filter": {
+        "name": "Fresh air filter"
+      },
+      "top_mode": {
+        "name": "Top"
+      },
+      "middle_mode": {
+        "name": "Middle"
+      },
+      "bottom_mode": {
+        "name": "Bottom"
+      },
+      "one_touch_filter": {
+        "name": "Filter"
+      },
+      "current_status": {
+        "name": "Status"
+      },
+      "current_course": {
+        "name": "Course"
+      },
+      "remaining": {
+        "name": "Remaining"
+      },
+      "total_time": {
+        "name": "Total time"
+      },
+      "cock_state": {
+        "name": "Cock state"
+      },
+      "sterilizing_state": {
+        "name": "Sterilizing"
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "Water tank full"
+      },
+      "door": {
+        "name": "Door"
+      },
+      "rinse_refill": {
+        "name": "Rinse refill"
       }
     },
     "event": {
       "notification": {
         "name": "Notification"
+      }
+    },
+    "switch": {
+      "express_mode": {
+        "name": "Express mode"
+      },
+      "sterilization": {
+        "name": "Sterilization reservation"
+      },
+      "auto_mode": {
+        "name": "Auto mode"
+      },
+      "sleep_mode": {
+        "name": "Sleep mode"
+      },
+      "warm_mode": {
+        "name": "Warm mist"
+      },
+      "mood_lamp": {
+        "name": "Mood lamp"
+      }
+    },
+    "select": {
+      "job_mode": {
+        "name": "Mode"
+      },
+      "water_type": {
+        "name": "Water type"
+      },
+      "default_water": {
+        "name": "Default water amount"
+      },
+      "display_light": {
+        "name": "Display brightness"
       }
     }
   }

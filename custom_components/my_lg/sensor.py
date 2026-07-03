@@ -27,9 +27,13 @@ from . import MyLgConfigEntry
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
+    DEVICE_TYPE_DISH_WASHER,
     DEVICE_TYPE_HUMIDIFIER,
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+    DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
+    DEVICE_TYPE_WATER_PURIFIER,
     DOMAIN,
 )
 from .coordinator import PatDeviceCoordinator
@@ -135,10 +139,76 @@ HUMIDIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
     ),
 )
 
+def _text(key: str, group: str, field: str) -> MyLgSensorDescription:
+    return MyLgSensorDescription(
+        key=key, translation_key=key,
+        value_fn=lambda c, g=group, f=field: c.get(g, f),
+    )
+
+
+def _loc_text(key: str, group: str, location: str, field: str) -> MyLgSensorDescription:
+    return MyLgSensorDescription(
+        key=key, translation_key=key,
+        value_fn=lambda c, g=group, l=location, f=field: c.get_location(g, l, f),
+    )
+
+
+def _temp_loc(key: str, location: str) -> MyLgSensorDescription:
+    return MyLgSensorDescription(
+        key=key, translation_key=key,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c, l=location: c.get_location("temperature", l, "targetTemperature"),
+    )
+
+
+def _timer(key: str, hkey: str, mkey: str) -> MyLgSensorDescription:
+    def fn(c, h=hkey, m=mkey):
+        hv = c.get("timer", h)
+        mv = c.get("timer", m)
+        if hv is None and mv is None:
+            return None
+        return (hv or 0) * 60 + (mv or 0)
+
+    return MyLgSensorDescription(
+        key=key, translation_key=key, native_unit_of_measurement="min", value_fn=fn
+    )
+
+
+REFRIGERATOR_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _temp_loc("fridge_temp", "FRIDGE"),
+    _temp_loc("freezer_temp", "FREEZER"),
+    _text("fresh_air_filter", "refrigeration", "freshAirFilter"),
+)
+
+KIMCHI_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _loc_text("top_mode", "temperature", "TOP", "targetTemperature"),
+    _loc_text("middle_mode", "temperature", "MIDDLE", "targetTemperature"),
+    _loc_text("bottom_mode", "temperature", "BOTTOM", "targetTemperature"),
+    _text("one_touch_filter", "refrigeration", "oneTouchFilter"),
+)
+
+DISHWASHER_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _text("current_status", "runState", "currentState"),
+    _text("current_course", "dishWashingCourse", "currentDishWashingCourse"),
+    _timer("remaining", "remainHour", "remainMinute"),
+    _timer("total_time", "totalHour", "totalMinute"),
+)
+
+WATER_PURIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
+    _text("cock_state", "runState", "cockState"),
+    _text("sterilizing_state", "runState", "sterilizingState"),
+)
+
 PAT_SENSORS_BY_TYPE: dict[str, tuple[MyLgSensorDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: AC_SENSORS,
     DEVICE_TYPE_AIR_PURIFIER: AIR_PURIFIER_SENSORS,
     DEVICE_TYPE_HUMIDIFIER: HUMIDIFIER_SENSORS,
+    DEVICE_TYPE_REFRIGERATOR: REFRIGERATOR_SENSORS,
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR: KIMCHI_SENSORS,
+    DEVICE_TYPE_DISH_WASHER: DISHWASHER_SENSORS,
+    DEVICE_TYPE_WATER_PURIFIER: WATER_PURIFIER_SENSORS,
 }
 
 

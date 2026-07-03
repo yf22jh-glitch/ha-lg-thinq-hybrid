@@ -75,16 +75,95 @@
       },
       "odor": {
         "name": "냄새"
+      },
+      "fridge_temp": {
+        "name": "냉장실 온도"
+      },
+      "freezer_temp": {
+        "name": "냉동실 온도"
+      },
+      "fresh_air_filter": {
+        "name": "청정 공기 필터"
+      },
+      "top_mode": {
+        "name": "상칸"
+      },
+      "middle_mode": {
+        "name": "중칸"
+      },
+      "bottom_mode": {
+        "name": "하칸"
+      },
+      "one_touch_filter": {
+        "name": "필터"
+      },
+      "current_status": {
+        "name": "현재 상태"
+      },
+      "current_course": {
+        "name": "코스"
+      },
+      "remaining": {
+        "name": "남은 시간"
+      },
+      "total_time": {
+        "name": "총 시간"
+      },
+      "cock_state": {
+        "name": "코크 상태"
+      },
+      "sterilizing_state": {
+        "name": "살균 상태"
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "물탱크 가득참"
+      },
+      "door": {
+        "name": "문"
+      },
+      "rinse_refill": {
+        "name": "린스 리필"
       }
     },
     "event": {
       "notification": {
         "name": "알림"
+      }
+    },
+    "switch": {
+      "express_mode": {
+        "name": "쾌속 모드"
+      },
+      "sterilization": {
+        "name": "살균 예약"
+      },
+      "auto_mode": {
+        "name": "자동 모드"
+      },
+      "sleep_mode": {
+        "name": "취침 모드"
+      },
+      "warm_mode": {
+        "name": "따뜻한 미스트"
+      },
+      "mood_lamp": {
+        "name": "무드 램프"
+      }
+    },
+    "select": {
+      "job_mode": {
+        "name": "운전 모드"
+      },
+      "water_type": {
+        "name": "물 종류"
+      },
+      "default_water": {
+        "name": "기본 물량"
+      },
+      "display_light": {
+        "name": "디스플레이 밝기"
       }
     }
   }
