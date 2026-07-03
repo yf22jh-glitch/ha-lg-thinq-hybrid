@@ -44,6 +44,27 @@ jobs:
         run: |
           echo "sha=$(git -C /tmp/upstream rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      # Bot-created PRs don't trigger the Validate workflow (GitHub loop guard),
+      # so import-test the synced wideq here. If it fails, no PR is opened.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Import-test synced wideq
+        run: |
+          pip install --upgrade homeassistant thinqconnect
+          export PYTHONPATH="$PWD/custom_components"
+          python - <<'PY'
+          import importlib
+          for m in [
+              "my_lg", "my_lg.wideq.core_async", "my_lg.wideq.device",
+              "my_lg.wideq.device_info", "my_lg.wideq.model_info",
+              "my_lg.wideq.devices.ac", "my_lg.wideq.devices.dehumidifier",
+              "my_lg.wideq.devices.washerDryer", "my_lg.wideq.devices.styler",
+          ]:
+              importlib.import_module(m); print("OK", m)
+          print("synced wideq imports OK")
+          PY
+
       - name: Open PR if changed
         uses: peter-evans/create-pull-request@v6
         with:
