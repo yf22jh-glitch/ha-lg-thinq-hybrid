@@ -3,8 +3,8 @@
 from .backports.enum import StrEnum
 
 # default core settings
-DEFAULT_COUNTRY = "KR"
-DEFAULT_LANGUAGE = "ko-KR"
+DEFAULT_COUNTRY = "US"
+DEFAULT_LANGUAGE = "en-US"
 DEFAULT_TIMEOUT = 15  # seconds
 
 # bit status
@@ -32,9 +32,6 @@ class AirConditionerFeatures(StrEnum):
     """Features for LG Air Conditioner devices."""
 
     ENERGY_CURRENT = "energy_current"
-    ENERGY_TODAY = "energy_today"
-    ENERGY_YESTERDAY = "energy_yesterday"
-    ENERGY_MONTH = "energy_month"
     HOT_WATER_TEMP = "hot_water_temperature"
     HUMIDITY = "humidity"
     FILTER_MAIN_LIFE = "filter_main_life"
@@ -42,9 +39,6 @@ class AirConditionerFeatures(StrEnum):
     FILTER_MAIN_USE = "filter_main_use"
     LIGHTING_DISPLAY = "lighting_display"
     MODE_AIRCLEAN = "mode_airclean"
-    POWERSAVE = "powersave"
-    AUTODRY = "autodry"
-    SMARTCARE = "smartcare"
     MODE_AWHP_SILENT = "mode_awhp_silent"
     MODE_JET = "mode_jet"
     PM1 = "pm1"
@@ -108,8 +102,6 @@ class RefrigeratorFeatures(StrEnum):
     """Features for LG Refrigerator devices."""
 
     ECOFRIENDLY = "eco_friendly"
-    ENERGY_TODAY = "energy_today"
-    ENERGY_MONTH = "energy_month"
     EXPRESSMODE = "express_mode"
     EXPRESSFRIDGE = "express_fridge"
     FRESHAIRFILTER = "fresh_air_filter"

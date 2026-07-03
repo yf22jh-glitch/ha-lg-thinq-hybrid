@@ -134,10 +134,7 @@ class Monitor:
         if Monitor._client_connected:
             return True
         call_time = datetime.now(timezone.utc)
-        last_client_refresh = Monitor._last_client_refresh
-        if last_client_refresh.tzinfo is None:
-            last_client_refresh = last_client_refresh.replace(tzinfo=timezone.utc)
-        difference = (call_time - last_client_refresh).total_seconds()
+        difference = (call_time - Monitor._last_client_refresh).total_seconds()
         if difference <= MIN_TIME_BETWEEN_CLI_REFRESH:
             return False
 
