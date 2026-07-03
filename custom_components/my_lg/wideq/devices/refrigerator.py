@@ -10,7 +10,7 @@ import logging
 
 from ..const import RefrigeratorFeatures, StateOptions, TemperatureUnit
 from ..core_async import ClientAsync
-from ..core_exceptions import InvalidRequestError
+from ..core_exceptions import APIError
 from ..device import LABEL_BIT_OFF, LABEL_BIT_ON, Device, DeviceStatus
 from ..device_info import DeviceInfo
 from ..model_info import TYPE_ENUM
@@ -43,7 +43,8 @@ DEFAULT_FREEZER_RANGE_F = [-8, 6]
 
 REFR_ROOT_DATA = "refState"
 CTRL_BASIC = ["Control", "basicCtrl"]
-ENERGY_USAGE_POLL_INTERVAL = 300  # 5 minutes
+ENERGY_TODAY_POLL_INTERVAL = 300  # 5 minutes
+ENERGY_MONTH_POLL_INTERVAL = 3600  # 60 minutes
 
 STATE_ECO_FRIENDLY = ["EcoFriendly", "ecoFriendly"]
 STATE_ICE_PLUS = ["IcePlus", ""]
@@ -81,7 +82,8 @@ class RefrigeratorDevice(Device):
             RefrigeratorFeatures.ENERGY_MONTH: None,
         }
         self._energy_usage_supported = True
-        self._last_energy_usage_poll: datetime | None = None
+        self._last_energy_today_poll: datetime | None = None
+        self._last_energy_month_poll: datetime | None = None
 
     def _get_feature_info(self, item_key):
         config = self.model_info.config_value("visibleItems")
@@ -415,64 +417,99 @@ class RefrigeratorDevice(Device):
         except (TypeError, ValueError):
             return 0
 
-    async def get_energy_usage(self):
-        """Get daily and monthly energy usage in kWh from ThinQ Web energy history."""
-        if not self._energy_usage_supported:
+    async def _get_energy_history(
+        self, period: str, start_date: str, end_date: str
+    ) -> dict | list | None:
+        """Get refrigerator energy history from ThinQ Web."""
+        path = (
+            f"service/fridge/{self.device_info.device_id}/energy-history"
+            f"?period={period}&startDate={start_date}&endDate={end_date}"
+        )
+        return await self._client.session.get2(path)
+
+    async def get_energy_today_usage(self):
+        """Get today's energy usage in Wh from ThinQ Web energy history."""
+        today = datetime.now().strftime("%Y-%m-%d")
+        try:
+            history = await self._get_energy_history("hour", today, today)
+        except (ValueError, APIError) as exc:
+            _LOGGER.debug(
+                "Error calling refrigerator get_energy_today_usage method: %s", exc
+            )
             return None
 
+        today_usage = self._energy_history_wh(history)
+        if today_usage is None:
+            _LOGGER.debug(
+                "Unexpected refrigerator get_energy_today_usage response: %s",
+                history,
+            )
+            return None
+
+        return {RefrigeratorFeatures.ENERGY_TODAY: today_usage}
+
+    async def get_energy_month_usage(self):
+        """Get this month's energy usage in kWh from ThinQ Web energy history."""
         now = datetime.now()
-        today = now.strftime("%Y-%m-%d")
         month_start = datetime(now.year, now.month, 1).strftime("%Y-%m-%d")
         month_end = datetime(
             now.year, now.month, monthrange(now.year, now.month)[1]
         ).strftime("%Y-%m-%d")
-
-        async def _get_history(period: str, start_date: str, end_date: str):
-            path = (
-                f"service/fridge/{self.device_info.device_id}/energy-history"
-                f"?period={period}&startDate={start_date}&endDate={end_date}"
-            )
-            return await self._client.session.get2(path)
-
         try:
-            today_history = await _get_history("hour", today, today)
-            month_history = await _get_history("month", month_start, month_end)
-        except (ValueError, InvalidRequestError) as exc:
-            _LOGGER.debug("Error calling refrigerator get_energy_usage method: %s", exc)
-            return None
-
-        today_usage = self._energy_history_wh(today_history)
-        month_usage = self._energy_history_kwh(month_history)
-        if today_usage is None or month_usage is None:
+            history = await self._get_energy_history("month", month_start, month_end)
+        except (ValueError, APIError) as exc:
             _LOGGER.debug(
-                "Unexpected refrigerator get_energy_usage response: today=%s, month=%s",
-                today_history,
-                month_history,
+                "Error calling refrigerator get_energy_month_usage method: %s", exc
             )
             return None
 
-        return {
-            RefrigeratorFeatures.ENERGY_TODAY: today_usage,
-            RefrigeratorFeatures.ENERGY_MONTH: month_usage,
-        }
+        month_usage = self._energy_history_kwh(history)
+        if month_usage is None:
+            _LOGGER.debug(
+                "Unexpected refrigerator get_energy_month_usage response: %s",
+                history,
+            )
+            return None
+
+        return {RefrigeratorFeatures.ENERGY_MONTH: month_usage}
 
     async def _update_energy_usage(self):
         """Update energy usage values on a slower polling interval."""
         if not self._energy_usage_supported:
             return
+        if not self._client.monitoring_active:
+            return
         now = datetime.now()
-        if self._last_energy_usage_poll is not None:
-            diff = (now - self._last_energy_usage_poll).total_seconds()
-            if diff < ENERGY_USAGE_POLL_INTERVAL:
-                return
-        self._last_energy_usage_poll = now
-        if energy_usage := await self.get_energy_usage():
+        today_due = (
+            self._last_energy_today_poll is None
+            or (now - self._last_energy_today_poll).total_seconds()
+            >= ENERGY_TODAY_POLL_INTERVAL
+        )
+        if today_due:
+            if self._last_energy_today_poll is None:
+                self._client.refresh_client_id()
+            self._last_energy_today_poll = now
+            if energy_usage := await self.get_energy_today_usage():
+                self._energy_usage.update(energy_usage)
+            return
+
+        month_due = (
+            self._last_energy_month_poll is None
+            or (now - self._last_energy_month_poll).total_seconds()
+            >= ENERGY_MONTH_POLL_INTERVAL
+        )
+        if not month_due:
+            return
+        if self._last_energy_month_poll is None:
+            self._client.refresh_client_id()
+        self._last_energy_month_poll = now
+        if energy_usage := await self.get_energy_month_usage():
             self._energy_usage.update(energy_usage)
 
     async def poll(self) -> RefrigeratorStatus | None:
         """Poll the device's current state."""
 
-        res = await self._device_poll(REFR_ROOT_DATA, thinq2_query_device=True)
+        res = await self._device_poll(REFR_ROOT_DATA)
         if not res:
             return None
 
