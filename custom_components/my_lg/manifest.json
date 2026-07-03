@@ -10,8 +10,8 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/yf22jh-glitch/ha-lg-thinq-hybrid/issues",
   "requirements": [
-    "thinqconnect>=1.0.13",
+    "thinqconnect>=1.0.12",
     "xmltodict>=0.13.0"
   ],
-  "version": "0.5.2"
+  "version": "0.5.3"
 }
