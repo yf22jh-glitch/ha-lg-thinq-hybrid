@@ -1,0 +1,62 @@
+name: Sync vendored wideq
+
+# Keeps custom_components/my_lg/wideq/ in sync with the upstream
+# ollo69/ha-smartthinq-sensors. Runs on GitHub's servers (no local host needed).
+# It only opens a PR when upstream changed; our Validate workflow then import-tests
+# the PR against the latest Home Assistant before you merge.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1" # weekly, Monday
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: ollo69/ha-smartthinq-sensors
+  UPSTREAM_PATH: custom_components/smartthinq_sensors/wideq
+  VENDOR_PATH: custom_components/my_lg/wideq
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream wideq
+        run: |
+          git clone --depth 1 "https://github.com/${UPSTREAM_REPO}.git" /tmp/upstream
+          test -d "/tmp/upstream/${UPSTREAM_PATH}" || {
+            echo "upstream wideq path not found"; exit 1; }
+
+      - name: Sync into vendored copy (preserve our NOTICE.md)
+        run: |
+          rsync -a --delete \
+            --exclude='__pycache__' \
+            --exclude='NOTICE.md' \
+            "/tmp/upstream/${UPSTREAM_PATH}/" "${VENDOR_PATH}/"
+
+      - name: Record upstream commit
+        id: up
+        run: |
+          echo "sha=$(git -C /tmp/upstream rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR if changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: sync/wideq-upstream
+          commit-message: "chore(wideq): sync from ${{ env.UPSTREAM_REPO }}@${{ steps.up.outputs.sha }}"
+          title: "Sync vendored wideq from ${{ env.UPSTREAM_REPO }}"
+          body: |
+            Automated sync of `${{ env.VENDOR_PATH }}` from
+            `${{ env.UPSTREAM_REPO }}` @ `${{ steps.up.outputs.sha }}`.
+
+            ⚠️ Review the diff — upstream changes to the LG internal API decoding
+            land here. The Validate workflow import-tests this PR against the latest
+            Home Assistant. Merge only if it is green and the fields we rely on
+            (AC power, dehumidifier water tank, washer/styler details) still decode.
+          labels: automated, wideq
+          delete-branch: true
