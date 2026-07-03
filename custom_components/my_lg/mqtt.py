@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from .const import PUSH_TYPE_DEVICE_STATUS
+from .const import PUSH_TYPE_DEVICE_PUSH, PUSH_TYPE_DEVICE_STATUS
 from .coordinator import PatDeviceCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,11 +42,13 @@ class MyLgMqtt:
         api,
         client_id: str,
         coordinators: dict[str, PatDeviceCoordinator],
+        on_push: Callable[[str, str], None] | None = None,
     ) -> None:
         self.hass = hass
         self.api = api
         self.client_id = client_id
         self.coordinators = coordinators
+        self._on_push = on_push
         self._client = None
         self._event_subscribed: list[str] = []
 
@@ -94,14 +97,18 @@ class MyLgMqtt:
         except (ValueError, UnicodeDecodeError):
             return
 
-        if message.get("pushType") != PUSH_TYPE_DEVICE_STATUS:
-            # DEVICE_PUSH (notifications) handled in later stages.
-            return
-        coordinator = self.coordinators.get(message.get("deviceId"))
-        if coordinator is None:
-            return
-        report = message.get("report") or {}
-        self.hass.loop.call_soon_threadsafe(coordinator.handle_mqtt_status, report)
+        push_type = message.get("pushType")
+        device_id = message.get("deviceId")
+
+        if push_type == PUSH_TYPE_DEVICE_STATUS:
+            coordinator = self.coordinators.get(device_id)
+            if coordinator is None:
+                return
+            report = message.get("report") or {}
+            self.hass.loop.call_soon_threadsafe(coordinator.handle_mqtt_status, report)
+        elif push_type == PUSH_TYPE_DEVICE_PUSH and self._on_push and device_id:
+            code = message.get("pushCode") or ""
+            self.hass.loop.call_soon_threadsafe(self._on_push, device_id, code)
 
     async def async_stop(self) -> None:
         """Clean up: delete our event subscriptions and deregister the client."""

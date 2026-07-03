@@ -25,8 +25,13 @@ DEFAULT_LANGUAGE = "ko-KR"
 # MQTT broker (one connection per client_id).
 CLIENT_ID_PREFIX = "home-assistant-mylg"
 
-# --- Platforms enabled in Stage 1 (AC state + control, no power) ---
-PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SENSOR]
+# --- Platforms ---
+PLATFORMS: list[Platform] = [
+    Platform.CLIMATE,
+    Platform.SENSOR,
+    Platform.HUMIDIFIER,
+    Platform.BINARY_SENSOR,
+]
 
 # --- ThinQ device types (thinqconnect deviceType strings) ---
 DEVICE_TYPE_AIR_CONDITIONER = "DEVICE_AIR_CONDITIONER"
@@ -34,14 +39,22 @@ DEVICE_TYPE_DEHUMIDIFIER = "DEVICE_DEHUMIDIFIER"
 DEVICE_TYPE_WASHTOWER = "DEVICE_WASHTOWER"
 DEVICE_TYPE_STYLER = "DEVICE_STYLER"
 
-# Stage 1 whitelist: only these device types are set up by this integration.
+# Whitelist: only these device types are set up by this integration.
 # Everything else stays on the official lg_thinq integration.
-# (Stage 2+ adds dehumidifier / washtower / styler.)
-SUPPORTED_DEVICE_TYPES: set[str] = {DEVICE_TYPE_AIR_CONDITIONER}
+# (Stage 3.5+ adds washtower / styler.)
+SUPPORTED_DEVICE_TYPES: set[str] = {
+    DEVICE_TYPE_AIR_CONDITIONER,
+    DEVICE_TYPE_DEHUMIDIFIER,
+}
 
 # --- MQTT push message types (thinqconnect) ---
 PUSH_TYPE_DEVICE_STATUS = "DEVICE_STATUS"
 PUSH_TYPE_DEVICE_PUSH = "DEVICE_PUSH"
+
+# DEVICE_PUSH codes we act on. WATER_IS_FULL is dehumidifier water tank
+# (edge event); it triggers a prompt wideq refresh to update the level sensor.
+PUSH_CODE_WATER_IS_FULL = "WATER_IS_FULL"
+WATER_PUSH_CODES: set[str] = {PUSH_CODE_WATER_IS_FULL}
 
 # --- Polling intervals (seconds) ---
 # PAT REST is only a low-frequency fallback; MQTT push carries realtime state.

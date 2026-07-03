@@ -52,6 +52,11 @@
       "energy_month": {
         "name": "Energy month"
       }
+    },
+    "binary_sensor": {
+      "water_tank_full": {
+        "name": "Water tank full"
+      }
     }
   }
 }

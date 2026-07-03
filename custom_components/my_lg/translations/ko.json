@@ -52,6 +52,11 @@
       "energy_month": {
         "name": "이번달 에너지"
       }
+    },
+    "binary_sensor": {
+      "water_tank_full": {
+        "name": "물탱크 가득참"
+      }
     }
   }
 }

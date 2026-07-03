@@ -25,11 +25,13 @@ from .const import (
     DEFAULT_IDLE_INTERVAL,
     DEFAULT_LANGUAGE,
     DEVICE_TYPE_AIR_CONDITIONER,
+    DEVICE_TYPE_DEHUMIDIFIER,
     DOMAIN,
     OPT_AC_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
+    WATER_PUSH_CODES,
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
 )
@@ -42,6 +44,18 @@ from .wideq_client import WideqClient
 _LOGGER = logging.getLogger(__name__)
 
 POWER_ON = "POWER_ON"
+
+# operation resource key per device type (to read POWER_ON/OFF).
+_OPERATION_KEY = {
+    DEVICE_TYPE_AIR_CONDITIONER: "airConOperationMode",
+    DEVICE_TYPE_DEHUMIDIFIER: "dehumidifierOperationMode",
+}
+
+
+def _is_active(coordinator: PatDeviceCoordinator) -> bool:
+    """True if the device is powered on (so wideq should poll at active cadence)."""
+    key = _OPERATION_KEY.get(coordinator.device_type)
+    return bool(key) and coordinator.get("operation", key) == POWER_ON
 
 
 @dataclass
@@ -94,12 +108,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     if not data.coordinators:
         _LOGGER.warning("my_lg: no supported devices found (Stage 1 = air conditioners)")
 
+    # On a water-tank push, refresh wideq promptly so the level sensor updates
+    # fast (rate-limited). wideq_coordinator is set by _setup_wideq below.
+    def _on_push(device_id: str, code: str) -> None:
+        if code in WATER_PUSH_CODES and data.wideq_coordinator is not None:
+            hass.async_create_task(data.wideq_coordinator.async_request_refresh())
+
     # MQTT push (best-effort; REST fallback keeps working if this fails).
-    mqtt = MyLgMqtt(hass, api, client_id, data.coordinators)
+    mqtt = MyLgMqtt(hass, api, client_id, data.coordinators, on_push=_on_push)
     await mqtt.async_start()
     data.mqtt = mqtt
 
-    # wideq (optional): AC realtime power/energy and other PAT-missing fields.
+    # wideq (optional): AC realtime power/energy, dehumidifier water tank, etc.
     if entry.data.get(CONF_WIDEQ_TOKEN):
         _setup_wideq(hass, entry, data)
 
@@ -121,17 +141,11 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
     )
     limiter = GlobalRateLimiter(WIDEQ_MAX_CALLS_PER_HOUR, WIDEQ_MIN_CALL_SPACING)
 
-    ac_coordinators = [
-        c
-        for c in data.coordinators.values()
-        if c.device_type == DEVICE_TYPE_AIR_CONDITIONER
-    ]
+    coordinators = list(data.coordinators.values())
 
     def active_fn() -> bool:
-        return any(
-            c.get("operation", "airConOperationMode") == POWER_ON
-            for c in ac_coordinators
-        )
+        # Poll wideq at active cadence while any monitored device is running.
+        return any(_is_active(c) for c in coordinators)
 
     opts = entry.options
     data.wideq_client = client
