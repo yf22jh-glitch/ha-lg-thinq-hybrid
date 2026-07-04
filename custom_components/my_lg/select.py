@@ -88,7 +88,5 @@ class MyLgSelect(MyLgEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         d = self.entity_description
         payload = {d.group: {d.field: option}}
-        await self.coordinator.api.async_post_device_control(
-            self.coordinator.device_id, payload
-        )
+        await self.coordinator.async_control(payload)
         self.coordinator.handle_mqtt_status(payload)

@@ -201,6 +201,15 @@
       },
       "styler_stop": {
         "name": "Stop"
+      },
+      "washer_power_off": {
+        "name": "Washer power off"
+      },
+      "dryer_power_off": {
+        "name": "Dryer power off"
+      },
+      "styler_power_off": {
+        "name": "Power off"
       }
     }
   }

@@ -46,13 +46,16 @@ def _dryer(mode: str) -> dict[str, Any]:
 WASHTOWER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
     _op("washer_start", _washer("START")),
     _op("washer_stop", _washer("STOP")),
+    _op("washer_power_off", _washer("POWER_OFF")),
     _op("dryer_start", _dryer("START")),
     _op("dryer_stop", _dryer("STOP")),
+    _op("dryer_power_off", _dryer("POWER_OFF")),
 )
 
 STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
     _op("styler_start", {"operation": {"stylerOperationMode": "START"}}),
     _op("styler_stop", {"operation": {"stylerOperationMode": "STOP"}}),
+    _op("styler_power_off", {"operation": {"stylerOperationMode": "POWER_OFF"}}),
 )
 
 BUTTONS_BY_TYPE: dict[str, tuple[MyLgButtonDescription, ...]] = {
@@ -86,6 +89,4 @@ class MyLgButton(MyLgEntity, ButtonEntity):
         self.entity_description = description
 
     async def async_press(self) -> None:
-        await self.coordinator.api.async_post_device_control(
-            self.coordinator.device_id, self.entity_description.payload
-        )
+        await self.coordinator.async_control(self.entity_description.payload)

@@ -135,9 +135,7 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
 
     # --- write ---
     async def _control(self, payload: dict[str, Any]) -> None:
-        await self.coordinator.api.async_post_device_control(
-            self.coordinator.device_id, payload
-        )
+        await self.coordinator.async_control(payload)
         # optimistic: reflect immediately; MQTT push confirms shortly after.
         self.coordinator.handle_mqtt_status(payload)
 

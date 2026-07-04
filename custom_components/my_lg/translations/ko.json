@@ -201,6 +201,15 @@
       },
       "styler_stop": {
         "name": "정지"
+      },
+      "washer_power_off": {
+        "name": "세탁 전원 끄기"
+      },
+      "dryer_power_off": {
+        "name": "건조 전원 끄기"
+      },
+      "styler_power_off": {
+        "name": "전원 끄기"
       }
     }
   }

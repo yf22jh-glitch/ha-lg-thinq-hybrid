@@ -78,8 +78,6 @@ class MyLgFridgeTargetTemp(MyLgEntity, NumberEntity):
                 "targetTemperatureC": int(value),
             }
         }
-        await self.coordinator.api.async_post_device_control(
-            self.coordinator.device_id, payload
-        )
+        await self.coordinator.async_control(payload)
         # Status temperature is a location-keyed list; a genuine value arrives
         # via the next DEVICE_STATUS push, so no optimistic merge here.

@@ -89,9 +89,7 @@ class MyLgHumidifier(MyLgEntity, HumidifierEntity):
         return self._get(self._cfg["job_group"], "currentJobMode")
 
     async def _control(self, payload: dict[str, Any]) -> None:
-        await self.coordinator.api.async_post_device_control(
-            self.coordinator.device_id, payload
-        )
+        await self.coordinator.async_control(payload)
         self.coordinator.handle_mqtt_status(payload)
 
     async def async_turn_on(self, **kwargs: Any) -> None:

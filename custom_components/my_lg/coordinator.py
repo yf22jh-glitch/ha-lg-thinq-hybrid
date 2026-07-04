@@ -8,9 +8,19 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from thinqconnect.thinq_api import ThinQAPIException
 
 from .const import DOMAIN, PAT_FALLBACK_INTERVAL
+
+# LG control errors that have a clear user action; anything else surfaces the
+# raw error name/code.
+_CONTROL_HINTS: dict[str, str] = {
+    "2301": "기기에서 '원격 시작'을 먼저 켜 주세요.",  # COMMAND_NOT_SUPPORTED_IN_REMOTE_OFF
+    "2302": "지금 기기 상태에서는 이 명령을 쓸 수 없어요.",  # COMMAND_NOT_SUPPORTED_IN_STATE
+    "2304": "전원이 꺼져 있어요. 먼저 전원을 켠 뒤 다시 시도해 주세요.",  # ...IN_POWER_OFF
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -152,6 +162,15 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if isinstance(prop, list):
             return any(isinstance(p, dict) and group in p for p in prop)
         return False
+
+    async def async_control(self, payload: dict[str, Any]) -> None:
+        """Post a control payload, translating LG API errors to friendly ones."""
+        try:
+            await self.api.async_post_device_control(self.device_id, payload)
+        except ThinQAPIException as err:
+            hint = _CONTROL_HINTS.get(str(err.code))
+            detail = hint or f"{err.error_name} ({err.code})"
+            raise HomeAssistantError(f"{self.alias}: {detail}") from err
 
     def supports_field(self, group: str, field: str) -> bool:
         """True if the profile advertises a specific field within a property group."""
