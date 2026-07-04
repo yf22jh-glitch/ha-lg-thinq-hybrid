@@ -94,6 +94,12 @@
       "bottom_mode": {
         "name": "하칸"
       },
+      "left_mode": {
+        "name": "좌칸"
+      },
+      "right_mode": {
+        "name": "우칸"
+      },
       "one_touch_filter": {
         "name": "필터"
       },

@@ -48,6 +48,11 @@ class MyLgSensorDescription(SensorEntityDescription):
     """Sensor description with a getter into the status dict."""
 
     value_fn: Callable[[PatDeviceCoordinator], float | None]
+    # Profile property group that indicates support. When set, the sensor is
+    # created if the device profile advertises this group even while the device
+    # is offline (status value currently None) — otherwise an offline-at-startup
+    # device would silently lose the entity until the next reload.
+    profile_group: str | None = None
 
 
 AC_SENSORS: tuple[MyLgSensorDescription, ...] = (
@@ -85,6 +90,7 @@ def _pm(key: str, tkey: str, field: str, dclass: SensorDeviceClass) -> MyLgSenso
         device_class=dclass,
         native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
         state_class=SensorStateClass.MEASUREMENT,
+        profile_group="airQualitySensor",
         value_fn=lambda c, f=field: c.get("airQualitySensor", f),
     )
 
@@ -95,12 +101,14 @@ _HUMIDITY = MyLgSensorDescription(
     device_class=SensorDeviceClass.HUMIDITY,
     native_unit_of_measurement=PERCENTAGE,
     state_class=SensorStateClass.MEASUREMENT,
+    profile_group="airQualitySensor",
     value_fn=lambda c: c.get("airQualitySensor", "humidity"),
 )
 _TOTAL_POLLUTION = MyLgSensorDescription(
     key="total_pollution",
     translation_key="total_pollution",
     state_class=SensorStateClass.MEASUREMENT,
+    profile_group="airQualitySensor",
     value_fn=lambda c: c.get("airQualitySensor", "totalPollution"),
 )
 
@@ -114,6 +122,7 @@ AIR_PURIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
         key="odor",
         translation_key="odor",
         state_class=SensorStateClass.MEASUREMENT,
+        profile_group="airQualitySensor",
         value_fn=lambda c: c.get("airQualitySensor", "odor"),
     ),
     MyLgSensorDescription(
@@ -121,6 +130,7 @@ AIR_PURIFIER_SENSORS: tuple[MyLgSensorDescription, ...] = (
         translation_key="filter_remaining",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        profile_group="filterInfo",
         value_fn=lambda c: c.get("filterInfo", "filterRemainPercent"),
     ),
 )
@@ -184,12 +194,25 @@ REFRIGERATOR_SENSORS: tuple[MyLgSensorDescription, ...] = (
     _text("fresh_air_filter", "refrigeration", "freshAirFilter"),
 )
 
-KIMCHI_SENSORS: tuple[MyLgSensorDescription, ...] = (
-    _loc_text("top_mode", "temperature", "TOP", "targetTemperature"),
-    _loc_text("middle_mode", "temperature", "MIDDLE", "targetTemperature"),
-    _loc_text("bottom_mode", "temperature", "BOTTOM", "targetTemperature"),
-    _text("one_touch_filter", "refrigeration", "oneTouchFilter"),
-)
+# Kimchi fridges vary by model: some report TOP/MIDDLE/BOTTOM compartments,
+# others LEFT/RIGHT/MIDDLE/BOTTOM. Enumerate the locations the device actually
+# reports instead of hardcoding, so LEFT/RIGHT compartments aren't dropped.
+_KIMCHI_LOCATIONS = ("TOP", "MIDDLE", "BOTTOM", "LEFT", "RIGHT")
+
+
+def _kimchi_descriptions(coord: PatDeviceCoordinator) -> tuple[MyLgSensorDescription, ...]:
+    present = {
+        item.get("locationName")
+        for item in (coord.get("temperature") or [])
+        if isinstance(item, dict)
+    }
+    descs = [
+        _loc_text(f"{loc.lower()}_mode", "temperature", loc, "targetTemperature")
+        for loc in _KIMCHI_LOCATIONS
+        if loc in present
+    ]
+    descs.append(_text("one_touch_filter", "refrigeration", "oneTouchFilter"))
+    return tuple(descs)
 
 DISHWASHER_SENSORS: tuple[MyLgSensorDescription, ...] = (
     _text("current_status", "runState", "currentState"),
@@ -281,13 +304,18 @@ PAT_SENSORS_BY_TYPE: dict[str, tuple[MyLgSensorDescription, ...]] = {
     DEVICE_TYPE_AIR_PURIFIER: AIR_PURIFIER_SENSORS,
     DEVICE_TYPE_HUMIDIFIER: HUMIDIFIER_SENSORS,
     DEVICE_TYPE_REFRIGERATOR: REFRIGERATOR_SENSORS,
-    DEVICE_TYPE_KIMCHI_REFRIGERATOR: KIMCHI_SENSORS,
     DEVICE_TYPE_DISH_WASHER: DISHWASHER_SENSORS,
     DEVICE_TYPE_WATER_PURIFIER: WATER_PURIFIER_SENSORS,
     DEVICE_TYPE_OVEN: OVEN_SENSORS,
     DEVICE_TYPE_COOKTOP: COOKTOP_SENSORS,
     DEVICE_TYPE_WASHTOWER: WASHTOWER_PAT_SENSORS,
     DEVICE_TYPE_STYLER: STYLER_PAT_SENSORS,
+}
+
+# Device types whose sensor set depends on the device's reported layout and so
+# must be built per-device (see _kimchi_descriptions).
+DYNAMIC_PAT_SENSORS: dict[str, Callable[[PatDeviceCoordinator], tuple[MyLgSensorDescription, ...]]] = {
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR: _kimchi_descriptions,
 }
 
 
@@ -341,7 +369,7 @@ def _wq(*path: str):
     return getter
 
 
-def _energy(key: str, tkey: str, path: tuple[str, ...]) -> WideqSensorDescription:
+def _wenergy(key: str, tkey: str, path: tuple[str, ...]) -> WideqSensorDescription:
     return WideqSensorDescription(
         key=key,
         translation_key=tkey,
@@ -352,11 +380,11 @@ def _energy(key: str, tkey: str, path: tuple[str, ...]) -> WideqSensorDescriptio
     )
 
 
-def _text(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescription:
+def _wtext(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescription:
     return WideqSensorDescription(key=key, name=name, value_fn=_wq(*path))
 
 
-def _minutes(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescription:
+def _wminutes(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescription:
     return WideqSensorDescription(
         key=key, name=name, native_unit_of_measurement="min", value_fn=_wq(*path)
     )
@@ -365,33 +393,33 @@ def _minutes(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescripti
 # All wideq-only (PAT cannot provide these). Snapshot is nested under
 # washer/dryer/styler dicts (unlike AC's flat dotted keys).
 WASHTOWER_SENSORS: tuple[WideqSensorDescription, ...] = (
-    _text("washer_state", "Washer state", ("washer", "state")),
-    _text("washer_course", "Washer course", ("washer", "course")),
-    _text("washer_spin", "Washer spin", ("washer", "spin")),
-    _text("washer_water_temp", "Washer water temp", ("washer", "temp")),
-    _text("washer_water_level", "Washer water level", ("washer", "waterLevel")),
-    _minutes("washer_remain", "Washer remaining", ("washer", "remainTimeMinute")),
-    _text("washer_error", "Washer error", ("washer", "error")),
-    _text("washer_door_lock", "Washer door lock", ("washer", "doorLock")),
-    _text("washer_child_lock", "Washer child lock", ("washer", "childLock")),
-    _energy("washer_energy", "washer_energy", ("washer", "accumulatedEnergyData")),
-    _text("dryer_state", "Dryer state", ("dryer", "state")),
-    _text("dryer_dry_level", "Dryer dry level", ("dryer", "dryLevel")),
-    _minutes("dryer_remain", "Dryer remaining", ("dryer", "remainTimeMinute")),
-    _text("dryer_duct_clogging", "Dryer duct clogging", ("dryer", "ductClogging")),
-    _text("dryer_error", "Dryer error", ("dryer", "error")),
-    _energy("dryer_energy", "dryer_energy", ("dryer", "accumulatedEnergyData")),
+    _wtext("washer_state", "Washer state", ("washer", "state")),
+    _wtext("washer_course", "Washer course", ("washer", "course")),
+    _wtext("washer_spin", "Washer spin", ("washer", "spin")),
+    _wtext("washer_water_temp", "Washer water temp", ("washer", "temp")),
+    _wtext("washer_water_level", "Washer water level", ("washer", "waterLevel")),
+    _wminutes("washer_remain", "Washer remaining", ("washer", "remainTimeMinute")),
+    _wtext("washer_error", "Washer error", ("washer", "error")),
+    _wtext("washer_door_lock", "Washer door lock", ("washer", "doorLock")),
+    _wtext("washer_child_lock", "Washer child lock", ("washer", "childLock")),
+    _wenergy("washer_energy", "washer_energy", ("washer", "accumulatedEnergyData")),
+    _wtext("dryer_state", "Dryer state", ("dryer", "state")),
+    _wtext("dryer_dry_level", "Dryer dry level", ("dryer", "dryLevel")),
+    _wminutes("dryer_remain", "Dryer remaining", ("dryer", "remainTimeMinute")),
+    _wtext("dryer_duct_clogging", "Dryer duct clogging", ("dryer", "ductClogging")),
+    _wtext("dryer_error", "Dryer error", ("dryer", "error")),
+    _wenergy("dryer_energy", "dryer_energy", ("dryer", "accumulatedEnergyData")),
 )
 
 STYLER_SENSORS: tuple[WideqSensorDescription, ...] = (
-    _text("styler_state", "State", ("styler", "state")),
-    _text("styler_course", "Course", ("styler", "course")),
-    _minutes("styler_remain", "Remaining", ("styler", "remainTimeMinute")),
-    _text("styler_night_dry", "Night dry", ("styler", "nightDry")),
-    _text("styler_door_lock", "Door lock", ("styler", "doorLock")),
-    _text("styler_child_lock", "Child lock", ("styler", "childLock")),
-    _text("styler_error", "Error", ("styler", "error")),
-    _energy("styler_energy", "styler_energy", ("styler", "accumulatedEnergyData")),
+    _wtext("styler_state", "State", ("styler", "state")),
+    _wtext("styler_course", "Course", ("styler", "course")),
+    _wminutes("styler_remain", "Remaining", ("styler", "remainTimeMinute")),
+    _wtext("styler_night_dry", "Night dry", ("styler", "nightDry")),
+    _wtext("styler_door_lock", "Door lock", ("styler", "doorLock")),
+    _wtext("styler_child_lock", "Child lock", ("styler", "childLock")),
+    _wtext("styler_error", "Error", ("styler", "error")),
+    _wenergy("styler_energy", "styler_energy", ("styler", "accumulatedEnergyData")),
 )
 
 WIDEQ_SENSORS_BY_TYPE: dict[str, tuple[WideqSensorDescription, ...]] = {
@@ -409,9 +437,18 @@ async def async_setup_entry(
     data = entry.runtime_data
     entities: list[SensorEntity] = []
     for coordinator in data.coordinators.values():
-        # PAT sensors (create only for fields the device actually reports).
-        for desc in PAT_SENSORS_BY_TYPE.get(coordinator.device_type, ()):
-            if desc.value_fn(coordinator) is not None:
+        descs = PAT_SENSORS_BY_TYPE.get(coordinator.device_type, ())
+        builder = DYNAMIC_PAT_SENSORS.get(coordinator.device_type)
+        if builder is not None:
+            descs = descs + builder(coordinator)
+        # Create a sensor when the device reports the field now, or when its
+        # profile advertises the capability (so offline-at-startup devices keep
+        # their entities instead of losing them until the next reload).
+        for desc in descs:
+            if desc.value_fn(coordinator) is not None or (
+                desc.profile_group is not None
+                and coordinator.supports(desc.profile_group)
+            ):
                 entities.append(MyLgSensor(coordinator, desc))
         # wideq-backed sensors (only if wideq is configured).
         if data.wideq_coordinator is not None:

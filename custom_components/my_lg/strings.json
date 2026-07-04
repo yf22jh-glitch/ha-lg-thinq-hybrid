@@ -94,6 +94,12 @@
       "bottom_mode": {
         "name": "Bottom"
       },
+      "left_mode": {
+        "name": "Left"
+      },
+      "right_mode": {
+        "name": "Right"
+      },
       "one_touch_filter": {
         "name": "Filter"
       },

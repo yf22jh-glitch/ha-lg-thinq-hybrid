@@ -140,6 +140,19 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("%s: profile load failed: %s", self.alias, err)
             self.profile = None
 
+    def supports(self, group: str) -> bool:
+        """True if the device profile advertises a property group.
+
+        Used to create optional sensors (air quality, filter) even when the
+        device is offline at startup and reports no live value yet.
+        """
+        prop = (self.profile or {}).get("property")
+        if isinstance(prop, dict):
+            return group in prop
+        if isinstance(prop, list):
+            return any(isinstance(p, dict) and group in p for p in prop)
+        return False
+
     def push_codes(self) -> list[str]:
         """All DEVICE_PUSH notification codes this device can emit (recursive)."""
         codes: list[str] = []
