@@ -171,6 +171,37 @@
       "display_light": {
         "name": "Display brightness"
       }
+    },
+    "number": {
+      "fridge_target_temp": {
+        "name": "Fridge temperature"
+      },
+      "freezer_target_temp": {
+        "name": "Freezer temperature"
+      },
+      "convertible_target_temp": {
+        "name": "Convertible temperature"
+      }
+    },
+    "button": {
+      "washer_start": {
+        "name": "Washer start"
+      },
+      "washer_stop": {
+        "name": "Washer stop"
+      },
+      "dryer_start": {
+        "name": "Dryer start"
+      },
+      "dryer_stop": {
+        "name": "Dryer stop"
+      },
+      "styler_start": {
+        "name": "Start"
+      },
+      "styler_stop": {
+        "name": "Stop"
+      }
     }
   }
 }

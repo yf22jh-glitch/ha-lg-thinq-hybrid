@@ -153,6 +153,21 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return any(isinstance(p, dict) and group in p for p in prop)
         return False
 
+    def supports_field(self, group: str, field: str) -> bool:
+        """True if the profile advertises a specific field within a property group."""
+        prop = (self.profile or {}).get("property")
+        if isinstance(prop, dict):
+            grp = prop.get(group)
+            return isinstance(grp, dict) and field in grp
+        if isinstance(prop, list):
+            return any(
+                isinstance(p, dict)
+                and isinstance(p.get(group), dict)
+                and field in p[group]
+                for p in prop
+            )
+        return False
+
     def push_codes(self) -> list[str]:
         """All DEVICE_PUSH notification codes this device can emit (recursive)."""
         codes: list[str] = []

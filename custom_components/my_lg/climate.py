@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.climate import (
+    SWING_BOTH,
+    SWING_HORIZONTAL,
+    SWING_OFF,
+    SWING_VERTICAL,
     ClimateEntity,
     ClimateEntityFeature,
     HVACMode,
@@ -68,6 +72,22 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             HVACMode.AUTO,
         ]
         self._attr_fan_modes = ["LOW", "MID", "HIGH", "POWER", "AUTO"]
+        # Swing: horizontal (rotateLeftRight) / vertical (rotateUpDown), each
+        # exposed only if the device profile advertises the field.
+        self._swing_lr = coordinator.supports_field("windDirection", "rotateLeftRight")
+        self._swing_ud = coordinator.supports_field("windDirection", "rotateUpDown")
+        if self._swing_lr or self._swing_ud:
+            self._attr_supported_features = (
+                self._attr_supported_features | ClimateEntityFeature.SWING_MODE
+            )
+            modes = [SWING_OFF]
+            if self._swing_lr:
+                modes.append(SWING_HORIZONTAL)
+            if self._swing_ud:
+                modes.append(SWING_VERTICAL)
+            if self._swing_lr and self._swing_ud:
+                modes.append(SWING_BOTH)
+            self._attr_swing_modes = modes
 
     # --- read ---
     @property
@@ -100,6 +120,18 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
     @property
     def fan_mode(self) -> str | None:
         return self._get("airFlow", "windStrength")
+
+    @property
+    def swing_mode(self) -> str | None:
+        lr = self._swing_lr and bool(self._get("windDirection", "rotateLeftRight"))
+        ud = self._swing_ud and bool(self._get("windDirection", "rotateUpDown"))
+        if lr and ud:
+            return SWING_BOTH
+        if lr:
+            return SWING_HORIZONTAL
+        if ud:
+            return SWING_VERTICAL
+        return SWING_OFF
 
     # --- write ---
     async def _control(self, payload: dict[str, Any]) -> None:
@@ -134,3 +166,12 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         await self._control({"airFlow": {"windStrength": fan_mode}})
+
+    async def async_set_swing_mode(self, swing_mode: str) -> None:
+        payload: dict[str, Any] = {}
+        if self._swing_lr:
+            payload["rotateLeftRight"] = swing_mode in (SWING_HORIZONTAL, SWING_BOTH)
+        if self._swing_ud:
+            payload["rotateUpDown"] = swing_mode in (SWING_VERTICAL, SWING_BOTH)
+        if payload:
+            await self._control({"windDirection": payload})

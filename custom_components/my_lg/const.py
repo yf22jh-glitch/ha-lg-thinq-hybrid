@@ -35,9 +35,11 @@ PLATFORMS: list[Platform] = [
     Platform.SELECT,
     Platform.SWITCH,
     Platform.EVENT,
+    Platform.NUMBER,
+    Platform.BUTTON,
 ]
-# Platform.NUMBER pending: fridge/freezer target-temp write payload needs
-# live verification (location-keyed resource) before shipping a write entity.
+# NUMBER: fridge/freezer target-temp (write via temperatureInUnits + locationName).
+# BUTTON: washer/dryer/styler operation (START/STOP) via *OperationMode.
 
 # --- ThinQ device types (thinqconnect deviceType strings) ---
 DEVICE_TYPE_AIR_CONDITIONER = "DEVICE_AIR_CONDITIONER"
