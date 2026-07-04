@@ -27,6 +27,10 @@ class MyLgSwitchDescription(SwitchEntityDescription):
     field: str
     on_value: Any
     off_value: Any
+    # Reflect the commanded value immediately. Turn off for toggles the device
+    # may silently ignore (e.g. warm mist needs heated water) so the UI follows
+    # the real reported state instead of showing a fake "on".
+    optimistic: bool = True
 
 
 SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
@@ -59,6 +63,7 @@ SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
             key="warm_mode", translation_key="warm_mode",
             group="humidity", field="warmMode",
             on_value="WARM_ON", off_value="WARM_OFF",
+            optimistic=False,  # only engages with heated water; follow real state
         ),
         MyLgSwitchDescription(
             key="mood_lamp", translation_key="mood_lamp",
@@ -100,7 +105,8 @@ class MyLgSwitch(MyLgEntity, SwitchEntity):
         d = self.entity_description
         payload = {d.group: {d.field: value}}
         await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)
+        if d.optimistic:
+            self.coordinator.handle_mqtt_status(payload)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._set(self.entity_description.on_value)
