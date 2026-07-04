@@ -80,14 +80,11 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             self._attr_supported_features = (
                 self._attr_supported_features | ClimateEntityFeature.SWING_MODE
             )
-            # LG ACs have no "vertical-only" swing: rotateUpDown alone is ignored
-            # by the unit and falls back to off (verified on 4 units 2026-07-04).
-            # Up/down only ships as part of BOTH, and only on models that support
-            # it (e.g. seojae); others degrade BOTH -> horizontal. So we expose
-            # off / horizontal / both and drop the never-working vertical.
             modes = [SWING_OFF]
             if self._swing_lr:
                 modes.append(SWING_HORIZONTAL)
+            if self._swing_ud:
+                modes.append(SWING_VERTICAL)
             if self._swing_lr and self._swing_ud:
                 modes.append(SWING_BOTH)
             self._attr_swing_modes = modes
@@ -171,10 +168,15 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
         await self._control({"airFlow": {"windStrength": fan_mode}})
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
-        payload: dict[str, Any] = {}
+        # LG applies only one windDirection field per command — sending both
+        # rotateLeftRight and rotateUpDown in a single payload makes the unit
+        # apply just one (or neither). Issue them separately, like the SDK's
+        # set_wind_rotate_left_right / set_wind_rotate_up_down.
         if self._swing_lr:
-            payload["rotateLeftRight"] = swing_mode in (SWING_HORIZONTAL, SWING_BOTH)
+            await self._control(
+                {"windDirection": {"rotateLeftRight": swing_mode in (SWING_HORIZONTAL, SWING_BOTH)}}
+            )
         if self._swing_ud:
-            payload["rotateUpDown"] = swing_mode in (SWING_VERTICAL, SWING_BOTH)
-        if payload:
-            await self._control({"windDirection": payload})
+            await self._control(
+                {"windDirection": {"rotateUpDown": swing_mode in (SWING_VERTICAL, SWING_BOTH)}}
+            )
