@@ -80,11 +80,14 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             self._attr_supported_features = (
                 self._attr_supported_features | ClimateEntityFeature.SWING_MODE
             )
+            # LG ACs have no "vertical-only" swing: rotateUpDown alone is ignored
+            # by the unit and falls back to off (verified on 4 units 2026-07-04).
+            # Up/down only ships as part of BOTH, and only on models that support
+            # it (e.g. seojae); others degrade BOTH -> horizontal. So we expose
+            # off / horizontal / both and drop the never-working vertical.
             modes = [SWING_OFF]
             if self._swing_lr:
                 modes.append(SWING_HORIZONTAL)
-            if self._swing_ud:
-                modes.append(SWING_VERTICAL)
             if self._swing_lr and self._swing_ud:
                 modes.append(SWING_BOTH)
             self._attr_swing_modes = modes
