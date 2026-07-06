@@ -339,7 +339,7 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
         key="energy_today",
         translation_key="energy_today",
         device_class=SensorDeviceClass.ENERGY,
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda s: s.get("airState.energy.dailyTotal"),
     ),
@@ -347,7 +347,7 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
         key="energy_month",
         translation_key="energy_month",
         device_class=SensorDeviceClass.ENERGY,
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_registry_enabled_default=False,
         value_fn=lambda s: s.get("airState.energy.monthlyTotal"),
@@ -497,16 +497,29 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             manufacturer="LG",
             model=pat_coordinator.model or pat_coordinator.device_type,
         )
+        # Cumulative energy meters must not vanish when the device drops out of
+        # the wideq snapshot (e.g. AC powered off); a gap would break long-term
+        # statistics. Cache the last reading and keep reporting it.
+        self._is_energy = description.device_class == SensorDeviceClass.ENERGY
+        self._last_value: float | None = None
 
     @property
     def available(self) -> bool:
-        return (
-            self.coordinator.last_update_success
-            and self._alias in (self.coordinator.data or {})
-        )
+        if not self.coordinator.last_update_success:
+            return False
+        if self._alias in (self.coordinator.data or {}):
+            return True
+        # energy: stay available on cached value even while device is absent
+        return self._is_energy and self._last_value is not None
 
     @property
     def native_value(self) -> float | None:
-        return self.entity_description.value_fn(
+        value = self.entity_description.value_fn(
             self.coordinator.snapshot_for(self._alias)
         )
+        if value is not None:
+            if self._is_energy:
+                self._last_value = value
+            return value
+        # device absent/None: hold last energy reading (cumulative), else None
+        return self._last_value if self._is_energy else None
