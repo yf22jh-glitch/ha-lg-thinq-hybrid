@@ -156,6 +156,24 @@
       },
       "mood_lamp": {
         "name": "무드 램프"
+      },
+      "wind_forest": {
+        "name": "자연풍"
+      },
+      "wind_long_power": {
+        "name": "파워윈드"
+      },
+      "wind_concentration": {
+        "name": "집중풍"
+      },
+      "wind_manner": {
+        "name": "매너풍"
+      },
+      "wind_auto_fit": {
+        "name": "AI 자동풍"
+      },
+      "power_save": {
+        "name": "절전"
       }
     },
     "select": {
@@ -170,6 +188,9 @@
       },
       "display_light": {
         "name": "디스플레이 밝기"
+      },
+      "wind_strength_detail": {
+        "name": "상세 풍속"
       }
     },
     "number": {

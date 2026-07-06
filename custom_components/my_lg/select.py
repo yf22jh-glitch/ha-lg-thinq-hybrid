@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
 from .const import (
+    DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_WATER_PURIFIER,
@@ -28,6 +29,15 @@ class MyLgSelectDescription(SelectEntityDescription):
 
 
 SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
+    DEVICE_TYPE_AIR_CONDITIONER: (
+        # Detailed fan speed incl. 미풍(SLOW_LOW) that the climate fan_mode
+        # (windStrength) doesn't expose.
+        MyLgSelectDescription(
+            key="wind_strength_detail", translation_key="wind_strength_detail",
+            group="airFlow", field="windStrengthDetail",
+            choices=["SLOW_LOW", "LOW", "MID", "HIGH", "POWER", "AUTO"],
+        ),
+    ),
     DEVICE_TYPE_AIR_PURIFIER: (
         MyLgSelectDescription(
             key="job_mode", translation_key="job_mode",
@@ -65,7 +75,10 @@ async def async_setup_entry(
     entities: list[MyLgSelect] = []
     for coordinator in entry.runtime_data.coordinators.values():
         for desc in SELECTS_BY_TYPE.get(coordinator.device_type, ()):
-            if coordinator.get(desc.group, desc.field) is not None:
+            if (
+                coordinator.supports_field(desc.group, desc.field)
+                or coordinator.get(desc.group, desc.field) is not None
+            ):
                 entities.append(MyLgSelect(coordinator, desc))
     async_add_entities(entities)
 

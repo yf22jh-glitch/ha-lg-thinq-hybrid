@@ -156,6 +156,24 @@
       },
       "mood_lamp": {
         "name": "Mood lamp"
+      },
+      "wind_forest": {
+        "name": "Natural wind"
+      },
+      "wind_long_power": {
+        "name": "Power wind"
+      },
+      "wind_concentration": {
+        "name": "Concentrated wind"
+      },
+      "wind_manner": {
+        "name": "Manner wind"
+      },
+      "wind_auto_fit": {
+        "name": "Auto-fit wind"
+      },
+      "power_save": {
+        "name": "Power save"
       }
     },
     "select": {
@@ -170,6 +188,9 @@
       },
       "display_light": {
         "name": "Display brightness"
+      },
+      "wind_strength_detail": {
+        "name": "Fan speed (detail)"
       }
     },
     "number": {
