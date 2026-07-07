@@ -83,3 +83,20 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
     def snapshot_for(self, alias: str) -> dict[str, Any]:
         return (self.data or {}).get(alias, {})
+
+    async def async_control(self, alias: str, ctrl_key: str, **kwargs: Any) -> None:
+        """Send one wideq control command for a device (rate-limited)."""
+        await self.rate_limiter.acquire()
+        await self.client.async_control(alias, ctrl_key, **kwargs)
+
+    def apply_optimistic(self, alias: str, key: str, value: Any) -> None:
+        """Reflect a just-sent value immediately; the next poll confirms it.
+
+        wideq-only fields have no MQTT push, so without this the UI would lag
+        until the next scheduled poll. A rejected write self-corrects then.
+        """
+        data = dict(self.data or {})
+        snap = dict(data.get(alias, {}))
+        snap[key] = value
+        data[alias] = snap
+        self.async_set_updated_data(data)

@@ -12,15 +12,22 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity
-from homeassistant.const import UnitOfTemperature
+from dataclasses import dataclass
+
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberEntityDescription,
+)
+from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
-from .const import DEVICE_TYPE_REFRIGERATOR
+from .const import DEVICE_TYPE_AIR_PURIFIER, DEVICE_TYPE_REFRIGERATOR
 from .coordinator import PatDeviceCoordinator
-from .entity import MyLgEntity
+from .coordinator_wideq import WideqCoordinator
+from .entity import MyLgEntity, MyLgWideqEntity
 
 # Fallback °C ranges when the profile doesn't pin them per compartment.
 _FALLBACK_RANGE: dict[str, tuple[int, int]] = {
@@ -30,12 +37,33 @@ _FALLBACK_RANGE: dict[str, tuple[int, int]] = {
 }
 
 
+@dataclass(frozen=True, kw_only=True)
+class MyLgWideqNumberDescription(NumberEntityDescription):
+    """A wideq numeric (range) field with its thinq2 control shape."""
+
+    ctrl_key: str
+    data_key: str
+
+
+WIDEQ_NUMBERS_BY_TYPE: dict[str, tuple[MyLgWideqNumberDescription, ...]] = {
+    DEVICE_TYPE_AIR_PURIFIER: (
+        # 희망습도 (가습 겸용 공청기). PAT는 습도를 센서로만 노출.
+        MyLgWideqNumberDescription(
+            key="target_humidity", translation_key="target_humidity",
+            ctrl_key="basicCtrl", data_key="airState.humidity.desired",
+            native_min_value=30, native_max_value=70, native_step=5,
+            native_unit_of_measurement=PERCENTAGE,
+        ),
+    ),
+}
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up refrigerator target-temperature numbers."""
+    """Set up refrigerator target-temperature numbers + wideq-only numbers."""
     entities: list[NumberEntity] = []
     for coord in entry.runtime_data.coordinators.values():
         if coord.device_type != DEVICE_TYPE_REFRIGERATOR:
@@ -46,6 +74,13 @@ async def async_setup_entry(
             loc = item.get("locationName")
             if loc and isinstance(item.get("targetTemperature"), (int, float)):
                 entities.append(MyLgFridgeTargetTemp(coord, loc))
+
+    wideq: WideqCoordinator | None = entry.runtime_data.wideq_coordinator
+    if wideq is not None:
+        for coord in entry.runtime_data.coordinators.values():
+            for wdesc in WIDEQ_NUMBERS_BY_TYPE.get(coord.device_type, ()):
+                entities.append(MyLgWideqNumber(wideq, coord, wdesc))
+
     async_add_entities(entities)
 
 
@@ -81,3 +116,33 @@ class MyLgFridgeTargetTemp(MyLgEntity, NumberEntity):
         await self.coordinator.async_control(payload)
         # Status temperature is a location-keyed list; a genuine value arrives
         # via the next DEVICE_STATUS push, so no optimistic merge here.
+
+
+class MyLgWideqNumber(MyLgWideqEntity, NumberEntity):
+    """A wideq-only numeric range field (air-purifier target humidity…)."""
+
+    entity_description: MyLgWideqNumberDescription
+
+    def __init__(
+        self,
+        wideq_coordinator: WideqCoordinator,
+        pat_coordinator: PatDeviceCoordinator,
+        description: MyLgWideqNumberDescription,
+    ) -> None:
+        super().__init__(wideq_coordinator, pat_coordinator, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> float | None:
+        raw = self._snapshot.get(self.entity_description.data_key)
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return None
+        # 0 = humidification off / no target set; show nothing rather than a
+        # value below the valid range.
+        return value if value >= self.native_min_value else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        d = self.entity_description
+        await self._wideq_set(d.ctrl_key, d.data_key, int(value), use_dataset=False)

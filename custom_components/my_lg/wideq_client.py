@@ -41,6 +41,9 @@ class WideqClient:
         self._language = language
         self._client_id = client_id
         self._client = None
+        # alias -> wideq device id (differs from the PAT device id); populated
+        # from each snapshot poll and, if control runs first, on demand.
+        self._device_ids: dict[str, str] = {}
 
     async def async_connect(self):
         """Create the underlying ClientAsync from the stored refresh token."""
@@ -83,9 +86,75 @@ class WideqClient:
         for dev in self._client.devices or []:
             snap = dev.as_dict().get("snapshot")
             alias = getattr(dev, "name", None) or dev.as_dict().get("alias")
+            if alias:
+                self._device_ids[alias] = dev.device_id
             if isinstance(snap, dict) and alias:
                 out[alias] = snap
         return out
+
+    async def _device_id_for(self, alias: str) -> str | None:
+        """Return the wideq device id for an alias, populating the map if needed.
+
+        Control can be invoked before the first (deliberately delayed) snapshot
+        poll, so refresh the device list on demand when the alias is unknown.
+        """
+        if alias in self._device_ids:
+            return self._device_ids[alias]
+        if self._client is None:
+            await self.async_connect()
+        await self._client.refresh_devices()
+        for dev in self._client.devices or []:
+            name = getattr(dev, "name", None) or dev.as_dict().get("alias")
+            if name:
+                self._device_ids[name] = dev.device_id
+        return self._device_ids.get(alias)
+
+    async def async_control(
+        self,
+        alias: str,
+        ctrl_key: str,
+        *,
+        command: str = "Set",
+        data_key: str | None = None,
+        value: Any = None,
+        data_set_list: dict[str, Any] | None = None,
+    ) -> Any:
+        """Send a single thinq2 control-sync command for a wideq-only field.
+
+        Two shapes, matching the model's advertised control:
+        - dataKey form (basicCtrl/settingInfo): one key/value.
+        - dataSetList form (wModeCtrl): one key inside a dataSetList dict.
+        A single write call is not a polling loop, so it is not a ban risk; the
+        physical device does act, so callers gate real writes accordingly.
+        """
+        device_id = await self._device_id_for(alias)
+        if not device_id:
+            raise ValueError(f"wideq: no device id for alias {alias!r}")
+
+        async def _do() -> Any:
+            # Same root fix as polling: renew the ~1h token before the call.
+            await self._client.refresh_auth()
+            session = self._client.session
+            if data_set_list is not None:
+                payload = {
+                    "ctrlKey": ctrl_key,
+                    "command": command,
+                    "dataSetList": data_set_list,
+                }
+                return await session.device_v2_controls(device_id, payload, None)
+            return await session.device_v2_controls(
+                device_id, ctrl_key, command, data_key, value
+            )
+
+        try:
+            return await _do()
+        except Exception as err:  # noqa: BLE001
+            # Reconnect once if the session died, then retry (mirrors polling).
+            _LOGGER.debug("wideq control failed (%s); reconnecting and retrying", err)
+            await self.async_close()
+            await self.async_connect()
+            device_id = await self._device_id_for(alias) or device_id
+            return await _do()
 
     async def async_close(self) -> None:
         if self._client is not None:
