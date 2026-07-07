@@ -174,11 +174,48 @@
       },
       "power_save": {
         "name": "Power save"
+      },
+      "air_clean": {
+        "name": "Air clean"
+      },
+      "smart_care": {
+        "name": "Smart care"
+      },
+      "jet_mode": {
+        "name": "Jet mode"
+      },
+      "uv_disinfection": {
+        "name": "UV disinfection"
+      },
+      "uvnano": {
+        "name": "UVnano"
       }
     },
     "select": {
       "job_mode": {
         "name": "Mode"
+      },
+      "auto_dry": {
+        "name": "Auto dry",
+        "state": {
+          "off": "Off",
+          "on": "On",
+          "30min": "30 min",
+          "60min": "60 min",
+          "ai_auto": "AI auto"
+        }
+      },
+      "display_brightness": {
+        "name": "Display brightness",
+        "state": {
+          "off": "Off",
+          "20": "20%",
+          "40": "40%",
+          "50": "50%",
+          "60": "60%",
+          "80": "80%",
+          "100": "100%"
+        }
       },
       "water_type": {
         "name": "Water type"
@@ -208,6 +245,9 @@
       },
       "convertible_target_temp": {
         "name": "Convertible temperature"
+      },
+      "target_humidity": {
+        "name": "Target humidity"
       }
     },
     "button": {

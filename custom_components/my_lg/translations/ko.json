@@ -174,11 +174,48 @@
       },
       "power_save": {
         "name": "절전"
+      },
+      "air_clean": {
+        "name": "공기청정"
+      },
+      "smart_care": {
+        "name": "스마트케어"
+      },
+      "jet_mode": {
+        "name": "제트"
+      },
+      "uv_disinfection": {
+        "name": "UV 살균"
+      },
+      "uvnano": {
+        "name": "UV나노"
       }
     },
     "select": {
       "job_mode": {
         "name": "운전 모드"
+      },
+      "auto_dry": {
+        "name": "자동건조",
+        "state": {
+          "off": "끄기",
+          "on": "켜기",
+          "30min": "30분",
+          "60min": "60분",
+          "ai_auto": "AI 자동"
+        }
+      },
+      "display_brightness": {
+        "name": "디스플레이 밝기",
+        "state": {
+          "off": "끄기",
+          "20": "20%",
+          "40": "40%",
+          "50": "50%",
+          "60": "60%",
+          "80": "80%",
+          "100": "100%"
+        }
       },
       "water_type": {
         "name": "물 종류"
@@ -208,6 +245,9 @@
       },
       "convertible_target_temp": {
         "name": "변온실 온도"
+      },
+      "target_humidity": {
+        "name": "희망 습도"
       }
     },
     "button": {
