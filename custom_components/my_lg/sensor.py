@@ -349,7 +349,6 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_registry_enabled_default=False,
         value_fn=lambda s: s.get("airState.energy.monthlyTotal"),
     ),
 )
