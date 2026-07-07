@@ -103,13 +103,13 @@ WIDEQ_SELECTS_BY_TYPE: dict[str, tuple[MyLgWideqSelectDescription, ...]] = {
         MyLgWideqSelectDescription(
             key="auto_dry", translation_key="auto_dry",
             ctrl_key="settingInfo", data_key="airState.miscFuncState.autoDry",
-            value_map={"OFF": 0, "ON": 1, "30MIN": 2, "60MIN": 3, "AI_AUTO": 255},
+            value_map={"off": 0, "on": 1, "30min": 2, "60min": 3, "ai_auto": 255},
         ),
         # LED 디스플레이 밝기 (이 모델은 100=끄기 ~ 200=100% 스케일).
         MyLgWideqSelectDescription(
             key="display_brightness", translation_key="display_brightness",
             ctrl_key="settingInfo", data_key="airState.lightingState.displayControl",
-            value_map={"OFF": 100, "20": 120, "40": 140, "50": 150,
+            value_map={"off": 100, "20": 120, "40": 140, "50": 150,
                        "60": 160, "80": 180, "100": 200},
         ),
     ),
