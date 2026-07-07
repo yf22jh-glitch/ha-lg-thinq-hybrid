@@ -12,6 +12,7 @@ from . import MyLgConfigEntry
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
+    DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_WATER_PURIFIER,
 )
@@ -62,6 +63,20 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="display_light", translation_key="display_light",
             group="display", field="light",
             choices=["OFF", "LEVEL_1", "LEVEL_2", "LEVEL_3"],
+        ),
+        # 위생건조(살균건조): 가습 종료 후 내부를 말려 곰팡이/물때 예방
+        MyLgSelectDescription(
+            key="hygiene_dry", translation_key="hygiene_dry",
+            group="operation", field="hygieneDryMode",
+            choices=["OFF", "SILENT", "NORMAL", "FAST"],
+        ),
+    ),
+    DEVICE_TYPE_DEHUMIDIFIER: (
+        # 제습 풍량(약/강). windStrengthLevel이 정식 write 필드(windStrength는 alias).
+        MyLgSelectDescription(
+            key="wind_strength", translation_key="wind_strength",
+            group="airFlow", field="windStrengthLevel",
+            choices=["LOW", "HIGH"],
         ),
     ),
 }

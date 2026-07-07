@@ -63,7 +63,22 @@ class WideqClient:
         """
         if self._client is None:
             await self.async_connect()
-        await self._client.refresh_devices()
+        try:
+            # ROOT FIX: renew the wideq access token if near expiry BEFORE polling.
+            # The token has a ~1h TTL and ClientAsync does NOT auto-renew it inside
+            # refresh_devices, so without this call every poll fails with
+            # "ThinQ APIv2 error" ~1h after connect and AC power/energy silently
+            # dies (only a restart temporarily revived it). refresh_auth only hits
+            # the network when the token is actually near expiry, so it's cheap.
+            await self._client.refresh_auth()
+            await self._client.refresh_devices()
+        except Exception as err:  # noqa: BLE001
+            # Backup: if the session is truly dead, fully reconnect once and retry
+            # so the coordinator doesn't poll a dead client forever.
+            _LOGGER.debug("wideq refresh failed (%s); reconnecting and retrying", err)
+            await self.async_close()
+            await self.async_connect()
+            await self._client.refresh_devices()
         out: dict[str, dict[str, Any]] = {}
         for dev in self._client.devices or []:
             snap = dev.as_dict().get("snapshot")

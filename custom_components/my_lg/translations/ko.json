@@ -191,6 +191,12 @@
       },
       "wind_strength_detail": {
         "name": "상세 풍속"
+      },
+      "hygiene_dry": {
+        "name": "위생건조"
+      },
+      "wind_strength": {
+        "name": "풍량"
       }
     },
     "number": {

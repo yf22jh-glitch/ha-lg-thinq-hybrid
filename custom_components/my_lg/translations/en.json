@@ -191,6 +191,12 @@
       },
       "wind_strength_detail": {
         "name": "Fan speed (detail)"
+      },
+      "hygiene_dry": {
+        "name": "Hygiene dry"
+      },
+      "wind_strength": {
+        "name": "Wind strength"
       }
     },
     "number": {

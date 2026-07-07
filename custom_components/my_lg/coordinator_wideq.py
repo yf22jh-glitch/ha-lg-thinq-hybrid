@@ -42,6 +42,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._active_fn = active_fn
         self._ac_active_interval = ac_active_interval
         self._idle_interval = idle_interval
+        self._fail_count = 0
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -59,10 +60,21 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         try:
             snapshots = await self.client.async_get_snapshots()
         except Exception as err:  # noqa: BLE001
-            raise UpdateFailed(f"wideq poll failed: {err}") from err
+            self._fail_count += 1
+            # Back off hard after repeated failures. A persistently dead session
+            # would otherwise trigger a reconnect (extra gateway/oauth calls)
+            # every single poll — that hammering is a real LG ban risk. After 3
+            # strikes, poll only hourly until it recovers (a success or HA
+            # restart resets the counter).
+            if self._fail_count >= 3:
+                self.update_interval = timedelta(seconds=3600)
+            raise UpdateFailed(
+                f"wideq poll failed (x{self._fail_count}): {err}"
+            ) from err
 
-        # Self-adjust the next interval (takes effect on the next schedule; no
-        # forced poll here).
+        # Success: clear the failure backoff and self-adjust the next interval
+        # (takes effect on the next schedule; no forced poll here).
+        self._fail_count = 0
         active = self._active_fn()
         self.update_interval = timedelta(
             seconds=self._ac_active_interval if active else self._idle_interval
