@@ -150,13 +150,27 @@ def _create_lg_ssl_context() -> ssl.SSLContext:
     return context
 
 
-_SSL_CONTEXT = _create_lg_ssl_context()
+# NOTE: ssl.create_default_context() loads CA certs from disk (blocking I/O), so
+# it MUST NOT run at module import time — this module is imported lazily inside
+# the HA event loop and would trip the "blocking call inside the event loop"
+# detector. Build the context lazily instead. In the HA integration path a
+# session is always passed in (async_create_clientsession), so lg_client_session
+# is never reached and no context is ever created.
+_SSL_CONTEXT: ssl.SSLContext | None = None
+
+
+def _get_lg_ssl_context() -> ssl.SSLContext:
+    """Return the shared LG SSL context, creating it on first use."""
+    global _SSL_CONTEXT
+    if _SSL_CONTEXT is None:
+        _SSL_CONTEXT = _create_lg_ssl_context()
+    return _SSL_CONTEXT
 
 
 def lg_client_session() -> aiohttp.ClientSession:
     """Create an aiohttp client session to use with LG ThinQ."""
     connector = aiohttp.TCPConnector(
-        enable_cleanup_closed=ENABLE_CLEANUP_CLOSED, ssl_context=_SSL_CONTEXT
+        enable_cleanup_closed=ENABLE_CLEANUP_CLOSED, ssl_context=_get_lg_ssl_context()
     )
     return aiohttp.ClientSession(connector=connector)
 
