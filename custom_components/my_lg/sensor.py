@@ -504,8 +504,6 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
 
     @property
     def available(self) -> bool:
-        if not self.coordinator.last_update_success:
-            return False
         if self._alias in (self.coordinator.data or {}):
             return True
         # energy: stay available on cached value even while device is absent
@@ -522,3 +520,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             return value
         # device absent/None: hold last energy reading (cumulative), else None
         return self._last_value if self._is_energy else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self.coordinator.diagnostic_attributes

@@ -133,10 +133,11 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
 
     @property
     def available(self) -> bool:
-        return (
-            self.coordinator.last_update_success
-            and self._alias in (self.coordinator.data or {})
-        )
+        return self._alias in (self.coordinator.data or {})
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return self.coordinator.diagnostic_attributes
 
     @property
     def is_on(self) -> bool | None:

@@ -8,10 +8,70 @@ rate-limit that caused the original 24h block.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+from collections.abc import Iterator
 from typing import Any
 
+import aiohttp
+
+from .wideq.core_exceptions import (
+    AuthenticationError,
+    ClientDisconnected,
+    InvalidCredentialError,
+    NotLoggedInError,
+    TokenError,
+)
+
 _LOGGER = logging.getLogger(__name__)
+
+_RECONNECTABLE_ERRORS = (
+    AuthenticationError,
+    ClientDisconnected,
+    InvalidCredentialError,
+    NotLoggedInError,
+    TokenError,
+)
+
+
+def _exception_chain(err: BaseException) -> Iterator[BaseException]:
+    """Yield an exception and its explicit/implicit causes once each."""
+    seen: set[int] = set()
+    current: BaseException | None = err
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        yield current
+        current = current.__cause__ or current.__context__
+
+
+def is_server_unavailable(err: BaseException) -> bool:
+    """Return True for transient network and LG HTTP 5xx failures."""
+    for item in _exception_chain(err):
+        if isinstance(item, (asyncio.TimeoutError, aiohttp.ClientConnectionError)):
+            return True
+        status = getattr(item, "status", None)
+        if isinstance(status, int) and 500 <= status <= 599:
+            return True
+    return False
+
+
+def _is_reconnectable(err: BaseException) -> bool:
+    """Return True only when rebuilding the authenticated session can help."""
+    return any(
+        isinstance(item, _RECONNECTABLE_ERRORS) for item in _exception_chain(err)
+    )
+
+
+class WideqReconnectError(Exception):
+    """Preserve both the initial session error and reconnect failure."""
+
+    def __init__(self, initial: BaseException, reconnect: BaseException) -> None:
+        self.initial = initial
+        self.reconnect = reconnect
+        super().__init__(
+            f"initial={type(initial).__name__}: {initial}; "
+            f"reconnect={type(reconnect).__name__}: {reconnect}"
+        )
 
 
 def ac_energy_from_snapshot(snap: dict[str, Any]) -> dict[str, Any]:
@@ -76,12 +136,21 @@ class WideqClient:
             await self._client.refresh_auth()
             await self._client.refresh_devices()
         except Exception as err:  # noqa: BLE001
-            # Backup: if the session is truly dead, fully reconnect once and retry
-            # so the coordinator doesn't poll a dead client forever.
-            _LOGGER.debug("wideq refresh failed (%s); reconnecting and retrying", err)
-            await self.async_close()
-            await self.async_connect()
-            await self._client.refresh_devices()
+            # A server maintenance/network failure cannot be repaired by logging
+            # in again. Propagate it to the coordinator circuit breaker without
+            # adding gateway/OAuth traffic. Reconnect once only for an explicitly
+            # dead/invalid authenticated session.
+            if is_server_unavailable(err) or not _is_reconnectable(err):
+                raise
+            _LOGGER.debug(
+                "wideq session failed (%s); reconnecting and retrying once", err
+            )
+            try:
+                await self.async_close()
+                await self.async_connect()
+                await self._client.refresh_devices()
+            except Exception as reconnect_err:  # noqa: BLE001
+                raise WideqReconnectError(err, reconnect_err) from reconnect_err
         out: dict[str, dict[str, Any]] = {}
         for dev in self._client.devices or []:
             snap = dev.as_dict().get("snapshot")

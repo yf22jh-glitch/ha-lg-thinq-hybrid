@@ -22,13 +22,17 @@ from .const import (
     CONF_WIDEQ_CLIENT_ID,
     CONF_WIDEQ_TOKEN,
     DEFAULT_AC_ACTIVE_INTERVAL,
+    DEFAULT_APPLIANCE_ACTIVE_INTERVAL,
     DEFAULT_COUNTRY,
     DEFAULT_IDLE_INTERVAL,
     DEFAULT_LANGUAGE,
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_STYLER,
+    DEVICE_TYPE_WASHTOWER,
     DOMAIN,
     OPT_AC_ACTIVE_INTERVAL,
+    OPT_APPLIANCE_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
@@ -46,17 +50,62 @@ _LOGGER = logging.getLogger(__name__)
 
 POWER_ON = "POWER_ON"
 
-# operation resource key per device type (to read POWER_ON/OFF).
-_OPERATION_KEY = {
-    DEVICE_TYPE_AIR_CONDITIONER: "airConOperationMode",
-    DEVICE_TYPE_DEHUMIDIFIER: "dehumidifierOperationMode",
+# Non-running states reported through PAT/MQTT for appliances whose wideq-only
+# detail is useful while a cycle is active. Everything else (including pause,
+# reserved, and error) stays on the active cadence.
+_INACTIVE_RUN_STATES = {
+    None,
+    "COMPLETE",
+    "END",
+    "INITIAL",
+    "POWER_OFF",
+    "RUNNING_END",
 }
 
 
-def _is_active(coordinator: PatDeviceCoordinator) -> bool:
-    """True if the device is powered on (so wideq should poll at active cadence)."""
-    key = _OPERATION_KEY.get(coordinator.device_type)
-    return bool(key) and coordinator.get("operation", key) == POWER_ON
+def _is_ac_active(coordinator: PatDeviceCoordinator) -> bool:
+    """Return whether PAT/MQTT requests the AC-class collection cadence."""
+    if coordinator.device_type == DEVICE_TYPE_DEHUMIDIFIER:
+        # Preserve the existing 600s behavior while powered on; WATER_IS_FULL
+        # push still requests a prompt refresh and this cadence later sees clear.
+        return (
+            coordinator.get("operation", "dehumidifierOperationMode") == POWER_ON
+        )
+    return (
+        coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
+        and coordinator.get("operation", "airConOperationMode") == POWER_ON
+    )
+
+
+def _is_appliance_active(coordinator: PatDeviceCoordinator) -> bool:
+    """Return whether PAT/MQTT reports a washer/dryer/styler cycle active."""
+    if coordinator.device_type == DEVICE_TYPE_WASHTOWER:
+        return any(
+            coordinator.get(part, "runState", "currentState")
+            not in _INACTIVE_RUN_STATES
+            for part in ("washer", "dryer")
+        )
+    if coordinator.device_type == DEVICE_TYPE_STYLER:
+        return (
+            coordinator.get("runState", "currentState")
+            not in _INACTIVE_RUN_STATES
+        )
+    return False
+
+
+def _wideq_interval(
+    coordinators: list[PatDeviceCoordinator],
+    ac_active_interval: int,
+    appliance_active_interval: int,
+    idle_interval: int,
+) -> int:
+    """Choose collection cadence exclusively from PAT/MQTT state."""
+    intervals: list[int] = []
+    if any(_is_ac_active(c) for c in coordinators):
+        intervals.append(ac_active_interval)
+    if any(_is_appliance_active(c) for c in coordinators):
+        intervals.append(appliance_active_interval)
+    return min(intervals) if intervals else idle_interval
 
 
 @dataclass
@@ -147,21 +196,36 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
 
     coordinators = list(data.coordinators.values())
 
-    def active_fn() -> bool:
-        # Poll wideq at active cadence while any monitored device is running.
-        return any(_is_active(c) for c in coordinators)
-
     opts = entry.options
+    ac_active_interval = opts.get(
+        OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL
+    )
+    appliance_active_interval = opts.get(
+        OPT_APPLIANCE_ACTIVE_INTERVAL, DEFAULT_APPLIANCE_ACTIVE_INTERVAL
+    )
+    idle_interval = opts.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL)
+
+    def interval_fn() -> int:
+        # Device activity comes from PAT/MQTT; wideq only collects missing data.
+        return _wideq_interval(
+            coordinators,
+            ac_active_interval,
+            appliance_active_interval,
+            idle_interval,
+        )
+
     data.wideq_client = client
     data.wideq_coordinator = WideqCoordinator(
         hass,
         entry,
         client,
         limiter,
-        active_fn,
-        opts.get(OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL),
-        opts.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL),
+        interval_fn,
     )
+    for coordinator in coordinators:
+        entry.async_on_unload(
+            coordinator.async_add_listener(data.wideq_coordinator.reconcile_interval)
+        )
     # No first_refresh: wideq must not eager-poll on setup (restart-burst
     # avoidance). The first poll fires one interval after entities subscribe.
 

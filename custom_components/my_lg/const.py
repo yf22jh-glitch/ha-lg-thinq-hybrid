@@ -105,3 +105,9 @@ MIN_IDLE_INTERVAL = 600
 # Global wideq rate-limiter backstop (applies regardless of option values).
 WIDEQ_MAX_CALLS_PER_HOUR = 200
 WIDEQ_MIN_CALL_SPACING = 3.0
+
+# After repeated wideq failures, suspend normal polling and issue one real
+# snapshot request at this cadence. The request doubles as a recovery probe:
+# success supplies fresh data and restores the MQTT-derived normal interval.
+WIDEQ_CIRCUIT_FAILURE_THRESHOLD = 3
+WIDEQ_PROBE_INTERVAL = 900

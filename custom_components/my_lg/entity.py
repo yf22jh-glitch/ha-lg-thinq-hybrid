@@ -34,7 +34,9 @@ class MyLgEntity(CoordinatorEntity[PatDeviceCoordinator]):
 
     @property
     def available(self) -> bool:
-        return self.coordinator.last_update_success and bool(self.coordinator.data)
+        # PAT REST is only an hourly fallback. A transient fallback failure must
+        # not invalidate a valid state previously received through MQTT.
+        return bool(self.coordinator.data)
 
     def _get(self, *path: str, default: Any = None) -> Any:
         return self.coordinator.get(*path, default=default)
@@ -72,9 +74,13 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
 
     @property
     def available(self) -> bool:
-        # Unavailable until wideq has actually polled this device (the first
-        # poll is deliberately delayed after startup).
-        return self.coordinator.last_update_success and bool(self._snapshot)
+        # Keep the last good snapshot available during LG maintenance. Shared
+        # diagnostic attributes explicitly mark it stale until a probe succeeds.
+        return bool(self._snapshot)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self.coordinator.diagnostic_attributes
 
     async def _wideq_set(
         self, ctrl_key: str, data_key: str, value: Any, use_dataset: bool
