@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -20,10 +21,10 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
@@ -41,6 +42,7 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
+from .raw_sensor import RawSensorManager
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -161,7 +163,7 @@ def _text(key: str, group: str, field: str) -> MyLgSensorDescription:
 def _loc_text(key: str, group: str, location: str, field: str) -> MyLgSensorDescription:
     return MyLgSensorDescription(
         key=key, translation_key=key,
-        value_fn=lambda c, g=group, l=location, f=field: c.get_location(g, l, f),
+        value_fn=lambda c, g=group, loc=location, f=field: c.get_location(g, loc, f),
     )
 
 
@@ -171,7 +173,9 @@ def _temp_loc(key: str, location: str) -> MyLgSensorDescription:
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda c, l=location: c.get_location("temperature", l, "targetTemperature"),
+        value_fn=lambda c, loc=location: c.get_location(
+            "temperature", loc, "targetTemperature"
+        ),
     )
 
 
@@ -255,11 +259,19 @@ OVEN_SENSORS: tuple[MyLgSensorDescription, ...] = (
 
 def _zone(loc: str, label: str) -> tuple[MyLgSensorDescription, ...]:
     return (
-        _named(f"{loc.lower()}_state", f"{label} state",
-               lambda c, l=loc: c.get_zone(l, "cookingZone", "currentState")),
-        _named(f"{loc.lower()}_power", f"{label} power level",
-               lambda c, l=loc: c.get_zone(l, "power", "powerLevel"),
-               state_class=SensorStateClass.MEASUREMENT),
+        _named(
+            f"{loc.lower()}_state",
+            f"{label} state",
+            lambda c, location=loc: c.get_zone(
+                location, "cookingZone", "currentState"
+            ),
+        ),
+        _named(
+            f"{loc.lower()}_power",
+            f"{label} power level",
+            lambda c, location=loc: c.get_zone(location, "power", "powerLevel"),
+            state_class=SensorStateClass.MEASUREMENT,
+        ),
     )
 
 
@@ -456,6 +468,19 @@ async def async_setup_entry(
                     WideqDeviceSensor(data.wideq_coordinator, coordinator, wdesc)
                 )
     async_add_entities(entities)
+
+    # The complete audited RAW inventory is registered disabled by default.
+    # Catalog paths make entities available before the deliberately delayed
+    # first WideQ poll; listeners add genuinely new firmware fields later
+    # without triggering any additional network request.
+    manager = RawSensorManager(
+        list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
+    )
+    manager.add_new()
+    for coordinator in data.coordinators.values():
+        entry.async_on_unload(coordinator.async_add_listener(manager.add_new))
+    if data.wideq_coordinator is not None:
+        entry.async_on_unload(data.wideq_coordinator.async_add_listener(manager.add_new))
 
 
 class MyLgSensor(MyLgEntity, SensorEntity):
