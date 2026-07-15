@@ -42,10 +42,11 @@ from .const import (
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
+from .feature_catalog import load_catalogs
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
-from .wideq_client import WideqClient
 from .services import async_register_services
+from .wideq_client import WideqClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -176,6 +177,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # wideq (optional): AC realtime power/energy, dehumidifier water tank, etc.
     if entry.data.get(CONF_WIDEQ_TOKEN):
         _setup_wideq(hass, entry, data)
+
+    # Generated catalogs are file-backed. Warm their process-wide caches in an
+    # executor so synchronous entity factories never perform disk I/O on the
+    # Home Assistant event loop.
+    await hass.async_add_executor_job(load_catalogs)
 
     entry.runtime_data = data
     async_register_services(hass)
