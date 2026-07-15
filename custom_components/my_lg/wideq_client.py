@@ -187,6 +187,8 @@ class WideqClient:
         data_key: str | None = None,
         value: Any = None,
         data_set_list: dict[str, Any] | None = None,
+        payload: dict[str, Any] | None = None,
+        legacy_payload: dict[str, Any] | None = None,
     ) -> Any:
         """Send a single thinq2 control-sync command for a wideq-only field.
 
@@ -196,21 +198,26 @@ class WideqClient:
         A single write call is not a polling loop, so it is not a ban risk; the
         physical device does act, so callers gate real writes accordingly.
         """
-        device_id = await self._device_id_for(alias)
-        if not device_id:
-            raise ValueError(f"wideq: no device id for alias {alias!r}")
-
         async def _do() -> Any:
+            device_id = await self._device_id_for(alias)
+            if not device_id:
+                raise ValueError(f"wideq: no device id for alias {alias!r}")
             # Same root fix as polling: renew the ~1h token before the call.
             await self._client.refresh_auth()
             session = self._client.session
+            if legacy_payload is not None:
+                return await session.set_device_controls(device_id, legacy_payload)
+            if payload is not None:
+                return await session.device_v2_controls(device_id, payload, None)
             if data_set_list is not None:
-                payload = {
+                request_payload = {
                     "ctrlKey": ctrl_key,
                     "command": command,
                     "dataSetList": data_set_list,
                 }
-                return await session.device_v2_controls(device_id, payload, None)
+                return await session.device_v2_controls(
+                    device_id, request_payload, None
+                )
             return await session.device_v2_controls(
                 device_id, ctrl_key, command, data_key, value
             )
@@ -218,12 +225,23 @@ class WideqClient:
         try:
             return await _do()
         except Exception as err:  # noqa: BLE001
-            # Reconnect once if the session died, then retry (mirrors polling).
-            _LOGGER.debug("wideq control failed (%s); reconnecting and retrying", err)
-            await self.async_close()
-            await self.async_connect()
-            device_id = await self._device_id_for(alias) or device_id
-            return await _do()
+            # Keep writes under the same outage policy as snapshot polling.
+            # LG maintenance/5xx and ordinary command rejections cannot be
+            # repaired by logging in again; reconnecting there only multiplies
+            # gateway/OAuth traffic during an outage. Retry exactly once only
+            # when the authenticated session itself is explicitly invalid.
+            if is_server_unavailable(err) or not _is_reconnectable(err):
+                raise
+            _LOGGER.debug(
+                "wideq control session failed (%s); reconnecting and retrying once",
+                err,
+            )
+            try:
+                await self.async_close()
+                await self.async_connect()
+                return await _do()
+            except Exception as reconnect_err:  # noqa: BLE001
+                raise WideqReconnectError(err, reconnect_err) from reconnect_err
 
     async def async_close(self) -> None:
         if self._client is not None:
