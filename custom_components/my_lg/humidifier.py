@@ -10,9 +10,9 @@ from homeassistant.components.humidifier import (
     HumidifierEntityFeature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_DEHUMIDIFIER, DEVICE_TYPE_HUMIDIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity

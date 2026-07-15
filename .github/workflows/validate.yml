@@ -48,12 +48,51 @@ jobs:
           python - <<'PY'
           import importlib
           for m in [
-              "my_lg", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
+              "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
               "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.wideq_client", "my_lg.entity",
+              "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
+              "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",
+              "my_lg.wideq_control",
               "my_lg.config_flow", "my_lg.climate", "my_lg.sensor", "my_lg.humidifier",
-              "my_lg.binary_sensor", "my_lg.wideq.core_async", "my_lg.wideq.factory",
+              "my_lg.binary_sensor", "my_lg.select", "my_lg.number", "my_lg.button",
+              "my_lg.switch", "my_lg.fan", "my_lg.event",
+              "my_lg.wideq.core_async", "my_lg.wideq.factory",
           ]:
               importlib.import_module(m)
               print("import OK:", m)
           print("ALL IMPORTS OK against HA", __import__("homeassistant.const", fromlist=["__version__"]).__version__)
           PY
+      - name: Run unit and defense tests
+        run: PYTHONPATH="$PWD" python -m unittest discover -v -s tests
+
+  minimum-version:
+    name: HA 2024.11 + ThinQ Connect 1.0.12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install minimum supported dependencies
+        run: >-
+          pip install homeassistant==2024.11.3 thinqconnect==1.0.12
+          xmltodict "josepy<2"
+      - name: Import all integration modules
+        run: |
+          export PYTHONPATH="$PWD/custom_components"
+          python - <<'PY'
+          import importlib
+          for m in [
+              "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
+              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.wideq_client", "my_lg.entity",
+              "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
+              "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",
+              "my_lg.wideq_control", "my_lg.config_flow", "my_lg.climate", "my_lg.sensor",
+              "my_lg.humidifier", "my_lg.binary_sensor", "my_lg.select", "my_lg.number",
+              "my_lg.button", "my_lg.switch", "my_lg.fan", "my_lg.event",
+          ]:
+              importlib.import_module(m)
+              print("import OK:", m)
+          PY
+      - name: Run unit and defense tests
+        run: PYTHONPATH="$PWD" python -m unittest discover -v -s tests

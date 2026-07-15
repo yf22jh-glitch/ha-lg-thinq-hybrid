@@ -7,9 +7,9 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,

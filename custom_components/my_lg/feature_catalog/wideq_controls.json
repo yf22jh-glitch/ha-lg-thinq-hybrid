@@ -1,0 +1,6357 @@
+{
+  "1WPD4CMIDR__3": {
+    "controls": {},
+    "subdevices": {}
+  },
+  "2REFO1DBN3K_U": {
+    "controls": {
+      "basicCtrl": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "basicCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "refState.activeSaving": {
+            "options": [
+              "OFF",
+              "ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.convertibleTemp": {
+            "max": 255,
+            "min": 0,
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "refState.displayLock": {
+            "options": [
+              "UNLOCK",
+              "LOCK",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.ecoFriendly": {
+            "options": [
+              "OFF",
+              "ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.expressMode": {
+            "options": [
+              "OFF",
+              "EXPRESS_ON",
+              "RAPID_ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.freezerTemp": {
+            "max": 255,
+            "min": 0,
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "refState.freshAirFilter": {
+            "options": [
+              "OFF",
+              "AUTO",
+              "POWER",
+              "REPLACE",
+              "SMART_STORAGE_POWER",
+              "SMART_STORAGE_OFF",
+              "SMART_STORAGE_ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.fridgeTemp": {
+            "max": 255,
+            "min": 0,
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "refState.sabbathMode": {
+            "options": [
+              "OFF",
+              "ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.smartSavingMode": {
+            "options": [
+              "OFF",
+              "NIGHT_ON",
+              "CUSTOM_ON",
+              "SMARTGRID_DR_ON",
+              "SMARTGRID_DD_ON",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.smartSavingRun": {
+            "options": [
+              "STOP",
+              "RUN",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "refState.waterFilter": {
+            "options": [
+              "0_MONTH",
+              "1_MONTH",
+              "2_MONTH",
+              "3_MONTH",
+              "4_MONTH",
+              "5_MONTH",
+              "6_MONTH",
+              "7_MONTH",
+              "8_MONTH",
+              "9_MONTH",
+              "10_MONTH",
+              "11_MONTH",
+              "12_MONTH",
+              "IGNORE"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "refState": {
+            "activeSaving": "{{activeSaving}}",
+            "atLeastOneDoorOpen": "{{atLeastOneDoorOpen}}",
+            "convertibleDoorOpen": "{{convertibleDoorOpen}}",
+            "convertibleTemp": "{{convertibleTemp}}",
+            "didDoorOpen": "{{didDoorOpen}}",
+            "displayLock": "{{displayLock}}",
+            "ecoFriendly": "{{ecoFriendly}}",
+            "expressMode": "{{expressMode}}",
+            "freezerDoorOpen": "{{freezerDoorOpen}}",
+            "freezerTemp": "{{freezerTemp}}",
+            "freshAirFilter": "{{freshAirFilter}}",
+            "fridgeDoorOpen": "{{fridgeDoorOpen}}",
+            "fridgeTemp": "{{fridgeTemp}}",
+            "sabbathMode": "{{sabbathMode}}",
+            "smartSavingMode": "{{smartSavingMode}}",
+            "smartSavingRun": "{{smartSavingRun}}",
+            "tempUnit": "{{tempUnit}}",
+            "waterFilter": "{{waterFilter}}"
+          }
+        },
+        "writable_fields": [
+          "refState.fridgeTemp",
+          "refState.freezerTemp",
+          "refState.convertibleTemp",
+          "refState.smartSavingMode",
+          "refState.smartSavingRun",
+          "refState.activeSaving",
+          "refState.ecoFriendly",
+          "refState.expressMode",
+          "refState.freshAirFilter",
+          "refState.waterFilter",
+          "refState.displayLock",
+          "refState.sabbathMode"
+        ]
+      },
+      "getActiveIcePlusScheduleCtrl": {
+        "base": {},
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "getActiveIcePlusScheduleCtrl",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {},
+        "writable_fields": []
+      },
+      "getActiveSavingScheduleCtrl": {
+        "base": {},
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "getActiveSavingScheduleCtrl",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {},
+        "writable_fields": []
+      },
+      "getSmartFreshStorageScheduleCtrl": {
+        "base": {},
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "getSmartFreshStorageScheduleCtrl",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {},
+        "writable_fields": []
+      }
+    },
+    "subdevices": {}
+  },
+  "2REK1D04AR170": {
+    "controls": {
+      "SetControl": {
+        "base": {
+          "cmd": "Control",
+          "cmdOpt": "Set",
+          "value": "ControlData"
+        },
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetControl",
+        "experimental_fields": [
+          "LeftOrTopRoom",
+          "RightRoom",
+          "MiddleRoom",
+          "BottomRoom",
+          "OneTouchFilter",
+          "LockingStatus"
+        ],
+        "fields": {
+          "BottomRoom": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "DoorOpenState": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "FreshAirFilter": {
+            "options": [
+              "0",
+              "255"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "LeftOrTopRoom": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "LockingStatus": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "MiddleRoom": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "13"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "OneTouchFilter": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "RightRoom": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq1",
+        "requires_data": true,
+        "risk": "experimental",
+        "shape": "binary",
+        "template": "[{{LeftOrTopRoom}}, {{RightRoom}}, {{MiddleRoom}}, {{BottomRoom}}, {{FreshAirFilter}}, {{OneTouchFilter}}, {{LockingStatus}}, {{DoorOpenState}}]",
+        "writable_fields": [
+          "LeftOrTopRoom",
+          "RightRoom",
+          "MiddleRoom",
+          "BottomRoom",
+          "OneTouchFilter",
+          "LockingStatus"
+        ]
+      }
+    },
+    "subdevices": {}
+  },
+  "3REK2G03VI230D_2": {
+    "controls": {},
+    "subdevices": {}
+  },
+  "AIR_910604_WW": {
+    "controls": {},
+    "subdevices": {}
+  },
+  "CST_170004_WW": {
+    "controls": {
+      "allEventEnable": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "allEventEnable",
+        "experimental_fields": [
+          "airState.mon.timeout"
+        ],
+        "fields": {
+          "airState.mon.timeout": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "basicCtrl": {
+        "commands": [
+          "Operation",
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "basicCtrl",
+        "experimental_fields": [
+          "airState.miscFuncState.airFast",
+          "airState.miscFuncState.airRemoval"
+        ],
+        "fields": {
+          "airState.miscFuncState.airFast": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.miscFuncState.airRemoval": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.opMode": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.operation": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.target": {
+            "max": 30,
+            "min": 16,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.windStrength": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "256",
+              "257",
+              "258",
+              "259",
+              "260",
+              "261",
+              "262",
+              "263",
+              "264",
+              "511",
+              "512",
+              "513",
+              "514",
+              "515",
+              "516",
+              "517",
+              "518",
+              "519",
+              "520",
+              "767",
+              "768",
+              "769",
+              "770",
+              "771",
+              "772",
+              "773",
+              "774",
+              "775",
+              "776",
+              "1023",
+              "1024",
+              "1025",
+              "1026",
+              "1027",
+              "1028",
+              "1029",
+              "1030",
+              "1031",
+              "1032",
+              "1279",
+              "1280",
+              "1281",
+              "1282",
+              "1283",
+              "1284",
+              "1285",
+              "1286",
+              "1287",
+              "1288",
+              "1535",
+              "1536",
+              "1537",
+              "1538",
+              "1539",
+              "1540",
+              "1541",
+              "1542",
+              "1543",
+              "1544",
+              "1791",
+              "1792",
+              "1793",
+              "1794",
+              "1795",
+              "1796",
+              "1797",
+              "1798",
+              "1799",
+              "1800",
+              "2047",
+              "2048",
+              "2049",
+              "2050",
+              "2051",
+              "2052",
+              "2053",
+              "2054",
+              "2055",
+              "2056",
+              "2303",
+              "65280",
+              "65281",
+              "65282",
+              "65283",
+              "65284",
+              "65285",
+              "65286",
+              "65287",
+              "65288"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "diagData": {
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "diagData",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "low",
+        "shape": "command"
+      },
+      "energyDesiredCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "energyDesiredCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.energy.desiredDay": {
+            "max": 100,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.desiredMonth": {
+            "max": 3100,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.desiredWeek": {
+            "max": 700,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "energyStateCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "energyStateCtrl",
+        "experimental_fields": [
+          "airState.energy.inCurrent",
+          "airState.energy.outCurrent",
+          "airState.energy.totalCurrent"
+        ],
+        "fields": {
+          "airState.energy.inCurrent": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.energy.outCurrent": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.energy.totalCurrent": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "favoriteCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "favoriteCtrl",
+        "experimental_fields": [
+          "airState.tempState.twoSet.coolTemp",
+          "airState.tempState.twoSet.heatTemp"
+        ],
+        "fields": {
+          "airState.opMode": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.operation": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.basic": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.target": {
+            "max": 30,
+            "min": 16,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.tempState.twoSet.coolTemp": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.tempState.twoSet.heatTemp": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.wDir.hStep": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "100"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.vStep": {
+            "max": 91750,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.wMode.airClean": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.iceValley": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.jet": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.windStrength": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "256",
+              "257",
+              "258",
+              "259",
+              "260",
+              "261",
+              "262",
+              "263",
+              "264",
+              "511",
+              "512",
+              "513",
+              "514",
+              "515",
+              "516",
+              "517",
+              "518",
+              "519",
+              "520",
+              "767",
+              "768",
+              "769",
+              "770",
+              "771",
+              "772",
+              "773",
+              "774",
+              "775",
+              "776",
+              "1023",
+              "1024",
+              "1025",
+              "1026",
+              "1027",
+              "1028",
+              "1029",
+              "1030",
+              "1031",
+              "1032",
+              "1279",
+              "1280",
+              "1281",
+              "1282",
+              "1283",
+              "1284",
+              "1285",
+              "1286",
+              "1287",
+              "1288",
+              "1535",
+              "1536",
+              "1537",
+              "1538",
+              "1539",
+              "1540",
+              "1541",
+              "1542",
+              "1543",
+              "1544",
+              "1791",
+              "1792",
+              "1793",
+              "1794",
+              "1795",
+              "1796",
+              "1797",
+              "1798",
+              "1799",
+              "1800",
+              "2047",
+              "2048",
+              "2049",
+              "2050",
+              "2051",
+              "2052",
+              "2053",
+              "2054",
+              "2055",
+              "2056",
+              "2303",
+              "65280",
+              "65281",
+              "65282",
+              "65283",
+              "65284",
+              "65285",
+              "65286",
+              "65287",
+              "65288"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "filterMngStateCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "filterMngStateCtrl",
+        "experimental_fields": [
+          "airState.filterMngState.useTime",
+          "airState.filterMngState.remainTime",
+          "airState.filterMngState.maxTime",
+          "airState.filterMngState.changeDate",
+          "airState.filterMngState.type",
+          "airState.filterMngState.useTimeTop",
+          "airState.filterMngState.maxTimeTop",
+          "airState.filterMngState.useTimeMiddle",
+          "airState.filterMngState.maxTimMiddle",
+          "airState.filterMngState.useTimeBottom",
+          "airState.filterMngState.maxTimeBottom"
+        ],
+        "fields": {
+          "airState.filterMngState.changeDate": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimMiddle": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimeBottom": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimeTop": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.remainTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.type": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeBottom": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeMiddle": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeTop": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "homeCareCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "homeCareCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.homeCare.delay": {
+            "max": 10800,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.homeCare.interval": {
+            "max": 900,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.homeCare.onOff": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "miscCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "miscCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.aroma.color": {
+            "options": [
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.aroma.sound": {
+            "options": [
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.aroma.state": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.ductZone.control": {
+            "max": 255,
+            "min": 1,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "qualityMngCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "qualityMngCtrl",
+        "experimental_fields": [
+          "airState.quality.airMon"
+        ],
+        "fields": {
+          "airState.quality.PM1": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.PM10": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.PM2": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.airMon": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.quality.odor": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.overall": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.sensorMon": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "racAddCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "racAddCtrl",
+        "experimental_fields": [
+          "airState.rac.addFunc"
+        ],
+        "fields": {
+          "airState.rac.addFunc": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "remoteMon": {
+        "commands": [
+          "Stop",
+          "Start"
+        ],
+        "ctrl_key": "remoteMon",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "experimental",
+        "shape": "command"
+      },
+      "reservationCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "reservationCtrl",
+        "experimental_fields": [
+          "airState.reservation.monOnTime",
+          "airState.reservation.monOffTime",
+          "airState.reservation.tueOnTime",
+          "airState.reservation.tueOffTime",
+          "airState.reservation.wedOnTime",
+          "airState.reservation.wedOffTime",
+          "airState.reservation.thuOnTime",
+          "airState.reservation.thuOffTime",
+          "airState.reservation.friOnTime",
+          "airState.reservation.friOffTime",
+          "airState.reservation.satOnTime",
+          "airState.reservation.satOffTime",
+          "airState.reservation.sunOnTime",
+          "airState.reservation.sunOffTime"
+        ],
+        "fields": {
+          "airState.reservation.absoluteStartTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.absoluteStopTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.friOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.friOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sleepTime": {
+            "max": 420,
+            "min": 60,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.sunOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sunOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.targetTimeToStart": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.targetTimeToStop": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.thuOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.thuOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOnTime": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "settingInfo": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "settingInfo",
+        "experimental_fields": [
+          "airState.powerSave.cool"
+        ],
+        "fields": {
+          "airState.lightingState.displayControl": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "13",
+              "100",
+              "120",
+              "140",
+              "150",
+              "160",
+              "180",
+              "200"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.lightingState.magicBrightness": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.lightingState.mood": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.miscFuncState.autoDry": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "255"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.basic": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.cool": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.powerSave.dry": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.unit": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.spkVolume": {
+            "max": 10,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "voiceSetting": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "voiceSetting",
+        "experimental_fields": [
+          "airState.voice.setting"
+        ],
+        "fields": {
+          "airState.voice.recog": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.sensitivity": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.setting": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.voice.volume": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "wDirCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "wDirCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.wDir.auto": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.down": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.hStep": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "100"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.left": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.leftRight": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.right": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.side": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.swirl": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.up": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.upDown": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.vStep": {
+            "max": 91750,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "wModeCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "wModeCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.wMode.airClean": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowForest": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowLongPower": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowShower": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.humanCare": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.iceValley": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.jet": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.lowHeating": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.smartCare": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.turbo": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      }
+    },
+    "subdevices": {}
+  },
+  "CST_570004_WW": {
+    "controls": {
+      "allEventEnable": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "allEventEnable",
+        "experimental_fields": [
+          "airState.mon.timeout"
+        ],
+        "fields": {
+          "airState.mon.timeout": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "basicCtrl": {
+        "commands": [
+          "Operation",
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "basicCtrl",
+        "experimental_fields": [
+          "airState.miscFuncState.airFast",
+          "airState.miscFuncState.airRemoval"
+        ],
+        "fields": {
+          "airState.miscFuncState.airFast": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.miscFuncState.airRemoval": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.opMode": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.operation": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.target": {
+            "max": 30,
+            "min": 16,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.windStrength": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "256",
+              "257",
+              "258",
+              "259",
+              "260",
+              "261",
+              "262",
+              "263",
+              "264",
+              "511",
+              "512",
+              "513",
+              "514",
+              "515",
+              "516",
+              "517",
+              "518",
+              "519",
+              "520",
+              "767",
+              "768",
+              "769",
+              "770",
+              "771",
+              "772",
+              "773",
+              "774",
+              "775",
+              "776",
+              "1023",
+              "1024",
+              "1025",
+              "1026",
+              "1027",
+              "1028",
+              "1029",
+              "1030",
+              "1031",
+              "1032",
+              "1279",
+              "1280",
+              "1281",
+              "1282",
+              "1283",
+              "1284",
+              "1285",
+              "1286",
+              "1287",
+              "1288",
+              "1535",
+              "1536",
+              "1537",
+              "1538",
+              "1539",
+              "1540",
+              "1541",
+              "1542",
+              "1543",
+              "1544",
+              "1791",
+              "1792",
+              "1793",
+              "1794",
+              "1795",
+              "1796",
+              "1797",
+              "1798",
+              "1799",
+              "1800",
+              "2047",
+              "2048",
+              "2049",
+              "2050",
+              "2051",
+              "2052",
+              "2053",
+              "2054",
+              "2055",
+              "2056",
+              "2303",
+              "65280",
+              "65281",
+              "65282",
+              "65283",
+              "65284",
+              "65285",
+              "65286",
+              "65287",
+              "65288"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "diagData": {
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "diagData",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "low",
+        "shape": "command"
+      },
+      "energyDesiredCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "energyDesiredCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.energy.desiredDay": {
+            "max": 100,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.desiredMonth": {
+            "max": 3100,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.desiredWeek": {
+            "max": 700,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "energyStateCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "energyStateCtrl",
+        "experimental_fields": [
+          "airState.energy.inCurrent",
+          "airState.energy.outCurrent",
+          "airState.energy.totalCurrent"
+        ],
+        "fields": {
+          "airState.energy.inCurrent": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.energy.outCurrent": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.energy.totalCurrent": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "favoriteCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "favoriteCtrl",
+        "experimental_fields": [
+          "airState.tempState.twoSet.coolTemp",
+          "airState.tempState.twoSet.heatTemp"
+        ],
+        "fields": {
+          "airState.opMode": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.operation": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.basic": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.target": {
+            "max": 30,
+            "min": 16,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.tempState.twoSet.coolTemp": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.tempState.twoSet.heatTemp": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.wDir.hStep": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "100"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.vStep": {
+            "max": 91750,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.wMode.airClean": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.iceValley": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.jet": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.windStrength": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "256",
+              "257",
+              "258",
+              "259",
+              "260",
+              "261",
+              "262",
+              "263",
+              "264",
+              "511",
+              "512",
+              "513",
+              "514",
+              "515",
+              "516",
+              "517",
+              "518",
+              "519",
+              "520",
+              "767",
+              "768",
+              "769",
+              "770",
+              "771",
+              "772",
+              "773",
+              "774",
+              "775",
+              "776",
+              "1023",
+              "1024",
+              "1025",
+              "1026",
+              "1027",
+              "1028",
+              "1029",
+              "1030",
+              "1031",
+              "1032",
+              "1279",
+              "1280",
+              "1281",
+              "1282",
+              "1283",
+              "1284",
+              "1285",
+              "1286",
+              "1287",
+              "1288",
+              "1535",
+              "1536",
+              "1537",
+              "1538",
+              "1539",
+              "1540",
+              "1541",
+              "1542",
+              "1543",
+              "1544",
+              "1791",
+              "1792",
+              "1793",
+              "1794",
+              "1795",
+              "1796",
+              "1797",
+              "1798",
+              "1799",
+              "1800",
+              "2047",
+              "2048",
+              "2049",
+              "2050",
+              "2051",
+              "2052",
+              "2053",
+              "2054",
+              "2055",
+              "2056",
+              "2303",
+              "65280",
+              "65281",
+              "65282",
+              "65283",
+              "65284",
+              "65285",
+              "65286",
+              "65287",
+              "65288"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "filterMngStateCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "filterMngStateCtrl",
+        "experimental_fields": [
+          "airState.filterMngState.useTime",
+          "airState.filterMngState.remainTime",
+          "airState.filterMngState.maxTime",
+          "airState.filterMngState.changeDate",
+          "airState.filterMngState.type",
+          "airState.filterMngState.useTimeTop",
+          "airState.filterMngState.maxTimeTop",
+          "airState.filterMngState.useTimeMiddle",
+          "airState.filterMngState.maxTimMiddle",
+          "airState.filterMngState.useTimeBottom",
+          "airState.filterMngState.maxTimeBottom"
+        ],
+        "fields": {
+          "airState.filterMngState.changeDate": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimMiddle": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimeBottom": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.maxTimeTop": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.remainTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.type": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeBottom": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeMiddle": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.filterMngState.useTimeTop": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "homeCareCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "homeCareCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.homeCare.delay": {
+            "max": 10800,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.homeCare.interval": {
+            "max": 900,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.homeCare.onOff": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "miscCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "miscCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.aroma.color": {
+            "options": [
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.aroma.sound": {
+            "options": [
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.aroma.state": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.ductZone.control": {
+            "max": 255,
+            "min": 1,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "qualityMngCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "qualityMngCtrl",
+        "experimental_fields": [
+          "airState.quality.airMon"
+        ],
+        "fields": {
+          "airState.quality.PM1": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.PM10": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.PM2": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.airMon": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.quality.odor": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.overall": {
+            "max": 1000,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.quality.sensorMon": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "racAddCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "racAddCtrl",
+        "experimental_fields": [
+          "airState.rac.addFunc"
+        ],
+        "fields": {
+          "airState.rac.addFunc": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "remoteMon": {
+        "commands": [
+          "Stop",
+          "Start"
+        ],
+        "ctrl_key": "remoteMon",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "experimental",
+        "shape": "command"
+      },
+      "reservationCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "reservationCtrl",
+        "experimental_fields": [
+          "airState.reservation.monOnTime",
+          "airState.reservation.monOffTime",
+          "airState.reservation.tueOnTime",
+          "airState.reservation.tueOffTime",
+          "airState.reservation.wedOnTime",
+          "airState.reservation.wedOffTime",
+          "airState.reservation.thuOnTime",
+          "airState.reservation.thuOffTime",
+          "airState.reservation.friOnTime",
+          "airState.reservation.friOffTime",
+          "airState.reservation.satOnTime",
+          "airState.reservation.satOffTime",
+          "airState.reservation.sunOnTime",
+          "airState.reservation.sunOffTime"
+        ],
+        "fields": {
+          "airState.reservation.absoluteStartTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.absoluteStopTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.friOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.friOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sleepTime": {
+            "max": 420,
+            "min": 60,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.sunOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sunOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.targetTimeToStart": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.targetTimeToStop": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.thuOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.thuOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOnTime": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      },
+      "settingInfo": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "settingInfo",
+        "experimental_fields": [
+          "airState.powerSave.cool"
+        ],
+        "fields": {
+          "airState.lightingState.displayControl": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "13",
+              "100",
+              "120",
+              "140",
+              "150",
+              "160",
+              "180",
+              "200"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.lightingState.magicBrightness": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.lightingState.mood": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.miscFuncState.autoDry": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "255"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.basic": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.powerSave.cool": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.powerSave.dry": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.tempState.unit": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.spkVolume": {
+            "max": 10,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "voiceSetting": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "voiceSetting",
+        "experimental_fields": [
+          "airState.voice.setting"
+        ],
+        "fields": {
+          "airState.voice.recog": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.sensitivity": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.voice.setting": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.voice.volume": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "wDirCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "wDirCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.wDir.auto": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.down": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.hStep": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "100"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.left": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.leftRight": {
+            "options": [
+              "0",
+              "1",
+              "256",
+              "257"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.right": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.side": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.swirl": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.up": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.upDown": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wDir.vStep": {
+            "max": 91750,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "wModeCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "wModeCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.wMode.airClean": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowForest": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowLongPower": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.flowShower": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.humanCare": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.iceValley": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.jet": {
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.lowHeating": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.smartCare": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.wMode.turbo": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      }
+    },
+    "subdevices": {}
+  },
+  "D121110": {
+    "controls": {
+      "downloadCourse": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "downloadCourse",
+        "experimental_fields": [],
+        "fields": {
+          "dishwasher.autoDoor": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.childLock": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.course": {
+            "type": "reference",
+            "verified": true
+          },
+          "dishwasher.delayStart": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.dualZone": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.energySaver": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.extraDry": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.extraRinse": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.halfLoad": {
+            "options": [
+              "OFF",
+              "LOWER",
+              "UPPER"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.highTemp": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.mcReminderSetting": {
+            "options": [
+              "OFF",
+              "ON",
+              "UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.nightDry": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.signalLevel": {
+            "options": [
+              "LEVEL_OFF",
+              "LEVEL_ON",
+              "LEVEL_UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.smartCourse": {
+            "type": "reference",
+            "verified": true
+          },
+          "dishwasher.steam": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "dishwasher": {
+            "autoDoor": "{{AutoDoor}}",
+            "childLock": "{{ChildLock}}",
+            "course": "{{Course}}",
+            "courseDownloadDataLength": 6,
+            "courseDownloadType": "COURSEDATA",
+            "delayStart": "{{DelayStart}}",
+            "door": "{{Door}}",
+            "dualZone": "{{DualZone}}",
+            "energySaver": "{{EnergySaver}}",
+            "extraDry": "{{ExtraDry}}",
+            "extraRinse": "{{ExtraRinse}}",
+            "halfLoad": "{{HalfLoad}}",
+            "highTemp": "{{HighTemp}}",
+            "mcReminderSetting": "{{MCReminderSetting}}",
+            "nightDry": "{{NightDry}}",
+            "rinseRefill": "{{RinseRefill}}",
+            "saltRefill": "{{SaltRefill}}",
+            "signalLevel": "{{SignalLevel}}",
+            "smartCourse": "{{SmartCourse}}",
+            "steam": "{{Steam}}"
+          }
+        },
+        "writable_fields": [
+          "dishwasher.course",
+          "dishwasher.smartCourse",
+          "dishwasher.childLock",
+          "dishwasher.signalLevel",
+          "dishwasher.mcReminderSetting",
+          "dishwasher.nightDry",
+          "dishwasher.delayStart",
+          "dishwasher.energySaver",
+          "dishwasher.extraDry",
+          "dishwasher.highTemp",
+          "dishwasher.dualZone",
+          "dishwasher.halfLoad",
+          "dishwasher.steam",
+          "dishwasher.autoDoor",
+          "dishwasher.extraRinse"
+        ]
+      },
+      "setOption": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setOption",
+        "experimental_fields": [],
+        "fields": {
+          "dishwasher.mcReminderSetting": {
+            "options": [
+              "OFF",
+              "ON",
+              "UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.rinseLevel": {
+            "options": [
+              "LEVEL_0",
+              "LEVEL_1",
+              "LEVEL_2",
+              "LEVEL_3",
+              "LEVEL_4",
+              "LEVEL_UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.signalLevel": {
+            "options": [
+              "LEVEL_OFF",
+              "LEVEL_ON",
+              "LEVEL_UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "dishwasher.softeningLevel": {
+            "options": [
+              "LEVEL_0",
+              "LEVEL_1",
+              "LEVEL_2",
+              "LEVEL_3",
+              "LEVEL_4",
+              "LEVEL_UNSET"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "dishwasher": {
+            "mcReminderSetting": "{{MCReminderSetting}}",
+            "rinseLevel": "{{RinseLevel}}",
+            "signalLevel": "{{SignalLevel}}",
+            "softeningLevel": "{{SofteningLevel}}"
+          }
+        },
+        "writable_fields": [
+          "dishwasher.rinseLevel",
+          "dishwasher.softeningLevel",
+          "dishwasher.mcReminderSetting",
+          "dishwasher.signalLevel"
+        ]
+      }
+    },
+    "subdevices": {}
+  },
+  "DHUM_056905_WW": {
+    "controls": {
+      "basicCtrl": {
+        "commands": [
+          "Operation",
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "basicCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.humidity.desired": {
+            "max": 70,
+            "min": 30,
+            "step": 5,
+            "type": "range",
+            "verified": true
+          },
+          "airState.opMode": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20",
+              "21",
+              "22",
+              "83",
+              "84",
+              "85",
+              "86",
+              "104",
+              "105",
+              "106",
+              "107"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.operation": {
+            "options": [
+              "0",
+              "1"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "airState.windStrength": {
+            "options": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "risk": "low",
+        "shape": "data_key"
+      },
+      "diagData": {
+        "commands": [
+          "Get"
+        ],
+        "ctrl_key": "diagData",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "low",
+        "shape": "command"
+      },
+      "energyStateCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "energyStateCtrl",
+        "experimental_fields": [],
+        "fields": {
+          "airState.energy.inCurrent": {
+            "max": 40,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.outCurrent": {
+            "max": 40,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.energy.totalCurrent": {
+            "max": 40,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          }
+        },
+        "risk": "experimental",
+        "shape": "data_key"
+      },
+      "remoteMon": {
+        "commands": [
+          "Stop",
+          "Start"
+        ],
+        "ctrl_key": "remoteMon",
+        "experimental_fields": [],
+        "fields": {},
+        "risk": "experimental",
+        "shape": "command"
+      },
+      "reservationCtrl": {
+        "commands": [
+          "Get",
+          "Set"
+        ],
+        "ctrl_key": "reservationCtrl",
+        "experimental_fields": [
+          "airState.reservation.monOnTime",
+          "airState.reservation.monOffTime",
+          "airState.reservation.tueOnTime",
+          "airState.reservation.tueOffTime",
+          "airState.reservation.wedOnTime",
+          "airState.reservation.wedOffTime",
+          "airState.reservation.thuOnTime",
+          "airState.reservation.thuOffTime",
+          "airState.reservation.friOnTime",
+          "airState.reservation.friOffTime",
+          "airState.reservation.satOnTime",
+          "airState.reservation.satOffTime",
+          "airState.reservation.sunOnTime",
+          "airState.reservation.sunOffTime"
+        ],
+        "fields": {
+          "airState.reservation.absoluteStartTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.absoluteStopTime": {
+            "max": 2400,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.friOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.friOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.monOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.satOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sleepTime": {
+            "max": 420,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.sunOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.sunOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.targetTimeToStart": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.targetTimeToStop": {
+            "max": 1440,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "airState.reservation.thuOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.thuOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.tueOnTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOffTime": {
+            "type": "unknown",
+            "verified": false
+          },
+          "airState.reservation.wedOnTime": {
+            "type": "unknown",
+            "verified": false
+          }
+        },
+        "risk": "low",
+        "shape": "dataset"
+      }
+    },
+    "subdevices": {}
+  },
+  "HUM_056905_WW": {
+    "controls": {},
+    "subdevices": {}
+  },
+  "ST_R_ETH01Y_": {
+    "controls": {
+      "downloadCourse": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "downloadCourse",
+        "experimental_fields": [
+          "styler.downloadSlot",
+          "styler.smartCourse"
+        ],
+        "fields": {
+          "styler.childLock": {
+            "options": [
+              "CHILDLOCK_OFF",
+              "CHILDLOCK_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.course": {
+            "type": "reference",
+            "verified": true
+          },
+          "styler.downloadSlot": {
+            "type": "string",
+            "verified": false
+          },
+          "styler.initialBit": {
+            "options": [
+              "INITIAL_BIT_OFF",
+              "INITIAL_BIT_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.nightDry": {
+            "options": [
+              "NIGHTDRY_OFF",
+              "NIGHTDRY_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.remoteStart": {
+            "options": [
+              "REMOTE_START_OFF",
+              "REMOTE_START_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.reserveTimeHour": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.reserveTimeMinute": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.smartCourse": {
+            "type": "string",
+            "verified": false
+          },
+          "styler.smartPairing": {
+            "options": [
+              "SMART_PAIRING_OFF",
+              "SMART_PAIRING_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.stay1Time": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.stay2Time": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.timeDry": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.timeSetting": {
+            "options": [
+              "TIMESETTING_NO",
+              "TIMESETTING_30",
+              "TIMESETTING_40",
+              "TIMESETTING_50",
+              "TIMESETTING_60",
+              "TIMESETTING_70",
+              "TIMESETTING_80",
+              "TIMESETTING_100",
+              "TIMESETTING_120",
+              "TIMESETTING_150",
+              "TIMESETTING_180",
+              "TIMESETTING_240"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "childLock": "{{ChildLock}}",
+            "cooling1FanRPM": "{{Cooling1_Fan_RPM}}",
+            "cooling1MHRPM": "{{Cooling1_MH_RPM}}",
+            "cooling1Time": "{{Cooling1_Time}}",
+            "cooling2FanRPM": "{{Cooling2_Fan_RPM}}",
+            "cooling2MHRPM": "{{Cooling2_MH_RPM}}",
+            "cooling2Time": "{{Cooling2_Time}}",
+            "course": "{{Course}}",
+            "courseDownloadDataLength": 46,
+            "courseDownloadType": "COURSEDATA",
+            "downloadSlot": "{{downloadSlot}}",
+            "drying1FanRPM": "{{Drying1_Fan_RPM}}",
+            "drying1MHRPM": "{{Drying1_MH_RPM}}",
+            "drying1Time": "{{Drying1_Time}}",
+            "drying2FanRPM": "{{Drying2_Fan_RPM}}",
+            "drying2MHRPM": "{{Drying2_MH_RPM}}",
+            "drying2Time": "{{Drying2_Time}}",
+            "initialBit": "{{InitialBit}}",
+            "nightDry": "{{NightDry}}",
+            "preHeat1FanRPM": "{{PreHeat1_Fan_RPM}}",
+            "preHeat1MHRPM": "{{PreHeat1_MH_RPM}}",
+            "preHeat1Time": "{{PreHeat1_Time}}",
+            "preHeat2FanRPM": "{{PreHeat2_Fan_RPM}}",
+            "preHeat2MHRPM": "{{PreHeat2_MH_RPM}}",
+            "preHeat2Time": "{{PreHeat2_Time}}",
+            "preSteam1FanRPM": "{{PreSteam1_Fan_RPM}}",
+            "preSteam1MHRPM": "{{PreSteam1_MH_RPM}}",
+            "preSteam1Time": "{{PreSteam1_Time}}",
+            "preSteam2FanRPM": "{{PreSteam2_Fan_RPM}}",
+            "preSteam2MHRPM": "{{PreSteam2_MH_RPM}}",
+            "preSteam2Time": "{{PreSteam2_Time}}",
+            "remoteStart": "{{RemoteStart}}",
+            "reserveTimeHour": "{{Reserve_Time_H}}",
+            "reserveTimeMinute": "{{Reserve_Time_M}}",
+            "smartCourse": "{{SmartCourse}}",
+            "smartPairing": "{{smartPairing}}",
+            "stay1FanRPM": "{{Stay1_Fan_RPM}}",
+            "stay1MHRPM": "{{Stay1_MH_RPM}}",
+            "stay1Time": "{{Stay1_Time}}",
+            "stay2FanRPM": "{{Stay2_Fan_RPM}}",
+            "stay2MHRPM": "{{Stay2_MH_RPM}}",
+            "stay2Time": "{{Stay2_Time}}",
+            "steam1FanRPM": "{{Steam1_Fan_RPM}}",
+            "steam1MHRPM": "{{Steam1_MH_RPM}}",
+            "steam1Time": "{{Steam1_Time}}",
+            "steam2FanRPM": "{{Steam2_Fan_RPM}}",
+            "steam2MHRPM": "{{Steam2_MH_RPM}}",
+            "steam2Time": "{{Steam2_Time}}",
+            "timeDry": "{{TimeDry}}",
+            "timeSetting": "{{timeSetting}}"
+          }
+        },
+        "writable_fields": [
+          "styler.course",
+          "styler.downloadSlot",
+          "styler.smartCourse",
+          "styler.childLock",
+          "styler.nightDry",
+          "styler.initialBit",
+          "styler.remoteStart",
+          "styler.reserveTimeHour",
+          "styler.reserveTimeMinute",
+          "styler.timeDry",
+          "styler.stay1Time",
+          "styler.stay2Time",
+          "styler.smartPairing",
+          "styler.timeSetting"
+        ]
+      },
+      "offPower": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "offPower",
+        "experimental_fields": [],
+        "fields": {
+          "styler.controlDataValue": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "controlDataType": "POWEROFF",
+            "controlDataValue": 0,
+            "controlDataValueLength": 1
+          }
+        },
+        "writable_fields": []
+      },
+      "onPower": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "onPower",
+        "experimental_fields": [],
+        "fields": {
+          "styler.controlDataValue": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "controlDataType": "POWERON",
+            "controlDataValue": 1,
+            "controlDataValueLength": 1
+          }
+        },
+        "writable_fields": []
+      },
+      "pauseCourse": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "pauseCourse",
+        "experimental_fields": [],
+        "fields": {
+          "styler.controlDataValue": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "controlDataType": "PAUSE",
+            "controlDataValue": 0,
+            "controlDataValueLength": 1
+          }
+        },
+        "writable_fields": []
+      },
+      "remoteMaintain": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "remoteMaintain",
+        "experimental_fields": [],
+        "fields": {
+          "styler.remoteMaintain": {
+            "options": [
+              "REMOTE_MAINTAIN_OFF",
+              "REMOTE_MAINTAIN_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "controlDataType": "REMOTE_MAINTAIN",
+            "controlDataValueLength": 1,
+            "remoteMaintain": "REMOTE_MAINTAIN_OFF"
+          }
+        },
+        "writable_fields": [
+          "styler.remoteMaintain"
+        ]
+      },
+      "resumeCourse": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "resumeCourse",
+        "experimental_fields": [],
+        "fields": {
+          "styler.childLock": {
+            "options": [
+              "CHILDLOCK_OFF",
+              "CHILDLOCK_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.course": {
+            "type": "reference",
+            "verified": true
+          },
+          "styler.initialBit": {
+            "options": [
+              "INITIAL_BIT_OFF",
+              "INITIAL_BIT_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.nightDry": {
+            "options": [
+              "NIGHTDRY_OFF",
+              "NIGHTDRY_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.remoteStart": {
+            "options": [
+              "REMOTE_START_OFF",
+              "REMOTE_START_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.reserveTimeHour": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.reserveTimeMinute": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.smartCourse": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "childLock": "{{ChildLock}}",
+            "course": "{{Course}}",
+            "initialBit": "{{InitialBit}}",
+            "nightDry": "{{NightDry}}",
+            "remoteStart": "{{RemoteStart}}",
+            "reserveTimeHour": "{{Reserve_Time_H}}",
+            "reserveTimeMinute": "{{Reserve_Time_M}}",
+            "smartCourse": "{{SmartCourse}}"
+          }
+        },
+        "writable_fields": []
+      },
+      "startCourse": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "startCourse",
+        "experimental_fields": [
+          "styler.downloadSlot",
+          "styler.smartCourse"
+        ],
+        "fields": {
+          "styler.childLock": {
+            "options": [
+              "CHILDLOCK_OFF",
+              "CHILDLOCK_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.course": {
+            "type": "reference",
+            "verified": true
+          },
+          "styler.downloadSlot": {
+            "type": "string",
+            "verified": false
+          },
+          "styler.initialBit": {
+            "options": [
+              "INITIAL_BIT_OFF",
+              "INITIAL_BIT_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.nightDry": {
+            "options": [
+              "NIGHTDRY_OFF",
+              "NIGHTDRY_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.remoteStart": {
+            "options": [
+              "REMOTE_START_OFF",
+              "REMOTE_START_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "styler.reserveTimeHour": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.reserveTimeMinute": {
+            "options": [
+              "min",
+              "max"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "styler.smartCourse": {
+            "type": "string",
+            "verified": false
+          },
+          "styler.stay1Time": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.stay2Time": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.timeDry": {
+            "type": "integer",
+            "verified": true
+          },
+          "styler.timeSetting": {
+            "options": [
+              "TIMESETTING_NO",
+              "TIMESETTING_30",
+              "TIMESETTING_40",
+              "TIMESETTING_50",
+              "TIMESETTING_60",
+              "TIMESETTING_70",
+              "TIMESETTING_80",
+              "TIMESETTING_100",
+              "TIMESETTING_120",
+              "TIMESETTING_150",
+              "TIMESETTING_180",
+              "TIMESETTING_240"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "childLock": "{{ChildLock}}",
+            "cooling1FanRPM": "{{Cooling1_Fan_RPM}}",
+            "cooling1MHRPM": "{{Cooling1_MH_RPM}}",
+            "cooling1Time": "{{Cooling1_Time}}",
+            "cooling2FanRPM": "{{Cooling2_Fan_RPM}}",
+            "cooling2MHRPM": "{{Cooling2_MH_RPM}}",
+            "cooling2Time": "{{Cooling2_Time}}",
+            "course": "{{Course}}",
+            "downloadSlot": "{{downloadSlot}}",
+            "drying1FanRPM": "{{Drying1_Fan_RPM}}",
+            "drying1MHRPM": "{{Drying1_MH_RPM}}",
+            "drying1Time": "{{Drying1_Time}}",
+            "drying2FanRPM": "{{Drying2_Fan_RPM}}",
+            "drying2MHRPM": "{{Drying2_MH_RPM}}",
+            "drying2Time": "{{Drying2_Time}}",
+            "initialBit": "{{InitialBit}}",
+            "nightDry": "{{NightDry}}",
+            "preHeat1FanRPM": "{{PreHeat1_Fan_RPM}}",
+            "preHeat1MHRPM": "{{PreHeat1_MH_RPM}}",
+            "preHeat1Time": "{{PreHeat1_Time}}",
+            "preHeat2FanRPM": "{{PreHeat2_Fan_RPM}}",
+            "preHeat2MHRPM": "{{PreHeat2_MH_RPM}}",
+            "preHeat2Time": "{{PreHeat2_Time}}",
+            "preSteam1FanRPM": "{{PreSteam1_Fan_RPM}}",
+            "preSteam1MHRPM": "{{PreSteam1_MH_RPM}}",
+            "preSteam1Time": "{{PreSteam1_Time}}",
+            "preSteam2FanRPM": "{{PreSteam2_Fan_RPM}}",
+            "preSteam2MHRPM": "{{PreSteam2_MH_RPM}}",
+            "preSteam2Time": "{{PreSteam2_Time}}",
+            "remoteStart": "{{RemoteStart}}",
+            "reserveTimeHour": "{{Reserve_Time_H}}",
+            "reserveTimeMinute": "{{Reserve_Time_M}}",
+            "smartCourse": "{{SmartCourse}}",
+            "stay1FanRPM": "{{Stay1_Fan_RPM}}",
+            "stay1MHRPM": "{{Stay1_MH_RPM}}",
+            "stay1Time": "{{Stay1_Time}}",
+            "stay2FanRPM": "{{Stay2_Fan_RPM}}",
+            "stay2MHRPM": "{{Stay2_MH_RPM}}",
+            "stay2Time": "{{Stay2_Time}}",
+            "steam1FanRPM": "{{Steam1_Fan_RPM}}",
+            "steam1MHRPM": "{{Steam1_MH_RPM}}",
+            "steam1Time": "{{Steam1_Time}}",
+            "steam2FanRPM": "{{Steam2_Fan_RPM}}",
+            "steam2MHRPM": "{{Steam2_MH_RPM}}",
+            "steam2Time": "{{Steam2_Time}}",
+            "timeDry": "{{TimeDry}}",
+            "timeSetting": "{{timeSetting}}"
+          }
+        },
+        "writable_fields": [
+          "styler.course",
+          "styler.downloadSlot",
+          "styler.smartCourse",
+          "styler.childLock",
+          "styler.nightDry",
+          "styler.initialBit",
+          "styler.remoteStart",
+          "styler.reserveTimeHour",
+          "styler.reserveTimeMinute",
+          "styler.timeDry",
+          "styler.stay1Time",
+          "styler.stay2Time",
+          "styler.timeSetting"
+        ]
+      },
+      "vtCtrl": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "vtCtrl",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ctrlTarget": [
+            "UNDEFINE"
+          ],
+          "productType": "NORMAL",
+          "reqDevType": "temp",
+          "vtData": {
+            "UNDEFINE": [
+              {
+                "cmd": "temp",
+                "type": "temp",
+                "value": "temp"
+              }
+            ]
+          }
+        },
+        "writable_fields": []
+      },
+      "wakeup": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "wakeup",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "styler": {
+            "controlDataType": "WAKEUP",
+            "controlDataValueLength": 0
+          }
+        },
+        "writable_fields": []
+      }
+    },
+    "subdevices": {}
+  },
+  "WBEF3": {
+    "controls": {
+      "setClearRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setClearRecipe",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "contentType": "ContentType"
+          }
+        },
+        "writable_fields": []
+      },
+      "setCookStart": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setCookStart",
+        "experimental_fields": [],
+        "fields": {
+          "cooktopState.controlPowerLevel": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "cooktopState.controlSelectedBurner": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "cooktopState.controlTimerHour": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "cooktopState.controlTimerMin": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "hazardous",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "contentType": "ContentType",
+            "controlPowerLevel": "ControlPowerLevel",
+            "controlSelectedBurner": "ControlSelectedBurner",
+            "controlTimerHour": "ControlTimerHour",
+            "controlTimerMin": "ControlTimerMin",
+            "dataLength": "DataLength",
+            "reservedValue1": "ReservedValue",
+            "reservedValue2": "ReservedValue",
+            "reservedValue3": "ReservedValue",
+            "reservedValue4": "ReservedValue"
+          }
+        },
+        "writable_fields": [
+          "cooktopState.controlSelectedBurner",
+          "cooktopState.controlPowerLevel",
+          "cooktopState.controlTimerHour",
+          "cooktopState.controlTimerMin"
+        ]
+      },
+      "setCookStop": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setCookStop",
+        "experimental_fields": [],
+        "fields": {
+          "cooktopState.cooktopPowerOff": {
+            "type": "string",
+            "verified": true
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "cooktopPowerOff": "CooktopPowerOff"
+          }
+        },
+        "writable_fields": []
+      },
+      "setCooktopTimerDefault": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setCooktopTimerDefault",
+        "experimental_fields": [],
+        "fields": {
+          "cooktopState.cooktopTimerDefault": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "contentType": "ContentType",
+            "cooktopTimerDefault": "cooktopTimerDefault"
+          }
+        },
+        "writable_fields": [
+          "cooktopState.cooktopTimerDefault"
+        ]
+      },
+      "setUpContents": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "setUpContents",
+        "experimental_fields": [],
+        "fields": {
+          "cooktopState.upContentsEndSoundNum": {
+            "type": "number",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "contentType": "ContentType",
+            "dataLength": "DataLength",
+            "upContentsEndSoundNum": "{{UpContentsEndSoundNum}}"
+          }
+        },
+        "writable_fields": [
+          "cooktopState.upContentsEndSoundNum"
+        ]
+      },
+      "upRecipeCookDownload": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "upRecipeCookDownload",
+        "experimental_fields": [
+          "cooktopState.upRecipeWholeStageNum",
+          "cooktopState.upRecipePowerLvStep1",
+          "cooktopState.upRecipeOperationTimeStep1",
+          "cooktopState.upRecipePushSendTimeStep1",
+          "cooktopState.upRecipePushCodeStep1",
+          "cooktopState.upRecipePowerLvStep2",
+          "cooktopState.upRecipeOperationTimeStep2",
+          "cooktopState.upRecipePushSendTimeStep2",
+          "cooktopState.upRecipePushCodeStep2",
+          "cooktopState.upRecipePowerLvStep3",
+          "cooktopState.upRecipeOperationTimeStep3",
+          "cooktopState.upRecipePushSendTimeStep3",
+          "cooktopState.upRecipePushCodeStep3",
+          "cooktopState.upRecipePowerLvStep4",
+          "cooktopState.upRecipeOperationTimeStep4",
+          "cooktopState.upRecipePushSendTimeStep4",
+          "cooktopState.upRecipePushCodeStep4",
+          "cooktopState.upRecipePowerLvStep5",
+          "cooktopState.upRecipeOperationTimeStep5",
+          "cooktopState.upRecipePushSendTimeStep5",
+          "cooktopState.upRecipePushCodeStep5",
+          "cooktopState.upRecipePowerLvStep6",
+          "cooktopState.upRecipeOperationTimeStep6",
+          "cooktopState.upRecipePushSendTimeStep6",
+          "cooktopState.upRecipePushCodeStep6",
+          "cooktopState.upRecipePowerLvStep7",
+          "cooktopState.upRecipeOperationTimeStep7",
+          "cooktopState.upRecipePushSendTimeStep7",
+          "cooktopState.upRecipePushCodeStep7",
+          "cooktopState.upRecipePowerLvStep8",
+          "cooktopState.upRecipeOperationTimeStep8",
+          "cooktopState.upRecipePushSendTimeStep8",
+          "cooktopState.upRecipePushCodeStep8",
+          "cooktopState.upRecipePowerLvStep9",
+          "cooktopState.upRecipeOperationTimeStep9",
+          "cooktopState.upRecipePushSendTimeStep9",
+          "cooktopState.upRecipePushCodeStep9",
+          "cooktopState.upRecipePowerLvStep10",
+          "cooktopState.upRecipeOperationTimeStep10",
+          "cooktopState.upRecipePushSendTimeStep10",
+          "cooktopState.upRecipePushCodeStep10"
+        ],
+        "fields": {
+          "cooktopState.upRecipeNumber": {
+            "type": "number",
+            "verified": true
+          },
+          "cooktopState.upRecipeOperationTimeStep1": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep10": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep2": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep3": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep4": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep5": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep6": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep7": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep8": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeOperationTimeStep9": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep1": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep10": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep2": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep3": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep4": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep5": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep6": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep7": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep8": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePowerLvStep9": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep1": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep10": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep2": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep3": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep4": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep5": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep6": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep7": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep8": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushCodeStep9": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep1": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep10": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep2": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep3": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep4": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep5": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep6": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep7": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep8": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipePushSendTimeStep9": {
+            "type": "string",
+            "verified": false
+          },
+          "cooktopState.upRecipeWholeStageNum": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "cooktopState": {
+            "contentType": "ContentType",
+            "upRecipeNumber": "upRecipeNumber",
+            "upRecipeOperationTimeStep1": "upRecipeOperationTimeStep1",
+            "upRecipeOperationTimeStep10": "upRecipeOperationTimeStep10",
+            "upRecipeOperationTimeStep2": "upRecipeOperationTimeStep2",
+            "upRecipeOperationTimeStep3": "upRecipeOperationTimeStep3",
+            "upRecipeOperationTimeStep4": "upRecipeOperationTimeStep4",
+            "upRecipeOperationTimeStep5": "upRecipeOperationTimeStep5",
+            "upRecipeOperationTimeStep6": "upRecipeOperationTimeStep6",
+            "upRecipeOperationTimeStep7": "upRecipeOperationTimeStep7",
+            "upRecipeOperationTimeStep8": "upRecipeOperationTimeStep8",
+            "upRecipeOperationTimeStep9": "upRecipeOperationTimeStep9",
+            "upRecipePowerLvStep1": "upRecipePowerLvStep1",
+            "upRecipePowerLvStep10": "upRecipePowerLvStep10",
+            "upRecipePowerLvStep2": "upRecipePowerLvStep2",
+            "upRecipePowerLvStep3": "upRecipePowerLvStep3",
+            "upRecipePowerLvStep4": "upRecipePowerLvStep4",
+            "upRecipePowerLvStep5": "upRecipePowerLvStep5",
+            "upRecipePowerLvStep6": "upRecipePowerLvStep6",
+            "upRecipePowerLvStep7": "upRecipePowerLvStep7",
+            "upRecipePowerLvStep8": "upRecipePowerLvStep8",
+            "upRecipePowerLvStep9": "upRecipePowerLvStep9",
+            "upRecipePushCodeStep1": "upRecipePushCodeStep1",
+            "upRecipePushCodeStep10": "upRecipePushCodeStep10",
+            "upRecipePushCodeStep2": "upRecipePushCodeStep2",
+            "upRecipePushCodeStep3": "upRecipePushCodeStep3",
+            "upRecipePushCodeStep4": "upRecipePushCodeStep4",
+            "upRecipePushCodeStep5": "upRecipePushCodeStep5",
+            "upRecipePushCodeStep6": "upRecipePushCodeStep6",
+            "upRecipePushCodeStep7": "upRecipePushCodeStep7",
+            "upRecipePushCodeStep8": "upRecipePushCodeStep8",
+            "upRecipePushCodeStep9": "upRecipePushCodeStep9",
+            "upRecipePushSendTimeStep1": "upRecipePushSendTimeStep1",
+            "upRecipePushSendTimeStep10": "upRecipePushSendTimeStep10",
+            "upRecipePushSendTimeStep2": "upRecipePushSendTimeStep2",
+            "upRecipePushSendTimeStep3": "upRecipePushSendTimeStep3",
+            "upRecipePushSendTimeStep4": "upRecipePushSendTimeStep4",
+            "upRecipePushSendTimeStep5": "upRecipePushSendTimeStep5",
+            "upRecipePushSendTimeStep6": "upRecipePushSendTimeStep6",
+            "upRecipePushSendTimeStep7": "upRecipePushSendTimeStep7",
+            "upRecipePushSendTimeStep8": "upRecipePushSendTimeStep8",
+            "upRecipePushSendTimeStep9": "upRecipePushSendTimeStep9",
+            "upRecipeWholeStageNum": "upRecipeWholeStageNum"
+          }
+        },
+        "writable_fields": [
+          "cooktopState.upRecipeNumber",
+          "cooktopState.upRecipeWholeStageNum",
+          "cooktopState.upRecipePowerLvStep1",
+          "cooktopState.upRecipeOperationTimeStep1",
+          "cooktopState.upRecipePushSendTimeStep1",
+          "cooktopState.upRecipePushCodeStep1",
+          "cooktopState.upRecipePowerLvStep2",
+          "cooktopState.upRecipeOperationTimeStep2",
+          "cooktopState.upRecipePushSendTimeStep2",
+          "cooktopState.upRecipePushCodeStep2",
+          "cooktopState.upRecipePowerLvStep3",
+          "cooktopState.upRecipeOperationTimeStep3",
+          "cooktopState.upRecipePushSendTimeStep3",
+          "cooktopState.upRecipePushCodeStep3",
+          "cooktopState.upRecipePowerLvStep4",
+          "cooktopState.upRecipeOperationTimeStep4",
+          "cooktopState.upRecipePushSendTimeStep4",
+          "cooktopState.upRecipePushCodeStep4",
+          "cooktopState.upRecipePowerLvStep5",
+          "cooktopState.upRecipeOperationTimeStep5",
+          "cooktopState.upRecipePushSendTimeStep5",
+          "cooktopState.upRecipePushCodeStep5",
+          "cooktopState.upRecipePowerLvStep6",
+          "cooktopState.upRecipeOperationTimeStep6",
+          "cooktopState.upRecipePushSendTimeStep6",
+          "cooktopState.upRecipePushCodeStep6",
+          "cooktopState.upRecipePowerLvStep7",
+          "cooktopState.upRecipeOperationTimeStep7",
+          "cooktopState.upRecipePushSendTimeStep7",
+          "cooktopState.upRecipePushCodeStep7",
+          "cooktopState.upRecipePowerLvStep8",
+          "cooktopState.upRecipeOperationTimeStep8",
+          "cooktopState.upRecipePushSendTimeStep8",
+          "cooktopState.upRecipePushCodeStep8",
+          "cooktopState.upRecipePowerLvStep9",
+          "cooktopState.upRecipeOperationTimeStep9",
+          "cooktopState.upRecipePushSendTimeStep9",
+          "cooktopState.upRecipePushCodeStep9",
+          "cooktopState.upRecipePowerLvStep10",
+          "cooktopState.upRecipeOperationTimeStep10",
+          "cooktopState.upRecipePushSendTimeStep10",
+          "cooktopState.upRecipePushCodeStep10"
+        ]
+      }
+    },
+    "subdevices": {}
+  },
+  "WMLJ32RS": {
+    "controls": {
+      "DeleteDownloadRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "DeleteDownloadRecipe",
+        "experimental_fields": [
+          "ovenState.downMyrecipeDelete1",
+          "ovenState.downMyrecipeDelete2",
+          "ovenState.downMyrecipeDelete3",
+          "ovenState.downMyrecipeDelete4",
+          "ovenState.downMyrecipeDelete5",
+          "ovenState.downMyrecipeDelete6",
+          "ovenState.downMyrecipeDelete7",
+          "ovenState.downMyrecipeDelete8",
+          "ovenState.downMyrecipeDelete9",
+          "ovenState.downMyrecipeDelete10"
+        ],
+        "fields": {
+          "ovenState.downMyrecipeDelete1": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete10": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete2": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete3": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete4": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete5": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete6": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete7": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete8": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.downMyrecipeDelete9": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "DELETE_DOWN_RECIPE",
+            "cmdOptionDataLength": "DELETE_DOWN_RECIPE",
+            "downMyrecipeDelete1": "",
+            "downMyrecipeDelete10": "",
+            "downMyrecipeDelete2": "",
+            "downMyrecipeDelete3": "",
+            "downMyrecipeDelete4": "",
+            "downMyrecipeDelete5": "",
+            "downMyrecipeDelete6": "",
+            "downMyrecipeDelete7": "",
+            "downMyrecipeDelete8": "",
+            "downMyrecipeDelete9": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.downMyrecipeDelete1",
+          "ovenState.downMyrecipeDelete2",
+          "ovenState.downMyrecipeDelete3",
+          "ovenState.downMyrecipeDelete4",
+          "ovenState.downMyrecipeDelete5",
+          "ovenState.downMyrecipeDelete6",
+          "ovenState.downMyrecipeDelete7",
+          "ovenState.downMyrecipeDelete8",
+          "ovenState.downMyrecipeDelete9",
+          "ovenState.downMyrecipeDelete10"
+        ]
+      },
+      "OVWakeup": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "OVWakeup",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "",
+            "cmdOptionDataLength": ""
+          }
+        },
+        "writable_fields": []
+      },
+      "ResetDownloadRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "ResetDownloadRecipe",
+        "experimental_fields": [],
+        "fields": {},
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "RESET_DOWN_RECIPE",
+            "cmdOptionDataLength": "RESET_DOWN_RECIPE"
+          }
+        },
+        "writable_fields": []
+      },
+      "SetAutoCookStart": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetAutoCookStart",
+        "experimental_fields": [
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.cmdOptionCookRawData",
+          "ovenState.cmdOptionStep",
+          "ovenState.cmdOptionTurnOver",
+          "ovenState.cmdOptionSetReserved"
+        ],
+        "fields": {
+          "ovenState.cmdOptionCookRawData": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetReserved": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetSubCookNumber": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionStep": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionTurnOver": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "hazardous",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "",
+            "cmdOptionCookRawData": "",
+            "cmdOptionDataLength": "",
+            "cmdOptionSetReserved": 0,
+            "cmdOptionSetSubCookNumber": "",
+            "cmdOptionStep": "",
+            "cmdOptionTurnOver": 0
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.cmdOptionCookRawData",
+          "ovenState.cmdOptionStep",
+          "ovenState.cmdOptionTurnOver",
+          "ovenState.cmdOptionSetReserved"
+        ]
+      },
+      "SetAutoCookStartRawData": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetAutoCookStartRawData",
+        "experimental_fields": [
+          "ovenState.cmdOptionCookRawData"
+        ],
+        "fields": {
+          "ovenState.cmdOptionCookRawData": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "hazardous",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionCookRawData": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdOptionCookRawData"
+        ]
+      },
+      "SetCookModeOrder": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetCookModeOrder",
+        "experimental_fields": [
+          "ovenState.SetManualCookOrder0",
+          "ovenState.SetManualCookOrder1",
+          "ovenState.SetManualCookOrder2",
+          "ovenState.SetManualCookOrder3",
+          "ovenState.SetManualCookOrder4",
+          "ovenState.SetManualCookOrder5",
+          "ovenState.SetManualCookOrder6",
+          "ovenState.SetManualCookOrder7",
+          "ovenState.SetManualCookOrder8",
+          "ovenState.SetManualCookOrder9",
+          "ovenState.SetManualCookOrder10",
+          "ovenState.SetManualCookOrder11",
+          "ovenState.SetManualCookOrder12",
+          "ovenState.SetManualCookOrder13",
+          "ovenState.SetManualCookOrder14"
+        ],
+        "fields": {
+          "ovenState.SetManualCookOrder0": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder1": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder10": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder11": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder12": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder13": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder14": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder2": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder3": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder4": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder5": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder6": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder7": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder8": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.SetManualCookOrder9": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "SetManualCookOrder0": "NOT_SET",
+            "SetManualCookOrder1": "NOT_SET",
+            "SetManualCookOrder10": "NOT_SET",
+            "SetManualCookOrder11": "NOT_SET",
+            "SetManualCookOrder12": "NOT_SET",
+            "SetManualCookOrder13": "NOT_SET",
+            "SetManualCookOrder14": "NOT_SET",
+            "SetManualCookOrder2": "NOT_SET",
+            "SetManualCookOrder3": "NOT_SET",
+            "SetManualCookOrder4": "NOT_SET",
+            "SetManualCookOrder5": "NOT_SET",
+            "SetManualCookOrder6": "NOT_SET",
+            "SetManualCookOrder7": "NOT_SET",
+            "SetManualCookOrder8": "NOT_SET",
+            "SetManualCookOrder9": "NOT_SET",
+            "cmdOptionContentsType": "SET_COOKMODE_ORDER",
+            "cmdOptionDataLength": "SET_COOKMODE_ORDER"
+          }
+        },
+        "writable_fields": [
+          "ovenState.SetManualCookOrder0",
+          "ovenState.SetManualCookOrder1",
+          "ovenState.SetManualCookOrder2",
+          "ovenState.SetManualCookOrder3",
+          "ovenState.SetManualCookOrder4",
+          "ovenState.SetManualCookOrder5",
+          "ovenState.SetManualCookOrder6",
+          "ovenState.SetManualCookOrder7",
+          "ovenState.SetManualCookOrder8",
+          "ovenState.SetManualCookOrder9",
+          "ovenState.SetManualCookOrder10",
+          "ovenState.SetManualCookOrder11",
+          "ovenState.SetManualCookOrder12",
+          "ovenState.SetManualCookOrder13",
+          "ovenState.SetManualCookOrder14"
+        ]
+      },
+      "SetCookStart": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetCookStart",
+        "experimental_fields": [
+          "ovenState.cmdOptionSetCookName",
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.setTargetTemp",
+          "ovenState.setTargetTempLevel",
+          "ovenState.setTargetWatt",
+          "ovenState.setTargetWeight",
+          "ovenState.setTargetSteamLevel",
+          "ovenState.cmdOptionSetTargetTimeHour",
+          "ovenState.cmdOptionSetTargetTimeMinute",
+          "ovenState.cmdOptionSetTargetTimeSecond",
+          "ovenState.cmdOptionSetTargetTemperatureUnit",
+          "ovenState.cmdOptionSetWeightUnit",
+          "ovenState.cmdOptionStep",
+          "ovenState.cmdOptionSetMyRecipeCookNumber",
+          "ovenState.cmdOptionSetReserved"
+        ],
+        "fields": {
+          "ovenState.cmdOptionSetCookName": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetMyRecipeCookNumber": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetReserved": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetSubCookNumber": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTemperatureUnit": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeHour": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeMinute": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeSecond": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetWeightUnit": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionStep": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.setTargetSteamLevel": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.setTargetTemp": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.setTargetTempLevel": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.setTargetWatt": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.setTargetWeight": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "hazardous",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "",
+            "cmdOptionDataLength": "",
+            "cmdOptionSetCookName": "RANGE",
+            "cmdOptionSetMyRecipeCookNumber": 0,
+            "cmdOptionSetReserved": 0,
+            "cmdOptionSetSubCookNumber": 0,
+            "cmdOptionSetTargetTemperatureUnit": "CELSIUS",
+            "cmdOptionSetTargetTimeHour": 0,
+            "cmdOptionSetTargetTimeMinute": 0,
+            "cmdOptionSetTargetTimeSecond": 0,
+            "cmdOptionSetWeightUnit": "KG",
+            "cmdOptionStep": 0,
+            "setTargetSteamLevel": "NONE",
+            "setTargetTemp": 0,
+            "setTargetTempLevel": "NONE",
+            "setTargetWatt": 0,
+            "setTargetWeight": 0
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdOptionSetCookName",
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.setTargetTemp",
+          "ovenState.setTargetTempLevel",
+          "ovenState.setTargetWatt",
+          "ovenState.setTargetWeight",
+          "ovenState.setTargetSteamLevel",
+          "ovenState.cmdOptionSetTargetTimeHour",
+          "ovenState.cmdOptionSetTargetTimeMinute",
+          "ovenState.cmdOptionSetTargetTimeSecond",
+          "ovenState.cmdOptionSetTargetTemperatureUnit",
+          "ovenState.cmdOptionSetWeightUnit",
+          "ovenState.cmdOptionStep",
+          "ovenState.cmdOptionSetMyRecipeCookNumber",
+          "ovenState.cmdOptionSetReserved"
+        ]
+      },
+      "SetCookStop": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetCookStop",
+        "experimental_fields": [],
+        "fields": {
+          "ovenState.cmdOptionCookStop": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": true,
+        "platform": "thinq2",
+        "requires_data": false,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionCookStop": ""
+          }
+        },
+        "writable_fields": []
+      },
+      "SetDownloadRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetDownloadRecipe",
+        "experimental_fields": [
+          "ovenState.cmdOptionSetCookName",
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.setTargetTemp",
+          "ovenState.setTargetTempLevel",
+          "ovenState.setTargetWatt",
+          "ovenState.setTargetWeight",
+          "ovenState.setTargetSteamLevel",
+          "ovenState.cmdOptionSetTargetTimeHour",
+          "ovenState.cmdOptionSetTargetTimeMinute",
+          "ovenState.cmdOptionSetTargetTimeSecond",
+          "ovenState.cmdOptionSetTargetTemperatureUnit",
+          "ovenState.cmdOptionSetWeightUnit",
+          "ovenState.cmdOptionStep",
+          "ovenState.myrecipeDeviceID",
+          "ovenState.recipeTitleUniCode_1"
+        ],
+        "fields": {
+          "ovenState.cmdOptionSetCookName": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetSubCookNumber": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTemperatureUnit": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeHour": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeMinute": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetTargetTimeSecond": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionSetWeightUnit": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.cmdOptionStep": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.myrecipeDeviceID": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.recipeTitleUniCode_1": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.setTargetSteamLevel": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.setTargetTemp": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.setTargetTempLevel": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.setTargetWatt": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.setTargetWeight": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "SET_DOWN_RECIPE",
+            "cmdOptionDataLength": "SET_DOWN_RECIPE",
+            "cmdOptionSetCookName": "",
+            "cmdOptionSetSubCookNumber": 0,
+            "cmdOptionSetTargetTemperatureUnit": "",
+            "cmdOptionSetTargetTimeHour": 0,
+            "cmdOptionSetTargetTimeMinute": 0,
+            "cmdOptionSetTargetTimeSecond": 0,
+            "cmdOptionSetWeightUnit": 0,
+            "cmdOptionStep": 0,
+            "myrecipeDeviceID": "",
+            "recipeTitleUniCode_1": "",
+            "setTargetSteamLevel": 0,
+            "setTargetTemp": "",
+            "setTargetTempLevel": 0,
+            "setTargetWatt": "",
+            "setTargetWeight": 0
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdOptionSetCookName",
+          "ovenState.cmdOptionSetSubCookNumber",
+          "ovenState.setTargetTemp",
+          "ovenState.setTargetTempLevel",
+          "ovenState.setTargetWatt",
+          "ovenState.setTargetWeight",
+          "ovenState.setTargetSteamLevel",
+          "ovenState.cmdOptionSetTargetTimeHour",
+          "ovenState.cmdOptionSetTargetTimeMinute",
+          "ovenState.cmdOptionSetTargetTimeSecond",
+          "ovenState.cmdOptionSetTargetTemperatureUnit",
+          "ovenState.cmdOptionSetWeightUnit",
+          "ovenState.cmdOptionStep",
+          "ovenState.myrecipeDeviceID",
+          "ovenState.recipeTitleUniCode_1"
+        ]
+      },
+      "SetDownloadedRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetDownloadedRecipe",
+        "experimental_fields": [
+          "ovenState.myrecipeDeviceID"
+        ],
+        "fields": {
+          "ovenState.myrecipeDeviceID": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "SET_DOWNED_RECIPE",
+            "cmdOptionDataLength": "SET_DOWNED_RECIPE",
+            "myrecipeDeviceID": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.myrecipeDeviceID"
+        ]
+      },
+      "SetMyThingRecipe": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetMyThingRecipe",
+        "experimental_fields": [
+          "ovenState.SetMyThingRecipe0",
+          "ovenState.SetMyThingRecipe1",
+          "ovenState.SetMyThingRecipe2",
+          "ovenState.SetMyThingRecipe3",
+          "ovenState.SetMyThingRecipe4",
+          "ovenState.SetMyThingRecipe5",
+          "ovenState.SetMyThingRecipe6",
+          "ovenState.SetMyThingRecipe7",
+          "ovenState.SetMyThingRecipe8",
+          "ovenState.SetMyThingRecipe9"
+        ],
+        "fields": {
+          "ovenState.SetMyThingRecipe0": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe1": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe2": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe3": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe4": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe5": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe6": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe7": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe8": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.SetMyThingRecipe9": {
+            "type": "number",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "SetMyThingRecipe0": 0,
+            "SetMyThingRecipe1": 0,
+            "SetMyThingRecipe2": 0,
+            "SetMyThingRecipe3": 0,
+            "SetMyThingRecipe4": 0,
+            "SetMyThingRecipe5": 0,
+            "SetMyThingRecipe6": 0,
+            "SetMyThingRecipe7": 0,
+            "SetMyThingRecipe8": 0,
+            "SetMyThingRecipe9": 0,
+            "cmdOptionContentsType": "SET_MY_THINQ_RECIPE",
+            "cmdOptionDataLength": "SET_MY_THINQ_RECIPE"
+          }
+        },
+        "writable_fields": [
+          "ovenState.SetMyThingRecipe0",
+          "ovenState.SetMyThingRecipe1",
+          "ovenState.SetMyThingRecipe2",
+          "ovenState.SetMyThingRecipe3",
+          "ovenState.SetMyThingRecipe4",
+          "ovenState.SetMyThingRecipe5",
+          "ovenState.SetMyThingRecipe6",
+          "ovenState.SetMyThingRecipe7",
+          "ovenState.SetMyThingRecipe8",
+          "ovenState.SetMyThingRecipe9"
+        ]
+      },
+      "SetPreference": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetPreference",
+        "experimental_fields": [
+          "ovenState.mwoSettingClockSetTimeHour",
+          "ovenState.mwoSettingClockSetTimeMin",
+          "ovenState.mwoSettingClockSetTimeSec",
+          "ovenState.mwoSettingClockSetHourMode",
+          "ovenState.mwoSettingSound",
+          "ovenState.mwoSettingClockDisplay",
+          "ovenState.mwoSettingDisplayScrollSpeed",
+          "ovenState.mwoSettingDefrostWeightMode",
+          "ovenState.mwoSettingDemoMode",
+          "ovenState.settingOvenClockTimeYear",
+          "ovenState.settingOvenClockTimeMonth",
+          "ovenState.settingOvenClockTimeDay"
+        ],
+        "fields": {
+          "ovenState.mwoSettingClockDisplay": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.mwoSettingClockSetHourMode": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.mwoSettingClockSetTimeHour": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.mwoSettingClockSetTimeMin": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.mwoSettingClockSetTimeSec": {
+            "type": "number",
+            "verified": false
+          },
+          "ovenState.mwoSettingDefrostWeightMode": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.mwoSettingDemoMode": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.mwoSettingDisplayScrollSpeed": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.mwoSettingSound": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingAutoTimeSync": {
+            "options": [
+              "NOT_SET",
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "ovenState.settingOvenClockTimeDay": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingOvenClockTimeMonth": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingOvenClockTimeYear": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "REMOTE_SETTING",
+            "cmdOptionDataLength": "REMOTE_SETTING",
+            "mwoSettingClockDisplay": "NOT_SET",
+            "mwoSettingClockSetHourMode": "12H_MODE",
+            "mwoSettingClockSetTimeHour": 0,
+            "mwoSettingClockSetTimeMin": 0,
+            "mwoSettingClockSetTimeSec": 0,
+            "mwoSettingDefrostWeightMode": "NOT_SET",
+            "mwoSettingDemoMode": "NOT_SET",
+            "mwoSettingDisplayScrollSpeed": "NOT_SET",
+            "mwoSettingSound": "NOT_SET",
+            "settingAutoTimeSync": "",
+            "settingOvenClockTimeDay": "",
+            "settingOvenClockTimeMonth": "",
+            "settingOvenClockTimeYear": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.mwoSettingClockSetTimeHour",
+          "ovenState.mwoSettingClockSetTimeMin",
+          "ovenState.mwoSettingClockSetTimeSec",
+          "ovenState.mwoSettingClockSetHourMode",
+          "ovenState.mwoSettingSound",
+          "ovenState.mwoSettingClockDisplay",
+          "ovenState.mwoSettingDisplayScrollSpeed",
+          "ovenState.mwoSettingDefrostWeightMode",
+          "ovenState.mwoSettingDemoMode",
+          "ovenState.settingOvenClockTimeYear",
+          "ovenState.settingOvenClockTimeMonth",
+          "ovenState.settingOvenClockTimeDay",
+          "ovenState.settingAutoTimeSync"
+        ]
+      },
+      "SetRemoteControlLock": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetRemoteControlLock",
+        "experimental_fields": [
+          "ovenState.cmdControlLock"
+        ],
+        "fields": {
+          "ovenState.cmdControlLock": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdControlLock": "",
+            "cmdOptionContentsType": "REMOTE_CONTROL_LOCK",
+            "cmdOptionDataLength": "REMOTE_CONTROL_LOCK"
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdControlLock"
+        ]
+      },
+      "SetTimer": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetTimer",
+        "experimental_fields": [
+          "ovenState.upperTimerSecond",
+          "ovenState.upperTimerMinute",
+          "ovenState.lowerTimerSecond",
+          "ovenState.lowerTimerMinute"
+        ],
+        "fields": {
+          "ovenState.lowerTimerHour": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "ovenState.lowerTimerMinute": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.lowerTimerSecond": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.upperTimerHour": {
+            "options": [
+              "min",
+              "max",
+              "step"
+            ],
+            "type": "range",
+            "verified": true
+          },
+          "ovenState.upperTimerMinute": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.upperTimerSecond": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "",
+            "cmdOptionDataLength": "",
+            "lowerTimerHour": "",
+            "lowerTimerMinute": "",
+            "lowerTimerSecond": "",
+            "upperTimerHour": "",
+            "upperTimerMinute": "",
+            "upperTimerSecond": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.upperTimerSecond",
+          "ovenState.upperTimerMinute",
+          "ovenState.upperTimerHour",
+          "ovenState.lowerTimerSecond",
+          "ovenState.lowerTimerMinute",
+          "ovenState.lowerTimerHour"
+        ]
+      },
+      "SetUpContentsAutoSort": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetUpContentsAutoSort",
+        "experimental_fields": [
+          "ovenState.cmdAutoSort"
+        ],
+        "fields": {
+          "ovenState.cmdAutoSort": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdAutoSort": "",
+            "cmdOptionContentsType": "UP_AUTOSORT",
+            "cmdOptionDataLength": "UP_AUTOSORT"
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdAutoSort"
+        ]
+      },
+      "SetUpContentsBrightness": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetUpContentsBrightness",
+        "experimental_fields": [
+          "ovenState.settingBrightness"
+        ],
+        "fields": {
+          "ovenState.settingBrightness": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "UP_BRIGHTNESS",
+            "cmdOptionDataLength": "UP_BRIGHTNESS",
+            "settingBrightness": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.settingBrightness"
+        ]
+      },
+      "SetUpContentsLCD": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetUpContentsLCD",
+        "experimental_fields": [
+          "ovenState.initLCD",
+          "ovenState.settingOvenClockTimeHour",
+          "ovenState.settingOvenClockTimeMinute",
+          "ovenState.settingOvenClockTimeSecond"
+        ],
+        "fields": {
+          "ovenState.initLCD": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingOvenClockTimeHour": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingOvenClockTimeMinute": {
+            "type": "string",
+            "verified": false
+          },
+          "ovenState.settingOvenClockTimeSecond": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "UP_INIT_LCD",
+            "cmdOptionDataLength": "UP_INIT_LCD",
+            "initLCD": "",
+            "settingOvenClockTimeHour": "",
+            "settingOvenClockTimeMinute": "",
+            "settingOvenClockTimeSecond": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.initLCD",
+          "ovenState.settingOvenClockTimeHour",
+          "ovenState.settingOvenClockTimeMinute",
+          "ovenState.settingOvenClockTimeSecond"
+        ]
+      },
+      "SetUpContentsMelody": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetUpContentsMelody",
+        "experimental_fields": [],
+        "fields": {
+          "ovenState.endMelody": {
+            "options": [
+              "END_MELODY_0",
+              "END_MELODY_1",
+              "END_MELODY_2",
+              "END_MELODY_3",
+              "END_MELODY_4",
+              "END_MELODY_5",
+              "END_MELODY_6",
+              "END_MELODY_7",
+              "END_MELODY_8",
+              "END_MELODY_9",
+              "END_MELODY_10",
+              "END_MELODY_11",
+              "END_MELODY_12",
+              "END_MELODY_13",
+              "END_MELODY_14",
+              "END_MELODY_15",
+              "END_MELODY_16"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "UP_END_MELODY",
+            "cmdOptionDataLength": "UP_END_MELODY",
+            "endMelody": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.endMelody"
+        ]
+      },
+      "SetUpContentsVolume": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "SetUpContentsVolume",
+        "experimental_fields": [
+          "ovenState.settingBeepVolume"
+        ],
+        "fields": {
+          "ovenState.settingBeepVolume": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "UP_VOLUME",
+            "cmdOptionDataLength": "UP_VOLUME",
+            "settingBeepVolume": ""
+          }
+        },
+        "writable_fields": [
+          "ovenState.settingBeepVolume"
+        ]
+      },
+      "manualCookRawDataStart": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "manualCookRawDataStart",
+        "experimental_fields": [
+          "ovenState.cmdOptionCookStartRaw"
+        ],
+        "fields": {
+          "ovenState.cmdOptionCookStartRaw": {
+            "type": "string",
+            "verified": false
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "hazardous",
+        "shape": "template",
+        "template": {
+          "ovenState": {
+            "cmdOptionContentsType": "REMOTE_COOK_START_AUTO",
+            "cmdOptionCookStartRaw": "",
+            "cmdOptionDataLength": "REMOTE_COOK_START_AUTO_LWO"
+          }
+        },
+        "writable_fields": [
+          "ovenState.cmdOptionCookStartRaw"
+        ]
+      }
+    },
+    "subdevices": {}
+  },
+  "WTL_KPK_BDH_KR_01": {
+    "controls": {},
+    "subdevices": {
+      "dryer": {
+        "WMDownload": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMDownload",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.Course": {
+              "options": [
+                "NO_TEMP",
+                "TEMP_ULTRALOW",
+                "TEMP_LOW",
+                "TEMP_MEDIUM",
+                "TEMP_MEDIUMHIGH",
+                "TEMP_HIGH"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.SmartCourse": {
+              "options": [
+                "NO_TEMP",
+                "TEMP_ULTRALOW",
+                "TEMP_LOW",
+                "TEMP_MEDIUM",
+                "TEMP_MEDIUMHIGH",
+                "TEMP_HIGH"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.childLock": {
+              "options": [
+                "CHILDLOCK_OFF",
+                "CHILDLOCK_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.dampDryBeep": {
+              "options": [
+                "DAMPDRYBEEP_OFF",
+                "DAMPDRYBEEP_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.dnnReady": {
+              "options": [
+                "DNNREADY_OFF",
+                "DNNREADY_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.dryLevel": {
+              "options": [
+                "NO_DRYLEVEL",
+                "DRYLEVEL_DAMPDRY",
+                "DRYLEVEL_LESSDRY",
+                "DRYLEVEL_IRON",
+                "DRYLEVEL_CUPBOARD",
+                "DRYLEVEL_VERYDRY"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.ecoHybrid": {
+              "options": [
+                "NO_ECOHYBRID",
+                "ECOHYBRID_ECO",
+                "ECOHYBRID_NORMAL",
+                "ECOHYBRID_TURBO"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.initialBit": {
+              "options": [
+                "INITIAL_BIT_OFF",
+                "INITIAL_BIT_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.moreLessTime": {
+              "options": [
+                "0",
+                "10",
+                "20",
+                "30",
+                "40",
+                "50",
+                "60",
+                "70",
+                "80",
+                "90",
+                "100",
+                "120",
+                "150",
+                "180",
+                "210",
+                "240"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.remoteStart": {
+              "options": [
+                "REMOTE_START_OFF",
+                "REMOTE_START_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.reservation": {
+              "options": [
+                "RESERVATION_OFF",
+                "RESERVATION_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.reserveTimeHour": {
+              "max": 19,
+              "min": 3,
+              "options": [
+                "min",
+                "max"
+              ],
+              "step": 1,
+              "type": "range",
+              "verified": true
+            },
+            "washerDryer.reserveTimeMinute": {
+              "max": 30,
+              "min": 0,
+              "options": [
+                "min",
+                "max",
+                "pickerOffset"
+              ],
+              "step": 1,
+              "type": "range",
+              "verified": true
+            },
+            "washerDryer.selfClean": {
+              "options": [
+                "SELFCLEAN_OFF",
+                "SELFCLEAN_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.standby": {
+              "options": [
+                "STANDBY_OFF",
+                "STANDBY_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.timeSetting": {
+              "max": 240,
+              "min": 30,
+              "options": [
+                "min",
+                "max"
+              ],
+              "step": 1,
+              "type": "range",
+              "verified": true
+            },
+            "washerDryer.wrinkleCare": {
+              "options": [
+                "WRINKLECARE_OFF",
+                "WRINKLECARE_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            }
+          },
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": true,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "washerDryer": {
+              "Course": "temp",
+              "SmartCourse": "temp",
+              "childLock": "CHILDLOCK_OFF",
+              "courseDownloadDataLength": 21,
+              "courseDownloadType": "COURSEDATA",
+              "dampDryBeep": "DAMPDRYBEEP_OFF",
+              "dnnReady": "DNNREADY_OFF",
+              "dryLevel": "NO_DRYLEVEL",
+              "ecoHybrid": "NO_ECOHYBRID",
+              "initialBit": "INITIAL_BIT_OFF",
+              "moreLessTime": 0,
+              "remoteStart": "REMOTE_START_OFF",
+              "reservation": "RESERVATION_OFF",
+              "reserveTimeHour": 0,
+              "reserveTimeMinute": 0,
+              "selfClean": "SELFCLEAN_OFF",
+              "standby": "STANDBY_OFF",
+              "timeSetting": 0,
+              "wrinkleCare": "WRINKLECARE_OFF"
+            }
+          },
+          "writable_fields": [
+            "washerDryer.Course",
+            "washerDryer.ecoHybrid",
+            "washerDryer.timeSetting",
+            "washerDryer.reserveTimeHour",
+            "washerDryer.reserveTimeMinute",
+            "washerDryer.reservation",
+            "washerDryer.wrinkleCare",
+            "washerDryer.childLock",
+            "washerDryer.selfClean",
+            "washerDryer.dampDryBeep",
+            "washerDryer.remoteStart",
+            "washerDryer.initialBit",
+            "washerDryer.standby",
+            "washerDryer.dnnReady",
+            "washerDryer.dryLevel",
+            "washerDryer.moreLessTime",
+            "washerDryer.SmartCourse"
+          ]
+        },
+        "WMOff": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMOff",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.controlDataValue": {
+              "type": "number",
+              "verified": false
+            }
+          },
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "POWEROFF",
+              "controlDataValue": 0,
+              "controlDataValueLength": 1
+            }
+          },
+          "writable_fields": []
+        },
+        "WMStop": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMStop",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.controlDataValue": {
+              "type": "number",
+              "verified": false
+            }
+          },
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "PAUSE",
+              "controlDataValue": 0,
+              "controlDataValueLength": 1
+            }
+          },
+          "writable_fields": []
+        },
+        "WMWakeup": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMWakeup",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "WAKEUP",
+              "controlDataValueLength": 0
+            }
+          },
+          "writable_fields": []
+        },
+        "courseSetting": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "courseSetting",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "WAKEUP",
+              "controlDataValueLength": 0
+            }
+          },
+          "writable_fields": []
+        },
+        "vtCtrl": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "vtCtrl",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "dryer",
+          "template": {
+            "ctrlTarget": [
+              "UNDEFINE"
+            ],
+            "productType": "NORMAL",
+            "reqDevType": "temp",
+            "vtData": {
+              "UNDEFINE": [
+                {
+                  "cmd": "temp",
+                  "type": "temp",
+                  "value": "temp"
+                }
+              ]
+            }
+          },
+          "writable_fields": []
+        }
+      },
+      "washer": {
+        "WMDownload": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMDownload",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.Course": {
+              "options": [
+                "NO_TEMP",
+                "TEMP_COLD",
+                "TEMP_30",
+                "TEMP_40",
+                "TEMP_60",
+                "TEMP_95",
+                "FL27_TEMP_TAPCOLD",
+                "FL27_TEMP_COLD",
+                "FL27_TEMP_ECOWARM",
+                "FL27_TEMP_WARM",
+                "FL27_TEMP_WARMRINSE",
+                "FL27_TEMP_HOT",
+                "FL27_TEMP_EXTRAHOT"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.SmartCourse": {
+              "options": [
+                "NO_TEMP",
+                "TEMP_COLD",
+                "TEMP_30",
+                "TEMP_40",
+                "TEMP_60",
+                "TEMP_95",
+                "FL27_TEMP_TAPCOLD",
+                "FL27_TEMP_COLD",
+                "FL27_TEMP_ECOWARM",
+                "FL27_TEMP_WARM",
+                "FL27_TEMP_WARMRINSE",
+                "FL27_TEMP_HOT",
+                "FL27_TEMP_EXTRAHOT"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.childLock": {
+              "options": [
+                "CHILDLOCK_OFF",
+                "CHILDLOCK_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.coldWash": {
+              "options": [
+                "COLDWASH_OFF",
+                "COLDWASH_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.dryLevel": {
+              "options": [
+                "NO_DRYLEVEL",
+                "DRYLEVEL_WIND",
+                "DRYLEVEL_TURBO",
+                "DRYLEVEL_30MIN",
+                "DRYLEVEL_60MIN",
+                "DRYLEVEL_90MIN",
+                "DRYLEVEL_120MIN",
+                "DRYLEVEL_150MIN"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.freshCare": {
+              "options": [
+                "FRESHCARE_OFF",
+                "FRESHCARE_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.initialBit": {
+              "options": [
+                "INITIAL_BIT_OFF",
+                "INITIAL_BIT_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.preWash": {
+              "options": [
+                "PREWASH_OFF",
+                "PREWASH_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.remoteStart": {
+              "options": [
+                "REMOTE_START_OFF",
+                "REMOTE_START_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.reserveTimeHour": {
+              "max": 19,
+              "min": 3,
+              "options": [
+                "min",
+                "max"
+              ],
+              "step": 1,
+              "type": "range",
+              "verified": true
+            },
+            "washerDryer.reserveTimeMinute": {
+              "max": 30,
+              "min": 0,
+              "options": [
+                "min",
+                "max",
+                "pickerOffset"
+              ],
+              "step": 1,
+              "type": "range",
+              "verified": true
+            },
+            "washerDryer.rinse": {
+              "options": [
+                "NO_RINSE",
+                "RINSE_1",
+                "RINSE_2",
+                "RINSE_3",
+                "RINSE_4",
+                "RINSE_5",
+                "RINSE_NORMAL",
+                "RINSE_PLUS",
+                "RINSE_PLUS2",
+                "RINSE_PLUS3"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.rinseSpin": {
+              "options": [
+                "RINSE_SPIN_OFF",
+                "RINSE_SPIN_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.soilWash": {
+              "options": [
+                "NO_SOILWASH",
+                "SOILWASH_LIGHT",
+                "SOILWASH_LIGHT_NORMAL",
+                "SOILWASH_NORMAL",
+                "SOILWASH_NORMAL_HEAVY",
+                "SOILWASH_HEAVY",
+                "SOILWASH_PREWASH",
+                "SOILWASH_SOAKING"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.spin": {
+              "options": [
+                "NO_SPIN",
+                "SPIN_400",
+                "SPIN_600",
+                "SPIN_800",
+                "SPIN_1000",
+                "SPIN_1200",
+                "SPIN_DRAIN_ONLY",
+                "SPIN_LOW",
+                "SPIN_MEDIUM",
+                "SPIN_HIGH",
+                "SPIN_EXTRA_HIGH"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.steam": {
+              "options": [
+                "STEAM_OFF",
+                "STEAM_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.temp": {
+              "options": [
+                "NO_TEMP",
+                "TEMP_COLD",
+                "TEMP_30",
+                "TEMP_40",
+                "TEMP_60",
+                "TEMP_95",
+                "FL27_TEMP_TAPCOLD",
+                "FL27_TEMP_COLD",
+                "FL27_TEMP_ECOWARM",
+                "FL27_TEMP_WARM",
+                "FL27_TEMP_WARMRINSE",
+                "FL27_TEMP_HOT",
+                "FL27_TEMP_EXTRAHOT"
+              ],
+              "type": "enum",
+              "verified": true
+            },
+            "washerDryer.turboWash": {
+              "options": [
+                "TURBOWASH_OFF",
+                "TURBOWASH_ON"
+              ],
+              "type": "enum",
+              "verified": true
+            }
+          },
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": true,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "washerDryer": {
+              "Course": "temp",
+              "SmartCourse": "temp",
+              "childLock": "CHILDLOCK_OFF",
+              "coldWash": "COLDWASH_OFF",
+              "courseDownloadDataLength": 21,
+              "courseDownloadType": "COURSEDATA",
+              "dryLevel": "NO_DRYLEVEL",
+              "freshCare": "FRESHCARE_OFF",
+              "initialBit": "INITIAL_BIT_OFF",
+              "preWash": "PREWASH_OFF",
+              "remoteStart": "REMOTE_START_OFF",
+              "reserveTimeHour": "0",
+              "reserveTimeMinute": "0",
+              "rinse": "RINSE_NORMAL",
+              "rinseSpin": "RINSE_SPIN_OFF",
+              "soilWash": "NO_SOILWASH",
+              "spin": "NO_SPIN",
+              "steam": "STEAM_OFF",
+              "temp": "NO_TEMP",
+              "turboWash": "TURBOWASH_OFF"
+            }
+          },
+          "writable_fields": [
+            "washerDryer.Course",
+            "washerDryer.soilWash",
+            "washerDryer.spin",
+            "washerDryer.temp",
+            "washerDryer.reserveTimeHour",
+            "washerDryer.reserveTimeMinute",
+            "washerDryer.freshCare",
+            "washerDryer.childLock",
+            "washerDryer.steam",
+            "washerDryer.preWash",
+            "washerDryer.rinse",
+            "washerDryer.remoteStart",
+            "washerDryer.turboWash",
+            "washerDryer.coldWash",
+            "washerDryer.initialBit",
+            "washerDryer.SmartCourse",
+            "washerDryer.dryLevel",
+            "washerDryer.rinseSpin"
+          ]
+        },
+        "WMOff": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMOff",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.controlDataValue": {
+              "type": "number",
+              "verified": false
+            }
+          },
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "POWEROFF",
+              "controlDataValue": 0,
+              "controlDataValueLength": 1
+            }
+          },
+          "writable_fields": []
+        },
+        "WMStop": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMStop",
+          "experimental_fields": [],
+          "fields": {
+            "washerDryer.controlDataValue": {
+              "type": "number",
+              "verified": false
+            }
+          },
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "PAUSE",
+              "controlDataValue": 0,
+              "controlDataValueLength": 1
+            }
+          },
+          "writable_fields": []
+        },
+        "WMWakeup": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "WMWakeup",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": true,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "operation",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "WAKEUP",
+              "controlDataValueLength": 0
+            }
+          },
+          "writable_fields": []
+        },
+        "courseSetting": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "courseSetting",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "washerDryer": {
+              "controlDataType": "WAKEUP",
+              "controlDataValueLength": 0
+            }
+          },
+          "writable_fields": []
+        },
+        "vtCtrl": {
+          "base": {},
+          "commands": [
+            "Set"
+          ],
+          "ctrl_key": "vtCtrl",
+          "experimental_fields": [],
+          "fields": {},
+          "parameterless": false,
+          "platform": "thinq2",
+          "requires_data": false,
+          "risk": "low",
+          "shape": "template",
+          "subdevice": "washer",
+          "template": {
+            "ctrlTarget": [
+              "UNDEFINE"
+            ],
+            "productType": "NORMAL",
+            "reqDevType": "temp",
+            "vtData": {
+              "UNDEFINE": [
+                {
+                  "cmd": "temp",
+                  "type": "temp",
+                  "value": "temp"
+                }
+              ]
+            }
+          },
+          "writable_fields": []
+        }
+      }
+    }
+  }
+}

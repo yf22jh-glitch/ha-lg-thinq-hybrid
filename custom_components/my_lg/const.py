@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "my_lg"
+SERVICE_WIDEQ_COMMAND = "wideq_command"
 
 # Config entry data keys
 CONF_ACCESS_TOKEN = "access_token"
@@ -37,6 +38,8 @@ PLATFORMS: list[Platform] = [
     Platform.EVENT,
     Platform.NUMBER,
     Platform.BUTTON,
+    Platform.TIME,
+    Platform.TEXT,
 ]
 # NUMBER: fridge/freezer target-temp (write via temperatureInUnits + locationName).
 # BUTTON: washer/dryer/styler operation (START/STOP) via *OperationMode.
@@ -93,6 +96,8 @@ MQTT_SUBSCRIPTION_REFRESH_INTERVAL = 86400
 OPT_AC_ACTIVE_INTERVAL = "ac_active_interval"
 OPT_APPLIANCE_ACTIVE_INTERVAL = "appliance_active_interval"
 OPT_IDLE_INTERVAL = "idle_interval"
+OPT_ALLOW_HAZARDOUS_CONTROLS = "allow_hazardous_controls"
+OPT_ALLOW_EXPERIMENTAL_CONTROLS = "allow_experimental_controls"
 
 DEFAULT_AC_ACTIVE_INTERVAL = 600
 DEFAULT_APPLIANCE_ACTIVE_INTERVAL = 300

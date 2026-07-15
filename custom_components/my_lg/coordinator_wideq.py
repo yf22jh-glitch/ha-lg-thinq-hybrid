@@ -9,6 +9,7 @@ interval instead of reconnecting or hammering LG's gateway.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
@@ -47,6 +48,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._fail_count = 0
         self._failure_started_at: datetime | None = None
         self._last_success_at: datetime | None = None
+        self._control_locks: dict[str, asyncio.Lock] = {}
+        self._io_lock = asyncio.Lock()
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -60,9 +63,13 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         )
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
-        await self.rate_limiter.acquire()
         try:
-            snapshots = await self.client.async_get_snapshots()
+            # Do not overlap a dashboard refresh with a device command. The
+            # limiter spaces request starts; this lock also serializes their
+            # actual network lifetimes.
+            async with self._io_lock:
+                await self.rate_limiter.acquire()
+                snapshots = await self.client.async_get_snapshots()
         except Exception as err:  # noqa: BLE001
             self._fail_count += 1
             if self._failure_started_at is None:
@@ -169,14 +176,35 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def snapshot_for(self, alias: str) -> dict[str, Any]:
         return (self.data or {}).get(alias, {})
 
-    async def async_control(self, alias: str, ctrl_key: str, **kwargs: Any) -> None:
+    async def async_control(
+        self,
+        alias: str,
+        ctrl_key: str,
+        *,
+        request_factory: Callable[[], dict[str, Any]] | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Send one wideq control command for a device (rate-limited)."""
         if self.circuit_open:
             raise HomeAssistantError(
                 "LG ThinQ wideq service is unavailable; waiting for recovery probe"
             )
-        await self.rate_limiter.acquire()
-        await self.client.async_control(alias, ctrl_key, **kwargs)
+        # Keep read-modify-write payloads for one appliance serialized. The
+        # global limiter spaces request starts, but intentionally does not hold
+        # its lock for the duration of network I/O.
+        lock = self._control_locks.setdefault(alias, asyncio.Lock())
+        async with lock:
+            async with self._io_lock:
+                # Re-check after waiting: a prior command or scheduled poll may
+                # have opened the circuit while this caller was queued.
+                if self.circuit_open:
+                    raise HomeAssistantError(
+                        "LG ThinQ wideq service is unavailable; waiting for recovery probe"
+                    )
+                if request_factory is not None:
+                    kwargs = request_factory()
+                await self.rate_limiter.acquire()
+                await self.client.async_control(alias, ctrl_key, **kwargs)
 
     def apply_optimistic(self, alias: str, key: str, value: Any) -> None:
         """Reflect a just-sent value immediately; the next poll confirms it.

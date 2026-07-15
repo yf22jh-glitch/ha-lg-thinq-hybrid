@@ -3,22 +3,32 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dc_field
+from typing import Any
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import (
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_WATER_PURIFIER,
+    OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+    OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
+from .value_access import is_meaningful
+from .wideq_control import (
+    control_risk_allowed,
+    iter_wideq_field_controls,
+    normalize_option,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -46,6 +56,12 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             group="airPurifierJobMode", field="currentJobMode",
             choices=["CLEAN", "SILENT", "HUMIDITY"],
         ),
+        MyLgSelectDescription(
+            key="wind_strength_detail", translation_key="wind_strength_detail",
+            group="airFlow", field="windStrengthDetail",
+            choices=["OFF", "LOW", "MID", "HIGH", "AUTO"],
+            entity_registry_enabled_default=False,
+        ),
     ),
     DEVICE_TYPE_WATER_PURIFIER: (
         MyLgSelectDescription(
@@ -60,6 +76,12 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
         ),
     ),
     DEVICE_TYPE_HUMIDIFIER: (
+        MyLgSelectDescription(
+            key="wind_strength", translation_key="wind_strength",
+            group="airFlow", field="windStrength",
+            choices=["LOW", "MID", "HIGH", "POWER"],
+            entity_registry_enabled_default=False,
+        ),
         MyLgSelectDescription(
             key="display_light", translation_key="display_light",
             group="display", field="light",
@@ -132,9 +154,26 @@ async def async_setup_entry(
 
     wideq: WideqCoordinator | None = entry.runtime_data.wideq_coordinator
     if wideq is not None:
+        allow_hazardous = bool(
+            entry.options.get(OPT_ALLOW_HAZARDOUS_CONTROLS, False)
+        )
+        allow_experimental = bool(
+            entry.options.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False)
+        )
         for coordinator in entry.runtime_data.coordinators.values():
             for wdesc in WIDEQ_SELECTS_BY_TYPE.get(coordinator.device_type, ()):
                 entities.append(MyLgWideqSelect(wideq, coordinator, wdesc))
+            for control in iter_wideq_field_controls(coordinator.model):
+                if control.value_type == "enum" and control.options:
+                    entities.append(
+                        MyLgWideqCatalogSelect(
+                            wideq,
+                            coordinator,
+                            control,
+                            allow_hazardous,
+                            allow_experimental,
+                        )
+                    )
 
     async_add_entities(entities)
 
@@ -193,3 +232,57 @@ class MyLgWideqSelect(MyLgWideqEntity, SelectEntity):
         if value is None:
             return
         await self._wideq_set(d.ctrl_key, d.data_key, value, d.use_dataset)
+
+
+class MyLgWideqCatalogSelect(MyLgWideqEntity, SelectEntity):
+    """A model-advertised enum that is not duplicated by PAT."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(
+        self,
+        wideq_coordinator: WideqCoordinator,
+        pat_coordinator: PatDeviceCoordinator,
+        control,
+        hazardous_controls_allowed: bool,
+        experimental_controls_allowed: bool,
+    ) -> None:
+        super().__init__(wideq_coordinator, pat_coordinator, control.key)
+        self._control = control
+        self._hazardous_controls_allowed = hazardous_controls_allowed
+        self._experimental_controls_allowed = experimental_controls_allowed
+        self._attr_name = f"WideQ · {control.field}"
+        self._attr_options = list(control.options)
+
+    @property
+    def available(self) -> bool:
+        if not control_risk_allowed(
+            self._control,
+            allow_hazardous=self._hazardous_controls_allowed,
+            allow_experimental=self._experimental_controls_allowed,
+            pat_data=self._pat_coordinator.data,
+            snapshot=self._snapshot,
+        ):
+            return False
+        return (
+            not self.coordinator.circuit_open
+            and is_meaningful(self._snapshot.get(self._control.field))
+        )
+
+    @property
+    def current_option(self) -> str | None:
+        option = normalize_option(self._snapshot.get(self._control.field))
+        return option if option in self.options else None
+
+    async def async_select_option(self, option: str) -> None:
+        value: Any = option
+        if option.lstrip("-").isdigit():
+            value = int(option)
+        await self._wideq_set(
+            self._control.ctrl_key,
+            self._control.field,
+            value,
+            self._control.use_dataset,
+            optimistic=self._control.risk == "low",
+        )

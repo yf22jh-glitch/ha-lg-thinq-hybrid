@@ -60,6 +60,7 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
     ) -> None:
         super().__init__(wideq_coordinator)
         self._alias = pat_coordinator.alias
+        self._pat_coordinator = pat_coordinator
         self._attr_unique_id = f"{pat_coordinator.device_id}_{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, pat_coordinator.device_id)},
@@ -83,7 +84,13 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
         return self.coordinator.diagnostic_attributes
 
     async def _wideq_set(
-        self, ctrl_key: str, data_key: str, value: Any, use_dataset: bool
+        self,
+        ctrl_key: str,
+        data_key: str,
+        value: Any,
+        use_dataset: bool,
+        *,
+        optimistic: bool = True,
     ) -> None:
         """Send one control and optimistically reflect the new value."""
         if use_dataset:
@@ -94,4 +101,5 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
             await self.coordinator.async_control(
                 self._alias, ctrl_key, data_key=data_key, value=value
             )
-        self.coordinator.apply_optimistic(self._alias, data_key, value)
+        if optimistic:
+            self.coordinator.apply_optimistic(self._alias, data_key, value)

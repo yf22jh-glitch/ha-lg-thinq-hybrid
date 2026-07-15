@@ -10,10 +10,10 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import (
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_DISH_WASHER,

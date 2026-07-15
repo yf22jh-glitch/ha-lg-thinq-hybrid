@@ -1,0 +1,35 @@
+wideq_command:
+  name: WideQ command
+  description: >-
+    Send an audited model-defined WideQ command. Unknown controls and fields are
+    rejected locally. Operation, hazardous, and experimental commands remain
+    locked by remote-control state and integration options.
+  fields:
+    device_id:
+      name: Device ID or alias
+      required: true
+      selector:
+        text:
+    control:
+      name: Control
+      required: true
+      selector:
+        text:
+    subdevice:
+      name: Subdevice
+      description: Optional washer or dryer target for a WashTower control.
+      selector:
+        select:
+          options:
+            - washer
+            - dryer
+    command:
+      name: Command
+      description: Optional model command, such as Set, Start, Stop, or Get.
+      selector:
+        text:
+    data:
+      name: Data
+      description: Allowed field/value overrides from the audited model schema.
+      selector:
+        object:

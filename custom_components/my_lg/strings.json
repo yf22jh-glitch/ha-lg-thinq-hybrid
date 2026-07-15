@@ -27,7 +27,9 @@
         "data": {
           "ac_active_interval": "Air conditioner active interval (min 60s)",
           "appliance_active_interval": "Appliance active interval (min 300s)",
-          "idle_interval": "Idle baseline interval (min 600s)"
+          "idle_interval": "Idle baseline interval (min 600s)",
+          "allow_hazardous_controls": "Enable hazardous cooking controls",
+          "allow_experimental_controls": "Enable experimental model controls"
         }
       }
     }
@@ -277,6 +279,9 @@
       },
       "styler_power_off": {
         "name": "Power off"
+      },
+      "styler_power_on": {
+        "name": "Power on"
       }
     }
   }

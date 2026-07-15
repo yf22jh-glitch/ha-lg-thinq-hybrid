@@ -6,9 +6,9 @@ from typing import Any
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
+from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_AIR_PURIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
