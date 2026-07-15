@@ -13,6 +13,7 @@ STYLER_COMPARE.md
 # --- 작업/에이전트 부산물 ---
 .claude/
 scratchpad/
+Docs/
 
 # --- python ---
 __pycache__/
