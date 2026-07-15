@@ -35,6 +35,8 @@ from .const import (
     MIN_APPLIANCE_ACTIVE_INTERVAL,
     MIN_IDLE_INTERVAL,
     OPT_AC_ACTIVE_INTERVAL,
+    OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+    OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_APPLIANCE_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
 )
@@ -141,6 +143,14 @@ class MyLgOptionsFlow(OptionsFlow):
                     OPT_IDLE_INTERVAL,
                     default=opts.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL),
                 ): vol.All(vol.Coerce(int), vol.Range(min=MIN_IDLE_INTERVAL)),
+                vol.Optional(
+                    OPT_ALLOW_HAZARDOUS_CONTROLS,
+                    default=opts.get(OPT_ALLOW_HAZARDOUS_CONTROLS, False),
+                ): bool,
+                vol.Optional(
+                    OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+                    default=opts.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False),
+                ): bool,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

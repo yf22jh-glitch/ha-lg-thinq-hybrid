@@ -27,7 +27,9 @@
         "data": {
           "ac_active_interval": "에어컨 활성 간격 (최소 60초)",
           "appliance_active_interval": "가전 활성 간격 (최소 300초)",
-          "idle_interval": "유휴 baseline 간격 (최소 600초)"
+          "idle_interval": "유휴 baseline 간격 (최소 600초)",
+          "allow_hazardous_controls": "위험 조리 제어 활성화",
+          "allow_experimental_controls": "실험 모델 제어 활성화"
         }
       }
     }
@@ -277,6 +279,9 @@
       },
       "styler_power_off": {
         "name": "전원 끄기"
+      },
+      "styler_power_on": {
+        "name": "전원 켜기"
       }
     }
   }

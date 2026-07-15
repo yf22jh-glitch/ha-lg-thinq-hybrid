@@ -15,7 +15,7 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from .compat import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
 from .const import DEVICE_TYPE_AIR_CONDITIONER

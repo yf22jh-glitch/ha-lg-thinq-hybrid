@@ -45,6 +45,7 @@ from .coordinator_wideq import WideqCoordinator
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
 from .wideq_client import WideqClient
+from .services import async_register_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -177,6 +178,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         _setup_wideq(hass, entry, data)
 
     entry.runtime_data = data
+    async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
     return True
