@@ -122,6 +122,16 @@
       },
       "sterilizing_state": {
         "name": "Sterilizing"
+      },
+      "power_save_mode": {
+        "name": "Power-save setting",
+        "state": {
+          "off": "Power save off",
+          "general": "General power save",
+          "comfortable": "Comfort power save",
+          "dehumidification": "Dehumidification power save",
+          "mixed": "Combined power save"
+        }
       }
     },
     "binary_sensor": {
@@ -175,7 +185,7 @@
         "name": "Auto-fit wind"
       },
       "power_save": {
-        "name": "Power save"
+        "name": "General power save"
       },
       "air_clean": {
         "name": "Air clean"

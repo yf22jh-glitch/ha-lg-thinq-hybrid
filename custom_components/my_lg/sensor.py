@@ -42,6 +42,7 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
+from .power_save import ac_power_save_attributes, ac_power_save_mode
 from .raw_sensor import RawSensorManager
 
 
@@ -335,11 +336,26 @@ DYNAMIC_PAT_SENSORS: dict[str, Callable[[PatDeviceCoordinator], tuple[MyLgSensor
 class WideqSensorDescription(SensorEntityDescription):
     """Sensor description reading from a wideq snapshot dict (dotted keys)."""
 
-    value_fn: Callable[[dict], float | None]
+    value_fn: Callable[[dict], Any]
+    attribute_fn: Callable[[dict], dict[str, Any]] | None = None
     history_key: str | None = None
 
 
 WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
+    WideqSensorDescription(
+        key="power_save_mode",
+        translation_key="power_save_mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=[
+            "off",
+            "general",
+            "comfortable",
+            "dehumidification",
+            "mixed",
+        ],
+        value_fn=ac_power_save_mode,
+        attribute_fn=ac_power_save_attributes,
+    ),
     WideqSensorDescription(
         key="energy_current",
         translation_key="energy_current",
@@ -551,7 +567,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         # the wideq snapshot (e.g. AC powered off); a gap would break long-term
         # statistics. Cache the last reading and keep reporting it.
         self._is_energy = description.device_class == SensorDeviceClass.ENERGY
-        self._last_value: float | None = None
+        self._last_value: Any = None
 
     @property
     def available(self) -> bool:
@@ -565,7 +581,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         return self._is_energy and self._last_value is not None
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> Any:
         if self.entity_description.history_key is not None:
             return self.coordinator.energy_history_value(
                 self._alias, self.entity_description.history_key
@@ -584,6 +600,12 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(self.coordinator.diagnostic_attributes)
+        if self.entity_description.attribute_fn is not None:
+            attrs.update(
+                self.entity_description.attribute_fn(
+                    self.coordinator.snapshot_for(self._alias)
+                )
+            )
         if self.entity_description.history_key is not None:
             attrs.update(self.coordinator.energy_history_attributes(self._alias))
         elif self.entity_description.key in {

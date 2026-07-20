@@ -122,6 +122,16 @@
       },
       "sterilizing_state": {
         "name": "살균 상태"
+      },
+      "power_save_mode": {
+        "name": "절전 설정",
+        "state": {
+          "off": "절전 꺼짐",
+          "general": "일반 절전",
+          "comfortable": "쾌적 절전",
+          "dehumidification": "절전 제습",
+          "mixed": "복합 절전"
+        }
       }
     },
     "binary_sensor": {
@@ -175,7 +185,7 @@
         "name": "AI 자동풍"
       },
       "power_save": {
-        "name": "절전"
+        "name": "일반 절전"
       },
       "air_clean": {
         "name": "공기청정"
