@@ -30,6 +30,7 @@ from .const import (
     DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_COOKTOP,
     DEVICE_TYPE_DISH_WASHER,
+    DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_KIMCHI_REFRIGERATOR,
     DEVICE_TYPE_OVEN,
@@ -384,7 +385,7 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
     ),
 )
 
-WIDEQ_REFRIGERATOR_SENSORS: tuple[WideqSensorDescription, ...] = (
+WIDEQ_ENERGY_HISTORY_SENSORS: tuple[WideqSensorDescription, ...] = (
     WideqSensorDescription(
         key="energy_today",
         translation_key="energy_today",
@@ -404,6 +405,10 @@ WIDEQ_REFRIGERATOR_SENSORS: tuple[WideqSensorDescription, ...] = (
         history_key="month",
     ),
 )
+
+# Refrigerators use a different ThinQ Web route but expose the same period
+# totals and therefore share the entity descriptions.
+WIDEQ_REFRIGERATOR_SENSORS = WIDEQ_ENERGY_HISTORY_SENSORS
 
 
 def _wq(*path: str):
@@ -475,10 +480,14 @@ STYLER_SENSORS: tuple[WideqSensorDescription, ...] = (
 
 WIDEQ_SENSORS_BY_TYPE: dict[str, tuple[WideqSensorDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: WIDEQ_AC_SENSORS,
+    DEVICE_TYPE_DEHUMIDIFIER: WIDEQ_ENERGY_HISTORY_SENSORS,
     DEVICE_TYPE_REFRIGERATOR: WIDEQ_REFRIGERATOR_SENSORS,
     DEVICE_TYPE_KIMCHI_REFRIGERATOR: WIDEQ_REFRIGERATOR_SENSORS,
+    DEVICE_TYPE_COOKTOP: WIDEQ_ENERGY_HISTORY_SENSORS,
+    DEVICE_TYPE_OVEN: WIDEQ_ENERGY_HISTORY_SENSORS,
+    DEVICE_TYPE_WATER_PURIFIER: WIDEQ_ENERGY_HISTORY_SENSORS,
     DEVICE_TYPE_WASHTOWER: WASHTOWER_SENSORS,
-    DEVICE_TYPE_STYLER: STYLER_SENSORS,
+    DEVICE_TYPE_STYLER: STYLER_SENSORS + WIDEQ_ENERGY_HISTORY_SENSORS,
 }
 
 

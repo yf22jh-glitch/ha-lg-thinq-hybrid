@@ -200,12 +200,31 @@ class WideqEnergyHistoryParserTests(unittest.TestCase):
 
         self.assertEqual(result, {"today": 0.078, "month": 20.659})
 
+    def test_generic_daily_history_is_converted_from_wh_to_kwh(self) -> None:
+        result = wideq_client.parse_device_energy_history(
+            {
+                "item": [
+                    {"usedDate": "2026-07-19", "power": "1776"},
+                    {"usedDate": "2026-07-20", "power": "328"},
+                    {"usedDate": "2026-07-21", "power": "0"},
+                ]
+            },
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 0.328, "month": 2.104})
+
     def test_unexpected_history_shape_is_not_reported_as_zero(self) -> None:
         self.assertIsNone(
             wideq_client.parse_ac_energy_history({"error": True}, date(2026, 7, 20))
         )
         self.assertIsNone(
             wideq_client.parse_fridge_energy_history([], {"error": True})
+        )
+        self.assertIsNone(
+            wideq_client.parse_device_energy_history(
+                {"error": True}, date(2026, 7, 20)
+            )
         )
 
 
@@ -261,6 +280,30 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("period=hour", session.paths[0])
         self.assertIn("period=month", session.paths[1])
 
+    async def test_generic_device_history_uses_one_rate_limited_request(self) -> None:
+        subject, session, acquire, limiter_calls = self._subject(
+            [
+                {
+                    "item": [
+                        {"usedDate": "2026-07-19", "power": "1776"},
+                        {"usedDate": "2026-07-20", "power": "328"},
+                    ]
+                }
+            ]
+        )
+
+        result = await subject.async_get_energy_usage(
+            "device",
+            "devices",
+            target_date=date(2026, 7, 20),
+            before_request=acquire,
+        )
+
+        self.assertEqual(result, {"today": 0.328, "month": 2.104})
+        self.assertEqual(limiter_calls(), 1)
+        self.assertEqual(len(session.paths), 1)
+        self.assertIn("service/devices/wideq-id/energy-history", session.paths[0])
+        self.assertIn("period=day", session.paths[0])
 
 if __name__ == "__main__":
     unittest.main()

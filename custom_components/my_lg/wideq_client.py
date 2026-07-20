@@ -133,6 +133,37 @@ def parse_ac_energy_history(
     }
 
 
+def parse_device_energy_history(
+    history: Any, target_date: date
+) -> dict[str, float] | None:
+    """Parse a generic ThinQ device daily history response into kWh.
+
+    Despite the response field being named ``power``, ThinQ returns one energy
+    quantity in Wh for each day. This shape is used by the app for the water
+    purifier, cooktop, oven/range, and styler.
+    """
+    items = _history_items(history)
+    if items is None:
+        return None
+    today_key = target_date.isoformat()
+    today_wh = 0.0
+    month_wh = 0.0
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            value = _energy_wh(item.get("power"))
+        except (TypeError, ValueError):
+            continue
+        month_wh += value
+        if str(item.get("usedDate", ""))[:10] == today_key:
+            today_wh += value
+    return {
+        "today": round(today_wh / 1000, 3),
+        "month": round(month_wh / 1000, 3),
+    }
+
+
 def parse_fridge_energy_history(
     today_history: Any, month_history: Any
 ) -> dict[str, float] | None:
@@ -245,7 +276,7 @@ class WideqClient:
         target_date: date,
         before_request: Callable[[], Awaitable[None]],
     ) -> dict[str, float] | None:
-        """Read verified AC/fridge energy-history endpoints without retrying.
+        """Read verified ThinQ Web energy-history endpoints without retrying.
 
         ``before_request`` is the integration's global rate limiter. It is
         invoked once per physical HTTP request so these optional reads stay
@@ -284,6 +315,14 @@ class WideqClient:
                 f"?period=month&startDate={month_start}&endDate={month_end}"
             )
             return parse_fridge_energy_history(today_history, month_history)
+
+        if appliance == "devices":
+            await before_request()
+            history = await self._client.session.get2(
+                f"service/devices/{device_id}/energy-history"
+                f"?period=day&startDate={month_start}&endDate={month_end}"
+            )
+            return parse_device_energy_history(history, target_date)
 
         raise ValueError(f"unsupported energy-history appliance: {appliance}")
 

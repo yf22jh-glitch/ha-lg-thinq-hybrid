@@ -27,11 +27,14 @@ from .const import (
     DEFAULT_IDLE_INTERVAL,
     DEFAULT_LANGUAGE,
     DEVICE_TYPE_AIR_CONDITIONER,
+    DEVICE_TYPE_COOKTOP,
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+    DEVICE_TYPE_OVEN,
     DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
+    DEVICE_TYPE_WATER_PURIFIER,
     DOMAIN,
     OPT_AC_ACTIVE_INTERVAL,
     OPT_APPLIANCE_ACTIVE_INTERVAL,
@@ -205,19 +208,25 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
     limiter = GlobalRateLimiter(WIDEQ_MAX_CALLS_PER_HOUR, WIDEQ_MIN_CALL_SPACING)
 
     coordinators = list(data.coordinators.values())
+    # PAT exposes none of these energy quantities. Each mapping below was
+    # verified against the device's current ThinQ app module and a live
+    # response. WashTower is intentionally absent: LG returns zero from its
+    # history service for this combined model, so its snapshot counters remain
+    # the only truthful energy source.
+    energy_history_appliance_by_type = {
+        DEVICE_TYPE_AIR_CONDITIONER: "aircon",
+        DEVICE_TYPE_DEHUMIDIFIER: "aircon",
+        DEVICE_TYPE_REFRIGERATOR: "fridge",
+        DEVICE_TYPE_KIMCHI_REFRIGERATOR: "fridge",
+        DEVICE_TYPE_COOKTOP: "devices",
+        DEVICE_TYPE_OVEN: "devices",
+        DEVICE_TYPE_WATER_PURIFIER: "devices",
+        DEVICE_TYPE_STYLER: "devices",
+    }
     energy_history_targets = {
-        coordinator.alias: (
-            "aircon"
-            if coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
-            else "fridge"
-        )
+        coordinator.alias: energy_history_appliance_by_type[coordinator.device_type]
         for coordinator in coordinators
-        if coordinator.device_type
-        in {
-            DEVICE_TYPE_AIR_CONDITIONER,
-            DEVICE_TYPE_REFRIGERATOR,
-            DEVICE_TYPE_KIMCHI_REFRIGERATOR,
-        }
+        if coordinator.device_type in energy_history_appliance_by_type
     }
 
     opts = entry.options
