@@ -10,6 +10,7 @@ import unittest
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from custom_components.my_lg.const import WIDEQ_PROBE_INTERVAL
 from custom_components.my_lg.coordinator_wideq import WideqCoordinator
@@ -27,7 +28,10 @@ class FakeClient:
     def __init__(self) -> None:
         self.poll_calls = 0
         self.control_calls = 0
+        self.energy_calls = 0
         self.poll_error: Exception | None = None
+        self.energy_error: Exception | None = None
+        self.energy_values = {"today": 1.3, "month": 98.6}
         self.snapshots = {"device": {"value": 1}}
         self.active = 0
         self.max_active = 0
@@ -44,6 +48,15 @@ class FakeClient:
         self.max_active = max(self.max_active, self.active)
         await asyncio.sleep(0)
         self.active -= 1
+
+    async def async_get_energy_usage(
+        self, alias, appliance, *, target_date, before_request
+    ):
+        self.energy_calls += 1
+        await before_request()
+        if self.energy_error is not None:
+            raise self.energy_error
+        return self.energy_values
 
 
 class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
@@ -94,6 +107,95 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(self.client.control_calls, 2)
         self.assertEqual(self.client.max_active, 1)
+
+    async def test_energy_history_uses_separate_cache(self) -> None:
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
+        self.assertEqual(coordinator.energy_history_value("device", "month"), 98.6)
+        self.assertEqual(self.client.energy_calls, 1)
+        self.assertEqual(self.limiter.calls, 2)
+
+    async def test_energy_history_failure_does_not_fail_snapshot_poll(self) -> None:
+        class HttpError(Exception):
+            status = 504
+
+        self.client.energy_error = HttpError("maintenance")
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+        )
+        coordinator._energy_history["device"] = {
+            "today": 1.3,
+            "month": 98.6,
+            "period_date": dt_util.now().date().isoformat(),
+            "fetched_at": "cached",
+        }
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, self.client.snapshots)
+        self.assertFalse(coordinator.circuit_open)
+        self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
+        self.assertTrue(
+            coordinator.energy_history_attributes("device")["energy_history_stale"]
+        )
+
+    async def test_unsupported_energy_history_is_probed_once(self) -> None:
+        class UnsupportedError(Exception):
+            code = "0005"
+
+        self.client.energy_error = UnsupportedError("unsupported")
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "fridge"},
+        )
+
+        await coordinator._async_update_data()
+        coordinator._energy_history_next_attempt = None
+        await coordinator._async_update_data()
+
+        self.assertEqual(self.client.energy_calls, 1)
+        self.assertFalse(
+            coordinator.energy_history_attributes("device")[
+                "energy_history_supported"
+            ]
+        )
+
+    async def test_successful_recovery_probe_skips_optional_energy_batch(self) -> None:
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+        )
+        coordinator._fail_count = 3
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(self.client.energy_calls, 0)
+        self.assertFalse(coordinator.circuit_open)
 
 
 if __name__ == "__main__":

@@ -116,3 +116,10 @@ WIDEQ_MIN_CALL_SPACING = 3.0
 # success supplies fresh data and restores the MQTT-derived normal interval.
 WIDEQ_CIRCUIT_FAILURE_THRESHOLD = 3
 WIDEQ_PROBE_INTERVAL = 900
+
+# Energy history is a separate ThinQ Web endpoint, not part of the normal
+# all-device snapshot. Keep it deliberately slow and retain the last successful
+# values when that optional endpoint is unavailable. A failed batch waits longer
+# before trying again and never opens/closes the main snapshot circuit.
+WIDEQ_ENERGY_HISTORY_INTERVAL = 1800
+WIDEQ_ENERGY_HISTORY_FAILURE_RETRY = 3600

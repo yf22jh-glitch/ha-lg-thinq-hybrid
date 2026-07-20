@@ -336,6 +336,7 @@ class WideqSensorDescription(SensorEntityDescription):
     """Sensor description reading from a wideq snapshot dict (dotted keys)."""
 
     value_fn: Callable[[dict], float | None]
+    history_key: str | None = None
 
 
 WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
@@ -353,7 +354,8 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda s: s.get("airState.energy.dailyTotal"),
+        value_fn=lambda s: None,
+        history_key="today",
     ),
     WideqSensorDescription(
         key="energy_month",
@@ -361,7 +363,29 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda s: s.get("airState.energy.monthlyTotal"),
+        value_fn=lambda s: None,
+        history_key="month",
+    ),
+)
+
+WIDEQ_REFRIGERATOR_SENSORS: tuple[WideqSensorDescription, ...] = (
+    WideqSensorDescription(
+        key="energy_today",
+        translation_key="energy_today",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda s: None,
+        history_key="today",
+    ),
+    WideqSensorDescription(
+        key="energy_month",
+        translation_key="energy_month",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda s: None,
+        history_key="month",
     ),
 )
 
@@ -435,6 +459,8 @@ STYLER_SENSORS: tuple[WideqSensorDescription, ...] = (
 
 WIDEQ_SENSORS_BY_TYPE: dict[str, tuple[WideqSensorDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: WIDEQ_AC_SENSORS,
+    DEVICE_TYPE_REFRIGERATOR: WIDEQ_REFRIGERATOR_SENSORS,
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR: WIDEQ_REFRIGERATOR_SENSORS,
     DEVICE_TYPE_WASHTOWER: WASHTOWER_SENSORS,
     DEVICE_TYPE_STYLER: STYLER_SENSORS,
 }
@@ -529,6 +555,10 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
 
     @property
     def available(self) -> bool:
+        if self.entity_description.history_key is not None:
+            return self.coordinator.energy_history_available(
+                self._alias, self.entity_description.history_key
+            )
         if self._alias in (self.coordinator.data or {}):
             return True
         # energy: stay available on cached value even while device is absent
@@ -536,6 +566,11 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> float | None:
+        if self.entity_description.history_key is not None:
+            return self.coordinator.energy_history_value(
+                self._alias, self.entity_description.history_key
+            )
+
         value = self.entity_description.value_fn(
             self.coordinator.snapshot_for(self._alias)
         )
@@ -548,4 +583,18 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return self.coordinator.diagnostic_attributes
+        attrs = dict(self.coordinator.diagnostic_attributes)
+        if self.entity_description.history_key is not None:
+            attrs.update(self.coordinator.energy_history_attributes(self._alias))
+        elif self.entity_description.key in {
+            "washer_energy",
+            "dryer_energy",
+            "styler_energy",
+        }:
+            attrs.update(
+                {
+                    "energy_source": "wideq_snapshot",
+                    "energy_scope": "current_or_last_cycle",
+                }
+            )
+        return attrs

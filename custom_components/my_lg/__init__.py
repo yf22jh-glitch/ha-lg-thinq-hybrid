@@ -28,6 +28,8 @@ from .const import (
     DEFAULT_LANGUAGE,
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+    DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
     DOMAIN,
@@ -203,6 +205,20 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
     limiter = GlobalRateLimiter(WIDEQ_MAX_CALLS_PER_HOUR, WIDEQ_MIN_CALL_SPACING)
 
     coordinators = list(data.coordinators.values())
+    energy_history_targets = {
+        coordinator.alias: (
+            "aircon"
+            if coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
+            else "fridge"
+        )
+        for coordinator in coordinators
+        if coordinator.device_type
+        in {
+            DEVICE_TYPE_AIR_CONDITIONER,
+            DEVICE_TYPE_REFRIGERATOR,
+            DEVICE_TYPE_KIMCHI_REFRIGERATOR,
+        }
+    }
 
     opts = entry.options
     ac_active_interval = opts.get(
@@ -229,6 +245,7 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
         client,
         limiter,
         interval_fn,
+        energy_history_targets,
     )
     for coordinator in coordinators:
         entry.async_on_unload(

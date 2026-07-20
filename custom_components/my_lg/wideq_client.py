@@ -9,8 +9,10 @@ rate-limit that caused the original 24h block.
 from __future__ import annotations
 
 import asyncio
+import calendar
 import logging
-from collections.abc import Iterator
+from collections.abc import Awaitable, Callable, Iterator
+from datetime import date
 from typing import Any
 
 import aiohttp
@@ -49,9 +51,14 @@ def is_server_unavailable(err: BaseException) -> bool:
     for item in _exception_chain(err):
         if isinstance(item, (asyncio.TimeoutError, aiohttp.ClientConnectionError)):
             return True
-        status = getattr(item, "status", None)
-        if isinstance(status, int) and 500 <= status <= 599:
-            return True
+        for attribute in ("status", "code"):
+            raw_status = getattr(item, attribute, None)
+            try:
+                status = int(raw_status)
+            except (TypeError, ValueError):
+                continue
+            if 500 <= status <= 599:
+                return True
     return False
 
 
@@ -81,6 +88,75 @@ def ac_energy_from_snapshot(snap: dict[str, Any]) -> dict[str, Any]:
         "energy_today_wh": snap.get("airState.energy.dailyTotal"),
         "energy_week_wh": snap.get("airState.energy.weeklyTotal"),
         "energy_month_wh": snap.get("airState.energy.monthlyTotal"),
+    }
+
+
+def _history_items(history: Any) -> list[dict[str, Any]] | None:
+    """Normalize ThinQ Web energy-history response shapes."""
+    if isinstance(history, list):
+        return history
+    if isinstance(history, dict) and isinstance(history.get("item"), list):
+        return history["item"]
+    return None
+
+
+def _energy_wh(value: Any) -> float:
+    """Return a ThinQ energy value as Wh, treating explicit NO_DATA as zero."""
+    if value in (None, "NO_DATA"):
+        return 0.0
+    return float(value)
+
+
+def parse_ac_energy_history(
+    history: Any, target_date: date
+) -> dict[str, float] | None:
+    """Parse one AC daily history response into period totals in kWh."""
+    items = _history_items(history)
+    if items is None:
+        return None
+    today_key = target_date.isoformat()
+    today_wh = 0.0
+    month_wh = 0.0
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            value = _energy_wh(item.get("energyData"))
+        except (TypeError, ValueError):
+            continue
+        month_wh += value
+        if str(item.get("usedDate", ""))[:10] == today_key:
+            today_wh += value
+    return {
+        "today": round(today_wh / 1000, 3),
+        "month": round(month_wh / 1000, 3),
+    }
+
+
+def parse_fridge_energy_history(
+    today_history: Any, month_history: Any
+) -> dict[str, float] | None:
+    """Parse refrigerator hourly/monthly history responses into kWh."""
+    today_items = _history_items(today_history)
+    month_items = _history_items(month_history)
+    if today_items is None or month_items is None:
+        return None
+
+    def total_wh(items: list[dict[str, Any]]) -> float:
+        total = 0.0
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            raw = item.get("power", item.get("energyData", item.get("useAmount")))
+            try:
+                total += _energy_wh(raw)
+            except (TypeError, ValueError):
+                continue
+        return total
+
+    return {
+        "today": round(total_wh(today_items) / 1000, 3),
+        "month": round(total_wh(month_items) / 1000, 3),
     }
 
 
@@ -160,6 +236,56 @@ class WideqClient:
             if isinstance(snap, dict) and alias:
                 out[alias] = snap
         return out
+
+    async def async_get_energy_usage(
+        self,
+        alias: str,
+        appliance: str,
+        *,
+        target_date: date,
+        before_request: Callable[[], Awaitable[None]],
+    ) -> dict[str, float] | None:
+        """Read verified AC/fridge energy-history endpoints without retrying.
+
+        ``before_request`` is the integration's global rate limiter. It is
+        invoked once per physical HTTP request so these optional reads stay
+        under the same spacing/hourly cap as snapshots and controls.
+        """
+        if self._client is None:
+            await self.async_connect()
+        device_id = self._device_ids.get(alias)
+        if not device_id:
+            return None
+
+        month_start = target_date.replace(day=1).isoformat()
+        month_end = target_date.replace(
+            day=calendar.monthrange(target_date.year, target_date.month)[1]
+        ).isoformat()
+
+        if appliance == "aircon":
+            await before_request()
+            history = await self._client.session.get2(
+                f"service/aircon/{device_id}/energy-history"
+                f"?period=day&startDate={month_start}&endDate={month_end}"
+                "&saveEnergyYn=N"
+            )
+            return parse_ac_energy_history(history, target_date)
+
+        if appliance == "fridge":
+            today = target_date.isoformat()
+            await before_request()
+            today_history = await self._client.session.get2(
+                f"service/fridge/{device_id}/energy-history"
+                f"?period=hour&startDate={today}&endDate={today}"
+            )
+            await before_request()
+            month_history = await self._client.session.get2(
+                f"service/fridge/{device_id}/energy-history"
+                f"?period=month&startDate={month_start}&endDate={month_end}"
+            )
+            return parse_fridge_energy_history(today_history, month_history)
+
+        raise ValueError(f"unsupported energy-history appliance: {appliance}")
 
     async def _device_id_for(self, alias: str) -> str | None:
         """Return the wideq device id for an alias, populating the map if needed.

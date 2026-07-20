@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+from datetime import date
 from pathlib import Path
 from types import ModuleType
 import unittest
@@ -70,6 +71,16 @@ class _Client:
         return None
 
 
+class _EnergySession:
+    def __init__(self, responses) -> None:
+        self.responses = list(responses)
+        self.paths: list[str] = []
+
+    async def get2(self, path: str):
+        self.paths.append(path)
+        return self.responses.pop(0)
+
+
 class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
     def _subject(self, errors: list[BaseException | None]):
         subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
@@ -100,6 +111,12 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(session.calls, 1)
         self.assertEqual(subject.connect_calls, 0)
+
+    def test_api_error_code_5xx_is_server_unavailable(self) -> None:
+        class ApiError(Exception):
+            code = "504"
+
+        self.assertTrue(wideq_client.is_server_unavailable(ApiError("maintenance")))
 
     async def test_command_rejection_does_not_reconnect_or_retry(self) -> None:
         subject, session = self._subject([ValueError("rejected")])
@@ -160,6 +177,89 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(session.calls, 0)
         self.assertEqual(subject.connect_calls, 0)
+
+
+class WideqEnergyHistoryParserTests(unittest.TestCase):
+    def test_ac_daily_history_is_converted_from_wh_to_kwh(self) -> None:
+        result = wideq_client.parse_ac_energy_history(
+            [
+                {"usedDate": "2026-07-19", "energyData": "2500"},
+                {"usedDate": "2026-07-20", "energyData": "1300"},
+                {"usedDate": "2026-07-21", "energyData": "NO_DATA"},
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 1.3, "month": 3.8})
+
+    def test_fridge_hour_and_month_history_are_converted_to_kwh(self) -> None:
+        result = wideq_client.parse_fridge_energy_history(
+            {"item": [{"power": "38"}, {"power": "40"}, {"power": "NO_DATA"}]},
+            [{"usedDate": "2026-07", "power": "20659"}],
+        )
+
+        self.assertEqual(result, {"today": 0.078, "month": 20.659})
+
+    def test_unexpected_history_shape_is_not_reported_as_zero(self) -> None:
+        self.assertIsNone(
+            wideq_client.parse_ac_energy_history({"error": True}, date(2026, 7, 20))
+        )
+        self.assertIsNone(
+            wideq_client.parse_fridge_energy_history([], {"error": True})
+        )
+
+
+class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
+    def _subject(self, responses):
+        subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
+        session = _EnergySession(responses)
+        subject._client = _Client(session)
+        subject._device_ids["device"] = "wideq-id"
+        limiter_calls = 0
+
+        async def acquire() -> None:
+            nonlocal limiter_calls
+            limiter_calls += 1
+
+        return subject, session, acquire, lambda: limiter_calls
+
+    async def test_ac_history_uses_one_rate_limited_request(self) -> None:
+        subject, session, acquire, limiter_calls = self._subject(
+            [[{"usedDate": "2026-07-20", "energyData": "1300"}]]
+        )
+
+        result = await subject.async_get_energy_usage(
+            "device",
+            "aircon",
+            target_date=date(2026, 7, 20),
+            before_request=acquire,
+        )
+
+        self.assertEqual(result, {"today": 1.3, "month": 1.3})
+        self.assertEqual(limiter_calls(), 1)
+        self.assertEqual(len(session.paths), 1)
+        self.assertIn("period=day", session.paths[0])
+
+    async def test_fridge_history_uses_two_rate_limited_requests(self) -> None:
+        subject, session, acquire, limiter_calls = self._subject(
+            [
+                [{"usedDate": "2026-07-20 00:00:00", "power": "459"}],
+                [{"usedDate": "2026-07", "power": "20679"}],
+            ]
+        )
+
+        result = await subject.async_get_energy_usage(
+            "device",
+            "fridge",
+            target_date=date(2026, 7, 20),
+            before_request=acquire,
+        )
+
+        self.assertEqual(result, {"today": 0.459, "month": 20.679})
+        self.assertEqual(limiter_calls(), 2)
+        self.assertEqual(len(session.paths), 2)
+        self.assertIn("period=hour", session.paths[0])
+        self.assertIn("period=month", session.paths[1])
 
 
 if __name__ == "__main__":

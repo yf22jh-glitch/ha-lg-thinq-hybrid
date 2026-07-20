@@ -55,13 +55,13 @@
         "name": "Energy month"
       },
       "washer_energy": {
-        "name": "Washer energy"
+        "name": "Washer cycle energy"
       },
       "dryer_energy": {
-        "name": "Dryer energy"
+        "name": "Dryer cycle energy"
       },
       "styler_energy": {
-        "name": "Energy"
+        "name": "Cycle energy"
       },
       "pm1": {
         "name": "PM1"

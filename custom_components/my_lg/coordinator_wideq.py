@@ -19,14 +19,17 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
     WIDEQ_CIRCUIT_FAILURE_THRESHOLD,
+    WIDEQ_ENERGY_HISTORY_FAILURE_RETRY,
+    WIDEQ_ENERGY_HISTORY_INTERVAL,
     WIDEQ_PROBE_INTERVAL,
 )
 from .rate_limiter import GlobalRateLimiter
-from .wideq_client import WideqClient
+from .wideq_client import WideqClient, is_server_unavailable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +44,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         client: WideqClient,
         rate_limiter: GlobalRateLimiter,
         interval_fn: Callable[[], int],
+        energy_history_targets: dict[str, str] | None = None,
     ) -> None:
         self.client = client
         self.rate_limiter = rate_limiter
@@ -50,6 +54,12 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._last_success_at: datetime | None = None
         self._control_locks: dict[str, asyncio.Lock] = {}
         self._io_lock = asyncio.Lock()
+        self._energy_history_targets = dict(energy_history_targets or {})
+        self._energy_history: dict[str, dict[str, Any]] = {}
+        self._energy_history_unsupported: set[str] = set()
+        self._energy_history_failures: dict[str, str] = {}
+        self._energy_history_next_attempt: datetime | None = None
+        self._energy_history_batch_stale = False
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -70,6 +80,14 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             async with self._io_lock:
                 await self.rate_limiter.acquire()
                 snapshots = await self.client.async_get_snapshots()
+                # Optional per-device history reads are deliberately independent
+                # from the snapshot circuit. Their errors retain cached energy
+                # and never turn an otherwise healthy all-device poll into a
+                # coordinator failure. A successful recovery probe skips this
+                # optional batch once, so a just-recovered service receives only
+                # the single probe request.
+                if self._fail_count == 0:
+                    await self._async_refresh_energy_history()
         except Exception as err:  # noqa: BLE001
             self._fail_count += 1
             if self._failure_started_at is None:
@@ -175,6 +193,115 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
     def snapshot_for(self, alias: str) -> dict[str, Any]:
         return (self.data or {}).get(alias, {})
+
+    async def _async_refresh_energy_history(self) -> None:
+        """Refresh verified energy endpoints at a separate low cadence."""
+        if not self._energy_history_targets:
+            return
+        now = datetime.now(timezone.utc)
+        if (
+            self._energy_history_next_attempt is not None
+            and now < self._energy_history_next_attempt
+        ):
+            return
+
+        target_date = dt_util.now().date()
+        failed = False
+        server_down = False
+        for alias, appliance in self._energy_history_targets.items():
+            if alias in self._energy_history_unsupported:
+                continue
+            try:
+                values = await self.client.async_get_energy_usage(
+                    alias,
+                    appliance,
+                    target_date=target_date,
+                    before_request=self.rate_limiter.acquire,
+                )
+                if values is None:
+                    raise ValueError("no supported energy-history response")
+            except Exception as err:  # noqa: BLE001
+                # 0005 is returned consistently by legacy refrigerators that do
+                # not implement the ThinQ Web energy service. Probe once per HA
+                # session, then leave their entities unavailable.
+                if str(getattr(err, "code", "")) == "0005":
+                    self._energy_history_unsupported.add(alias)
+                    self._energy_history_failures.pop(alias, None)
+                    _LOGGER.info(
+                        "wideq energy history is not supported for %s", alias
+                    )
+                    continue
+
+                failed = True
+                self._energy_history_failures[alias] = (
+                    f"{type(err).__name__}: {err}"
+                )
+                if is_server_unavailable(err):
+                    server_down = True
+                    break
+                continue
+
+            self._energy_history[alias] = {
+                **values,
+                "period_date": target_date.isoformat(),
+                "fetched_at": now.isoformat(),
+            }
+            self._energy_history_failures.pop(alias, None)
+
+        self._energy_history_batch_stale = failed
+        retry = (
+            WIDEQ_ENERGY_HISTORY_FAILURE_RETRY
+            if failed
+            else WIDEQ_ENERGY_HISTORY_INTERVAL
+        )
+        self._energy_history_next_attempt = now + timedelta(seconds=retry)
+        if failed:
+            reason = (
+                "LG service unavailable" if server_down else "device response error"
+            )
+            _LOGGER.warning(
+                "wideq energy history refresh deferred for %ds (%s); "
+                "cached values retained",
+                retry,
+                reason,
+            )
+
+    def energy_history_value(self, alias: str, key: str) -> float | None:
+        """Return a period-safe cached energy-history value."""
+        item = self._energy_history.get(alias)
+        if item is None:
+            return None
+        target_date = dt_util.now().date()
+        period_date = item.get("period_date")
+        if key == "today" and period_date != target_date.isoformat():
+            return None
+        if key == "month" and str(period_date)[:7] != target_date.strftime("%Y-%m"):
+            return None
+        value = item.get(key)
+        return float(value) if value is not None else None
+
+    def energy_history_available(self, alias: str, key: str) -> bool:
+        """Return whether a valid current-period history value is cached."""
+        return self.energy_history_value(alias, key) is not None
+
+    def energy_history_attributes(self, alias: str) -> dict[str, Any]:
+        """Return diagnostics for one energy-history target."""
+        item = self._energy_history.get(alias, {})
+        return {
+            "energy_source": "wideq_energy_history",
+            "energy_history_last_success": item.get("fetched_at"),
+            "energy_history_stale": (
+                self._energy_history_batch_stale
+                or alias in self._energy_history_failures
+                or (
+                    bool(item)
+                    and item.get("period_date") != dt_util.now().date().isoformat()
+                )
+            ),
+            "energy_history_supported": (
+                False if alias in self._energy_history_unsupported else True
+            ),
+        }
 
     async def async_control(
         self,
