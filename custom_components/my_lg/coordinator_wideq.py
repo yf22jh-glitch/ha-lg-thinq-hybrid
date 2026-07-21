@@ -18,6 +18,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -26,6 +27,7 @@ from .const import (
     WIDEQ_CIRCUIT_FAILURE_THRESHOLD,
     WIDEQ_ENERGY_HISTORY_FAILURE_RETRY,
     WIDEQ_ENERGY_HISTORY_INTERVAL,
+    WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY,
     WIDEQ_PROBE_INTERVAL,
 )
 from .rate_limiter import GlobalRateLimiter
@@ -45,6 +47,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         rate_limiter: GlobalRateLimiter,
         interval_fn: Callable[[], int],
         energy_history_targets: dict[str, str] | None = None,
+        energy_history_store: Store[dict[str, Any]] | None = None,
     ) -> None:
         self.client = client
         self.rate_limiter = rate_limiter
@@ -56,6 +59,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._io_lock = asyncio.Lock()
         self._energy_history_targets = dict(energy_history_targets or {})
         self._energy_history: dict[str, dict[str, Any]] = {}
+        self._energy_history_store = energy_history_store
+        self._energy_history_restored: set[str] = set()
         self._energy_history_unsupported: set[str] = set()
         self._energy_history_failures: dict[str, str] = {}
         self._energy_history_next_attempt: datetime | None = None
@@ -194,6 +199,81 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def snapshot_for(self, alias: str) -> dict[str, Any]:
         return (self.data or {}).get(alias, {})
 
+    async def async_restore_energy_history(self) -> None:
+        """Restore current-period energy totals before entities are registered."""
+        if self._energy_history_store is None:
+            return
+        stored = await self._energy_history_store.async_load()
+        if not isinstance(stored, dict):
+            return
+        items = stored.get("items")
+        if not isinstance(items, dict):
+            return
+
+        today = dt_util.now().date()
+        current_day = today.isoformat()
+        current_month = today.strftime("%Y-%m")
+        for alias, raw_item in items.items():
+            if alias not in self._energy_history_targets or not isinstance(
+                raw_item, dict
+            ):
+                continue
+            period_date = raw_item.get("period_date")
+            if not isinstance(period_date, str):
+                continue
+
+            restored: dict[str, Any] = {
+                "period_date": period_date,
+                "fetched_at": raw_item.get("fetched_at"),
+            }
+            if period_date == current_day:
+                value = self._energy_value(raw_item.get("today"))
+                if value is not None:
+                    restored["today"] = value
+            if period_date[:7] == current_month:
+                value = self._energy_value(raw_item.get("month"))
+                if value is not None:
+                    restored["month"] = value
+            if "today" not in restored and "month" not in restored:
+                continue
+            self._energy_history[alias] = restored
+            self._energy_history_restored.add(alias)
+
+    @staticmethod
+    def _energy_value(value: Any) -> float | None:
+        """Return a finite persisted energy value."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if number < 0 or number in {float("inf"), float("-inf")} or number != number:
+            return None
+        return number
+
+    def _energy_history_payload(self) -> dict[str, Any]:
+        """Serialize only verified energy targets."""
+        return {
+            "items": {
+                alias: dict(item)
+                for alias, item in self._energy_history.items()
+                if alias in self._energy_history_targets
+            }
+        }
+
+    def _schedule_energy_history_save(self) -> None:
+        if self._energy_history_store is None:
+            return
+        self._energy_history_store.async_delay_save(
+            self._energy_history_payload,
+            WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY,
+        )
+
+    async def async_persist_energy_history(self) -> None:
+        """Flush the latest energy cache during config-entry unload."""
+        if self._energy_history_store is None:
+            return
+        await self._energy_history_store.async_save(self._energy_history_payload())
+
     async def _async_refresh_energy_history(self) -> None:
         """Refresh verified energy endpoints at a separate low cadence."""
         if not self._energy_history_targets:
@@ -208,6 +288,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         target_date = dt_util.now().date()
         failed = False
         server_down = False
+        cache_changed = False
         for alias, appliance in self._energy_history_targets.items():
             if alias in self._energy_history_unsupported:
                 continue
@@ -246,9 +327,13 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 "period_date": target_date.isoformat(),
                 "fetched_at": now.isoformat(),
             }
+            self._energy_history_restored.discard(alias)
             self._energy_history_failures.pop(alias, None)
+            cache_changed = True
 
         self._energy_history_batch_stale = failed
+        if cache_changed:
+            self._schedule_energy_history_save()
         retry = (
             WIDEQ_ENERGY_HISTORY_FAILURE_RETRY
             if failed
@@ -290,8 +375,10 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         return {
             "energy_source": "wideq_energy_history",
             "energy_history_last_success": item.get("fetched_at"),
+            "energy_history_restored": alias in self._energy_history_restored,
             "energy_history_stale": (
                 self._energy_history_batch_stale
+                or alias in self._energy_history_restored
                 or alias in self._energy_history_failures
                 or (
                     bool(item)

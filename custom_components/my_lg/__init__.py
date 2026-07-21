@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -13,6 +14,7 @@ from homeassistant.helpers.aiohttp_client import (
     async_get_clientsession,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.storage import Store
 
 from .const import (
     CONF_ACCESS_TOKEN,
@@ -42,6 +44,7 @@ from .const import (
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
     WATER_PUSH_CODES,
+    WIDEQ_ENERGY_HISTORY_STORE_VERSION,
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
 )
@@ -181,7 +184,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
 
     # wideq (optional): AC realtime power/energy, dehumidifier water tank, etc.
     if entry.data.get(CONF_WIDEQ_TOKEN):
-        _setup_wideq(hass, entry, data)
+        await _setup_wideq(hass, entry, data)
 
     # Generated catalogs are file-backed. Warm their process-wide caches in an
     # executor so synchronous entity factories never perform disk I/O on the
@@ -195,7 +198,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     return True
 
 
-def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) -> None:
+async def _setup_wideq(
+    hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData
+) -> None:
     """Build the wideq client + single low-rate coordinator (AC energy, etc.)."""
     session = async_create_clientsession(hass)
     client = WideqClient(
@@ -248,6 +253,11 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
         )
 
     data.wideq_client = client
+    energy_history_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_ENERGY_HISTORY_STORE_VERSION,
+        f"{DOMAIN}.wideq_energy_history.{entry.entry_id}",
+    )
     data.wideq_coordinator = WideqCoordinator(
         hass,
         entry,
@@ -255,7 +265,9 @@ def _setup_wideq(hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData) ->
         limiter,
         interval_fn,
         energy_history_targets,
+        energy_history_store,
     )
+    await data.wideq_coordinator.async_restore_energy_history()
     for coordinator in coordinators:
         entry.async_on_unload(
             coordinator.async_add_listener(data.wideq_coordinator.reconcile_interval)
@@ -270,6 +282,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
     data: MyLgData | None = getattr(entry, "runtime_data", None)
     if data and data.mqtt:
         await data.mqtt.async_stop()
+    if data and data.wideq_coordinator:
+        await data.wideq_coordinator.async_persist_energy_history()
     if data and data.wideq_client:
         await data.wideq_client.async_close()
     return unload_ok
