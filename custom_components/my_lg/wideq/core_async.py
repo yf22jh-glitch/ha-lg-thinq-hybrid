@@ -127,6 +127,7 @@ TOKEN_EXP_LIMIT = 60  # will expire within 60 seconds
 MIN_TIME_BETWEEN_UPDATE = 25
 MIN_TIME_BETWEEN_SSE_RECONNECT = 60
 MIN_TIME_BETWEEN_SSE_EXTEND = 20 * 60
+MIN_TIME_BETWEEN_ENERGY_HISTORY = 20
 SSE_RETRY_DELAY_MAX = 30 * 60
 
 _LG_SSL_CIPHERS = (
@@ -150,27 +151,13 @@ def _create_lg_ssl_context() -> ssl.SSLContext:
     return context
 
 
-# NOTE: ssl.create_default_context() loads CA certs from disk (blocking I/O), so
-# it MUST NOT run at module import time — this module is imported lazily inside
-# the HA event loop and would trip the "blocking call inside the event loop"
-# detector. Build the context lazily instead. In the HA integration path a
-# session is always passed in (async_create_clientsession), so lg_client_session
-# is never reached and no context is ever created.
-_SSL_CONTEXT: ssl.SSLContext | None = None
-
-
-def _get_lg_ssl_context() -> ssl.SSLContext:
-    """Return the shared LG SSL context, creating it on first use."""
-    global _SSL_CONTEXT
-    if _SSL_CONTEXT is None:
-        _SSL_CONTEXT = _create_lg_ssl_context()
-    return _SSL_CONTEXT
+_SSL_CONTEXT = _create_lg_ssl_context()
 
 
 def lg_client_session() -> aiohttp.ClientSession:
     """Create an aiohttp client session to use with LG ThinQ."""
     connector = aiohttp.TCPConnector(
-        enable_cleanup_closed=ENABLE_CLEANUP_CLOSED, ssl_context=_get_lg_ssl_context()
+        enable_cleanup_closed=ENABLE_CLEANUP_CLOSED, ssl_context=_SSL_CONTEXT
     )
     return aiohttp.ClientSession(connector=connector)
 
@@ -208,6 +195,7 @@ class CoreAsync:
             self._client_id_created_on = datetime.fromtimestamp(0, timezone.utc)
         self._update_clientid_callback = update_clientid_callback
         self._lang_pack_url = None
+        self._refresh_client_id_before_next_post = False
 
         if session:
             self._session = session
@@ -292,6 +280,10 @@ class CoreAsync:
     def _web_client_id(self) -> str:
         """Return a ThinQ Web-style client ID."""
         return self._get_client_id("web") or V2_CLIENT_ID
+
+    def refresh_client_id_before_next_post(self) -> None:
+        """Refresh the client ID before the next ThinQ2 POST request."""
+        self._refresh_client_id_before_next_post = True
 
     @staticmethod
     async def _get_json_resp(response: aiohttp.ClientResponse) -> dict:
@@ -427,7 +419,16 @@ class CoreAsync:
 
         _LOGGER.debug("lgedm2_post before: %s", url)
 
-        client_id = self._get_client_id(user_number)
+        force_refresh_client_id = (
+            is_api_v2
+            and user_number is not None
+            and self._refresh_client_id_before_next_post
+        )
+        if force_refresh_client_id:
+            _LOGGER.debug("Refreshing client ID before first POST after SSE reconnect")
+            self._refresh_client_id_before_next_post = False
+
+        client_id = self._get_client_id(user_number, force_refresh_client_id)
         async with self._get_session().post(
             url=url,
             json=data if is_api_v2 else {DATA_ROOT: data},
@@ -1391,6 +1392,10 @@ class ClientAsync:
         self._last_device_update = datetime.now(timezone.utc)
         self._last_snapshot_refresh = datetime.min.replace(tzinfo=timezone.utc)
         self._lock = asyncio.Lock()
+        self._energy_history_lock = asyncio.Lock()
+        self._last_energy_history_request = datetime.min.replace(tzinfo=timezone.utc)
+        self._device_detail_lock = asyncio.Lock()
+        self._last_device_detail_request = datetime.min.replace(tzinfo=timezone.utc)
         # The last list of devices we got from the server. This is the
         # raw JSON list data describing the devices.
         self._devices = None
@@ -1413,6 +1418,7 @@ class ClientAsync:
         self._monitor_connection_id: str | None = None
         self._monitor_token: str | None = None
         self._monitor_connected = False
+        self._monitor_connected_on = datetime.min.replace(tzinfo=timezone.utc)
         self._last_monitor_update = datetime.min.replace(tzinfo=timezone.utc)
         self._last_monitor_extend = datetime.min.replace(tzinfo=timezone.utc)
 
@@ -1439,9 +1445,14 @@ class ClientAsync:
                 # for debug
                 if emul_device := await asyncio.to_thread(self._load_emul_devices):
                     new_devices.extend(emul_device)
-            self._devices = {
-                d[KEY_DEVICE_ID]: d for d in new_devices if KEY_DEVICE_ID in d
-            }
+            devices = {}
+            for dev in new_devices:
+                if KEY_DEVICE_ID not in dev:
+                    continue
+                device_id = dev[KEY_DEVICE_ID]
+                current = self._devices.get(device_id) if self._devices else None
+                devices[device_id] = self._merge_dicts(current, dev)
+            self._devices = devices
 
     @property
     def api_version(self):
@@ -1474,6 +1485,16 @@ class ClientAsync:
         if not self._auth:
             return None
         return self._auth.gateway.core._get_client_id(self._auth.user_number, True)
+
+    async def prepare_energy_history_request(self) -> None:
+        """Serialize ThinQ Web energy-history calls and refresh client ID."""
+        async with self._energy_history_lock:
+            now = datetime.now(timezone.utc)
+            diff = (now - self._last_energy_history_request).total_seconds()
+            if diff < MIN_TIME_BETWEEN_ENERGY_HISTORY:
+                await asyncio.sleep(MIN_TIME_BETWEEN_ENERGY_HISTORY - diff)
+            self.refresh_client_id()
+            self._last_energy_history_request = datetime.now(timezone.utc)
 
     @property
     def session(self) -> Session:
@@ -1528,7 +1549,7 @@ class ClientAsync:
             return None
         if not self._devices or device_id not in self._devices:
             return None
-        snapshot = self._devices[device_id].get("snapshot")
+        snapshot = DeviceInfo(self._devices[device_id]).snapshot
         return snapshot.copy() if isinstance(snapshot, dict) else snapshot
 
     @property
@@ -1545,6 +1566,18 @@ class ClientAsync:
         diff = (datetime.now(timezone.utc) - self._last_monitor_update).total_seconds()
         return diff < MIN_TIME_BETWEEN_SSE_RECONNECT
 
+    @property
+    def monitor_connected(self) -> bool:
+        """Return if the ThinQ Web SSE monitor is currently connected."""
+        return self._monitor_connected
+
+    def monitor_connected_for(self, seconds: float) -> bool:
+        """Return if the ThinQ Web SSE monitor stayed connected long enough."""
+        if not self._monitor_connected:
+            return False
+        diff = (datetime.now(timezone.utc) - self._monitor_connected_on).total_seconds()
+        return diff >= seconds
+
     def invalidate_device_snapshot(self, device_id: str) -> None:
         """Drop a cached device snapshot after a local control command."""
         if self._devices and device_id in self._devices:
@@ -1559,6 +1592,23 @@ class ClientAsync:
                 callback(snapshot)
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.debug("ThinQ SSE monitor callback failed", exc_info=True)
+
+    @staticmethod
+    def _merge_dicts(current: dict | None, update: dict | None) -> dict:
+        """Return a recursive merge preserving cached keys missing from updates."""
+        if not isinstance(current, dict):
+            return update.copy() if isinstance(update, dict) else {}
+        if not isinstance(update, dict):
+            return current.copy()
+
+        merged = current.copy()
+        for key, value in update.items():
+            old_value = merged.get(key)
+            if isinstance(old_value, dict) and isinstance(value, dict):
+                merged[key] = ClientAsync._merge_dicts(old_value, value)
+            else:
+                merged[key] = value
+        return merged
 
     @staticmethod
     def _decode_sse_payload(data: str) -> dict | None:
@@ -1639,8 +1689,7 @@ class ClientAsync:
             return
         current = self._devices[device_id].get("snapshot")
         if isinstance(current, dict):
-            current.update(snapshot)
-            snapshot = current
+            snapshot = self._merge_dicts(current, snapshot)
         self._devices[device_id]["snapshot"] = snapshot
         self._last_monitor_update = datetime.now(timezone.utc)
         _LOGGER.debug("ThinQ SSE updated cached snapshot for device %s", device_id)
@@ -1694,6 +1743,7 @@ class ClientAsync:
         self._monitor_connection_id = None
         self._monitor_token = None
         self._monitor_connected = False
+        self._monitor_connected_on = datetime.min.replace(tzinfo=timezone.utc)
 
     async def _register_monitor_client(self) -> None:
         """Register or extend the ThinQ Web SSE monitoring client."""
@@ -1724,22 +1774,32 @@ class ClientAsync:
         retry_delay = MIN_TIME_BETWEEN_SSE_RECONNECT
         while self._connected:
             try:
+                _LOGGER.debug("ThinQ SSE monitor refreshing auth")
                 await self.refresh_auth()
+                _LOGGER.debug("ThinQ SSE monitor registering client")
                 await self._register_monitor_client()
-                await self._read_monitor_events()
-                retry_delay = MIN_TIME_BETWEEN_SSE_RECONNECT
+                _LOGGER.debug("ThinQ SSE monitor opening event stream")
+                if await self._read_monitor_events():
+                    retry_delay = MIN_TIME_BETWEEN_SSE_RECONNECT
             except asyncio.CancelledError:
                 raise
             except Exception as err:  # pylint: disable=broad-except
+                was_connected = self._monitor_connected
                 self._monitor_connected = False
+                self._monitor_connected_on = datetime.min.replace(tzinfo=timezone.utc)
                 _LOGGER.debug("ThinQ SSE monitor disconnected: %s", err)
+                if was_connected:
+                    retry_delay = MIN_TIME_BETWEEN_SSE_RECONNECT
+                _LOGGER.debug(
+                    "ThinQ SSE monitor retrying in %s seconds", retry_delay
+                )
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, SSE_RETRY_DELAY_MAX)
 
-    async def _read_monitor_events(self) -> None:
+    async def _read_monitor_events(self) -> bool:
         """Open and consume the ThinQ Web SSE event stream."""
         if not self._monitor_connection_id or not self._monitor_token:
-            return
+            return False
         headers = self.session._nscreen_headers(
             {"x-nscreen-token": self._monitor_token, "Accept": "text/event-stream"}
         )
@@ -1757,6 +1817,9 @@ class ClientAsync:
                 raise exc.APIError(f"ThinQ SSE monitor HTTP {resp.status}", resp.status)
             _LOGGER.debug("ThinQ SSE monitor connected")
             self._monitor_connected = True
+            self._monitor_connected_on = datetime.now(timezone.utc)
+            self._auth.gateway.core.refresh_client_id_before_next_post()
+            stream_connected = True
             event = ""
             data_lines: list[str] = []
             async for raw_line in resp.content:
@@ -1779,11 +1842,37 @@ class ClientAsync:
                 elif line.startswith("data:"):
                     data_lines.append(line[5:].strip())
             self._monitor_connected = False
+            self._monitor_connected_on = datetime.min.replace(tzinfo=timezone.utc)
+            return stream_connected
 
     def _check_connected(self):
         """Check that client is in connected status."""
         if not self._connected:
             raise exc.ClientDisconnected()
+
+    async def refresh_device(self, device_id: str):
+        """Refresh a single device using the ThinQ Web detail API."""
+        async with self._lock:
+            device = await self.session.get2(f"service/devices/{device_id}")
+            if not isinstance(device, dict):
+                return False
+            device[KEY_DEVICE_ID] = device.get(KEY_DEVICE_ID) or device_id
+            current = self._devices.get(device_id) if self._devices else None
+            if self._devices is None:
+                self._devices = {}
+            self._devices[device_id] = self._merge_dicts(current, device)
+            self._last_snapshot_refresh = datetime.now(timezone.utc)
+            return True
+
+    async def refresh_device_spaced(self, device_id: str, min_interval: float):
+        """Refresh a single device while spacing detail API calls globally."""
+        async with self._device_detail_lock:
+            call_time = datetime.now(timezone.utc)
+            diff = (call_time - self._last_device_detail_request).total_seconds()
+            if diff < min_interval:
+                await asyncio.sleep(min_interval - diff)
+            self._last_device_detail_request = datetime.now(timezone.utc)
+            return await self.refresh_device(device_id)
 
     async def refresh_devices(self):
         """Refresh the devices' information for this client."""
