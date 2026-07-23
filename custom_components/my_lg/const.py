@@ -90,6 +90,16 @@ PAT_FALLBACK_INTERVAL = 3600
 # MQTT subscription refresh (event subscription has an expiry).
 MQTT_SUBSCRIPTION_REFRESH_INTERVAL = 86400
 
+# Startup calls use the official PAT API and are independent from the WideQ
+# limiter below.  Keep a small bounded fan-out so 16 devices do not initialize
+# serially, while avoiding an unbounded restart burst against LG.
+PAT_DEVICE_LIST_TIMEOUT = 30
+PAT_PREPARE_CONCURRENCY = 3
+PAT_PREPARE_CALL_TIMEOUT = 15
+MQTT_SETUP_CALL_TIMEOUT = 20
+MQTT_SUBSCRIBE_CONCURRENCY = 3
+MQTT_SUBSCRIBE_CALL_TIMEOUT = 15
+
 # --- wideq polling intervals (Stage 2+; user-configurable via OptionsFlow) ---
 # Defaults and HARD FLOORS. Floors are enforced in the options flow so a user
 # can never reintroduce the 30s-polling that caused the original 24h block.
@@ -123,5 +133,7 @@ WIDEQ_PROBE_INTERVAL = 900
 # before trying again and never opens/closes the main snapshot circuit.
 WIDEQ_ENERGY_HISTORY_INTERVAL = 1800
 WIDEQ_ENERGY_HISTORY_FAILURE_RETRY = 3600
-WIDEQ_ENERGY_HISTORY_STORE_VERSION = 1
+WIDEQ_ENERGY_HISTORY_STORE_VERSION = 2
+WIDEQ_ENERGY_HISTORY_LEGACY_STORE_VERSION = 1
 WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY = 5
+WIDEQ_DEVICE_MAP_STORE_VERSION = 1

@@ -140,7 +140,7 @@ async def audit(output: Path) -> None:
         candidates = snapshots.get(model, ())
         offset = snapshot_offsets[model]
         if offset < len(candidates):
-            wideq_data[fake_alias] = candidates[offset]
+            wideq_data[fake_id] = candidates[offset]
             snapshot_offsets[model] += 1
 
     offline_client = OfflineClient()

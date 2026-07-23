@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from typing import Any
@@ -41,19 +42,26 @@ from .const import (
     OPT_AC_ACTIVE_INTERVAL,
     OPT_APPLIANCE_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
+    PAT_DEVICE_LIST_TIMEOUT,
+    PAT_PREPARE_CALL_TIMEOUT,
+    PAT_PREPARE_CONCURRENCY,
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
     WATER_PUSH_CODES,
     WIDEQ_ENERGY_HISTORY_STORE_VERSION,
+    WIDEQ_ENERGY_HISTORY_LEGACY_STORE_VERSION,
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
+    WIDEQ_DEVICE_MAP_STORE_VERSION,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
+from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
 from .services import async_register_services
+from .startup import StartupMetrics, async_prepare_coordinators
 from .wideq_client import WideqClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -127,6 +135,7 @@ class MyLgData:
     mqtt: MyLgMqtt | None = None
     wideq_client: WideqClient | None = None
     wideq_coordinator: WideqCoordinator | None = None
+    startup_metrics: StartupMetrics | None = None
 
 
 MyLgConfigEntry = ConfigEntry  # ConfigEntry[MyLgData] at type-check time
@@ -149,7 +158,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     )
 
     try:
-        devices = await api.async_get_device_list()
+        devices = await asyncio.wait_for(
+            api.async_get_device_list(), timeout=PAT_DEVICE_LIST_TIMEOUT
+        )
     except Exception as err:  # noqa: BLE001
         raise ConfigEntryNotReady(f"device list failed: {err}") from err
 
@@ -160,12 +171,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         if info.get("deviceType") not in SUPPORTED_DEVICE_TYPES:
             continue  # everything else stays on official lg_thinq
         coordinator = PatDeviceCoordinator(hass, entry, api, device)
-        # Seed initial state (PAT is the official low-risk API). Non-fatal: an
-        # offline appliance must not fail the whole entry — it recovers via MQTT
-        # push / the next fallback poll. (No-eager-poll rule applies to wideq only.)
-        await coordinator.async_refresh()
-        await coordinator.async_load_profile()  # push codes + capabilities
         data.coordinators[coordinator.device_id] = coordinator
+
+    # Seed initial PAT state/profile with a small bounded fan-out.  One offline
+    # or stalled appliance is non-fatal and later recovers through MQTT push or
+    # the hourly REST fallback.  WideQ still performs no eager setup poll.
+    _, data.startup_metrics = await async_prepare_coordinators(
+        list(data.coordinators.values()),
+        concurrency=PAT_PREPARE_CONCURRENCY,
+        call_timeout=PAT_PREPARE_CALL_TIMEOUT,
+    )
+    _LOGGER.info(
+        "my_lg PAT prepared %d devices in %.3fs "
+        "(status=%d, profile=%d, timeouts=%d/%d)",
+        data.startup_metrics.supported_devices,
+        data.startup_metrics.preparation_seconds,
+        data.startup_metrics.status_ready,
+        data.startup_metrics.profile_ready,
+        data.startup_metrics.status_timeouts,
+        data.startup_metrics.profile_timeouts,
+    )
 
     if not data.coordinators:
         _LOGGER.warning("my_lg: no supported devices found (Stage 1 = air conditioners)")
@@ -229,9 +254,17 @@ async def _setup_wideq(
         DEVICE_TYPE_STYLER: "devices",
     }
     energy_history_targets = {
-        coordinator.alias: energy_history_appliance_by_type[coordinator.device_type]
+        coordinator.device_id: energy_history_appliance_by_type[coordinator.device_type]
         for coordinator in coordinators
         if coordinator.device_type in energy_history_appliance_by_type
+    }
+    pat_devices = {
+        coordinator.device_id: PatDeviceIdentity(
+            device_id=coordinator.device_id,
+            alias=coordinator.alias,
+            model=coordinator.model,
+        )
+        for coordinator in coordinators
     }
 
     opts = entry.options
@@ -256,7 +289,17 @@ async def _setup_wideq(
     energy_history_store: Store[dict[str, Any]] = Store(
         hass,
         WIDEQ_ENERGY_HISTORY_STORE_VERSION,
+        f"{DOMAIN}.wideq_energy_history_v2.{entry.entry_id}",
+    )
+    legacy_energy_history_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_ENERGY_HISTORY_LEGACY_STORE_VERSION,
         f"{DOMAIN}.wideq_energy_history.{entry.entry_id}",
+    )
+    device_map_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_DEVICE_MAP_STORE_VERSION,
+        f"{DOMAIN}.wideq_device_map.{entry.entry_id}",
     )
     data.wideq_coordinator = WideqCoordinator(
         hass,
@@ -266,7 +309,11 @@ async def _setup_wideq(
         interval_fn,
         energy_history_targets,
         energy_history_store,
+        pat_devices,
+        device_map_store,
+        legacy_energy_history_store,
     )
+    await data.wideq_coordinator.async_restore_device_map()
     await data.wideq_coordinator.async_restore_energy_history()
     for coordinator in coordinators:
         entry.async_on_unload(
@@ -284,6 +331,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
         await data.mqtt.async_stop()
     if data and data.wideq_coordinator:
         await data.wideq_coordinator.async_persist_energy_history()
+        await data.wideq_coordinator.async_persist_device_map()
     if data and data.wideq_client:
         await data.wideq_client.async_close()
     return unload_ok

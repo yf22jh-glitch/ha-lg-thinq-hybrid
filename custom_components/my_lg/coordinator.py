@@ -142,13 +142,15 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     return item.get(field, default)
         return default
 
-    async def async_load_profile(self) -> None:
+    async def async_load_profile(self) -> bool:
         """Fetch the device profile once (defines push codes & capabilities)."""
         try:
             self.profile = await self.api.async_get_device_profile(self.device_id)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("%s: profile load failed: %s", self.alias, err)
             self.profile = None
+            return False
+        return isinstance(self.profile, dict)
 
     def supports(self, group: str) -> bool:
         """True if the device profile advertises a property group.

@@ -245,5 +245,5 @@ class MyLgWideqActionButton(MyLgWideqEntity, ButtonEntity):
             self._spec, command=None, values={}, snapshot=self._snapshot
         )
         await self.coordinator.async_control(
-            self._alias, self._spec["ctrl_key"], **request
+            self._device_id, self._spec["ctrl_key"], **request
         )

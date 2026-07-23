@@ -59,7 +59,7 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
         key: str,
     ) -> None:
         super().__init__(wideq_coordinator)
-        self._alias = pat_coordinator.alias
+        self._device_id = pat_coordinator.device_id
         self._pat_coordinator = pat_coordinator
         self._attr_unique_id = f"{pat_coordinator.device_id}_{key}"
         self._attr_device_info = DeviceInfo(
@@ -71,7 +71,7 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
 
     @property
     def _snapshot(self) -> dict[str, Any]:
-        return self.coordinator.snapshot_for(self._alias)
+        return self.coordinator.snapshot_for(self._device_id)
 
     @property
     def available(self) -> bool:
@@ -95,11 +95,11 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
         """Send one control and optimistically reflect the new value."""
         if use_dataset:
             await self.coordinator.async_control(
-                self._alias, ctrl_key, data_set_list={data_key: value}
+                self._device_id, ctrl_key, data_set_list={data_key: value}
             )
         else:
             await self.coordinator.async_control(
-                self._alias, ctrl_key, data_key=data_key, value=value
+                self._device_id, ctrl_key, data_key=data_key, value=value
             )
         if optimistic:
-            self.coordinator.apply_optimistic(self._alias, data_key, value)
+            self.coordinator.apply_optimistic(self._device_id, data_key, value)

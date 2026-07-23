@@ -71,6 +71,37 @@ class _Client:
         return None
 
 
+class _Device:
+    def __init__(
+        self, device_id: str, alias: str, model: str, snapshot: dict
+    ) -> None:
+        self.device_id = device_id
+        self.name = alias
+        self.model_name = model
+        self._snapshot = snapshot
+
+    def as_dict(self) -> dict:
+        return {"snapshot": self._snapshot}
+
+
+class _SnapshotClient:
+    def __init__(self, errors: list[BaseException | None]) -> None:
+        self._errors = errors
+        self.refresh_calls = 0
+        self.devices = [
+            _Device("wideq-id", "Living AC", "MODEL", {"power": 123})
+        ]
+
+    async def refresh_auth(self) -> None:
+        return None
+
+    async def refresh_devices(self) -> None:
+        self.refresh_calls += 1
+        err = self._errors.pop(0) if self._errors else None
+        if err is not None:
+            raise err
+
+
 class _EnergySession:
     def __init__(self, responses) -> None:
         self.responses = list(responses)
@@ -86,7 +117,6 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
         subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
         session = _Session(errors)
         subject._client = _Client(session)
-        subject._device_ids["device"] = "wideq-id"
         subject.connect_calls = 0
 
         async def close() -> None:
@@ -106,7 +136,7 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(_HttpError):
             await subject.async_control(
-                "device", "basicCtrl", data_key="field", value=1
+                "wideq-id", "basicCtrl", data_key="field", value=1
             )
 
         self.assertEqual(session.calls, 1)
@@ -123,7 +153,7 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(ValueError):
             await subject.async_control(
-                "device", "basicCtrl", data_key="field", value=1
+                "wideq-id", "basicCtrl", data_key="field", value=1
             )
 
         self.assertEqual(session.calls, 1)
@@ -135,48 +165,74 @@ class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
         )
 
         result = await subject.async_control(
-            "device", "basicCtrl", data_key="field", value=1
+            "wideq-id", "basicCtrl", data_key="field", value=1
         )
 
         self.assertEqual(result, {"ok": True})
         self.assertEqual(session.calls, 2)
         self.assertEqual(subject.connect_calls, 1)
 
-    async def test_device_lookup_auth_failure_uses_same_single_reconnect(self) -> None:
+    async def test_missing_stable_id_is_rejected_without_reconnect(self) -> None:
         subject, session = self._subject([None])
-        lookups = 0
-
-        async def lookup(alias: str):
-            nonlocal lookups
-            lookups += 1
-            if lookups == 1:
-                raise wideq_client.AuthenticationError()
-            return "wideq-id"
-
-        subject._device_id_for = lookup
-        result = await subject.async_control(
-            "device", "basicCtrl", data_key="field", value=1
-        )
-
-        self.assertEqual(result, {"ok": True})
-        self.assertEqual(lookups, 2)
-        self.assertEqual(session.calls, 1)
-        self.assertEqual(subject.connect_calls, 1)
-
-    async def test_device_lookup_5xx_does_not_reconnect(self) -> None:
-        subject, session = self._subject([])
-
-        async def lookup(alias: str):
-            raise _HttpError(504)
-
-        subject._device_id_for = lookup
-        with self.assertRaises(_HttpError):
+        with self.assertRaisesRegex(ValueError, "stable device id"):
             await subject.async_control(
-                "device", "basicCtrl", data_key="field", value=1
+                "", "basicCtrl", data_key="field", value=1
             )
 
         self.assertEqual(session.calls, 0)
         self.assertEqual(subject.connect_calls, 0)
+
+
+class WideqSnapshotReconnectTests(unittest.IsolatedAsyncioTestCase):
+    def _subject(self, errors: list[BaseException | None]):
+        subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
+        client = _SnapshotClient(errors)
+        subject._client = client
+        subject.connect_calls = 0
+
+        async def close() -> None:
+            subject._client = None
+
+        async def connect():
+            subject.connect_calls += 1
+            subject._client = client
+            return client
+
+        subject.async_close = close
+        subject.async_connect = connect
+        return subject, client
+
+    async def test_snapshot_returns_stable_identity_metadata(self) -> None:
+        subject, client = self._subject([None])
+
+        result = await subject.async_get_snapshots()
+
+        self.assertEqual(client.refresh_calls, 1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].device_id, "wideq-id")
+        self.assertEqual(result[0].alias, "Living AC")
+        self.assertEqual(result[0].model, "MODEL")
+        self.assertEqual(result[0].snapshot, {"power": 123})
+
+    async def test_snapshot_5xx_does_not_reconnect(self) -> None:
+        subject, client = self._subject([_HttpError(504)])
+
+        with self.assertRaises(_HttpError):
+            await subject.async_get_snapshots()
+
+        self.assertEqual(client.refresh_calls, 1)
+        self.assertEqual(subject.connect_calls, 0)
+
+    async def test_snapshot_auth_failure_reconnects_once(self) -> None:
+        subject, client = self._subject(
+            [wideq_client.AuthenticationError(), None]
+        )
+
+        result = await subject.async_get_snapshots()
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(client.refresh_calls, 2)
+        self.assertEqual(subject.connect_calls, 1)
 
 
 class WideqEnergyHistoryParserTests(unittest.TestCase):
@@ -233,7 +289,6 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
         session = _EnergySession(responses)
         subject._client = _Client(session)
-        subject._device_ids["device"] = "wideq-id"
         limiter_calls = 0
 
         async def acquire() -> None:
@@ -248,7 +303,7 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         )
 
         result = await subject.async_get_energy_usage(
-            "device",
+            "wideq-id",
             "aircon",
             target_date=date(2026, 7, 20),
             before_request=acquire,
@@ -268,7 +323,7 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         )
 
         result = await subject.async_get_energy_usage(
-            "device",
+            "wideq-id",
             "fridge",
             target_date=date(2026, 7, 20),
             before_request=acquire,
@@ -293,7 +348,7 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         )
 
         result = await subject.async_get_energy_usage(
-            "device",
+            "wideq-id",
             "devices",
             target_date=date(2026, 7, 20),
             before_request=acquire,

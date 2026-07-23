@@ -101,7 +101,7 @@ async def _handle_wideq_command(hass: HomeAssistant, call: ServiceCall) -> None:
             "Experimental model controls are locked in the integration options"
         )
 
-    snapshot = wideq.snapshot_for(coordinator.alias)
+    snapshot = wideq.snapshot_for(coordinator.device_id)
     if risk in {"operation", "hazardous"} and not (
         remote_control_enabled(coordinator.data)
         or remote_control_enabled(snapshot)
@@ -118,7 +118,7 @@ async def _handle_wideq_command(hass: HomeAssistant, call: ServiceCall) -> None:
                 values=call.data.get("data", {}),
                 # Read under the coordinator's command/I/O locks so composite
                 # preservation fields cannot be stale due to another command.
-                snapshot=wideq.snapshot_for(coordinator.alias),
+                snapshot=wideq.snapshot_for(coordinator.device_id),
             )
         except ControlValidationError as err:
             raise HomeAssistantError(f"{coordinator.alias}: {err}") from err
@@ -126,7 +126,7 @@ async def _handle_wideq_command(hass: HomeAssistant, call: ServiceCall) -> None:
     # Every shape, including get/actions and ThinQ1, still passes through the
     # shared limiter and open-circuit rejection. No follow-up poll is issued.
     await wideq.async_control(
-        coordinator.alias,
+        coordinator.device_id,
         spec["ctrl_key"],
         request_factory=request_factory,
     )

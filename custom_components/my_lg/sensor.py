@@ -563,7 +563,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         description: WideqSensorDescription,
     ) -> None:
         super().__init__(wideq_coordinator)
-        self._alias = pat_coordinator.alias
+        self._device_id = pat_coordinator.device_id
         self.entity_description = description
         self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
@@ -582,9 +582,9 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     def available(self) -> bool:
         if self.entity_description.history_key is not None:
             return self.coordinator.energy_history_available(
-                self._alias, self.entity_description.history_key
+                self._device_id, self.entity_description.history_key
             )
-        if self._alias in (self.coordinator.data or {}):
+        if self._device_id in (self.coordinator.data or {}):
             return True
         # energy: stay available on cached value even while device is absent
         return self._is_energy and self._last_value is not None
@@ -593,11 +593,11 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     def native_value(self) -> Any:
         if self.entity_description.history_key is not None:
             return self.coordinator.energy_history_value(
-                self._alias, self.entity_description.history_key
+                self._device_id, self.entity_description.history_key
             )
 
         value = self.entity_description.value_fn(
-            self.coordinator.snapshot_for(self._alias)
+            self.coordinator.snapshot_for(self._device_id)
         )
         if value is not None:
             if self._is_energy:
@@ -612,11 +612,13 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         if self.entity_description.attribute_fn is not None:
             attrs.update(
                 self.entity_description.attribute_fn(
-                    self.coordinator.snapshot_for(self._alias)
+                    self.coordinator.snapshot_for(self._device_id)
                 )
             )
         if self.entity_description.history_key is not None:
-            attrs.update(self.coordinator.energy_history_attributes(self._alias))
+            attrs.update(
+                self.coordinator.energy_history_attributes(self._device_id)
+            )
         elif self.entity_description.key in {
             "washer_energy",
             "dryer_energy",

@@ -122,7 +122,7 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
         pat_coordinator: PatDeviceCoordinator,
     ) -> None:
         super().__init__(wideq_coordinator)
-        self._alias = pat_coordinator.alias
+        self._device_id = pat_coordinator.device_id
         self._attr_unique_id = f"{pat_coordinator.device_id}_water_tank_full"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, pat_coordinator.device_id)},
@@ -133,7 +133,7 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
 
     @property
     def available(self) -> bool:
-        return self._alias in (self.coordinator.data or {})
+        return self._device_id in (self.coordinator.data or {})
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
@@ -141,7 +141,7 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
 
     @property
     def is_on(self) -> bool | None:
-        value = self.coordinator.snapshot_for(self._alias).get(WATER_TANK_KEY)
+        value = self.coordinator.snapshot_for(self._device_id).get(WATER_TANK_KEY)
         if value is None:
             return None
         try:

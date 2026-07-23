@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.my_lg.const import WIDEQ_PROBE_INTERVAL
 from custom_components.my_lg.coordinator_wideq import WideqCoordinator
+from custom_components.my_lg.device_identity import PatDeviceIdentity, WideqDeviceData
 
 
 class FakeLimiter:
@@ -32,7 +33,13 @@ class FakeClient:
         self.poll_error: Exception | None = None
         self.energy_error: Exception | None = None
         self.energy_values = {"today": 1.3, "month": 98.6}
-        self.snapshots = {"device": {"value": 1}}
+        self.snapshots = [
+            WideqDeviceData("wideq-device", "Device", "MODEL", {"value": 1}),
+            WideqDeviceData("wideq-one", "One", "MODEL", {"value": 2}),
+            WideqDeviceData("wideq-two", "Two", "MODEL", {"value": 3}),
+        ]
+        self.control_device_ids: list[str] = []
+        self.energy_device_ids: list[str] = []
         self.active = 0
         self.max_active = 0
 
@@ -42,17 +49,19 @@ class FakeClient:
             raise self.poll_error
         return self.snapshots
 
-    async def async_control(self, alias, ctrl_key, **kwargs):
+    async def async_control(self, device_id, ctrl_key, **kwargs):
         self.control_calls += 1
+        self.control_device_ids.append(device_id)
         self.active += 1
         self.max_active = max(self.max_active, self.active)
         await asyncio.sleep(0)
         self.active -= 1
 
     async def async_get_energy_usage(
-        self, alias, appliance, *, target_date, before_request
+        self, device_id, appliance, *, target_date, before_request
     ):
         self.energy_calls += 1
+        self.energy_device_ids.append(device_id)
         await before_request()
         if self.energy_error is not None:
             raise self.energy_error
@@ -81,12 +90,18 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.hass = HomeAssistant(str(Path("/tmp/lg-ha-coordinator-test")))
         self.client = FakeClient()
         self.limiter = FakeLimiter()
+        self.pat_devices = {
+            "device": PatDeviceIdentity("device", "Device", "MODEL"),
+            "one": PatDeviceIdentity("one", "One", "MODEL"),
+            "two": PatDeviceIdentity("two", "Two", "MODEL"),
+        }
         self.coordinator = WideqCoordinator(
             self.hass,
             None,
             self.client,
             self.limiter,
             lambda: 600,
+            pat_devices=self.pat_devices,
         )
 
     async def test_constructor_does_not_eager_poll(self) -> None:
@@ -113,7 +128,10 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_successful_probe_closes_circuit(self) -> None:
         self.coordinator._fail_count = 3
         result = await self.coordinator._async_update_data()
-        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(
+            result,
+            {"device": {"value": 1}, "one": {"value": 2}, "two": {"value": 3}},
+        )
         self.assertFalse(self.coordinator.circuit_open)
         self.assertEqual(self.coordinator.update_interval, timedelta(seconds=600))
 
@@ -124,6 +142,78 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(self.client.control_calls, 2)
         self.assertEqual(self.client.max_active, 1)
+        self.assertCountEqual(
+            self.client.control_device_ids, ["wideq-one", "wideq-two"]
+        )
+
+    async def test_restored_mapping_allows_control_without_startup_poll(self) -> None:
+        mapping_store = FakeStore(
+            {"pat_to_wideq": {"device": "wideq-device"}}
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            device_map_store=mapping_store,
+        )
+
+        await coordinator.async_restore_device_map()
+        await coordinator.async_control("device", "basicCtrl")
+
+        self.assertEqual(self.client.poll_calls, 0)
+        self.assertEqual(self.client.control_device_ids, ["wideq-device"])
+
+    async def test_duplicate_restored_mapping_is_re_resolved_before_control(self) -> None:
+        mapping_store = FakeStore(
+            {
+                "pat_to_wideq": {
+                    "device": "wideq-device",
+                    "one": "wideq-device",
+                }
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            device_map_store=mapping_store,
+        )
+
+        await coordinator.async_restore_device_map()
+        await coordinator.async_control("one", "basicCtrl")
+
+        self.assertEqual(self.client.poll_calls, 1)
+        self.assertEqual(self.client.control_device_ids, ["wideq-one"])
+
+    async def test_first_poll_persists_stable_mapping(self) -> None:
+        mapping_store = FakeStore()
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            device_map_store=mapping_store,
+        )
+
+        await coordinator._async_update_data()
+
+        self.assertEqual(mapping_store.save_calls, 1)
+        self.assertEqual(
+            mapping_store.data["pat_to_wideq"],
+            {
+                "device": "wideq-device",
+                "one": "wideq-one",
+                "two": "wideq-two",
+            },
+        )
 
     async def test_energy_history_uses_separate_cache(self) -> None:
         coordinator = WideqCoordinator(
@@ -133,14 +223,16 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.limiter,
             lambda: 600,
             {"device": "aircon"},
+            pat_devices=self.pat_devices,
         )
 
         result = await coordinator._async_update_data()
 
-        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(result["device"], {"value": 1})
         self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
         self.assertEqual(coordinator.energy_history_value("device", "month"), 98.6)
         self.assertEqual(self.client.energy_calls, 1)
+        self.assertEqual(self.client.energy_device_ids, ["wideq-device"])
         self.assertEqual(self.limiter.calls, 2)
 
     async def test_energy_history_restores_current_period_without_polling(self) -> None:
@@ -165,6 +257,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             lambda: 600,
             {"device": "aircon"},
             store,
+            pat_devices=self.pat_devices,
         )
 
         await coordinator.async_restore_energy_history()
@@ -182,6 +275,39 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
                 "energy_history_stale"
             ]
         )
+
+    async def test_legacy_alias_energy_cache_migrates_to_stable_id(self) -> None:
+        today = dt_util.now().date().isoformat()
+        stable_store = FakeStore()
+        legacy_store = FakeStore(
+            {
+                "items": {
+                    "Device": {
+                        "today": 1.5,
+                        "month": 42.0,
+                        "period_date": today,
+                        "fetched_at": "legacy",
+                    }
+                }
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            stable_store,
+            pat_devices=self.pat_devices,
+            legacy_energy_history_store=legacy_store,
+        )
+
+        await coordinator.async_restore_energy_history()
+
+        self.assertEqual(coordinator.energy_history_value("device", "today"), 1.5)
+        self.assertEqual(stable_store.save_calls, 1)
+        self.assertIn("device", stable_store.data["items"])
 
     async def test_energy_history_rejects_previous_month_cache(self) -> None:
         today = dt_util.now().date()
@@ -206,6 +332,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             lambda: 600,
             {"device": "aircon"},
             store,
+            pat_devices=self.pat_devices,
         )
 
         await coordinator.async_restore_energy_history()
@@ -223,6 +350,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             lambda: 600,
             {"device": "aircon"},
             store,
+            pat_devices=self.pat_devices,
         )
 
         await coordinator._async_update_data()
@@ -243,6 +371,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.limiter,
             lambda: 600,
             {"device": "aircon"},
+            pat_devices=self.pat_devices,
         )
         coordinator._energy_history["device"] = {
             "today": 1.3,
@@ -253,9 +382,32 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
 
         result = await coordinator._async_update_data()
 
-        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(result["device"], {"value": 1})
         self.assertFalse(coordinator.circuit_open)
         self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
+        self.assertTrue(
+            coordinator.energy_history_attributes("device")["energy_history_stale"]
+        )
+
+    async def test_unresolved_identity_keeps_energy_unavailable_and_stale(self) -> None:
+        self.client.snapshots = [
+            item for item in self.client.snapshots if item.device_id != "wideq-device"
+        ]
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            pat_devices=self.pat_devices,
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertNotIn("device", result)
+        self.assertEqual(self.client.energy_calls, 0)
+        self.assertIsNone(coordinator.energy_history_value("device", "today"))
         self.assertTrue(
             coordinator.energy_history_attributes("device")["energy_history_stale"]
         )
@@ -272,6 +424,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.limiter,
             lambda: 600,
             {"device": "fridge"},
+            pat_devices=self.pat_devices,
         )
 
         await coordinator._async_update_data()
@@ -293,12 +446,13 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.limiter,
             lambda: 600,
             {"device": "aircon"},
+            pat_devices=self.pat_devices,
         )
         coordinator._fail_count = 3
 
         result = await coordinator._async_update_data()
 
-        self.assertEqual(result, self.client.snapshots)
+        self.assertEqual(result["device"], {"value": 1})
         self.assertEqual(self.client.energy_calls, 0)
         self.assertFalse(coordinator.circuit_open)
 

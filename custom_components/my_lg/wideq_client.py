@@ -17,6 +17,7 @@ from typing import Any
 
 import aiohttp
 
+from .device_identity import WideqDeviceData
 from .wideq.core_exceptions import (
     AuthenticationError,
     ClientDisconnected,
@@ -208,9 +209,6 @@ class WideqClient:
         self._language = language
         self._client_id = client_id
         self._client = None
-        # alias -> wideq device id (differs from the PAT device id); populated
-        # from each snapshot poll and, if control runs first, on demand.
-        self._device_ids: dict[str, str] = {}
 
     async def async_connect(self):
         """Create the underlying ClientAsync from the stored refresh token."""
@@ -225,11 +223,11 @@ class WideqClient:
         )
         return self._client
 
-    async def async_get_snapshots(self) -> dict[str, dict[str, Any]]:
-        """Return {alias: snapshot} for all thinq2 devices in ONE API call.
+    async def async_get_snapshots(self) -> list[WideqDeviceData]:
+        """Return stable WideQ ids plus snapshots in one account API call.
 
-        Keyed by alias because wideq device ids differ from the PAT device ids;
-        the user-facing alias (e.g. "거실 에어컨") is shared by both APIs.
+        PAT/WideQ identity resolution deliberately lives in the coordinator;
+        aliases are matching metadata, never runtime dictionary keys.
         """
         if self._client is None:
             await self.async_connect()
@@ -258,19 +256,26 @@ class WideqClient:
                 await self._client.refresh_devices()
             except Exception as reconnect_err:  # noqa: BLE001
                 raise WideqReconnectError(err, reconnect_err) from reconnect_err
-        out: dict[str, dict[str, Any]] = {}
+        out: list[WideqDeviceData] = []
         for dev in self._client.devices or []:
-            snap = dev.as_dict().get("snapshot")
-            alias = getattr(dev, "name", None) or dev.as_dict().get("alias")
-            if alias:
-                self._device_ids[alias] = dev.device_id
-            if isinstance(snap, dict) and alias:
-                out[alias] = snap
+            raw = dev.as_dict()
+            snap = raw.get("snapshot")
+            alias = getattr(dev, "name", None) or raw.get("alias")
+            model = getattr(dev, "model_name", None) or raw.get("modelName")
+            if dev.device_id and alias and model:
+                out.append(
+                    WideqDeviceData(
+                        device_id=dev.device_id,
+                        alias=str(alias),
+                        model=str(model),
+                        snapshot=snap if isinstance(snap, dict) else {},
+                    )
+                )
         return out
 
     async def async_get_energy_usage(
         self,
-        alias: str,
+        wideq_device_id: str,
         appliance: str,
         *,
         target_date: date,
@@ -284,10 +289,6 @@ class WideqClient:
         """
         if self._client is None:
             await self.async_connect()
-        device_id = self._device_ids.get(alias)
-        if not device_id:
-            return None
-
         month_start = target_date.replace(day=1).isoformat()
         month_end = target_date.replace(
             day=calendar.monthrange(target_date.year, target_date.month)[1]
@@ -296,7 +297,7 @@ class WideqClient:
         if appliance == "aircon":
             await before_request()
             history = await self._client.session.get2(
-                f"service/aircon/{device_id}/energy-history"
+                f"service/aircon/{wideq_device_id}/energy-history"
                 f"?period=day&startDate={month_start}&endDate={month_end}"
                 "&saveEnergyYn=N"
             )
@@ -306,12 +307,12 @@ class WideqClient:
             today = target_date.isoformat()
             await before_request()
             today_history = await self._client.session.get2(
-                f"service/fridge/{device_id}/energy-history"
+                f"service/fridge/{wideq_device_id}/energy-history"
                 f"?period=hour&startDate={today}&endDate={today}"
             )
             await before_request()
             month_history = await self._client.session.get2(
-                f"service/fridge/{device_id}/energy-history"
+                f"service/fridge/{wideq_device_id}/energy-history"
                 f"?period=month&startDate={month_start}&endDate={month_end}"
             )
             return parse_fridge_energy_history(today_history, month_history)
@@ -319,33 +320,16 @@ class WideqClient:
         if appliance == "devices":
             await before_request()
             history = await self._client.session.get2(
-                f"service/devices/{device_id}/energy-history"
+                f"service/devices/{wideq_device_id}/energy-history"
                 f"?period=day&startDate={month_start}&endDate={month_end}"
             )
             return parse_device_energy_history(history, target_date)
 
         raise ValueError(f"unsupported energy-history appliance: {appliance}")
 
-    async def _device_id_for(self, alias: str) -> str | None:
-        """Return the wideq device id for an alias, populating the map if needed.
-
-        Control can be invoked before the first (deliberately delayed) snapshot
-        poll, so refresh the device list on demand when the alias is unknown.
-        """
-        if alias in self._device_ids:
-            return self._device_ids[alias]
-        if self._client is None:
-            await self.async_connect()
-        await self._client.refresh_devices()
-        for dev in self._client.devices or []:
-            name = getattr(dev, "name", None) or dev.as_dict().get("alias")
-            if name:
-                self._device_ids[name] = dev.device_id
-        return self._device_ids.get(alias)
-
     async def async_control(
         self,
-        alias: str,
+        wideq_device_id: str,
         ctrl_key: str,
         *,
         command: str = "Set",
@@ -364,16 +348,21 @@ class WideqClient:
         physical device does act, so callers gate real writes accordingly.
         """
         async def _do() -> Any:
-            device_id = await self._device_id_for(alias)
-            if not device_id:
-                raise ValueError(f"wideq: no device id for alias {alias!r}")
+            if not wideq_device_id:
+                raise ValueError("wideq: missing stable device id")
+            if self._client is None:
+                await self.async_connect()
             # Same root fix as polling: renew the ~1h token before the call.
             await self._client.refresh_auth()
             session = self._client.session
             if legacy_payload is not None:
-                return await session.set_device_controls(device_id, legacy_payload)
+                return await session.set_device_controls(
+                    wideq_device_id, legacy_payload
+                )
             if payload is not None:
-                return await session.device_v2_controls(device_id, payload, None)
+                return await session.device_v2_controls(
+                    wideq_device_id, payload, None
+                )
             if data_set_list is not None:
                 request_payload = {
                     "ctrlKey": ctrl_key,
@@ -381,10 +370,10 @@ class WideqClient:
                     "dataSetList": data_set_list,
                 }
                 return await session.device_v2_controls(
-                    device_id, request_payload, None
+                    wideq_device_id, request_payload, None
                 )
             return await session.device_v2_controls(
-                device_id, ctrl_key, command, data_key, value
+                wideq_device_id, ctrl_key, command, data_key, value
             )
 
         try:

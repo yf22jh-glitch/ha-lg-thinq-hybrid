@@ -122,7 +122,7 @@ class RawSensorManager:
 
             if self._wideq is None:
                 continue
-            snapshot = self._wideq.snapshot_for(coordinator.alias)
+            snapshot = self._wideq.snapshot_for(coordinator.device_id)
             for path in sorted(self._paths("wideq", coordinator.model, snapshot)):
                 identity = (coordinator.device_id, "wideq", path)
                 if identity in self._known:

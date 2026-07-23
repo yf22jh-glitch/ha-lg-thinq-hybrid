@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections.abc import Callable
@@ -9,7 +10,13 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from .const import PUSH_TYPE_DEVICE_PUSH, PUSH_TYPE_DEVICE_STATUS
+from .const import (
+    MQTT_SETUP_CALL_TIMEOUT,
+    MQTT_SUBSCRIBE_CALL_TIMEOUT,
+    MQTT_SUBSCRIBE_CONCURRENCY,
+    PUSH_TYPE_DEVICE_PUSH,
+    PUSH_TYPE_DEVICE_STATUS,
+)
 from .coordinator import PatDeviceCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +58,40 @@ class MyLgMqtt:
         self._on_push = on_push
         self._client = None
         self._event_subscribed: list[str] = []
+        self._subscription_failures = 0
+        self._subscription_timeouts = 0
+
+    async def _async_subscribe_device(
+        self, device_id: str, semaphore: asyncio.Semaphore
+    ) -> None:
+        """Subscribe one device without allowing it to stall the whole entry."""
+        async with semaphore:
+            # DEVICE_STATUS (realtime state) requires an *event* subscription.
+            try:
+                await asyncio.wait_for(
+                    self.api.async_post_event_subscribe(device_id),
+                    timeout=MQTT_SUBSCRIBE_CALL_TIMEOUT,
+                )
+                self._event_subscribed.append(device_id)
+            except asyncio.TimeoutError:
+                self._subscription_timeouts += 1
+                _LOGGER.warning("event subscribe %s timed out", device_id[:8])
+            except Exception as err:  # noqa: BLE001
+                self._subscription_failures += 1
+                _LOGGER.debug("event subscribe %s: %s", device_id[:8], err)
+
+            # DEVICE_PUSH notifications; account-shared, may already be subscribed.
+            try:
+                await asyncio.wait_for(
+                    self.api.async_post_push_subscribe(device_id),
+                    timeout=MQTT_SUBSCRIBE_CALL_TIMEOUT,
+                )
+            except asyncio.TimeoutError:
+                self._subscription_timeouts += 1
+                _LOGGER.warning("push subscribe %s timed out", device_id[:8])
+            except Exception as err:  # noqa: BLE001
+                self._subscription_failures += 1
+                _LOGGER.debug("push subscribe %s: %s", device_id[:8], err)
 
     async def async_start(self) -> bool:
         """Register, subscribe whitelisted devices, and connect. Best-effort."""
@@ -58,33 +99,39 @@ class MyLgMqtt:
 
         try:
             self._client = ThinQMQTTClient(self.api, self.client_id, self._on_message)
-            await self._client.async_init()
-            await self._client.async_prepare_mqtt()
+            await asyncio.wait_for(
+                self._client.async_init(), timeout=MQTT_SETUP_CALL_TIMEOUT
+            )
+            await asyncio.wait_for(
+                self._client.async_prepare_mqtt(), timeout=MQTT_SETUP_CALL_TIMEOUT
+            )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("my_lg MQTT prepare failed (falling back to REST): %s", err)
             self._client = None
             return False
 
-        for device_id in self.coordinators:
-            # DEVICE_STATUS (realtime state) requires an *event* subscription.
-            try:
-                await self.api.async_post_event_subscribe(device_id)
-                self._event_subscribed.append(device_id)
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.debug("event subscribe %s: %s", device_id[:8], err)
-            # DEVICE_PUSH notifications; account-shared, may already be subscribed.
-            try:
-                await self.api.async_post_push_subscribe(device_id)
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.debug("push subscribe %s: %s", device_id[:8], err)
+        semaphore = asyncio.Semaphore(MQTT_SUBSCRIBE_CONCURRENCY)
+        await asyncio.gather(
+            *(
+                self._async_subscribe_device(device_id, semaphore)
+                for device_id in self.coordinators
+            )
+        )
 
         try:
-            await self._client.async_connect_mqtt()
+            await asyncio.wait_for(
+                self._client.async_connect_mqtt(), timeout=MQTT_SETUP_CALL_TIMEOUT
+            )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("my_lg MQTT connect failed (falling back to REST): %s", err)
             return False
 
-        _LOGGER.info("my_lg MQTT connected (%d devices)", len(self._event_subscribed))
+        _LOGGER.info(
+            "my_lg MQTT connected (event subscriptions=%d, failures=%d, timeouts=%d)",
+            len(self._event_subscribed),
+            self._subscription_failures,
+            self._subscription_timeouts,
+        )
         return True
 
     def _on_message(self, *args: Any, **kwargs: Any) -> None:
@@ -112,14 +159,30 @@ class MyLgMqtt:
 
     async def async_stop(self) -> None:
         """Clean up: delete our event subscriptions and deregister the client."""
-        for device_id in self._event_subscribed:
+        async def _delete_event(device_id: str) -> None:
             try:
-                await self.api.async_delete_event_subscribe(device_id)
+                await asyncio.wait_for(
+                    self.api.async_delete_event_subscribe(device_id),
+                    timeout=MQTT_SUBSCRIBE_CALL_TIMEOUT,
+                )
             except Exception:  # noqa: BLE001
                 pass
+
+        semaphore = asyncio.Semaphore(MQTT_SUBSCRIBE_CONCURRENCY)
+
+        async def _bounded_delete(device_id: str) -> None:
+            async with semaphore:
+                await _delete_event(device_id)
+
+        await asyncio.gather(
+            *(_bounded_delete(device_id) for device_id in self._event_subscribed)
+        )
         self._event_subscribed.clear()
         try:
-            await self.api.async_delete_client_register(payload=CLIENT_BODY)
+            await asyncio.wait_for(
+                self.api.async_delete_client_register(payload=CLIENT_BODY),
+                timeout=MQTT_SETUP_CALL_TIMEOUT,
+            )
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("deregister client: %s", err)
         self._client = None

@@ -30,6 +30,11 @@ from .const import (
     WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY,
     WIDEQ_PROBE_INTERVAL,
 )
+from .device_identity import (
+    PatDeviceIdentity,
+    WideqDeviceData,
+    resolve_wideq_devices,
+)
 from .rate_limiter import GlobalRateLimiter
 from .wideq_client import WideqClient, is_server_unavailable
 
@@ -37,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
-    """Poll wideq snapshots (keyed by alias) at a conditional, rate-limited cadence."""
+    """Poll WideQ snapshots keyed by stable PAT id at a guarded cadence."""
 
     def __init__(
         self,
@@ -48,6 +53,9 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         interval_fn: Callable[[], int],
         energy_history_targets: dict[str, str] | None = None,
         energy_history_store: Store[dict[str, Any]] | None = None,
+        pat_devices: dict[str, PatDeviceIdentity] | None = None,
+        device_map_store: Store[dict[str, Any]] | None = None,
+        legacy_energy_history_store: Store[dict[str, Any]] | None = None,
     ) -> None:
         self.client = client
         self.rate_limiter = rate_limiter
@@ -60,11 +68,17 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._energy_history_targets = dict(energy_history_targets or {})
         self._energy_history: dict[str, dict[str, Any]] = {}
         self._energy_history_store = energy_history_store
+        self._legacy_energy_history_store = legacy_energy_history_store
         self._energy_history_restored: set[str] = set()
         self._energy_history_unsupported: set[str] = set()
         self._energy_history_failures: dict[str, str] = {}
         self._energy_history_next_attempt: datetime | None = None
         self._energy_history_batch_stale = False
+        self._pat_devices = dict(pat_devices or {})
+        self._pat_to_wideq: dict[str, str] = {}
+        self._device_map_store = device_map_store
+        self._ambiguous_pat_ids: set[str] = set()
+        self._unmatched_pat_ids: set[str] = set(self._pat_devices)
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -84,7 +98,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             # actual network lifetimes.
             async with self._io_lock:
                 await self.rate_limiter.acquire()
-                snapshots = await self.client.async_get_snapshots()
+                devices = await self.client.async_get_snapshots()
+                snapshots = self._resolve_devices(devices)
                 # Optional per-device history reads are deliberately independent
                 # from the snapshot circuit. Their errors retain cached energy
                 # and never turn an otherwise healthy all-device poll into a
@@ -147,6 +162,85 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.update_interval = timedelta(seconds=self._interval_fn())
         return snapshots
 
+    def _device_map_payload(self) -> dict[str, Any]:
+        """Serialize stable PAT-to-WideQ identifiers only."""
+        return {"pat_to_wideq": dict(self._pat_to_wideq)}
+
+    def _schedule_device_map_save(self) -> None:
+        if self._device_map_store is None:
+            return
+        self._device_map_store.async_delay_save(self._device_map_payload, 5)
+
+    async def async_restore_device_map(self) -> None:
+        """Restore stable identifiers without performing a WideQ request."""
+        if self._device_map_store is None:
+            return
+        stored = await self._device_map_store.async_load()
+        if not isinstance(stored, dict):
+            return
+        mapping = stored.get("pat_to_wideq")
+        if not isinstance(mapping, dict):
+            return
+        candidates = {
+            pat_id: wideq_id
+            for pat_id, wideq_id in mapping.items()
+            if pat_id in self._pat_devices
+            and isinstance(pat_id, str)
+            and isinstance(wideq_id, str)
+            and wideq_id
+        }
+        duplicate_wideq_ids = {
+            wideq_id
+            for wideq_id in candidates.values()
+            if sum(value == wideq_id for value in candidates.values()) > 1
+        }
+        self._ambiguous_pat_ids = {
+            pat_id
+            for pat_id, wideq_id in candidates.items()
+            if wideq_id in duplicate_wideq_ids
+        }
+        self._pat_to_wideq = {
+            pat_id: wideq_id
+            for pat_id, wideq_id in candidates.items()
+            if wideq_id not in duplicate_wideq_ids
+        }
+        self._unmatched_pat_ids = (
+            set(self._pat_devices)
+            - set(self._pat_to_wideq)
+            - self._ambiguous_pat_ids
+        )
+        if self._ambiguous_pat_ids:
+            _LOGGER.error(
+                "discarded a corrupt WideQ identity mapping affecting %d "
+                "PAT device(s); a fresh account snapshot is required",
+                len(self._ambiguous_pat_ids),
+            )
+
+    async def async_persist_device_map(self) -> None:
+        """Flush the stable mapping during config-entry unload."""
+        if self._device_map_store is not None:
+            await self._device_map_store.async_save(self._device_map_payload())
+
+    def _resolve_devices(self, devices: list[WideqDeviceData]) -> dict[str, dict[str, Any]]:
+        """Resolve one WideQ account response to PAT ids and retain the mapping."""
+        previous = dict(self._pat_to_wideq)
+        previous_ambiguous = set(self._ambiguous_pat_ids)
+        resolution = resolve_wideq_devices(
+            self._pat_devices, devices, self._pat_to_wideq
+        )
+        self._pat_to_wideq = resolution.pat_to_wideq
+        self._ambiguous_pat_ids = resolution.ambiguous_pat_ids
+        self._unmatched_pat_ids = resolution.unmatched_pat_ids
+        if self._pat_to_wideq != previous:
+            self._schedule_device_map_save()
+        if self._ambiguous_pat_ids and self._ambiguous_pat_ids != previous_ambiguous:
+            _LOGGER.error(
+                "wideq identity is ambiguous for %d PAT device(s); "
+                "their WideQ state and controls are blocked",
+                len(self._ambiguous_pat_ids),
+            )
+        return resolution.snapshots
+
     @property
     def circuit_open(self) -> bool:
         """Return whether only scheduled recovery probes may access wideq."""
@@ -174,6 +268,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "wideq_last_success": (
                 self._last_success_at.isoformat() if self._last_success_at else None
             ),
+            "wideq_identity_ambiguous": len(self._ambiguous_pat_ids),
+            "wideq_identity_unmatched": len(self._unmatched_pat_ids),
         }
 
     @callback
@@ -196,32 +292,25 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             return
         await super().async_request_refresh()
 
-    def snapshot_for(self, alias: str) -> dict[str, Any]:
-        return (self.data or {}).get(alias, {})
+    def snapshot_for(self, device_id: str) -> dict[str, Any]:
+        """Return the retained WideQ snapshot keyed by stable PAT id."""
+        return (self.data or {}).get(device_id, {})
 
     async def async_restore_energy_history(self) -> None:
-        """Restore current-period energy totals before entities are registered."""
-        if self._energy_history_store is None:
-            return
-        stored = await self._energy_history_store.async_load()
-        if not isinstance(stored, dict):
-            return
-        items = stored.get("items")
-        if not isinstance(items, dict):
-            return
-
+        """Restore stable-id totals, then migrate the legacy alias cache."""
         today = dt_util.now().date()
         current_day = today.isoformat()
         current_month = today.strftime("%Y-%m")
-        for alias, raw_item in items.items():
-            if alias not in self._energy_history_targets or not isinstance(
-                raw_item, dict
+
+        def _restore(device_id: str, raw_item: Any) -> bool:
+            if (
+                device_id not in self._energy_history_targets
+                or not isinstance(raw_item, dict)
             ):
-                continue
+                return False
             period_date = raw_item.get("period_date")
             if not isinstance(period_date, str):
-                continue
-
+                return False
             restored: dict[str, Any] = {
                 "period_date": period_date,
                 "fetched_at": raw_item.get("fetched_at"),
@@ -235,9 +324,41 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 if value is not None:
                     restored["month"] = value
             if "today" not in restored and "month" not in restored:
+                return False
+            self._energy_history[device_id] = restored
+            self._energy_history_restored.add(device_id)
+            return True
+
+        if self._energy_history_store is not None:
+            stored = await self._energy_history_store.async_load()
+            items = stored.get("items") if isinstance(stored, dict) else None
+            if isinstance(items, dict):
+                for device_id, raw_item in items.items():
+                    _restore(device_id, raw_item)
+
+        if self._legacy_energy_history_store is None:
+            return
+        legacy = await self._legacy_energy_history_store.async_load()
+        legacy_items = legacy.get("items") if isinstance(legacy, dict) else None
+        if not isinstance(legacy_items, dict):
+            return
+
+        alias_to_ids: dict[str, list[str]] = {}
+        for device_id, identity in self._pat_devices.items():
+            if device_id in self._energy_history_targets:
+                alias_to_ids.setdefault(identity.alias, []).append(device_id)
+
+        migrated = False
+        for alias, raw_item in legacy_items.items():
+            candidates = alias_to_ids.get(alias, [])
+            if len(candidates) != 1 or candidates[0] in self._energy_history:
                 continue
-            self._energy_history[alias] = restored
-            self._energy_history_restored.add(alias)
+            migrated = _restore(candidates[0], raw_item) or migrated
+
+        if migrated and self._energy_history_store is not None:
+            await self._energy_history_store.async_save(
+                self._energy_history_payload()
+            )
 
     @staticmethod
     def _energy_value(value: Any) -> float | None:
@@ -254,9 +375,9 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Serialize only verified energy targets."""
         return {
             "items": {
-                alias: dict(item)
-                for alias, item in self._energy_history.items()
-                if alias in self._energy_history_targets
+                device_id: dict(item)
+                for device_id, item in self._energy_history.items()
+                if device_id in self._energy_history_targets
             }
         }
 
@@ -289,12 +410,19 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         failed = False
         server_down = False
         cache_changed = False
-        for alias, appliance in self._energy_history_targets.items():
-            if alias in self._energy_history_unsupported:
+        for device_id, appliance in self._energy_history_targets.items():
+            if device_id in self._energy_history_unsupported:
+                continue
+            wideq_device_id = self._pat_to_wideq.get(device_id)
+            if wideq_device_id is None:
+                failed = True
+                self._energy_history_failures[device_id] = (
+                    "WideQ identity is not currently resolved"
+                )
                 continue
             try:
                 values = await self.client.async_get_energy_usage(
-                    alias,
+                    wideq_device_id,
                     appliance,
                     target_date=target_date,
                     before_request=self.rate_limiter.acquire,
@@ -306,15 +434,16 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 # not implement the ThinQ Web energy service. Probe once per HA
                 # session, then leave their entities unavailable.
                 if str(getattr(err, "code", "")) == "0005":
-                    self._energy_history_unsupported.add(alias)
-                    self._energy_history_failures.pop(alias, None)
+                    self._energy_history_unsupported.add(device_id)
+                    self._energy_history_failures.pop(device_id, None)
                     _LOGGER.info(
-                        "wideq energy history is not supported for %s", alias
+                        "wideq energy history is not supported for %s",
+                        device_id,
                     )
                     continue
 
                 failed = True
-                self._energy_history_failures[alias] = (
+                self._energy_history_failures[device_id] = (
                     f"{type(err).__name__}: {err}"
                 )
                 if is_server_unavailable(err):
@@ -322,13 +451,13 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     break
                 continue
 
-            self._energy_history[alias] = {
+            self._energy_history[device_id] = {
                 **values,
                 "period_date": target_date.isoformat(),
                 "fetched_at": now.isoformat(),
             }
-            self._energy_history_restored.discard(alias)
-            self._energy_history_failures.pop(alias, None)
+            self._energy_history_restored.discard(device_id)
+            self._energy_history_failures.pop(device_id, None)
             cache_changed = True
 
         self._energy_history_batch_stale = failed
@@ -351,9 +480,9 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 reason,
             )
 
-    def energy_history_value(self, alias: str, key: str) -> float | None:
+    def energy_history_value(self, device_id: str, key: str) -> float | None:
         """Return a period-safe cached energy-history value."""
-        item = self._energy_history.get(alias)
+        item = self._energy_history.get(device_id)
         if item is None:
             return None
         target_date = dt_util.now().date()
@@ -365,34 +494,34 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         value = item.get(key)
         return float(value) if value is not None else None
 
-    def energy_history_available(self, alias: str, key: str) -> bool:
+    def energy_history_available(self, device_id: str, key: str) -> bool:
         """Return whether a valid current-period history value is cached."""
-        return self.energy_history_value(alias, key) is not None
+        return self.energy_history_value(device_id, key) is not None
 
-    def energy_history_attributes(self, alias: str) -> dict[str, Any]:
+    def energy_history_attributes(self, device_id: str) -> dict[str, Any]:
         """Return diagnostics for one energy-history target."""
-        item = self._energy_history.get(alias, {})
+        item = self._energy_history.get(device_id, {})
         return {
             "energy_source": "wideq_energy_history",
             "energy_history_last_success": item.get("fetched_at"),
-            "energy_history_restored": alias in self._energy_history_restored,
+            "energy_history_restored": device_id in self._energy_history_restored,
             "energy_history_stale": (
                 self._energy_history_batch_stale
-                or alias in self._energy_history_restored
-                or alias in self._energy_history_failures
+                or device_id in self._energy_history_restored
+                or device_id in self._energy_history_failures
                 or (
                     bool(item)
                     and item.get("period_date") != dt_util.now().date().isoformat()
                 )
             ),
             "energy_history_supported": (
-                False if alias in self._energy_history_unsupported else True
+                False if device_id in self._energy_history_unsupported else True
             ),
         }
 
     async def async_control(
         self,
-        alias: str,
+        device_id: str,
         ctrl_key: str,
         *,
         request_factory: Callable[[], dict[str, Any]] | None = None,
@@ -406,7 +535,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # Keep read-modify-write payloads for one appliance serialized. The
         # global limiter spaces request starts, but intentionally does not hold
         # its lock for the duration of network I/O.
-        lock = self._control_locks.setdefault(alias, asyncio.Lock())
+        lock = self._control_locks.setdefault(device_id, asyncio.Lock())
         async with lock:
             async with self._io_lock:
                 # Re-check after waiting: a prior command or scheduled poll may
@@ -415,19 +544,43 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     raise HomeAssistantError(
                         "LG ThinQ wideq service is unavailable; waiting for recovery probe"
                     )
+                wideq_device_id = self._pat_to_wideq.get(device_id)
+                if wideq_device_id is None:
+                    # Controls are allowed before the deliberately delayed first
+                    # poll. Resolve once under the same global I/O lock, count
+                    # that physical snapshot request separately, and retain it.
+                    await self.rate_limiter.acquire()
+                    devices = await self.client.async_get_snapshots()
+                    snapshots = self._resolve_devices(devices)
+                    if snapshots:
+                        current = dict(self.data or {})
+                        current.update(snapshots)
+                        self.async_set_updated_data(current)
+                    wideq_device_id = self._pat_to_wideq.get(device_id)
+                if wideq_device_id is None:
+                    reason = (
+                        "ambiguous alias/model"
+                        if device_id in self._ambiguous_pat_ids
+                        else "no matching WideQ device"
+                    )
+                    raise HomeAssistantError(
+                        f"LG ThinQ WideQ identity unavailable: {reason}"
+                    )
                 if request_factory is not None:
                     kwargs = request_factory()
                 await self.rate_limiter.acquire()
-                await self.client.async_control(alias, ctrl_key, **kwargs)
+                await self.client.async_control(
+                    wideq_device_id, ctrl_key, **kwargs
+                )
 
-    def apply_optimistic(self, alias: str, key: str, value: Any) -> None:
+    def apply_optimistic(self, device_id: str, key: str, value: Any) -> None:
         """Reflect a just-sent value immediately; the next poll confirms it.
 
         wideq-only fields have no MQTT push, so without this the UI would lag
         until the next scheduled poll. A rejected write self-corrects then.
         """
         data = dict(self.data or {})
-        snap = dict(data.get(alias, {}))
+        snap = dict(data.get(device_id, {}))
         snap[key] = value
-        data[alias] = snap
+        data[device_id] = snap
         self.async_set_updated_data(data)

@@ -49,7 +49,8 @@ jobs:
           import importlib
           for m in [
               "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
-              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.wideq_client", "my_lg.entity",
+              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
+              "my_lg.wideq_client", "my_lg.entity",
               "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
               "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",
               "my_lg.wideq_control",
@@ -84,7 +85,8 @@ jobs:
           import importlib
           for m in [
               "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
-              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.wideq_client", "my_lg.entity",
+              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
+              "my_lg.wideq_client", "my_lg.entity",
               "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
               "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",
               "my_lg.wideq_control", "my_lg.config_flow", "my_lg.climate", "my_lg.sensor",
