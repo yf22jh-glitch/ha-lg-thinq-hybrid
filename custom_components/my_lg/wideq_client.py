@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import calendar
 import logging
+import math
 from collections.abc import Awaitable, Callable, Iterator
 from datetime import date
 from typing import Any
@@ -101,11 +102,23 @@ def _history_items(history: Any) -> list[dict[str, Any]] | None:
     return None
 
 
-def _energy_wh(value: Any) -> float:
-    """Return a ThinQ energy value as Wh, treating explicit NO_DATA as zero."""
-    if value in (None, "NO_DATA"):
-        return 0.0
-    return float(value)
+def _energy_wh(value: Any) -> float | None:
+    """Return one verified ThinQ energy quantity in Wh.
+
+    ``NO_DATA`` and a missing field are not proof of zero consumption.  The
+    app frequently omits the current day until its backend aggregation has
+    completed, so turning either case into zero produces a believable but
+    false daily total.  A numeric zero, on the other hand, is explicit data.
+    """
+    if value is None or value == "NO_DATA" or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (OverflowError, TypeError, ValueError):
+        return None
+    if not math.isfinite(number) or number < 0:
+        return None
+    return number
 
 
 def parse_ac_energy_history(
@@ -116,22 +129,28 @@ def parse_ac_energy_history(
     if items is None:
         return None
     today_key = target_date.isoformat()
-    today_wh = 0.0
+    today_wh: float | None = None
     month_wh = 0.0
+    month_samples = 0
     for item in items:
         if not isinstance(item, dict):
             continue
-        try:
-            value = _energy_wh(item.get("energyData"))
-        except (TypeError, ValueError):
+        used_date = str(item.get("usedDate", ""))
+        if not used_date.startswith(target_date.strftime("%Y-%m")):
+            continue
+        value = _energy_wh(item.get("energyData"))
+        if value is None:
             continue
         month_wh += value
-        if str(item.get("usedDate", ""))[:10] == today_key:
-            today_wh += value
-    return {
-        "today": round(today_wh / 1000, 3),
-        "month": round(month_wh / 1000, 3),
-    }
+        month_samples += 1
+        if used_date[:10] == today_key:
+            today_wh = (today_wh or 0.0) + value
+    result: dict[str, float] = {}
+    if today_wh is not None:
+        result["today"] = round(today_wh / 1000, 3)
+    if month_samples:
+        result["month"] = round(month_wh / 1000, 3)
+    return result or None
 
 
 def parse_device_energy_history(
@@ -147,22 +166,28 @@ def parse_device_energy_history(
     if items is None:
         return None
     today_key = target_date.isoformat()
-    today_wh = 0.0
+    today_wh: float | None = None
     month_wh = 0.0
+    month_samples = 0
     for item in items:
         if not isinstance(item, dict):
             continue
-        try:
-            value = _energy_wh(item.get("power"))
-        except (TypeError, ValueError):
+        used_date = str(item.get("usedDate", ""))
+        if not used_date.startswith(target_date.strftime("%Y-%m")):
+            continue
+        value = _energy_wh(item.get("power"))
+        if value is None:
             continue
         month_wh += value
-        if str(item.get("usedDate", ""))[:10] == today_key:
-            today_wh += value
-    return {
-        "today": round(today_wh / 1000, 3),
-        "month": round(month_wh / 1000, 3),
-    }
+        month_samples += 1
+        if used_date[:10] == today_key:
+            today_wh = (today_wh or 0.0) + value
+    result: dict[str, float] = {}
+    if today_wh is not None:
+        result["today"] = round(today_wh / 1000, 3)
+    if month_samples:
+        result["month"] = round(month_wh / 1000, 3)
+    return result or None
 
 
 def parse_fridge_energy_history(
@@ -171,25 +196,34 @@ def parse_fridge_energy_history(
     """Parse refrigerator hourly/monthly history responses into kWh."""
     today_items = _history_items(today_history)
     month_items = _history_items(month_history)
-    if today_items is None or month_items is None:
-        return None
 
-    def total_wh(items: list[dict[str, Any]]) -> float:
+    def total_wh(items: list[dict[str, Any]] | None) -> float | None:
+        if items is None:
+            return None
         total = 0.0
+        samples = 0
         for item in items:
             if not isinstance(item, dict):
                 continue
             raw = item.get("power", item.get("energyData", item.get("useAmount")))
-            try:
-                total += _energy_wh(raw)
-            except (TypeError, ValueError):
+            value = _energy_wh(raw)
+            if value is None:
                 continue
-        return total
+            total += value
+            samples += 1
+        return total if samples else None
 
-    return {
-        "today": round(total_wh(today_items) / 1000, 3),
-        "month": round(total_wh(month_items) / 1000, 3),
-    }
+    # These are two independently date-scoped endpoints.  Refrigerator models
+    # vary in whether hourly items contain an ISO date, an hour label, or no
+    # date field, so validating the inner label would reject legitimate data.
+    today_wh = total_wh(today_items)
+    month_wh = total_wh(month_items)
+    result: dict[str, float] = {}
+    if today_wh is not None:
+        result["today"] = round(today_wh / 1000, 3)
+    if month_wh is not None:
+        result["month"] = round(month_wh / 1000, 3)
+    return result or None
 
 
 class WideqClient:

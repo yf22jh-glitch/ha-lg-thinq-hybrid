@@ -270,12 +270,67 @@ class WideqEnergyHistoryParserTests(unittest.TestCase):
 
         self.assertEqual(result, {"today": 0.328, "month": 2.104})
 
+    def test_missing_current_day_is_not_fabricated_as_zero(self) -> None:
+        result = wideq_client.parse_ac_energy_history(
+            [
+                {"usedDate": "2026-07-19", "energyData": "2500"},
+                {"usedDate": "2026-07-20", "energyData": "NO_DATA"},
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"month": 2.5})
+
+    def test_out_of_period_daily_items_are_not_summed(self) -> None:
+        result = wideq_client.parse_ac_energy_history(
+            [
+                {"usedDate": "2026-06-30", "energyData": "9000"},
+                {"usedDate": "2026-07-20", "energyData": "1000"},
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 1.0, "month": 1.0})
+
+    def test_explicit_numeric_zero_is_verified_energy_data(self) -> None:
+        result = wideq_client.parse_device_energy_history(
+            {"item": [{"usedDate": "2026-07-20", "power": 0}]},
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 0.0, "month": 0.0})
+
+    def test_invalid_energy_samples_are_ignored(self) -> None:
+        result = wideq_client.parse_device_energy_history(
+            {
+                "item": [
+                    {"usedDate": "2026-07-20", "power": -1},
+                    {"usedDate": "2026-07-20", "power": "nan"},
+                    {"usedDate": "2026-07-20", "power": True},
+                    {"usedDate": "2026-07-20", "power": 10**10000},
+                ]
+            },
+            date(2026, 7, 20),
+        )
+
+        self.assertIsNone(result)
+
+    def test_fridge_partial_response_keeps_verified_period_only(self) -> None:
+        result = wideq_client.parse_fridge_energy_history(
+            {"item": [{"power": "NO_DATA"}]},
+            [{"usedDate": "2026-07", "power": "20659"}],
+        )
+
+        self.assertEqual(result, {"month": 20.659})
+
     def test_unexpected_history_shape_is_not_reported_as_zero(self) -> None:
         self.assertIsNone(
             wideq_client.parse_ac_energy_history({"error": True}, date(2026, 7, 20))
         )
         self.assertIsNone(
-            wideq_client.parse_fridge_energy_history([], {"error": True})
+            wideq_client.parse_fridge_energy_history(
+                [], {"error": True}
+            )
         )
         self.assertIsNone(
             wideq_client.parse_device_energy_history(

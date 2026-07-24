@@ -426,12 +426,18 @@ def _wq(*path: str):
 
 
 def _wenergy(key: str, tkey: str, path: tuple[str, ...]) -> WideqSensorDescription:
+    """Describe a current/last-cycle energy counter.
+
+    ThinQ snapshot ``accumulatedEnergyData`` resets between appliance cycles
+    and may be missed while the device is offline.  It is useful as a display
+    value, but it is not a monotonic meter and therefore must not participate
+    in Home Assistant long-term statistics as ``total_increasing``.
+    """
     return WideqSensorDescription(
         key=key,
         translation_key=tkey,
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=_wq(*path),
     )
 
@@ -564,6 +570,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     ) -> None:
         super().__init__(wideq_coordinator)
         self._device_id = pat_coordinator.device_id
+        self._pat_coordinator = pat_coordinator
         self.entity_description = description
         self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
@@ -572,11 +579,27 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             manufacturer="LG",
             model=pat_coordinator.model or pat_coordinator.device_type,
         )
-        # Cumulative energy meters must not vanish when the device drops out of
-        # the wideq snapshot (e.g. AC powered off); a gap would break long-term
-        # statistics. Cache the last reading and keep reporting it.
+        # Snapshot-backed energy display values may disappear while an
+        # appliance is offline.  Keep the last verified cycle reading for UI
+        # continuity; period totals use the separate persisted history cache.
         self._is_energy = description.device_class == SensorDeviceClass.ENERGY
         self._last_value: Any = None
+
+    def _ac_power_is_off(self) -> bool:
+        """Return whether the authoritative PAT status confirms AC power off."""
+        return (
+            self._pat_coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
+            and self._pat_coordinator.get("operation", "airConOperationMode")
+            == "POWER_OFF"
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to PAT too so an AC power-off zero is published at once."""
+        await super().async_added_to_hass()
+        if self.entity_description.key == "energy_current":
+            self.async_on_remove(
+                self._pat_coordinator.async_add_listener(self.async_write_ha_state)
+            )
 
     @property
     def available(self) -> bool:
@@ -584,6 +607,11 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             return self.coordinator.energy_history_available(
                 self._device_id, self.entity_description.history_key
             )
+        if (
+            self.entity_description.key == "energy_current"
+            and self._ac_power_is_off()
+        ):
+            return True
         if self._device_id in (self.coordinator.data or {}):
             return True
         # energy: stay available on cached value even while device is absent
@@ -595,6 +623,11 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             return self.coordinator.energy_history_value(
                 self._device_id, self.entity_description.history_key
             )
+        if (
+            self.entity_description.key == "energy_current"
+            and self._ac_power_is_off()
+        ):
+            return 0.0
 
         value = self.entity_description.value_fn(
             self.coordinator.snapshot_for(self._device_id)
@@ -603,7 +636,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             if self._is_energy:
                 self._last_value = value
             return value
-        # device absent/None: hold last energy reading (cumulative), else None
+        # Device absent/None: hold the last energy display reading, else None.
         return self._last_value if self._is_energy else None
 
     @property
@@ -617,7 +650,19 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             )
         if self.entity_description.history_key is not None:
             attrs.update(
-                self.coordinator.energy_history_attributes(self._device_id)
+                self.coordinator.energy_history_attributes(
+                    self._device_id, self.entity_description.history_key
+                )
+            )
+        elif self.entity_description.key == "energy_current":
+            attrs.update(
+                {
+                    "power_source": (
+                        "pat_confirmed_power_off"
+                        if self._ac_power_is_off()
+                        else "wideq_snapshot"
+                    )
+                }
             )
         elif self.entity_description.key in {
             "washer_energy",
@@ -628,6 +673,7 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
                 {
                     "energy_source": "wideq_snapshot",
                     "energy_scope": "current_or_last_cycle",
+                    "long_term_statistics_eligible": False,
                 }
             )
         return attrs

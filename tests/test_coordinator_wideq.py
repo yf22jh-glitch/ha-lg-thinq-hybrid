@@ -33,6 +33,8 @@ class FakeClient:
         self.poll_error: Exception | None = None
         self.energy_error: Exception | None = None
         self.energy_values = {"today": 1.3, "month": 98.6}
+        self.energy_values_by_id: dict[str, dict[str, float] | None] = {}
+        self.energy_errors_by_id: dict[str, Exception] = {}
         self.snapshots = [
             WideqDeviceData("wideq-device", "Device", "MODEL", {"value": 1}),
             WideqDeviceData("wideq-one", "One", "MODEL", {"value": 2}),
@@ -63,9 +65,10 @@ class FakeClient:
         self.energy_calls += 1
         self.energy_device_ids.append(device_id)
         await before_request()
-        if self.energy_error is not None:
-            raise self.energy_error
-        return self.energy_values
+        error = self.energy_errors_by_id.get(device_id, self.energy_error)
+        if error is not None:
+            raise error
+        return self.energy_values_by_id.get(device_id, self.energy_values)
 
 
 class FakeStore:
@@ -236,15 +239,22 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.limiter.calls, 2)
 
     async def test_energy_history_restores_current_period_without_polling(self) -> None:
-        today = dt_util.now().date().isoformat()
+        today = dt_util.now().date()
         store = FakeStore(
             {
+                "schema": 3,
                 "items": {
                     "device": {
-                        "today": 1.3,
-                        "month": 98.6,
-                        "period_date": today,
-                        "fetched_at": "persisted",
+                        "today": {
+                            "value": 1.3,
+                            "period": today.isoformat(),
+                            "fetched_at": "persisted-today",
+                        },
+                        "month": {
+                            "value": 98.6,
+                            "period": today.strftime("%Y-%m"),
+                            "fetched_at": "persisted-month",
+                        },
                     }
                 }
             }
@@ -266,15 +276,159 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
         self.assertEqual(coordinator.energy_history_value("device", "month"), 98.6)
         self.assertTrue(
-            coordinator.energy_history_attributes("device")[
+            coordinator.energy_history_attributes("device", "today")[
                 "energy_history_restored"
             ]
         )
         self.assertTrue(
-            coordinator.energy_history_attributes("device")[
+            coordinator.energy_history_attributes("device", "month")[
                 "energy_history_stale"
             ]
         )
+
+    async def test_v2_energy_cache_migrates_positive_values_only(self) -> None:
+        today = dt_util.now().date().isoformat()
+        stable_store = FakeStore()
+        previous_store = FakeStore(
+            {
+                "items": {
+                    "device": {
+                        "today": 0,
+                        "month": 42.0,
+                        "period_date": today,
+                        "fetched_at": "v2",
+                    }
+                }
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            stable_store,
+            pat_devices=self.pat_devices,
+            previous_energy_history_store=previous_store,
+        )
+
+        await coordinator.async_restore_energy_history()
+
+        self.assertIsNone(coordinator.energy_history_value("device", "today"))
+        self.assertEqual(coordinator.energy_history_value("device", "month"), 42.0)
+        self.assertEqual(stable_store.save_calls, 1)
+
+    async def test_v3_single_period_restore_is_reported_as_partial(self) -> None:
+        today = dt_util.now().date()
+        store = FakeStore(
+            {
+                "schema": 3,
+                "items": {
+                    "device": {
+                        "month": {
+                            "value": 42.0,
+                            "period": today.strftime("%Y-%m"),
+                            "fetched_at": "v3",
+                        }
+                    }
+                },
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            store,
+            pat_devices=self.pat_devices,
+        )
+
+        await coordinator.async_restore_energy_history()
+
+        attrs = coordinator.energy_history_attributes("device", "month")
+        self.assertEqual(coordinator.energy_history_value("device", "month"), 42.0)
+        self.assertTrue(attrs["energy_history_partial"])
+        self.assertEqual(attrs["energy_history_missing_fields"], ["today"])
+
+    async def test_v2_complements_but_never_overwrites_v3_field(self) -> None:
+        today = dt_util.now().date()
+        stable_store = FakeStore(
+            {
+                "schema": 3,
+                "items": {
+                    "device": {
+                        "today": {
+                            "value": 0.0,
+                            "period": today.isoformat(),
+                            "fetched_at": "v3",
+                        }
+                    }
+                },
+            }
+        )
+        previous_store = FakeStore(
+            {
+                "items": {
+                    "device": {
+                        "today": 9.9,
+                        "month": 42.0,
+                        "period_date": today.isoformat(),
+                        "fetched_at": "v2",
+                    }
+                }
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            stable_store,
+            pat_devices=self.pat_devices,
+            previous_energy_history_store=previous_store,
+        )
+
+        await coordinator.async_restore_energy_history()
+
+        self.assertEqual(coordinator.energy_history_value("device", "today"), 0.0)
+        self.assertEqual(coordinator.energy_history_value("device", "month"), 42.0)
+        self.assertEqual(stable_store.save_calls, 1)
+
+    async def test_v3_boolean_energy_value_is_rejected(self) -> None:
+        today = dt_util.now().date()
+        store = FakeStore(
+            {
+                "schema": 3,
+                "items": {
+                    "device": {
+                        "today": {
+                            "value": True,
+                            "period": today.isoformat(),
+                            "fetched_at": "bad",
+                        }
+                    }
+                },
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            store,
+            pat_devices=self.pat_devices,
+        )
+
+        await coordinator.async_restore_energy_history()
+
+        self.assertIsNone(coordinator.energy_history_value("device", "today"))
 
     async def test_legacy_alias_energy_cache_migrates_to_stable_id(self) -> None:
         today = dt_util.now().date().isoformat()
@@ -314,12 +468,19 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         previous_month = today - timedelta(days=today.day)
         store = FakeStore(
             {
+                "schema": 3,
                 "items": {
                     "device": {
-                        "today": 9.9,
-                        "month": 123.4,
-                        "period_date": previous_month.isoformat(),
-                        "fetched_at": "stale",
+                        "today": {
+                            "value": 9.9,
+                            "period": previous_month.isoformat(),
+                            "fetched_at": "stale",
+                        },
+                        "month": {
+                            "value": 123.4,
+                            "period": previous_month.strftime("%Y-%m"),
+                            "fetched_at": "stale",
+                        },
                     }
                 }
             }
@@ -356,8 +517,18 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
 
         self.assertEqual(store.save_calls, 1)
-        self.assertEqual(store.data["items"]["device"]["today"], 1.3)
-        self.assertEqual(store.data["items"]["device"]["month"], 98.6)
+        today = dt_util.now().date()
+        self.assertEqual(
+            store.data["items"]["device"]["today"]["value"], 1.3
+        )
+        self.assertEqual(
+            store.data["items"]["device"]["today"]["period"],
+            today.isoformat(),
+        )
+        self.assertEqual(
+            store.data["items"]["device"]["month"]["value"], 98.6
+        )
+        self.assertEqual(store.data["schema"], 3)
 
     async def test_energy_history_failure_does_not_fail_snapshot_poll(self) -> None:
         class HttpError(Exception):
@@ -373,11 +544,18 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             {"device": "aircon"},
             pat_devices=self.pat_devices,
         )
+        today = dt_util.now().date()
         coordinator._energy_history["device"] = {
-            "today": 1.3,
-            "month": 98.6,
-            "period_date": dt_util.now().date().isoformat(),
-            "fetched_at": "cached",
+            "today": {
+                "value": 1.3,
+                "period": today.isoformat(),
+                "fetched_at": "cached",
+            },
+            "month": {
+                "value": 98.6,
+                "period": today.strftime("%Y-%m"),
+                "fetched_at": "cached",
+            },
         }
 
         result = await coordinator._async_update_data()
@@ -386,8 +564,102 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(coordinator.circuit_open)
         self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
         self.assertTrue(
-            coordinator.energy_history_attributes("device")["energy_history_stale"]
+            coordinator.energy_history_attributes("device", "today")[
+                "energy_history_stale"
+            ]
         )
+        self.assertIn(
+            "maintenance",
+            coordinator.energy_history_attributes("device", "today")[
+                "energy_history_last_error"
+            ],
+        )
+
+    async def test_partial_energy_response_updates_only_verified_period(self) -> None:
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            pat_devices=self.pat_devices,
+        )
+        today = dt_util.now().date()
+        coordinator._energy_history["device"] = {
+            "today": {
+                "value": 1.3,
+                "period": today.isoformat(),
+                "fetched_at": "old-today",
+            },
+            "month": {
+                "value": 98.6,
+                "period": today.strftime("%Y-%m"),
+                "fetched_at": "old-month",
+            },
+        }
+        self.client.energy_values = {"month": 99.1}
+
+        await coordinator._async_update_data()
+
+        self.assertEqual(coordinator.energy_history_value("device", "today"), 1.3)
+        self.assertEqual(coordinator.energy_history_value("device", "month"), 99.1)
+        today_attrs = coordinator.energy_history_attributes("device", "today")
+        month_attrs = coordinator.energy_history_attributes("device", "month")
+        self.assertTrue(today_attrs["energy_history_stale"])
+        self.assertTrue(today_attrs["energy_history_partial"])
+        self.assertFalse(month_attrs["energy_history_stale"])
+        self.assertTrue(month_attrs["energy_history_partial"])
+        self.assertEqual(today_attrs["energy_history_missing_fields"], ["today"])
+
+    async def test_one_device_failure_does_not_stale_successful_device(self) -> None:
+        self.client.energy_errors_by_id["wideq-one"] = RuntimeError("bad payload")
+        self.client.energy_values_by_id["wideq-two"] = {
+            "today": 2.5,
+            "month": 40.0,
+        }
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"one": "aircon", "two": "aircon"},
+            pat_devices=self.pat_devices,
+        )
+
+        await coordinator._async_update_data()
+
+        self.assertIsNone(coordinator.energy_history_value("one", "today"))
+        self.assertEqual(coordinator.energy_history_value("two", "today"), 2.5)
+        self.assertTrue(
+            coordinator.energy_history_attributes("one", "today")[
+                "energy_history_stale"
+            ]
+        )
+        self.assertFalse(
+            coordinator.energy_history_attributes("two", "today")[
+                "energy_history_stale"
+            ]
+        )
+
+    async def test_malformed_energy_payload_does_not_fail_snapshot_poll(self) -> None:
+        self.client.energy_values = ["not", "a", "mapping"]
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            pat_devices=self.pat_devices,
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result["device"], {"value": 1})
+        self.assertFalse(coordinator.circuit_open)
+        self.assertIsNone(coordinator.energy_history_value("device", "today"))
 
     async def test_unresolved_identity_keeps_energy_unavailable_and_stale(self) -> None:
         self.client.snapshots = [
@@ -409,7 +681,9 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.client.energy_calls, 0)
         self.assertIsNone(coordinator.energy_history_value("device", "today"))
         self.assertTrue(
-            coordinator.energy_history_attributes("device")["energy_history_stale"]
+            coordinator.energy_history_attributes("device", "today")[
+                "energy_history_stale"
+            ]
         )
 
     async def test_unsupported_energy_history_is_probed_once(self) -> None:
@@ -426,14 +700,23 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             {"device": "fridge"},
             pat_devices=self.pat_devices,
         )
+        today = dt_util.now().date()
+        coordinator._energy_history["device"] = {
+            "today": {
+                "value": 4.2,
+                "period": today.isoformat(),
+                "fetched_at": "old",
+            }
+        }
 
         await coordinator._async_update_data()
         coordinator._energy_history_next_attempt = None
         await coordinator._async_update_data()
 
         self.assertEqual(self.client.energy_calls, 1)
+        self.assertIsNone(coordinator.energy_history_value("device", "today"))
         self.assertFalse(
-            coordinator.energy_history_attributes("device")[
+            coordinator.energy_history_attributes("device", "today")[
                 "energy_history_supported"
             ]
         )

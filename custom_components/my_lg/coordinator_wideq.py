@@ -39,6 +39,7 @@ from .rate_limiter import GlobalRateLimiter
 from .wideq_client import WideqClient, is_server_unavailable
 
 _LOGGER = logging.getLogger(__name__)
+_ENERGY_KEYS = ("today", "month")
 
 
 class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -56,6 +57,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         pat_devices: dict[str, PatDeviceIdentity] | None = None,
         device_map_store: Store[dict[str, Any]] | None = None,
         legacy_energy_history_store: Store[dict[str, Any]] | None = None,
+        previous_energy_history_store: Store[dict[str, Any]] | None = None,
     ) -> None:
         self.client = client
         self.rate_limiter = rate_limiter
@@ -69,11 +71,12 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._energy_history: dict[str, dict[str, Any]] = {}
         self._energy_history_store = energy_history_store
         self._legacy_energy_history_store = legacy_energy_history_store
-        self._energy_history_restored: set[str] = set()
+        self._previous_energy_history_store = previous_energy_history_store
+        self._energy_history_restored: set[tuple[str, str]] = set()
         self._energy_history_unsupported: set[str] = set()
         self._energy_history_failures: dict[str, str] = {}
+        self._energy_history_missing: dict[str, set[str]] = {}
         self._energy_history_next_attempt: datetime | None = None
-        self._energy_history_batch_stale = False
         self._pat_devices = dict(pat_devices or {})
         self._pat_to_wideq: dict[str, str] = {}
         self._device_map_store = device_map_store
@@ -297,12 +300,42 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         return (self.data or {}).get(device_id, {})
 
     async def async_restore_energy_history(self) -> None:
-        """Restore stable-id totals, then migrate the legacy alias cache."""
-        today = dt_util.now().date()
-        current_day = today.isoformat()
-        current_month = today.strftime("%Y-%m")
+        """Restore v3 period fields, then safely migrate v2/v1 caches.
 
-        def _restore(device_id: str, raw_item: Any) -> bool:
+        Older stores cannot distinguish an explicit numeric zero from the
+        historical parser's fabricated ``NO_DATA`` zero.  Positive values are
+        safe to retain as stale fallback; legacy zeroes are deliberately
+        discarded until the endpoint confirms them again.
+        """
+        today = dt_util.now().date()
+        periods = {"today": today.isoformat(), "month": today.strftime("%Y-%m")}
+
+        def _restore_v3(device_id: str, raw_item: Any) -> bool:
+            if (
+                device_id not in self._energy_history_targets
+                or not isinstance(raw_item, dict)
+            ):
+                return False
+            restored: dict[str, Any] = {}
+            for key, period in periods.items():
+                raw_field = raw_item.get(key)
+                if not isinstance(raw_field, dict) or raw_field.get("period") != period:
+                    continue
+                value = self._energy_value(raw_field.get("value"))
+                if value is None:
+                    continue
+                restored[key] = {
+                    "value": value,
+                    "period": period,
+                    "fetched_at": raw_field.get("fetched_at"),
+                }
+                self._energy_history_restored.add((device_id, key))
+            if not restored:
+                return False
+            self._energy_history[device_id] = restored
+            return True
+
+        def _migrate_legacy(device_id: str, raw_item: Any) -> bool:
             if (
                 device_id not in self._energy_history_targets
                 or not isinstance(raw_item, dict)
@@ -311,22 +344,30 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             period_date = raw_item.get("period_date")
             if not isinstance(period_date, str):
                 return False
-            restored: dict[str, Any] = {
-                "period_date": period_date,
-                "fetched_at": raw_item.get("fetched_at"),
-            }
-            if period_date == current_day:
-                value = self._energy_value(raw_item.get("today"))
-                if value is not None:
-                    restored["today"] = value
-            if period_date[:7] == current_month:
-                value = self._energy_value(raw_item.get("month"))
-                if value is not None:
-                    restored["month"] = value
-            if "today" not in restored and "month" not in restored:
+            restored = dict(self._energy_history.get(device_id, {}))
+            changed = False
+            for key, period in periods.items():
+                # A verified v3 field always wins, including an explicit zero.
+                # Legacy stores only complement a missing current-period field.
+                if key in restored:
+                    continue
+                if (key == "today" and period_date != period) or (
+                    key == "month" and period_date[:7] != period
+                ):
+                    continue
+                value = self._energy_value(raw_item.get(key))
+                if value is None or value == 0:
+                    continue
+                restored[key] = {
+                    "value": value,
+                    "period": period,
+                    "fetched_at": raw_item.get("fetched_at"),
+                }
+                self._energy_history_restored.add((device_id, key))
+                changed = True
+            if not changed:
                 return False
             self._energy_history[device_id] = restored
-            self._energy_history_restored.add(device_id)
             return True
 
         if self._energy_history_store is not None:
@@ -334,38 +375,44 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             items = stored.get("items") if isinstance(stored, dict) else None
             if isinstance(items, dict):
                 for device_id, raw_item in items.items():
-                    _restore(device_id, raw_item)
-
-        if self._legacy_energy_history_store is None:
-            return
-        legacy = await self._legacy_energy_history_store.async_load()
-        legacy_items = legacy.get("items") if isinstance(legacy, dict) else None
-        if not isinstance(legacy_items, dict):
-            return
-
-        alias_to_ids: dict[str, list[str]] = {}
-        for device_id, identity in self._pat_devices.items():
-            if device_id in self._energy_history_targets:
-                alias_to_ids.setdefault(identity.alias, []).append(device_id)
+                    _restore_v3(device_id, raw_item)
 
         migrated = False
-        for alias, raw_item in legacy_items.items():
-            candidates = alias_to_ids.get(alias, [])
-            if len(candidates) != 1 or candidates[0] in self._energy_history:
-                continue
-            migrated = _restore(candidates[0], raw_item) or migrated
+        if self._previous_energy_history_store is not None:
+            previous = await self._previous_energy_history_store.async_load()
+            previous_items = (
+                previous.get("items") if isinstance(previous, dict) else None
+            )
+            if isinstance(previous_items, dict):
+                for device_id, raw_item in previous_items.items():
+                    migrated = _migrate_legacy(device_id, raw_item) or migrated
+
+        if self._legacy_energy_history_store is not None:
+            legacy = await self._legacy_energy_history_store.async_load()
+            legacy_items = legacy.get("items") if isinstance(legacy, dict) else None
+            if isinstance(legacy_items, dict):
+                alias_to_ids: dict[str, list[str]] = {}
+                for device_id, identity in self._pat_devices.items():
+                    if device_id in self._energy_history_targets:
+                        alias_to_ids.setdefault(identity.alias, []).append(device_id)
+                for alias, raw_item in legacy_items.items():
+                    candidates = alias_to_ids.get(alias, [])
+                    if len(candidates) == 1:
+                        migrated = (
+                            _migrate_legacy(candidates[0], raw_item) or migrated
+                        )
 
         if migrated and self._energy_history_store is not None:
-            await self._energy_history_store.async_save(
-                self._energy_history_payload()
-            )
+            await self._energy_history_store.async_save(self._energy_history_payload())
 
     @staticmethod
     def _energy_value(value: Any) -> float | None:
         """Return a finite persisted energy value."""
+        if isinstance(value, bool):
+            return None
         try:
             number = float(value)
-        except (TypeError, ValueError):
+        except (OverflowError, TypeError, ValueError):
             return None
         if number < 0 or number in {float("inf"), float("-inf")} or number != number:
             return None
@@ -374,6 +421,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def _energy_history_payload(self) -> dict[str, Any]:
         """Serialize only verified energy targets."""
         return {
+            "schema": 3,
             "items": {
                 device_id: dict(item)
                 for device_id, item in self._energy_history.items()
@@ -410,7 +458,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         failed = False
         server_down = False
         cache_changed = False
-        for device_id, appliance in self._energy_history_targets.items():
+        targets = list(self._energy_history_targets.items())
+        for index, (device_id, appliance) in enumerate(targets):
             if device_id in self._energy_history_unsupported:
                 continue
             wideq_device_id = self._pat_to_wideq.get(device_id)
@@ -427,8 +476,14 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     target_date=target_date,
                     before_request=self.rate_limiter.acquire,
                 )
-                if values is None:
+                if not isinstance(values, dict):
                     raise ValueError("no supported energy-history response")
+                valid_values = {
+                    key: value
+                    for key, raw_value in values.items()
+                    if key in _ENERGY_KEYS
+                    and (value := self._energy_value(raw_value)) is not None
+                }
             except Exception as err:  # noqa: BLE001
                 # 0005 is returned consistently by legacy refrigerators that do
                 # not implement the ThinQ Web energy service. Probe once per HA
@@ -436,6 +491,14 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 if str(getattr(err, "code", "")) == "0005":
                     self._energy_history_unsupported.add(device_id)
                     self._energy_history_failures.pop(device_id, None)
+                    self._energy_history_missing[device_id] = set(_ENERGY_KEYS)
+                    if self._energy_history.pop(device_id, None) is not None:
+                        cache_changed = True
+                    self._energy_history_restored = {
+                        restored
+                        for restored in self._energy_history_restored
+                        if restored[0] != device_id
+                    }
                     _LOGGER.info(
                         "wideq energy history is not supported for %s",
                         device_id,
@@ -448,19 +511,43 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 )
                 if is_server_unavailable(err):
                     server_down = True
+                    for remaining_id, _ in targets[index + 1 :]:
+                        if remaining_id not in self._energy_history_unsupported:
+                            self._energy_history_failures[remaining_id] = (
+                                "LG service unavailable before this target was read"
+                            )
                     break
                 continue
 
-            self._energy_history[device_id] = {
-                **values,
-                "period_date": target_date.isoformat(),
-                "fetched_at": now.isoformat(),
+            if not valid_values:
+                self._energy_history_failures[device_id] = (
+                    "No verified current-period energy values"
+                )
+                self._energy_history_missing[device_id] = set(_ENERGY_KEYS)
+                failed = True
+                continue
+
+            item = dict(self._energy_history.get(device_id, {}))
+            periods = {
+                "today": target_date.isoformat(),
+                "month": target_date.strftime("%Y-%m"),
             }
-            self._energy_history_restored.discard(device_id)
+            for key, value in valid_values.items():
+                item[key] = {
+                    "value": value,
+                    "period": periods[key],
+                    "fetched_at": now.isoformat(),
+                }
+                self._energy_history_restored.discard((device_id, key))
+            self._energy_history[device_id] = item
+            missing = set(_ENERGY_KEYS) - valid_values.keys()
+            if missing:
+                self._energy_history_missing[device_id] = missing
+            else:
+                self._energy_history_missing.pop(device_id, None)
             self._energy_history_failures.pop(device_id, None)
             cache_changed = True
 
-        self._energy_history_batch_stale = failed
         if cache_changed:
             self._schedule_energy_history_save()
         retry = (
@@ -483,37 +570,56 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def energy_history_value(self, device_id: str, key: str) -> float | None:
         """Return a period-safe cached energy-history value."""
         item = self._energy_history.get(device_id)
-        if item is None:
+        if item is None or key not in _ENERGY_KEYS:
             return None
         target_date = dt_util.now().date()
-        period_date = item.get("period_date")
-        if key == "today" and period_date != target_date.isoformat():
+        field = item.get(key)
+        if not isinstance(field, dict):
             return None
-        if key == "month" and str(period_date)[:7] != target_date.strftime("%Y-%m"):
+        expected_period = (
+            target_date.isoformat()
+            if key == "today"
+            else target_date.strftime("%Y-%m")
+        )
+        if field.get("period") != expected_period:
             return None
-        value = item.get(key)
-        return float(value) if value is not None else None
+        return self._energy_value(field.get("value"))
 
     def energy_history_available(self, device_id: str, key: str) -> bool:
         """Return whether a valid current-period history value is cached."""
         return self.energy_history_value(device_id, key) is not None
 
-    def energy_history_attributes(self, device_id: str) -> dict[str, Any]:
-        """Return diagnostics for one energy-history target."""
+    def energy_history_attributes(
+        self, device_id: str, key: str
+    ) -> dict[str, Any]:
+        """Return period-specific diagnostics for one energy entity."""
         item = self._energy_history.get(device_id, {})
+        field = item.get(key) if isinstance(item, dict) else None
+        valid_field = field if isinstance(field, dict) else {}
+        missing = set(self._energy_history_missing.get(device_id, set()))
+        available_keys = {
+            candidate
+            for candidate in _ENERGY_KEYS
+            if self.energy_history_value(device_id, candidate) is not None
+        }
+        missing.update(set(_ENERGY_KEYS) - available_keys)
+        value_available = self.energy_history_value(device_id, key) is not None
         return {
             "energy_source": "wideq_energy_history",
-            "energy_history_last_success": item.get("fetched_at"),
-            "energy_history_restored": device_id in self._energy_history_restored,
+            "energy_scope": key,
+            "energy_history_period": valid_field.get("period"),
+            "energy_history_last_success": valid_field.get("fetched_at"),
+            "energy_history_restored": (device_id, key)
+            in self._energy_history_restored,
             "energy_history_stale": (
-                self._energy_history_batch_stale
-                or device_id in self._energy_history_restored
+                (device_id, key) in self._energy_history_restored
                 or device_id in self._energy_history_failures
-                or (
-                    bool(item)
-                    and item.get("period_date") != dt_util.now().date().isoformat()
-                )
+                or key in missing
+                or not value_available
             ),
+            "energy_history_partial": bool(available_keys and missing),
+            "energy_history_missing_fields": sorted(missing),
+            "energy_history_last_error": self._energy_history_failures.get(device_id),
             "energy_history_supported": (
                 False if device_id in self._energy_history_unsupported else True
             ),

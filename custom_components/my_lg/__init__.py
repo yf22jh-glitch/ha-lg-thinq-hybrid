@@ -49,6 +49,7 @@ from .const import (
     SUPPORTED_DEVICE_TYPES,
     WATER_PUSH_CODES,
     WIDEQ_ENERGY_HISTORY_STORE_VERSION,
+    WIDEQ_ENERGY_HISTORY_PREVIOUS_STORE_VERSION,
     WIDEQ_ENERGY_HISTORY_LEGACY_STORE_VERSION,
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
@@ -289,6 +290,11 @@ async def _setup_wideq(
     energy_history_store: Store[dict[str, Any]] = Store(
         hass,
         WIDEQ_ENERGY_HISTORY_STORE_VERSION,
+        f"{DOMAIN}.wideq_energy_history_v3.{entry.entry_id}",
+    )
+    previous_energy_history_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_ENERGY_HISTORY_PREVIOUS_STORE_VERSION,
         f"{DOMAIN}.wideq_energy_history_v2.{entry.entry_id}",
     )
     legacy_energy_history_store: Store[dict[str, Any]] = Store(
@@ -307,11 +313,12 @@ async def _setup_wideq(
         client,
         limiter,
         interval_fn,
-        energy_history_targets,
-        energy_history_store,
-        pat_devices,
-        device_map_store,
-        legacy_energy_history_store,
+        energy_history_targets=energy_history_targets,
+        energy_history_store=energy_history_store,
+        pat_devices=pat_devices,
+        device_map_store=device_map_store,
+        legacy_energy_history_store=legacy_energy_history_store,
+        previous_energy_history_store=previous_energy_history_store,
     )
     await data.wideq_coordinator.async_restore_device_map()
     await data.wideq_coordinator.async_restore_energy_history()
