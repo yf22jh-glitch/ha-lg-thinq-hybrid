@@ -1,0 +1,12 @@
+{
+  "domain": "kocom_energy",
+  "name": "Kocom Energy Integration",
+  "codeowners": ["@angkk2u"],
+  "dependencies": [],
+  "documentation": "https://github.com/angkk2u/kocom_energy",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/angkk2u/kocom_energy/issues",
+  "requirements": [],
+  "version": "1.1.0",
+  "config_flow": true
+}
