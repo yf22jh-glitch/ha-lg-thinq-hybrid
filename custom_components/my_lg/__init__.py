@@ -54,6 +54,7 @@ from .const import (
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
     WIDEQ_DEVICE_MAP_STORE_VERSION,
+    WIDEQ_POWER_SAVE_STORE_VERSION,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
@@ -307,6 +308,11 @@ async def _setup_wideq(
         WIDEQ_DEVICE_MAP_STORE_VERSION,
         f"{DOMAIN}.wideq_device_map.{entry.entry_id}",
     )
+    power_save_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_POWER_SAVE_STORE_VERSION,
+        f"{DOMAIN}.wideq_power_save_v1.{entry.entry_id}",
+    )
     data.wideq_coordinator = WideqCoordinator(
         hass,
         entry,
@@ -319,8 +325,10 @@ async def _setup_wideq(
         device_map_store=device_map_store,
         legacy_energy_history_store=legacy_energy_history_store,
         previous_energy_history_store=previous_energy_history_store,
+        power_save_store=power_save_store,
     )
     await data.wideq_coordinator.async_restore_device_map()
+    await data.wideq_coordinator.async_restore_power_save()
     await data.wideq_coordinator.async_restore_energy_history()
     for coordinator in coordinators:
         entry.async_on_unload(
@@ -337,6 +345,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
     if data and data.mqtt:
         await data.mqtt.async_stop()
     if data and data.wideq_coordinator:
+        await data.wideq_coordinator.async_persist_power_save()
         await data.wideq_coordinator.async_persist_energy_history()
         await data.wideq_coordinator.async_persist_device_map()
     if data and data.wideq_client:

@@ -20,6 +20,7 @@ _CONTROL_HINTS: dict[str, str] = {
     "2301": "기기에서 '원격 시작'을 먼저 켜 주세요.",  # COMMAND_NOT_SUPPORTED_IN_REMOTE_OFF
     "2302": "지금 기기 상태에서는 이 명령을 쓸 수 없어요.",  # COMMAND_NOT_SUPPORTED_IN_STATE
     "2304": "전원이 꺼져 있어요. 먼저 전원을 켠 뒤 다시 시도해 주세요.",  # ...IN_POWER_OFF
+    "2305": "현재 운전 모드에서는 이 기능을 사용할 수 없어요. 운전 모드를 확인해 주세요.",  # ...IN_MODE
 }
 
 _LOGGER = logging.getLogger(__name__)

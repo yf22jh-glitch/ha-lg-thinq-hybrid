@@ -187,6 +187,9 @@
       "power_save": {
         "name": "General power save"
       },
+      "comfortable_power_save": {
+        "name": "Comfort power save"
+      },
       "air_clean": {
         "name": "Air clean"
       },

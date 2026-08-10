@@ -187,6 +187,9 @@
       "power_save": {
         "name": "일반 절전"
       },
+      "comfortable_power_save": {
+        "name": "쾌적 절전"
+      },
       "air_clean": {
         "name": "공기청정"
       },

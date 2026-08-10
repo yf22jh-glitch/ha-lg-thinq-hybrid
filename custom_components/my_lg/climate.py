@@ -15,6 +15,7 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from .compat import AddConfigEntryEntitiesCallback
 
 from . import MyLgConfigEntry
@@ -34,6 +35,15 @@ HVAC_TO_JOBMODE = {v: k for k, v in JOBMODE_TO_HVAC.items()}
 POWER_ON = "POWER_ON"
 POWER_OFF = "POWER_OFF"
 
+# LG exposes different writable target-temperature properties for each job
+# mode.  Sending the generic targetTemperature while AUTO is active is
+# rejected by these wall-mounted units with COMMAND_NOT_SUPPORTED_IN_MODE.
+TEMPERATURE_FIELD_BY_JOBMODE = {
+    "COOL": "coolTargetTemperature",
+    "AUTO": "autoTargetTemperature",
+}
+
+JOBMODES_WITHOUT_TARGET_TEMPERATURE = {"AIR_DRY", "FAN"}
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -96,10 +106,38 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
 
     @property
     def target_temperature(self) -> float | None:
+        # These wall-mounted units expose neither a user-selectable temperature
+        # nor a humidity target in DRY.  Their generic targetTemperature value
+        # is only the last setpoint retained from another mode, so do not expose
+        # it as an active DRY/FAN target in Home Assistant.
+        if (
+            self._get("airConJobMode", "currentJobMode")
+            in JOBMODES_WITHOUT_TARGET_TEMPERATURE
+        ):
+            return None
         return self._get("temperature", "targetTemperature")
 
     @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """Expose target-temperature control only in modes that support it."""
+        features = (
+            ClimateEntityFeature.FAN_MODE
+            | ClimateEntityFeature.TURN_ON
+            | ClimateEntityFeature.TURN_OFF
+        )
+        if (
+            self._get("airConJobMode", "currentJobMode")
+            not in JOBMODES_WITHOUT_TARGET_TEMPERATURE
+        ):
+            features |= ClimateEntityFeature.TARGET_TEMPERATURE
+        if self._swing_lr or self._swing_ud:
+            features |= ClimateEntityFeature.SWING_MODE
+        return features
+
+    @property
     def min_temp(self) -> float:
+        if self._get("airConJobMode", "currentJobMode") == "AUTO":
+            return 18
         return self._get("temperature", "minTargetTemperature", default=16)
 
     @property
@@ -160,7 +198,28 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
         temp = kwargs.get(ATTR_TEMPERATURE)
         if temp is None:
             return
-        await self._control({"temperature": {"targetTemperature": temp}})
+        job_mode = self._get("airConJobMode", "currentJobMode")
+        field = TEMPERATURE_FIELD_BY_JOBMODE.get(job_mode)
+        if field is None:
+            if job_mode == "AIR_DRY":
+                raise HomeAssistantError(
+                    f"{self.coordinator.alias}: 제습 모드에서는 목표 온도나 "
+                    "목표 습도를 직접 설정할 수 없어요."
+                )
+            if job_mode == "FAN":
+                raise HomeAssistantError(
+                    f"{self.coordinator.alias}: 송풍 모드에서는 온도를 설정할 수 없어요."
+                )
+            raise HomeAssistantError(
+                f"{self.coordinator.alias}: 현재 운전 모드에서는 온도를 설정할 수 없어요."
+            )
+        await self._control({"temperature": {field: temp}})
+        # The climate entity reads the normalized targetTemperature field.
+        # Reflect it immediately while waiting for the next MQTT status push.
+        if field != "targetTemperature":
+            self.coordinator.handle_mqtt_status(
+                {"temperature": {"targetTemperature": temp}}
+            )
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         await self._control({"airFlow": {"windStrength": fan_mode}})

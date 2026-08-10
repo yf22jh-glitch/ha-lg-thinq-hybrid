@@ -607,6 +607,8 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             return self.coordinator.energy_history_available(
                 self._device_id, self.entity_description.history_key
             )
+        if self.entity_description.key == "power_save_mode":
+            return self.coordinator.power_save_available(self._device_id)
         if (
             self.entity_description.key == "energy_current"
             and self._ac_power_is_off()
@@ -629,9 +631,12 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         ):
             return 0.0
 
-        value = self.entity_description.value_fn(
-            self.coordinator.snapshot_for(self._device_id)
+        snapshot = (
+            self.coordinator.power_save_snapshot_for(self._device_id)
+            if self.entity_description.key == "power_save_mode"
+            else self.coordinator.snapshot_for(self._device_id)
         )
+        value = self.entity_description.value_fn(snapshot)
         if value is not None:
             if self._is_energy:
                 self._last_value = value
@@ -643,10 +648,17 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(self.coordinator.diagnostic_attributes)
         if self.entity_description.attribute_fn is not None:
+            snapshot = (
+                self.coordinator.power_save_snapshot_for(self._device_id)
+                if self.entity_description.key == "power_save_mode"
+                else self.coordinator.snapshot_for(self._device_id)
+            )
             attrs.update(
-                self.entity_description.attribute_fn(
-                    self.coordinator.snapshot_for(self._device_id)
-                )
+                self.entity_description.attribute_fn(snapshot)
+            )
+        if self.entity_description.key == "power_save_mode":
+            attrs.update(
+                self.coordinator.power_save_diagnostic_attributes(self._device_id)
             )
         if self.entity_description.history_key is not None:
             attrs.update(
