@@ -18,6 +18,7 @@ from .const import (
     PUSH_TYPE_DEVICE_STATUS,
 )
 from .coordinator import PatDeviceCoordinator
+from .rethink_event_relay import normalize_lifecycle_event
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,14 +51,17 @@ class MyLgMqtt:
         client_id: str,
         coordinators: dict[str, PatDeviceCoordinator],
         on_push: Callable[[str, str], None] | None = None,
+        on_lifecycle: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self.hass = hass
         self.api = api
         self.client_id = client_id
         self.coordinators = coordinators
         self._on_push = on_push
+        self._on_lifecycle = on_lifecycle
         self._client = None
         self._event_subscribed: list[str] = []
+        self._device_lifecycle_subscribed = False
         self._subscription_failures = 0
         self._subscription_timeouts = 0
 
@@ -118,6 +122,20 @@ class MyLgMqtt:
             )
         )
 
+        if self._on_lifecycle is not None:
+            try:
+                await asyncio.wait_for(
+                    self.api.async_post_push_devices_subscribe(),
+                    timeout=MQTT_SUBSCRIBE_CALL_TIMEOUT,
+                )
+                self._device_lifecycle_subscribed = True
+            except asyncio.TimeoutError:
+                self._subscription_timeouts += 1
+                _LOGGER.warning("device lifecycle subscription timed out")
+            except Exception as err:  # noqa: BLE001
+                self._subscription_failures += 1
+                _LOGGER.debug("device lifecycle subscription failed: %s", err)
+
         try:
             await asyncio.wait_for(
                 self._client.async_connect_mqtt(), timeout=MQTT_SETUP_CALL_TIMEOUT
@@ -132,6 +150,8 @@ class MyLgMqtt:
             self._subscription_failures,
             self._subscription_timeouts,
         )
+        if self._device_lifecycle_subscribed and self._on_lifecycle is not None:
+            self._on_lifecycle({"kind": "subscription_ready"})
         return True
 
     def _on_message(self, *args: Any, **kwargs: Any) -> None:
@@ -146,6 +166,16 @@ class MyLgMqtt:
 
         push_type = message.get("pushType")
         device_id = message.get("deviceId")
+        lifecycle_event = (
+            normalize_lifecycle_event(message)
+            if self._on_lifecycle is not None
+            else None
+        )
+
+        if lifecycle_event is not None and self._on_lifecycle is not None:
+            self.hass.loop.call_soon_threadsafe(
+                self._on_lifecycle, lifecycle_event
+            )
 
         if push_type == PUSH_TYPE_DEVICE_STATUS:
             coordinator = self.coordinators.get(device_id)
@@ -153,7 +183,12 @@ class MyLgMqtt:
                 return
             report = message.get("report") or {}
             self.hass.loop.call_soon_threadsafe(coordinator.handle_mqtt_status, report)
-        elif push_type == PUSH_TYPE_DEVICE_PUSH and self._on_push and device_id:
+        elif (
+            lifecycle_event is None
+            and push_type == PUSH_TYPE_DEVICE_PUSH
+            and self._on_push
+            and device_id
+        ):
             code = message.get("pushCode") or ""
             self.hass.loop.call_soon_threadsafe(self._on_push, device_id, code)
 
@@ -178,6 +213,15 @@ class MyLgMqtt:
             *(_bounded_delete(device_id) for device_id in self._event_subscribed)
         )
         self._event_subscribed.clear()
+        if self._device_lifecycle_subscribed:
+            try:
+                await asyncio.wait_for(
+                    self.api.async_delete_push_devices_subscribe(),
+                    timeout=MQTT_SUBSCRIBE_CALL_TIMEOUT,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("delete device lifecycle subscription: %s", err)
+            self._device_lifecycle_subscribed = False
         try:
             await asyncio.wait_for(
                 self.api.async_delete_client_register(payload=CLIENT_BODY),

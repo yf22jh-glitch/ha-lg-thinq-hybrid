@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -39,6 +40,11 @@ from .const import (
     OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_APPLIANCE_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
+)
+from .rethink_event_relay import (
+    CONF_RETHINK_EVENT_TOKEN,
+    MAX_TOKEN_LENGTH,
+    MIN_TOKEN_LENGTH,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -151,6 +157,20 @@ class MyLgOptionsFlow(OptionsFlow):
                     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
                     default=opts.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False),
                 ): bool,
+                vol.Optional(
+                    CONF_RETHINK_EVENT_TOKEN,
+                    default=opts.get(CONF_RETHINK_EVENT_TOKEN, ""),
+                ): vol.Any(
+                    "",
+                    vol.All(
+                        selector.TextSelector(
+                            selector.TextSelectorConfig(
+                                type=selector.TextSelectorType.PASSWORD
+                            )
+                        ),
+                        vol.Length(min=MIN_TOKEN_LENGTH, max=MAX_TOKEN_LENGTH),
+                    ),
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

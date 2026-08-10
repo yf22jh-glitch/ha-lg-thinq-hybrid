@@ -91,6 +91,7 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
         use_dataset: bool,
         *,
         optimistic: bool = True,
+        power_save_only: bool = False,
     ) -> None:
         """Send one control and optimistically reflect the new value."""
         if use_dataset:
@@ -102,4 +103,9 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
                 self._device_id, ctrl_key, data_key=data_key, value=value
             )
         if optimistic:
-            self.coordinator.apply_optimistic(self._device_id, data_key, value)
+            if power_save_only:
+                self.coordinator.apply_power_save_optimistic(
+                    self._device_id, data_key, value
+                )
+            else:
+                self.coordinator.apply_optimistic(self._device_id, data_key, value)

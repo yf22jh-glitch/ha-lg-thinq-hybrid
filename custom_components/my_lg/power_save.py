@@ -28,6 +28,20 @@ def _boolean_flag(value: Any) -> bool | None:
         return None
 
 
+def ac_power_save_cache(snapshot: dict[str, Any]) -> dict[str, bool]:
+    """Return only validated mode flags that are safe to persist.
+
+    Power and energy measurements intentionally never enter this cache. It is
+    used only to bridge the delayed first WideQ poll after an HA restart.
+    """
+    cached: dict[str, bool] = {}
+    for path in POWER_SAVE_FIELDS.values():
+        flag = _boolean_flag(snapshot.get(path))
+        if flag is not None:
+            cached[path] = flag
+    return cached
+
+
 def ac_power_save_flags(snapshot: dict[str, Any]) -> dict[str, bool | None]:
     """Return every independently reported AC power-save flag."""
     return {

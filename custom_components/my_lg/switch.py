@@ -7,6 +7,7 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from . import MyLgConfigEntry
 from .compat import AddConfigEntryEntitiesCallback
@@ -35,6 +36,17 @@ class MyLgSwitchDescription(SwitchEntityDescription):
     # may silently ignore (e.g. warm mist needs heated water) so the UI follows
     # the real reported state instead of showing a fake "on".
     optimistic: bool = True
+    allowed_job_modes: tuple[str, ...] = ()
+
+
+# The installed cassette models advertise generic WideQ air-clean/smart-care
+# fields in their status schema, but their model support flags contain neither
+# AIRCLEAN nor SMARTCARE.  Creating those controls produces ghost switches that
+# stay off/unavailable and are rejected when commanded.
+UNSUPPORTED_WIDEQ_AC_FEATURES_BY_MODEL: dict[str, frozenset[str]] = {
+    "CST_170004_WW": frozenset({"air_clean", "smart_care"}),
+    "CST_570004_WW": frozenset({"air_clean", "smart_care"}),
+}
 
 
 SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
@@ -45,31 +57,37 @@ SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
             key="wind_forest", translation_key="wind_forest",
             group="windDirection", field="forestWind",
             on_value=True, off_value=False, optimistic=False,
+            allowed_job_modes=("COOL", "AIR_DRY"),
         ),
         MyLgSwitchDescription(
             key="wind_long_power", translation_key="wind_long_power",
             group="windDirection", field="longPowerWind",
             on_value=True, off_value=False, optimistic=False,
+            allowed_job_modes=("COOL", "AIR_DRY"),
         ),
         MyLgSwitchDescription(
             key="wind_concentration", translation_key="wind_concentration",
             group="windDirection", field="concentrationWind",
             on_value=True, off_value=False, optimistic=False,
+            allowed_job_modes=("COOL", "AIR_DRY"),
         ),
         MyLgSwitchDescription(
             key="wind_manner", translation_key="wind_manner",
             group="windDirection", field="mannerWind",
             on_value=True, off_value=False, optimistic=False,
+            allowed_job_modes=("COOL", "AIR_DRY"),
         ),
         MyLgSwitchDescription(
             key="wind_auto_fit", translation_key="wind_auto_fit",
             group="windDirection", field="autoFitWind",
             on_value=True, off_value=False, optimistic=False,
+            allowed_job_modes=("COOL", "AIR_DRY"),
         ),
         MyLgSwitchDescription(
             key="power_save", translation_key="power_save",
             group="powerSave", field="powerSaveEnabled",
             on_value=True, off_value=False,
+            allowed_job_modes=("COOL",),
         ),
     ),
     DEVICE_TYPE_REFRIGERATOR: (
@@ -124,10 +142,23 @@ class MyLgWideqSwitchDescription(SwitchEntityDescription):
     use_dataset: bool = False  # wModeCtrl needs the dataSetList payload form
     on_value: int = 1
     off_value: int = 0
+    supported_models: frozenset[str] = frozenset()
+    allowed_job_modes: tuple[str, ...] = ()
 
 
 WIDEQ_SWITCHES_BY_TYPE: dict[str, tuple[MyLgWideqSwitchDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: (
+        # The installed cassette models expose this as the LG app's separate
+        # "comfort power save" toggle.  The official app writes
+        # settingInfo/Set airState.powerSave.hum with 0/1.
+        MyLgWideqSwitchDescription(
+            key="comfortable_power_save",
+            translation_key="comfortable_power_save",
+            ctrl_key="settingInfo",
+            data_key="airState.powerSave.hum",
+            supported_models=frozenset({"CST_170004_WW", "CST_570004_WW"}),
+            allowed_job_modes=("COOL",),
+        ),
         # wMode toggles use wModeCtrl (single key in a dataSetList).
         MyLgWideqSwitchDescription(
             key="air_clean", translation_key="air_clean",
@@ -179,6 +210,15 @@ async def async_setup_entry(
     if wideq is not None:
         for coordinator in entry.runtime_data.coordinators.values():
             for wdesc in WIDEQ_SWITCHES_BY_TYPE.get(coordinator.device_type, ()):
+                if (
+                    wdesc.supported_models
+                    and coordinator.model not in wdesc.supported_models
+                ):
+                    continue
+                if wdesc.key in UNSUPPORTED_WIDEQ_AC_FEATURES_BY_MODEL.get(
+                    coordinator.model, frozenset()
+                ):
+                    continue
                 entities.append(MyLgWideqSwitch(wideq, coordinator, wdesc))
 
     async_add_entities(entities)
@@ -206,6 +246,17 @@ class MyLgSwitch(MyLgEntity, SwitchEntity):
             self.coordinator.handle_mqtt_status(payload)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        d = self.entity_description
+        if d.allowed_job_modes:
+            job_mode = self._get("airConJobMode", "currentJobMode")
+            if job_mode not in d.allowed_job_modes:
+                if d.key == "power_save":
+                    detail = "일반 절전은 냉방 모드에서만 사용할 수 있어요."
+                else:
+                    detail = "특수 바람 기능은 냉방 또는 제습 모드에서만 사용할 수 있어요."
+                raise HomeAssistantError(
+                    f"{self.coordinator.alias}: {detail}"
+                )
         await self._set(self.entity_description.on_value)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -228,16 +279,61 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool:
-        raw = self._snapshot.get(self.entity_description.data_key)
+        d = self.entity_description
+        snapshot = (
+            self.coordinator.power_save_snapshot_for(self._device_id)
+            if d.key == "comfortable_power_save"
+            else self._snapshot
+        )
+        raw = snapshot.get(d.data_key)
         try:
-            return raw is not None and int(raw) == self.entity_description.on_value
+            return raw is not None and int(raw) == d.on_value
         except (TypeError, ValueError):
             return False
 
+    @property
+    def available(self) -> bool:
+        d = self.entity_description
+        if d.key == "comfortable_power_save":
+            return self.coordinator.power_save_field_available(
+                self._device_id, d.data_key
+            )
+        return super().available
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = dict(super().extra_state_attributes)
+        if self.entity_description.key == "comfortable_power_save":
+            attrs.update(
+                self.coordinator.power_save_diagnostic_attributes(self._device_id)
+            )
+        return attrs
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         d = self.entity_description
-        await self._wideq_set(d.ctrl_key, d.data_key, d.on_value, d.use_dataset)
+        if d.allowed_job_modes:
+            job_mode = self._pat_coordinator.get(
+                "airConJobMode", "currentJobMode"
+            )
+            if job_mode not in d.allowed_job_modes:
+                raise HomeAssistantError(
+                    f"{self._pat_coordinator.alias}: "
+                    "쾌적 절전은 냉방 모드에서만 사용할 수 있어요."
+                )
+        await self._wideq_set(
+            d.ctrl_key,
+            d.data_key,
+            d.on_value,
+            d.use_dataset,
+            power_save_only=d.key == "comfortable_power_save",
+        )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         d = self.entity_description
-        await self._wideq_set(d.ctrl_key, d.data_key, d.off_value, d.use_dataset)
+        await self._wideq_set(
+            d.ctrl_key,
+            d.data_key,
+            d.off_value,
+            d.use_dataset,
+            power_save_only=d.key == "comfortable_power_save",
+        )

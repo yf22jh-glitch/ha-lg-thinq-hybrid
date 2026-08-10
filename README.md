@@ -68,6 +68,20 @@ WideQ 호출은 각각 0개/0회였다.
 
 > 이 통합은 공식 `lg_thinq`와 **별도의 MQTT client_id**를 사용하므로 공식 통합과 병행 가능하다.
 
+### Rethink 기기 등록 이벤트 연동 (선택)
+
+같은 호스트의 Rethink가 기기 등록·삭제·이름 변경을 자동 대조하도록 하려면
+통합 옵션의 `Rethink 기기 등록 이벤트 연동 토큰`에 Rethink의 owner-only
+`cloud-events.token` 값을 입력한다. 토큰이 설정된 경우에만 ThinQ Connect의
+계정 단위 `push/devices` 구독을 추가하고, 고정 loopback 주소
+`http://127.0.0.1:44401/cloud/device-events`로 이벤트를 전달한다.
+
+- 원본 PAT payload, 별칭, MAC, 인증정보는 전달하거나 저장하지 않는다.
+- 이벤트 종류, device ID와 최상위 필드명만 Bearer 인증으로 전송한다.
+- 등록·삭제·이름 변경 이벤트에만 Rethink가 제한된 LG Home 확인을 예약한다.
+- 자동 재시도, 주기적인 기기 목록 조회, LG 계정의 기기 추가·삭제는 수행하지 않는다.
+- 토큰이 없거나 잘못된 경우 기존 PAT/MQTT 상태·제어 경로에는 영향이 없다.
+
 지원 검증 조합은 Home Assistant 2024.11.3 + ThinQ Connect 1.0.12 및 최신
 Home Assistant + 최신 ThinQ Connect다.
 

@@ -54,6 +54,7 @@ from .const import (
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
     WIDEQ_DEVICE_MAP_STORE_VERSION,
+    WIDEQ_POWER_SAVE_STORE_VERSION,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
@@ -61,6 +62,7 @@ from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
+from .rethink_event_relay import CONF_RETHINK_EVENT_TOKEN, RethinkEventRelay
 from .services import async_register_services
 from .startup import StartupMetrics, async_prepare_coordinators
 from .wideq_client import WideqClient
@@ -203,8 +205,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         if code in WATER_PUSH_CODES and data.wideq_coordinator is not None:
             hass.async_create_task(data.wideq_coordinator.async_request_refresh())
 
+    rethink_relay = RethinkEventRelay(
+        session, entry.options.get(CONF_RETHINK_EVENT_TOKEN, "")
+    )
+
+    def _on_lifecycle(event: dict[str, Any]) -> None:
+        hass.async_create_task(rethink_relay.async_send(event))
+
     # MQTT push (best-effort; REST fallback keeps working if this fails).
-    mqtt = MyLgMqtt(hass, api, client_id, data.coordinators, on_push=_on_push)
+    mqtt = MyLgMqtt(
+        hass,
+        api,
+        client_id,
+        data.coordinators,
+        on_push=_on_push,
+        on_lifecycle=_on_lifecycle if rethink_relay.enabled else None,
+    )
     await mqtt.async_start()
     data.mqtt = mqtt
 
@@ -307,6 +323,11 @@ async def _setup_wideq(
         WIDEQ_DEVICE_MAP_STORE_VERSION,
         f"{DOMAIN}.wideq_device_map.{entry.entry_id}",
     )
+    power_save_store: Store[dict[str, Any]] = Store(
+        hass,
+        WIDEQ_POWER_SAVE_STORE_VERSION,
+        f"{DOMAIN}.wideq_power_save_v1.{entry.entry_id}",
+    )
     data.wideq_coordinator = WideqCoordinator(
         hass,
         entry,
@@ -319,8 +340,10 @@ async def _setup_wideq(
         device_map_store=device_map_store,
         legacy_energy_history_store=legacy_energy_history_store,
         previous_energy_history_store=previous_energy_history_store,
+        power_save_store=power_save_store,
     )
     await data.wideq_coordinator.async_restore_device_map()
+    await data.wideq_coordinator.async_restore_power_save()
     await data.wideq_coordinator.async_restore_energy_history()
     for coordinator in coordinators:
         entry.async_on_unload(
@@ -337,6 +360,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
     if data and data.mqtt:
         await data.mqtt.async_stop()
     if data and data.wideq_coordinator:
+        await data.wideq_coordinator.async_persist_power_save()
         await data.wideq_coordinator.async_persist_energy_history()
         await data.wideq_coordinator.async_persist_device_map()
     if data and data.wideq_client:

@@ -29,7 +29,8 @@
           "appliance_active_interval": "Appliance active interval (min 300s)",
           "idle_interval": "Idle baseline interval (min 600s)",
           "allow_hazardous_controls": "Enable hazardous cooking controls",
-          "allow_experimental_controls": "Enable experimental model controls"
+          "allow_experimental_controls": "Enable experimental model controls",
+          "rethink_event_token": "Rethink lifecycle relay token (optional)"
         }
       }
     }
@@ -186,6 +187,9 @@
       },
       "power_save": {
         "name": "General power save"
+      },
+      "comfortable_power_save": {
+        "name": "Comfort power save"
       },
       "air_clean": {
         "name": "Air clean"
