@@ -29,7 +29,8 @@
           "appliance_active_interval": "가전 활성 간격 (최소 300초)",
           "idle_interval": "유휴 baseline 간격 (최소 600초)",
           "allow_hazardous_controls": "위험 조리 제어 활성화",
-          "allow_experimental_controls": "실험 모델 제어 활성화"
+          "allow_experimental_controls": "실험 모델 제어 활성화",
+          "rethink_event_token": "Rethink 기기 등록 이벤트 연동 토큰 (선택)"
         }
       }
     }

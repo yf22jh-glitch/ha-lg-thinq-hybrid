@@ -61,6 +61,7 @@ from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
+from .rethink_event_relay import CONF_RETHINK_EVENT_TOKEN, RethinkEventRelay
 from .services import async_register_services
 from .startup import StartupMetrics, async_prepare_coordinators
 from .wideq_client import WideqClient
@@ -203,8 +204,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         if code in WATER_PUSH_CODES and data.wideq_coordinator is not None:
             hass.async_create_task(data.wideq_coordinator.async_request_refresh())
 
+    rethink_relay = RethinkEventRelay(
+        session, entry.options.get(CONF_RETHINK_EVENT_TOKEN, "")
+    )
+
+    def _on_lifecycle(event: dict[str, Any]) -> None:
+        hass.async_create_task(rethink_relay.async_send(event))
+
     # MQTT push (best-effort; REST fallback keeps working if this fails).
-    mqtt = MyLgMqtt(hass, api, client_id, data.coordinators, on_push=_on_push)
+    mqtt = MyLgMqtt(
+        hass,
+        api,
+        client_id,
+        data.coordinators,
+        on_push=_on_push,
+        on_lifecycle=_on_lifecycle if rethink_relay.enabled else None,
+    )
     await mqtt.async_start()
     data.mqtt = mqtt
 
