@@ -28,6 +28,7 @@ from .const import (
     WIDEQ_ENERGY_HISTORY_FAILURE_RETRY,
     WIDEQ_ENERGY_HISTORY_INTERVAL,
     WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY,
+    WIDEQ_POWER_SAVE_STORE_SAVE_DELAY,
     WIDEQ_PROBE_INTERVAL,
 )
 from .device_identity import (
@@ -35,6 +36,7 @@ from .device_identity import (
     WideqDeviceData,
     resolve_wideq_devices,
 )
+from .power_save import ac_power_save_cache
 from .rate_limiter import GlobalRateLimiter
 from .wideq_client import WideqClient, is_server_unavailable
 
@@ -58,6 +60,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         device_map_store: Store[dict[str, Any]] | None = None,
         legacy_energy_history_store: Store[dict[str, Any]] | None = None,
         previous_energy_history_store: Store[dict[str, Any]] | None = None,
+        power_save_store: Store[dict[str, Any]] | None = None,
     ) -> None:
         self.client = client
         self.rate_limiter = rate_limiter
@@ -82,6 +85,10 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._device_map_store = device_map_store
         self._ambiguous_pat_ids: set[str] = set()
         self._unmatched_pat_ids: set[str] = set(self._pat_devices)
+        self._power_save_store = power_save_store
+        self._power_save_cache: dict[str, dict[str, bool]] = {}
+        self._power_save_restored_fields: set[tuple[str, str]] = set()
+        self._power_save_cache_saved_at: str | None = None
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -242,7 +249,120 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 "their WideQ state and controls are blocked",
                 len(self._ambiguous_pat_ids),
             )
+        self._update_power_save_cache(resolution.snapshots)
         return resolution.snapshots
+
+    def _power_save_payload(self) -> dict[str, Any]:
+        """Serialize only validated mode flags, never power/energy readings."""
+        return {
+            "saved_at": self._power_save_cache_saved_at,
+            "items": {
+                device_id: dict(item)
+                for device_id, item in self._power_save_cache.items()
+                if device_id in self._pat_devices and item
+            },
+        }
+
+    def _schedule_power_save_save(self) -> None:
+        if self._power_save_store is None:
+            return
+        self._power_save_store.async_delay_save(
+            self._power_save_payload,
+            WIDEQ_POWER_SAVE_STORE_SAVE_DELAY,
+        )
+
+    def _update_power_save_cache(
+        self, snapshots: dict[str, dict[str, Any]]
+    ) -> None:
+        """Merge verified power-save flags from a successful WideQ poll."""
+        changed = False
+        for device_id, snapshot in snapshots.items():
+            if device_id not in self._pat_devices or not isinstance(snapshot, dict):
+                continue
+            safe_fields = ac_power_save_cache(snapshot)
+            if not safe_fields:
+                continue
+            current = dict(self._power_save_cache.get(device_id, {}))
+            for path, value in safe_fields.items():
+                if current.get(path) != value:
+                    changed = True
+                current[path] = value
+                self._power_save_restored_fields.discard((device_id, path))
+            self._power_save_cache[device_id] = current
+        if changed:
+            self._power_save_cache_saved_at = datetime.now(timezone.utc).isoformat()
+            self._schedule_power_save_save()
+
+    async def async_restore_power_save(self) -> None:
+        """Restore only non-metering power-save flags without polling WideQ."""
+        if self._power_save_store is None:
+            return
+        stored = await self._power_save_store.async_load()
+        if not isinstance(stored, dict):
+            return
+        items = stored.get("items")
+        if not isinstance(items, dict):
+            return
+        for device_id, raw_item in items.items():
+            if device_id not in self._pat_devices or not isinstance(raw_item, dict):
+                continue
+            safe_fields = ac_power_save_cache(raw_item)
+            if not safe_fields:
+                continue
+            self._power_save_cache[device_id] = safe_fields
+            self._power_save_restored_fields.update(
+                (device_id, path) for path in safe_fields
+            )
+        saved_at = stored.get("saved_at")
+        self._power_save_cache_saved_at = (
+            saved_at if isinstance(saved_at, str) else None
+        )
+
+    async def async_persist_power_save(self) -> None:
+        """Flush the safe mode cache during config-entry unload."""
+        if self._power_save_store is not None:
+            await self._power_save_store.async_save(self._power_save_payload())
+
+    def power_save_snapshot_for(self, device_id: str) -> dict[str, Any]:
+        """Return live flags overlaid on the safe restart cache."""
+        merged: dict[str, Any] = dict(self._power_save_cache.get(device_id, {}))
+        merged.update(ac_power_save_cache(self.snapshot_for(device_id)))
+        return merged
+
+    def power_save_field_available(self, device_id: str, path: str) -> bool:
+        """Return whether one power-save flag is known live or from cache."""
+        return path in self.power_save_snapshot_for(device_id)
+
+    def power_save_available(self, device_id: str) -> bool:
+        """Return whether any verified power-save flag is known."""
+        return bool(self.power_save_snapshot_for(device_id))
+
+    def power_save_diagnostic_attributes(self, device_id: str) -> dict[str, Any]:
+        """Describe whether a displayed mode flag came from restart cache."""
+        restored = any(
+            cached_device_id == device_id
+            for cached_device_id, _ in self._power_save_restored_fields
+        )
+        return {
+            "power_save_cache_restored": restored,
+            "power_save_cache_saved_at": (
+                self._power_save_cache_saved_at if restored else None
+            ),
+            "power_save_cache_scope": "mode_flags_only",
+        }
+
+    def apply_power_save_optimistic(
+        self, device_id: str, path: str, value: Any
+    ) -> None:
+        """Reflect a mode command without making other WideQ fields available."""
+        safe = ac_power_save_cache({path: value})
+        if path not in safe:
+            return
+        current = dict(self._power_save_cache.get(device_id, {}))
+        current[path] = safe[path]
+        self._power_save_cache[device_id] = current
+        self._power_save_restored_fields.discard((device_id, path))
+        self.async_update_listeners()
 
     @property
     def circuit_open(self) -> bool:

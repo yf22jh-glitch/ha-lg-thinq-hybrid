@@ -218,6 +218,85 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             },
         )
 
+    async def test_power_save_restore_never_restores_power_or_energy(self) -> None:
+        store = FakeStore(
+            {
+                "saved_at": "2026-08-05T00:00:00+00:00",
+                "items": {
+                    "device": {
+                        "airState.powerSave.basic": 0,
+                        "airState.powerSave.hum": 1,
+                        "airState.energy.onCurrent": 9876,
+                        "energy_today": 42.5,
+                    }
+                },
+            }
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            power_save_store=store,
+        )
+
+        await coordinator.async_restore_power_save()
+
+        self.assertIsNone(coordinator.data)
+        self.assertEqual(coordinator.snapshot_for("device"), {})
+        self.assertEqual(
+            coordinator.power_save_snapshot_for("device"),
+            {
+                "airState.powerSave.basic": False,
+                "airState.powerSave.hum": True,
+            },
+        )
+        self.assertTrue(
+            coordinator.power_save_diagnostic_attributes("device")[
+                "power_save_cache_restored"
+            ]
+        )
+
+    async def test_successful_poll_persists_only_power_save_flags(self) -> None:
+        store = FakeStore()
+        self.client.snapshots[0] = WideqDeviceData(
+            "wideq-device",
+            "Device",
+            "MODEL",
+            {
+                "airState.powerSave.basic": 0,
+                "airState.powerSave.hum": 1,
+                "airState.energy.onCurrent": 1234,
+                "energy_today": 9.9,
+            },
+        )
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            power_save_store=store,
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result["device"]["airState.energy.onCurrent"], 1234)
+        self.assertEqual(
+            store.data["items"]["device"],
+            {
+                "airState.powerSave.basic": False,
+                "airState.powerSave.hum": True,
+            },
+        )
+        self.assertNotIn(
+            "airState.energy.onCurrent", store.data["items"]["device"]
+        )
+        self.assertNotIn("energy_today", store.data["items"]["device"])
+
     async def test_energy_history_uses_separate_cache(self) -> None:
         coordinator = WideqCoordinator(
             self.hass,
