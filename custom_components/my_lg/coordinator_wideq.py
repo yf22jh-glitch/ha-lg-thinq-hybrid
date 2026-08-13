@@ -87,6 +87,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._unmatched_pat_ids: set[str] = set(self._pat_devices)
         self._power_save_store = power_save_store
         self._power_save_cache: dict[str, dict[str, bool]] = {}
+        self._power_save_pending: dict[str, dict[str, bool]] = {}
         self._power_save_restored_fields: set[tuple[str, str]] = set()
         self._power_save_cache_saved_at: str | None = None
 
@@ -283,12 +284,17 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             if not safe_fields:
                 continue
             current = dict(self._power_save_cache.get(device_id, {}))
+            pending = self._power_save_pending.get(device_id)
             for path, value in safe_fields.items():
                 if current.get(path) != value:
                     changed = True
                 current[path] = value
+                if pending is not None:
+                    pending.pop(path, None)
                 self._power_save_restored_fields.discard((device_id, path))
             self._power_save_cache[device_id] = current
+            if pending is not None and not pending:
+                self._power_save_pending.pop(device_id, None)
         if changed:
             self._power_save_cache_saved_at = datetime.now(timezone.utc).isoformat()
             self._schedule_power_save_save()
@@ -324,9 +330,10 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             await self._power_save_store.async_save(self._power_save_payload())
 
     def power_save_snapshot_for(self, device_id: str) -> dict[str, Any]:
-        """Return live flags overlaid on the safe restart cache."""
+        """Return live/cache flags with acknowledged commands shown pending poll."""
         merged: dict[str, Any] = dict(self._power_save_cache.get(device_id, {}))
         merged.update(ac_power_save_cache(self.snapshot_for(device_id)))
+        merged.update(self._power_save_pending.get(device_id, {}))
         return merged
 
     def power_save_field_available(self, device_id: str, path: str) -> bool:
@@ -361,6 +368,9 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         current = dict(self._power_save_cache.get(device_id, {}))
         current[path] = safe[path]
         self._power_save_cache[device_id] = current
+        pending = dict(self._power_save_pending.get(device_id, {}))
+        pending[path] = safe[path]
+        self._power_save_pending[device_id] = pending
         self._power_save_restored_fields.discard((device_id, path))
         self.async_update_listeners()
 
