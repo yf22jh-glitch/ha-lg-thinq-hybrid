@@ -31,15 +31,12 @@
           "allow_hazardous_controls": "Enable hazardous cooking controls",
           "allow_experimental_controls": "Enable experimental model controls",
           "rethink_event_token": "Rethink lifecycle relay token (optional)",
-          "local_provider_mode": "Rethink Local provider mode (disabled or shadow)",
-          "local_pat_device_id": "Target PAT device ID (shadow only)",
-          "local_binding_id": "Opaque Local pilot binding ID (shadow only)",
-          "local_mqtt_password": "Read-only pilot MQTT password (leave blank to keep the saved secret)"
+          "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)"
         }
       }
     },
     "error": {
-      "local_shadow_invalid": "The Local shadow options are incomplete or outside the one-device pilot contract."
+      "local_shadow_invalid": "The Local shadow bindings are invalid, duplicated, or outside an exact published profile."
     }
   },
   "entity": {

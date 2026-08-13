@@ -101,8 +101,7 @@ class WaterTankEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
         data = SimpleNamespace(
             wideq_coordinator=wideq,
             coordinators={PAT_DEVICE_ID: pat_coordinator()},
-            local_provider=provider,
-            local_pat_device_id=PAT_DEVICE_ID,
+            local_providers={PAT_DEVICE_ID: provider},
         )
         entry = SimpleNamespace(runtime_data=data)
         entities = []

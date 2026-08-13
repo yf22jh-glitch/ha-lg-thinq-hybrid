@@ -14,5 +14,5 @@
     "thinqconnect>=1.0.12",
     "xmltodict>=0.13.0"
   ],
-  "version": "0.10.0"
+  "version": "0.11.0"
 }

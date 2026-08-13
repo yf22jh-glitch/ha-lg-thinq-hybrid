@@ -24,6 +24,7 @@ SPEC.loader.exec_module(local)
 
 NOW = datetime(2026, 8, 13, 1, 0, tzinfo=timezone.utc)
 BINDING_ID = "pilot_dhum_provider_001"
+BINDING_TWO = "pilot_dhum_provider_002"
 SESSION_ONE = "session_dhum_provider_001"
 SESSION_TWO = "session_dhum_provider_002"
 SERVICE_ONE = "1" * 32
@@ -535,6 +536,87 @@ class LocalShadowConfigurationTests(unittest.TestCase):
         self.assertEqual(config.pat_device_id, "pat-device-001")
         self.assertEqual(config.binding_id, BINDING_ID)
         self.assertEqual(config.mqtt_username, f"shadow-{BINDING_ID}")
+        self.assertEqual(config.profile_id, "dhum-water-tank-v1")
+        self.assertEqual(config.model_id, "DHUM_056905_WW")
+        self.assertEqual(config.platform, "thinq2")
+
+    def test_versioned_bindings_accept_json_or_list_and_reject_duplicates(self) -> None:
+        bindings = [
+            {
+                "schema_version": 1,
+                "mode": "shadow",
+                "profile_id": "dhum-water-tank-v1",
+                "model_id": "DHUM_056905_WW",
+                "platform": "thinq2",
+                "pat_device_id": "pat-device-001",
+                "binding_id": BINDING_ID,
+                "mqtt_password": "private-test-password-one",
+            },
+            {
+                "schema_version": 1,
+                "mode": "shadow",
+                "profile_id": "dhum-water-tank-v1",
+                "model_id": "DHUM_056905_WW",
+                "platform": "thinq2",
+                "pat_device_id": "pat-device-002",
+                "binding_id": BINDING_TWO,
+                "mqtt_password": "private-test-password-two",
+            },
+        ]
+        parsed_list = local.local_shadow_configurations(
+            {local.OPT_LOCAL_BINDINGS: bindings}
+        )
+        parsed_json = local.local_shadow_configurations(
+            {local.OPT_LOCAL_BINDINGS: json.dumps(bindings)}
+        )
+        self.assertEqual(parsed_list, parsed_json)
+        self.assertEqual(len(parsed_list), 2)
+        self.assertEqual(
+            [config.pat_device_id for config in parsed_list],
+            ["pat-device-001", "pat-device-002"],
+        )
+
+        for duplicate_key in ("pat_device_id", "binding_id"):
+            invalid = json.loads(json.dumps(bindings))
+            invalid[1][duplicate_key] = invalid[0][duplicate_key]
+            with (
+                self.subTest(duplicate_key=duplicate_key),
+                self.assertRaises(local.LocalProviderConfigurationError),
+            ):
+                local.local_shadow_configurations({local.OPT_LOCAL_BINDINGS: invalid})
+
+    def test_versioned_binding_pins_profile_model_platform_and_exact_keys(self) -> None:
+        base = {
+            "schema_version": 1,
+            "mode": "shadow",
+            "profile_id": "dhum-water-tank-v1",
+            "model_id": "DHUM_056905_WW",
+            "platform": "thinq2",
+            "pat_device_id": "pat-device-001",
+            "binding_id": BINDING_ID,
+            "mqtt_password": "private-test-password",
+        }
+        cases = []
+        for key, value in (
+            ("schema_version", 2),
+            ("mode", "preferred"),
+            ("profile_id", "unknown-profile"),
+            ("model_id", "OTHER_MODEL"),
+            ("platform", "thinq1"),
+        ):
+            invalid = dict(base)
+            invalid[key] = value
+            cases.append(invalid)
+        unexpected = dict(base)
+        unexpected["unexpected"] = True
+        cases.append(unexpected)
+
+        for binding in cases:
+            with (
+                self.subTest(binding=binding),
+                self.assertRaises(local.LocalProviderConfigurationError),
+            ):
+                local.local_shadow_configurations({local.OPT_LOCAL_BINDINGS: [binding]})
 
     def test_preferred_and_incomplete_shadow_modes_fail_closed(self) -> None:
         cases = [
@@ -571,10 +653,12 @@ class LocalShadowConfigurationTests(unittest.TestCase):
             submitted,
             {local.OPT_LOCAL_MQTT_PASSWORD: "existing-private-test-password"},
         )
+        self.assertNotIn(local.OPT_LOCAL_MQTT_PASSWORD, merged)
         self.assertEqual(
-            merged[local.OPT_LOCAL_MQTT_PASSWORD],
+            merged[local.OPT_LOCAL_BINDINGS][0]["mqtt_password"],
             "existing-private-test-password",
         )
+        self.assertEqual(merged[local.OPT_LOCAL_BINDINGS][0]["schema_version"], 1)
         self.assertEqual(merged["unrelated_option"], 300)
 
     def test_disabling_local_removes_binding_and_secret_options(self) -> None:
@@ -591,10 +675,170 @@ class LocalShadowConfigurationTests(unittest.TestCase):
         self.assertEqual(
             merged,
             {
-                local.OPT_LOCAL_PROVIDER_MODE: local.LOCAL_PROVIDER_MODE_DISABLED,
+                local.OPT_LOCAL_BINDINGS: [],
                 "unrelated_option": 300,
             },
         )
+
+    def test_new_binding_form_masks_secrets_and_merges_them_by_binding(self) -> None:
+        existing = local.migrate_local_shadow_options(
+            {
+                local.OPT_LOCAL_PROVIDER_MODE: local.LOCAL_PROVIDER_MODE_SHADOW,
+                local.OPT_LOCAL_PAT_DEVICE_ID: "pat-device-001",
+                local.OPT_LOCAL_BINDING_ID: BINDING_ID,
+                local.OPT_LOCAL_MQTT_PASSWORD: "existing-private-test-password",
+            }
+        )
+        rendered = local.local_bindings_for_form(existing)
+        self.assertNotIn("existing-private-test-password", rendered)
+        submitted = json.loads(rendered)
+        self.assertEqual(submitted[0]["mqtt_password"], "")
+
+        merged = local.merge_local_shadow_options(
+            {local.OPT_LOCAL_BINDINGS: rendered, "unrelated_option": 300},
+            existing,
+        )
+        self.assertEqual(
+            merged[local.OPT_LOCAL_BINDINGS][0]["mqtt_password"],
+            "existing-private-test-password",
+        )
+        self.assertEqual(merged["unrelated_option"], 300)
+
+    def test_invalid_existing_bindings_can_be_repaired_without_reusing_secrets(
+        self,
+    ) -> None:
+        repaired = {
+            "schema_version": 1,
+            "mode": "shadow",
+            "profile_id": "styler-core-state-v1",
+            "model_id": "ST_R_ETH01Y_",
+            "platform": "thinq2",
+            "pat_device_id": "pat-styler-001",
+            "binding_id": "pilot_styler_provider_001",
+            "mqtt_password": "new-private-test-password",
+        }
+
+        merged = local.merge_local_shadow_options(
+            {local.OPT_LOCAL_BINDINGS: [repaired]},
+            {local.OPT_LOCAL_BINDINGS: "not-json"},
+        )
+
+        self.assertEqual(merged[local.OPT_LOCAL_BINDINGS], [repaired])
+
+
+class GenericLocalSemanticProviderTests(unittest.TestCase):
+    def profile(self):
+        return local.LocalSemanticProfile(
+            profile_id="synthetic-two-field-v1",
+            model_id="SYNTHETIC_MODEL",
+            platform="thinq2",
+            semantics_revision=26,
+            fields={
+                "temperature.current_c": local.LocalSemanticFieldContract(
+                    value_type="number",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                    unit="°C",
+                ),
+                "door.open": local.LocalSemanticFieldContract(
+                    value_type="boolean",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                ),
+            },
+        )
+
+    def payload(self, **overrides) -> bytes:
+        value = {
+            "schema_version": 1,
+            "semantics_revision": 26,
+            "binding_id": BINDING_ID,
+            "model_id": "SYNTHETIC_MODEL",
+            "platform": "thinq2",
+            "session_id": SESSION_ONE,
+            "sequence": 1,
+            "published_at": "2026-08-13T00:59:59.000Z",
+            "fields": {
+                "temperature.current_c": {
+                    "value": 23.5,
+                    "value_type": "number",
+                    "unit": "°C",
+                    "observed_at": "2026-08-13T00:59:58.000Z",
+                    "confidence": "confirmed-synthetic",
+                    "exposure": "state",
+                },
+                "door.open": {
+                    "value": False,
+                    "value_type": "boolean",
+                    "observed_at": "2026-08-13T00:59:58.000Z",
+                    "confidence": "confirmed-synthetic",
+                    "exposure": "state",
+                },
+            },
+            "diagnostics": {
+                "rejected_frames": 0,
+                "unresolved_fields": 0,
+                "invalid_values": 0,
+                "unsupported_frames": 0,
+            },
+        }
+        value.update(overrides)
+        return json.dumps(value, separators=(",", ":")).encode()
+
+    def test_stores_typed_allowlisted_fields_for_one_exact_profile(self) -> None:
+        provider = local.LocalSemanticShadowProvider(
+            BINDING_ID, self.profile(), now=lambda: NOW
+        )
+        provider.ingest(provider.state_topic, self.payload(), qos=1, retained=True)
+        self.assertEqual(provider.profile_id, "synthetic-two-field-v1")
+        self.assertEqual(provider.model_id, "SYNTHETIC_MODEL")
+        self.assertEqual(provider.platform, "thinq2")
+        self.assertEqual(provider.field_value("temperature.current_c"), 23.5)
+        self.assertIs(provider.field_value("door.open"), False)
+        self.assertIsNone(provider.field_value("unknown.field"))
+        self.assertEqual(
+            set(provider.shadow_fields),
+            {"temperature.current_c", "door.open"},
+        )
+
+    def test_rejects_unknown_or_contract_mismatched_fields_atomically(self) -> None:
+        provider = local.LocalSemanticShadowProvider(
+            BINDING_ID, self.profile(), now=lambda: NOW
+        )
+        accepted = self.payload()
+        provider.ingest(provider.state_topic, accepted, qos=1, retained=True)
+
+        cases = []
+        unknown = json.loads(accepted)
+        unknown["sequence"] = 2
+        unknown["fields"]["unknown.field"] = unknown["fields"]["door.open"]
+        cases.append(unknown)
+        wrong_model = json.loads(accepted)
+        wrong_model["sequence"] = 2
+        wrong_model["model_id"] = "OTHER_MODEL"
+        cases.append(wrong_model)
+        wrong_unit = json.loads(accepted)
+        wrong_unit["sequence"] = 2
+        wrong_unit["fields"]["temperature.current_c"]["unit"] = "°F"
+        cases.append(wrong_unit)
+        wrong_type = json.loads(accepted)
+        wrong_type["sequence"] = 2
+        wrong_type["fields"]["door.open"]["value"] = 1
+        cases.append(wrong_type)
+
+        for payload in cases:
+            with (
+                self.subTest(payload=payload),
+                self.assertRaises(local.LocalProviderContractError),
+            ):
+                provider.ingest(
+                    provider.state_topic,
+                    json.dumps(payload).encode(),
+                    qos=1,
+                    retained=True,
+                )
+        self.assertEqual(provider.sequence, 1)
+        self.assertEqual(provider.field_value("temperature.current_c"), 23.5)
 
 
 class WaterTankResolverTests(unittest.TestCase):

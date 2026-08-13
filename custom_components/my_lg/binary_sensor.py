@@ -25,7 +25,7 @@ from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
 from .local_provider import (
     WIDEQ_WATER_TANK_KEY,
-    LocalWaterTankShadowProvider,
+    LocalSemanticShadowProvider,
     WaterTankProviderResolver,
 )
 
@@ -57,20 +57,26 @@ def _door_loc(location: str) -> Callable[[PatDeviceCoordinator], bool | None]:
 PAT_BINARY_BY_TYPE: dict[str, tuple[MyLgBinaryDescription, ...]] = {
     DEVICE_TYPE_REFRIGERATOR: (
         MyLgBinaryDescription(
-            key="door", translation_key="door",
-            device_class=BinarySensorDeviceClass.DOOR, is_on_fn=_door_loc("MAIN"),
+            key="door",
+            translation_key="door",
+            device_class=BinarySensorDeviceClass.DOOR,
+            is_on_fn=_door_loc("MAIN"),
         ),
     ),
     DEVICE_TYPE_DISH_WASHER: (
         MyLgBinaryDescription(
-            key="door", translation_key="door",
-            device_class=BinarySensorDeviceClass.DOOR, is_on_fn=_door_flat,
+            key="door",
+            translation_key="door",
+            device_class=BinarySensorDeviceClass.DOOR,
+            is_on_fn=_door_flat,
         ),
         MyLgBinaryDescription(
-            key="rinse_refill", translation_key="rinse_refill",
+            key="rinse_refill",
+            translation_key="rinse_refill",
             device_class=BinarySensorDeviceClass.PROBLEM,
             is_on_fn=lambda c: (
-                None if (v := c.get("dishWashingStatus", "rinseRefill")) is None
+                None
+                if (v := c.get("dishWashingStatus", "rinseRefill")) is None
                 else bool(v)
             ),
         ),
@@ -91,11 +97,7 @@ async def async_setup_entry(
             WaterTankFullSensor(
                 data.wideq_coordinator,
                 coordinator,
-                (
-                    data.local_provider
-                    if data.local_pat_device_id == coordinator.device_id
-                    else None
-                ),
+                data.local_providers.get(coordinator.device_id),
             )
             for coordinator in data.coordinators.values()
             if coordinator.device_type == DEVICE_TYPE_DEHUMIDIFIER
@@ -133,7 +135,7 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
         self,
         wideq_coordinator: WideqCoordinator,
         pat_coordinator: PatDeviceCoordinator,
-        local_provider: LocalWaterTankShadowProvider | None = None,
+        local_provider: LocalSemanticShadowProvider | None = None,
     ) -> None:
         super().__init__(wideq_coordinator)
         self._device_id = pat_coordinator.device_id

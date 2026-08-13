@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import unittest
 from types import SimpleNamespace
 from typing import ClassVar
@@ -13,6 +14,7 @@ from custom_components.my_lg.const import DEVICE_TYPE_DEHUMIDIFIER
 from custom_components.my_lg.local_provider import (
     LOCAL_PROVIDER_MODE_SHADOW,
     OPT_LOCAL_BINDING_ID,
+    OPT_LOCAL_BINDINGS,
     OPT_LOCAL_MQTT_PASSWORD,
     OPT_LOCAL_PAT_DEVICE_ID,
     OPT_LOCAL_PROVIDER_MODE,
@@ -20,6 +22,7 @@ from custom_components.my_lg.local_provider import (
 from tests.test_local_provider import BINDING_ID
 
 PAT_DEVICE_ID = "pat-dehumidifier-001"
+PAT_DEVICE_ID_TWO = "pat-dehumidifier-002"
 
 
 def options(**overrides):
@@ -33,22 +36,47 @@ def options(**overrides):
     return result
 
 
-def data(*, model="DHUM_056905_WW", wideq=True):
-    coordinator = SimpleNamespace(
-        device_id=PAT_DEVICE_ID,
-        device_type=DEVICE_TYPE_DEHUMIDIFIER,
-        model=model,
-    )
+def binding_options(*pat_device_ids):
+    return {
+        OPT_LOCAL_BINDINGS: [
+            {
+                "schema_version": 1,
+                "mode": "shadow",
+                "profile_id": "dhum-water-tank-v1",
+                "model_id": "DHUM_056905_WW",
+                "platform": "thinq2",
+                "pat_device_id": pat_device_id,
+                "binding_id": f"pilot_dhum_provider_{index:03d}",
+                "mqtt_password": f"private-test-password-{index}",
+            }
+            for index, pat_device_id in enumerate(pat_device_ids, start=1)
+        ]
+    }
+
+
+def data(*, model="DHUM_056905_WW", wideq=True, multiple=False):
+    device_ids = [PAT_DEVICE_ID]
+    if multiple:
+        device_ids.append(PAT_DEVICE_ID_TWO)
+    coordinators = {
+        device_id: SimpleNamespace(
+            device_id=device_id,
+            device_type=DEVICE_TYPE_DEHUMIDIFIER,
+            model=model,
+        )
+        for device_id in device_ids
+    }
     return integration.MyLgData(
         api=object(),
-        coordinators={PAT_DEVICE_ID: coordinator},
+        coordinators=coordinators,
         wideq_coordinator=object() if wideq else None,
     )
 
 
 class FakeSubscriber:
     instances: ClassVar[list[FakeSubscriber]] = []
-    start_error: ClassVar[Exception | None] = None
+    start_error_bindings: ClassVar[set[str]] = set()
+    stop_error_bindings: ClassVar[set[str]] = set()
 
     def __init__(self, loop, provider, **kwargs) -> None:
         self.loop = loop
@@ -60,24 +88,54 @@ class FakeSubscriber:
 
     async def async_start(self):
         self.started += 1
-        if self.start_error is not None:
-            raise self.start_error
+        if self.provider.binding_id in self.start_error_bindings:
+            raise RuntimeError("synthetic transport failure")
 
     async def async_stop(self):
         self.stopped += 1
+        if self.provider.binding_id in self.stop_error_bindings:
+            raise RuntimeError("synthetic stop failure")
 
 
 class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         FakeSubscriber.instances.clear()
-        FakeSubscriber.start_error = None
-        self.hass = SimpleNamespace(loop=asyncio.get_running_loop())
+        FakeSubscriber.start_error_bindings.clear()
+        FakeSubscriber.stop_error_bindings.clear()
+
+        async def async_add_executor_job(target, *args):
+            return await asyncio.to_thread(target, *args)
+
+        self.hass = SimpleNamespace(
+            loop=asyncio.get_running_loop(),
+            async_add_executor_job=async_add_executor_job,
+        )
+
+    async def test_configuration_and_catalogue_io_run_off_event_loop(self) -> None:
+        loop_thread = threading.get_ident()
+        worker_threads: list[int] = []
+        original = integration.local_shadow_configurations
+
+        def observed(options_value):
+            worker_threads.append(threading.get_ident())
+            return original(options_value)
+
+        with (
+            patch.object(integration, "local_shadow_configurations", observed),
+            patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber),
+        ):
+            await integration._setup_local_shadows(
+                self.hass, SimpleNamespace(options=options()), data()
+            )
+
+        self.assertEqual(len(worker_threads), 1)
+        self.assertNotEqual(worker_threads[0], loop_thread)
 
     async def test_exact_target_starts_one_sidecar_and_keeps_pat_anchor(self) -> None:
         runtime = data()
         entry = SimpleNamespace(options=options())
         with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
-            await integration._setup_local_shadow(self.hass, entry, runtime)
+            await integration._setup_local_shadows(self.hass, entry, runtime)
 
         self.assertEqual(len(FakeSubscriber.instances), 1)
         subscriber = FakeSubscriber.instances[0]
@@ -85,9 +143,8 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(subscriber.kwargs["host"], "127.0.0.1")
         self.assertEqual(subscriber.kwargs["port"], 18883)
         self.assertEqual(subscriber.kwargs["username"], f"shadow-{BINDING_ID}")
-        self.assertIs(runtime.local_mqtt, subscriber)
-        self.assertIs(runtime.local_provider, subscriber.provider)
-        self.assertEqual(runtime.local_pat_device_id, PAT_DEVICE_ID)
+        self.assertIs(runtime.local_mqtt_subscribers[PAT_DEVICE_ID], subscriber)
+        self.assertIs(runtime.local_providers[PAT_DEVICE_ID], subscriber.provider)
 
     async def test_missing_wideq_or_wrong_model_is_nonfatal_and_starts_nothing(
         self,
@@ -97,52 +154,152 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
                 with patch.object(
                     integration, "LocalPilotMqttSubscriber", FakeSubscriber
                 ):
-                    await integration._setup_local_shadow(
+                    await integration._setup_local_shadows(
                         self.hass,
                         SimpleNamespace(options=options()),
                         runtime,
                     )
-                self.assertIsNone(runtime.local_provider)
-                self.assertIsNone(runtime.local_mqtt)
+                self.assertEqual(runtime.local_providers, {})
+                self.assertEqual(runtime.local_mqtt_subscribers, {})
         self.assertEqual(FakeSubscriber.instances, [])
 
     async def test_transport_start_failure_never_blocks_wideq_runtime(self) -> None:
         runtime = data()
-        FakeSubscriber.start_error = RuntimeError("synthetic transport failure")
+        FakeSubscriber.start_error_bindings.add(BINDING_ID)
         with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
-            await integration._setup_local_shadow(
+            await integration._setup_local_shadows(
                 self.hass,
                 SimpleNamespace(options=options()),
                 runtime,
             )
         self.assertIsNotNone(runtime.wideq_coordinator)
-        self.assertIsNone(runtime.local_provider)
-        self.assertIsNone(runtime.local_mqtt)
+        self.assertEqual(runtime.local_providers, {})
+        self.assertEqual(runtime.local_mqtt_subscribers, {})
         self.assertEqual(FakeSubscriber.instances[0].stopped, 1)
 
     async def test_stop_detaches_identity_and_transport_before_returning(self) -> None:
         runtime = data()
         entry = SimpleNamespace(options=options())
         with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
-            await integration._setup_local_shadow(self.hass, entry, runtime)
+            await integration._setup_local_shadows(self.hass, entry, runtime)
         subscriber = FakeSubscriber.instances[0]
 
-        await integration._stop_local_shadow(runtime)
+        await integration._stop_local_shadows(runtime)
 
         self.assertEqual(subscriber.stopped, 1)
-        self.assertIsNone(runtime.local_provider)
-        self.assertIsNone(runtime.local_mqtt)
-        self.assertIsNone(runtime.local_pat_device_id)
+        self.assertEqual(runtime.local_providers, {})
+        self.assertEqual(runtime.local_mqtt_subscribers, {})
 
     async def test_disabled_mode_never_constructs_a_subscriber(self) -> None:
         runtime = data()
         entry = SimpleNamespace(options={OPT_LOCAL_PROVIDER_MODE: "disabled"})
         with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
-            await integration._setup_local_shadow(self.hass, entry, runtime)
+            await integration._setup_local_shadows(self.hass, entry, runtime)
 
         self.assertEqual(FakeSubscriber.instances, [])
-        self.assertIsNone(runtime.local_provider)
-        self.assertIsNone(runtime.local_mqtt)
+        self.assertEqual(runtime.local_providers, {})
+        self.assertEqual(runtime.local_mqtt_subscribers, {})
+
+    async def test_multiple_bindings_start_independently_by_pat_identity(self) -> None:
+        runtime = data(multiple=True)
+        entry = SimpleNamespace(
+            options=binding_options(PAT_DEVICE_ID, PAT_DEVICE_ID_TWO)
+        )
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(
+            set(runtime.local_providers), {PAT_DEVICE_ID, PAT_DEVICE_ID_TWO}
+        )
+        self.assertEqual(
+            set(runtime.local_mqtt_subscribers),
+            {PAT_DEVICE_ID, PAT_DEVICE_ID_TWO},
+        )
+        self.assertEqual(len(FakeSubscriber.instances), 2)
+        self.assertTrue(all(item.started == 1 for item in FakeSubscriber.instances))
+
+    async def test_non_dhum_profile_starts_without_wideq_and_stays_shadow_only(
+        self,
+    ) -> None:
+        pat_id = "pat-styler-001"
+        runtime = integration.MyLgData(
+            api=object(),
+            coordinators={
+                pat_id: SimpleNamespace(
+                    device_id=pat_id,
+                    device_type="STYLER",
+                    model="ST_R_ETH01Y_",
+                )
+            },
+            wideq_coordinator=None,
+        )
+        entry = SimpleNamespace(
+            options={
+                OPT_LOCAL_BINDINGS: [
+                    {
+                        "schema_version": 1,
+                        "mode": "shadow",
+                        "profile_id": "styler-core-state-v1",
+                        "model_id": "ST_R_ETH01Y_",
+                        "platform": "thinq2",
+                        "pat_device_id": pat_id,
+                        "binding_id": "pilot_styler_provider_001",
+                        "mqtt_password": "private-test-password",
+                    }
+                ]
+            }
+        )
+
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        provider = runtime.local_providers[pat_id]
+        self.assertEqual(provider.profile_id, "styler-core-state-v1")
+        self.assertEqual(provider.model_id, "ST_R_ETH01Y_")
+        self.assertEqual(
+            set(provider.profile.fields),
+            {
+                "cycle.course",
+                "cycle.state",
+                "option.no_interrupt_enabled",
+            },
+        )
+        self.assertIsNone(runtime.wideq_coordinator)
+
+    async def test_one_binding_start_failure_does_not_remove_a_healthy_binding(
+        self,
+    ) -> None:
+        runtime = data(multiple=True)
+        entry = SimpleNamespace(
+            options=binding_options(PAT_DEVICE_ID, PAT_DEVICE_ID_TWO)
+        )
+        FakeSubscriber.start_error_bindings.add("pilot_dhum_provider_002")
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(set(runtime.local_providers), {PAT_DEVICE_ID})
+        self.assertEqual(set(runtime.local_mqtt_subscribers), {PAT_DEVICE_ID})
+        failed = next(
+            item
+            for item in FakeSubscriber.instances
+            if item.provider.binding_id == "pilot_dhum_provider_002"
+        )
+        self.assertEqual(failed.stopped, 1)
+
+    async def test_stop_failure_is_isolated_and_all_bindings_are_detached(self) -> None:
+        runtime = data(multiple=True)
+        entry = SimpleNamespace(
+            options=binding_options(PAT_DEVICE_ID, PAT_DEVICE_ID_TWO)
+        )
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+        FakeSubscriber.stop_error_bindings.add("pilot_dhum_provider_001")
+
+        await integration._stop_local_shadows(runtime)
+
+        self.assertEqual(runtime.local_providers, {})
+        self.assertEqual(runtime.local_mqtt_subscribers, {})
+        self.assertTrue(all(item.stopped == 1 for item in FakeSubscriber.instances))
 
     async def test_failed_platform_unload_leaves_every_runtime_alive(self) -> None:
         local_subscriber = SimpleNamespace(async_stop=AsyncMock())
@@ -154,9 +311,8 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         )
         wideq_client = SimpleNamespace(async_close=AsyncMock())
         runtime = data()
-        runtime.local_provider = object()
-        runtime.local_mqtt = local_subscriber
-        runtime.local_pat_device_id = PAT_DEVICE_ID
+        runtime.local_providers[PAT_DEVICE_ID] = object()
+        runtime.local_mqtt_subscribers[PAT_DEVICE_ID] = local_subscriber
         runtime.mqtt = pat_mqtt
         runtime.wideq_coordinator = wideq
         runtime.wideq_client = wideq_client
@@ -174,8 +330,7 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         wideq.async_persist_energy_history.assert_not_awaited()
         wideq.async_persist_device_map.assert_not_awaited()
         wideq_client.async_close.assert_not_awaited()
-        self.assertIs(runtime.local_mqtt, local_subscriber)
-        self.assertEqual(runtime.local_pat_device_id, PAT_DEVICE_ID)
+        self.assertIs(runtime.local_mqtt_subscribers[PAT_DEVICE_ID], local_subscriber)
 
     async def test_successful_platform_unload_stops_each_runtime_once(self) -> None:
         local_subscriber = SimpleNamespace(async_stop=AsyncMock())
@@ -187,9 +342,8 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         )
         wideq_client = SimpleNamespace(async_close=AsyncMock())
         runtime = data()
-        runtime.local_provider = object()
-        runtime.local_mqtt = local_subscriber
-        runtime.local_pat_device_id = PAT_DEVICE_ID
+        runtime.local_providers[PAT_DEVICE_ID] = object()
+        runtime.local_mqtt_subscribers[PAT_DEVICE_ID] = local_subscriber
         runtime.mqtt = pat_mqtt
         runtime.wideq_coordinator = wideq
         runtime.wideq_client = wideq_client
@@ -207,9 +361,8 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         wideq.async_persist_energy_history.assert_awaited_once_with()
         wideq.async_persist_device_map.assert_awaited_once_with()
         wideq_client.async_close.assert_awaited_once_with()
-        self.assertIsNone(runtime.local_provider)
-        self.assertIsNone(runtime.local_mqtt)
-        self.assertIsNone(runtime.local_pat_device_id)
+        self.assertEqual(runtime.local_providers, {})
+        self.assertEqual(runtime.local_mqtt_subscribers, {})
 
 
 if __name__ == "__main__":

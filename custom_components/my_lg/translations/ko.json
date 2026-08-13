@@ -31,15 +31,12 @@
           "allow_hazardous_controls": "위험 조리 제어 활성화",
           "allow_experimental_controls": "실험 모델 제어 활성화",
           "rethink_event_token": "Rethink 기기 등록 이벤트 연동 토큰 (선택)",
-          "local_provider_mode": "Rethink Local provider 모드 (disabled 또는 shadow)",
-          "local_pat_device_id": "대상 PAT 디바이스 ID (shadow 전용)",
-          "local_binding_id": "불투명 Local 파일럿 binding ID (shadow 전용)",
-          "local_mqtt_password": "읽기 전용 파일럿 MQTT 비밀번호 (비워 두면 저장된 값 유지)"
+          "local_bindings": "버전이 고정된 읽기 전용 Local binding JSON ([]로 비활성화, 저장된 binding의 비밀번호는 빈 값으로 유지)"
         }
       }
     },
     "error": {
-      "local_shadow_invalid": "Local shadow 설정이 불완전하거나 제습기 한 대 파일럿 계약 범위를 벗어났습니다."
+      "local_shadow_invalid": "Local shadow binding이 잘못되었거나 중복되었거나 게시된 정확한 프로필 범위를 벗어났습니다."
     }
   },
   "entity": {

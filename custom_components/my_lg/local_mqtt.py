@@ -10,7 +10,7 @@ from typing import Any
 
 from .local_provider import (
     LocalProviderContractError,
-    LocalWaterTankShadowProvider,
+    LocalSemanticShadowProvider,
     validate_binding_id,
 )
 
@@ -47,12 +47,12 @@ def _result_code(value: object) -> int | None:
 
 
 class LocalPilotMqttSubscriber:
-    """Receive three exact QoS 1 topics from the loopback pilot broker."""
+    """Receive three exact QoS 1 topics for one read-only Local binding."""
 
     def __init__(
         self,
         loop: asyncio.AbstractEventLoop,
-        provider: LocalWaterTankShadowProvider,
+        provider: LocalSemanticShadowProvider,
         *,
         host: str,
         port: int,
