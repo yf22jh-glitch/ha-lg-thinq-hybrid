@@ -22,17 +22,24 @@
   "options": {
     "step": {
       "init": {
-        "title": "폴링 간격",
-        "description": "wideq 폴링 간격(초). LG 차단을 막기 위해 최소값이 강제됩니다.",
+        "title": "폴링 및 Local shadow",
+        "description": "보호된 wideq 폴링과 선택적 읽기 전용 Rethink Local 파일럿을 설정합니다. Local shadow는 기존 엔티티 상태를 바꾸지 않습니다.",
         "data": {
           "ac_active_interval": "에어컨 활성 간격 (최소 60초)",
           "appliance_active_interval": "가전 활성 간격 (최소 300초)",
           "idle_interval": "유휴 baseline 간격 (최소 600초)",
           "allow_hazardous_controls": "위험 조리 제어 활성화",
           "allow_experimental_controls": "실험 모델 제어 활성화",
-          "rethink_event_token": "Rethink 기기 등록 이벤트 연동 토큰 (선택)"
+          "rethink_event_token": "Rethink 기기 등록 이벤트 연동 토큰 (선택)",
+          "local_provider_mode": "Rethink Local provider 모드 (disabled 또는 shadow)",
+          "local_pat_device_id": "대상 PAT 디바이스 ID (shadow 전용)",
+          "local_binding_id": "불투명 Local 파일럿 binding ID (shadow 전용)",
+          "local_mqtt_password": "읽기 전용 파일럿 MQTT 비밀번호 (비워 두면 저장된 값 유지)"
         }
       }
+    },
+    "error": {
+      "local_shadow_invalid": "Local shadow 설정이 불완전하거나 제습기 한 대 파일럿 계약 범위를 벗어났습니다."
     }
   },
   "entity": {
