@@ -43,7 +43,7 @@ DEFAULT_FREEZER_RANGE_F = [-8, 6]
 
 REFR_ROOT_DATA = "refState"
 CTRL_BASIC = ["Control", "basicCtrl"]
-ENERGY_TODAY_POLL_INTERVAL = 300  # 5 minutes
+ENERGY_TODAY_POLL_INTERVAL = 600  # 10 minutes
 ENERGY_MONTH_POLL_INTERVAL = 3600  # 60 minutes
 
 STATE_ECO_FRIENDLY = ["EcoFriendly", "ecoFriendly"]
@@ -191,13 +191,63 @@ class RefrigeratorDevice(Device):
     def _get_temps_v2(self, key, unit_key=None):
         """Get valid values for temps for V2 models"""
         if unit_key:
-            if ref_key := self.model_info.target_key(key, unit_key, "tempUnit"):
+            if ref_key := self._get_target_temp_key(key, unit_key):
                 key = ref_key
         value_type = self.model_info.value_type(key)
         if not value_type or value_type != TYPE_ENUM:
-            return {}
+            return self._get_value_mapping_options(key)
         temp_values = self.model_info.value(key).options
         return {k: v for k, v in temp_values.items() if v != "IGNORE"}
+
+    def _model_value_info(self, key):
+        """Return raw model value info from Value or MonitoringValue sections."""
+        model_data = getattr(self.model_info, "_data", None)
+        if not isinstance(model_data, dict):
+            return None
+        for section in ("Value", "MonitoringValue"):
+            values = model_data.get(section)
+            if isinstance(values, dict) and isinstance(values.get(key), dict):
+                return values[key]
+        return None
+
+    def _get_target_temp_key(self, key, unit_key):
+        """Return the unit-specific temperature mapping key for V2 models."""
+        if ref_key := self.model_info.target_key(key, unit_key, "tempUnit"):
+            return ref_key
+
+        value_info = self._model_value_info(key)
+        if not value_info:
+            return None
+        target_key = value_info.get("target_key") or value_info.get("targetKey")
+        if not isinstance(target_key, dict):
+            return None
+
+        temp_unit_targets = target_key.get("tempUnit")
+        if isinstance(temp_unit_targets, dict):
+            return temp_unit_targets.get(unit_key)
+        return target_key.get(unit_key)
+
+    def _get_value_mapping_options(self, key):
+        """Return enum-like options from raw model value mappings."""
+        value_info = self._model_value_info(key)
+        if not value_info:
+            return {}
+        value_mapping = value_info.get("value_mapping") or value_info.get(
+            "valueMapping"
+        )
+        if not isinstance(value_mapping, dict):
+            return {}
+
+        options = {}
+        for raw_value, mapped_value in value_mapping.items():
+            if isinstance(mapped_value, dict):
+                label = mapped_value.get("label")
+            else:
+                label = mapped_value
+            if label in (None, "", "IGNORE"):
+                continue
+            options[str(raw_value)] = str(label)
+        return options
 
     @staticmethod
     def _get_temp_ranges(temps):
@@ -231,6 +281,16 @@ class RefrigeratorDevice(Device):
                 except ValueError:
                     return None
         return None
+
+    @staticmethod
+    def _temp_value(value):
+        """Return numeric temperature value from direct ThinQ Web snapshots."""
+        try:
+            if value in (None, StateOptions.NONE, StateOptions.UNKNOWN, "IGNORE"):
+                return None
+            return int(float(value))
+        except (TypeError, ValueError):
+            return None
 
     def get_fridge_temps(self, unit=None, unit_key=None):
         """Get valid values for fridge temp."""
@@ -341,7 +401,10 @@ class RefrigeratorDevice(Device):
         if self._status.temp_fridge is None:
             return
 
-        if (temp_key := self._get_temp_key(self._fridge_temps, temp)) is None:
+        temp_key = self._get_temp_key(self._fridge_temps, temp)
+        if temp_key is None and self.model_info.is_info_v2:
+            temp_key = self._temp_value(temp)
+        if temp_key is None:
             raise ValueError(f"Target fridge temperature not valid: {temp}")
         if not self.model_info.is_info_v2:
             temp_key = str(temp_key)
@@ -358,7 +421,10 @@ class RefrigeratorDevice(Device):
         if self._status.temp_freezer is None:
             return
 
-        if (temp_key := self._get_temp_key(self._freezer_temps, temp)) is None:
+        temp_key = self._get_temp_key(self._freezer_temps, temp)
+        if temp_key is None and self.model_info.is_info_v2:
+            temp_key = self._temp_value(temp)
+        if temp_key is None:
             raise ValueError(f"Target freezer temperature not valid: {temp}")
         if not self.model_info.is_info_v2:
             temp_key = str(temp_key)
@@ -425,6 +491,7 @@ class RefrigeratorDevice(Device):
             f"service/fridge/{self.device_info.device_id}/energy-history"
             f"?period={period}&startDate={start_date}&endDate={end_date}"
         )
+        await self._client.prepare_energy_history_request()
         return await self._client.session.get2(path)
 
     async def get_energy_today_usage(self):
@@ -486,8 +553,6 @@ class RefrigeratorDevice(Device):
             >= ENERGY_TODAY_POLL_INTERVAL
         )
         if today_due:
-            if self._last_energy_today_poll is None:
-                self._client.refresh_client_id()
             self._last_energy_today_poll = now
             if energy_usage := await self.get_energy_today_usage():
                 self._energy_usage.update(energy_usage)
@@ -500,8 +565,6 @@ class RefrigeratorDevice(Device):
         )
         if not month_due:
             return
-        if self._last_energy_month_poll is None:
-            self._client.refresh_client_id()
         self._last_energy_month_poll = now
         if energy_usage := await self.get_energy_month_usage():
             self._energy_usage.update(energy_usage)
@@ -623,9 +686,11 @@ class RefrigeratorStatus(DeviceStatus):
             index = 1
         temp_key = self._get_temp_key(STATE_FRIDGE_TEMP[index])
         if temp_key is None:
-            return None
+            return self._device._temp_value(self._data.get(STATE_FRIDGE_TEMP[index]))
         temp_lists = self._device.get_fridge_temps(self._get_temp_unit(), unit_key)
-        return self.to_int_or_none(temp_lists.get(temp_key))
+        return self.to_int_or_none(temp_lists.get(temp_key)) or self._device._temp_value(
+            self._data.get(STATE_FRIDGE_TEMP[index])
+        )
 
     @property
     def temp_freezer(self):
@@ -637,9 +702,11 @@ class RefrigeratorStatus(DeviceStatus):
             index = 1
         temp_key = self._get_temp_key(STATE_FREEZER_TEMP[index])
         if temp_key is None:
-            return None
+            return self._device._temp_value(self._data.get(STATE_FREEZER_TEMP[index]))
         temp_lists = self._device.get_freezer_temps(self._get_temp_unit(), unit_key)
-        return self.to_int_or_none(temp_lists.get(temp_key))
+        return self.to_int_or_none(temp_lists.get(temp_key)) or self._device._temp_value(
+            self._data.get(STATE_FREEZER_TEMP[index])
+        )
 
     @property
     def temp_unit(self):
