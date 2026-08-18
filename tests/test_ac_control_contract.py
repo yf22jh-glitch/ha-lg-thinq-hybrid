@@ -2,23 +2,27 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
-from typing import Any
 import unittest
+from copy import deepcopy
+from types import SimpleNamespace
+from typing import Any
 
 from homeassistant.components.climate import ClimateEntityFeature, HVACMode
 from homeassistant.const import ATTR_TEMPERATURE
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.my_lg.climate import MyLgClimate
+from custom_components.my_lg.const import DEVICE_TYPE_AIR_CONDITIONER
 from custom_components.my_lg.coordinator import deep_merge
+from custom_components.my_lg.pat_control import PatControlRequest
+from custom_components.my_lg.select import MyLgWideqCatalogSelect
 from custom_components.my_lg.switch import (
     SWITCHES_BY_TYPE,
     WIDEQ_SWITCHES_BY_TYPE,
     MyLgSwitch,
     MyLgWideqSwitch,
 )
-from custom_components.my_lg.const import DEVICE_TYPE_AIR_CONDITIONER
+from custom_components.my_lg.wideq_control import iter_wideq_field_controls
 
 
 class FakePatCoordinator:
@@ -61,10 +65,19 @@ class FakePatCoordinator:
     def supports_field(self, group: str, field: str) -> bool:
         return field in self.profile.get("property", {}).get(group, {})
 
-    async def async_control(self, payload: dict[str, Any]) -> None:
+    def control_contract_available(self, request: PatControlRequest | None) -> bool:
+        return request is not None and bool(request.expectations)
+
+    async def async_control(self, request: PatControlRequest) -> None:
         if self.control_error is not None:
             raise self.control_error
+        payload = dict(request.payload)
         self.controls.append(deepcopy(payload))
+        for expectation in request.expectations:
+            result: Any = deepcopy(expectation.value)
+            for token in reversed(expectation.path):
+                result = {token: result}
+            deep_merge(self.data, result)
 
     def handle_mqtt_status(self, payload: dict[str, Any]) -> None:
         deep_merge(self.data, deepcopy(payload))
@@ -74,8 +87,11 @@ class FakeWideqCoordinator:
     """WideQ double that keeps power-save state separate from normal data."""
 
     def __init__(self) -> None:
+        self.circuit_open = False
         self.controls: list[tuple[str, str, dict[str, Any]]] = []
         self.control_error: Exception | None = None
+        self.snapshots: dict[str, dict[str, Any]] = {}
+        self.post_snapshots: dict[str, dict[str, Any]] = {}
         self.power_save: dict[str, dict[str, Any]] = {
             "test-device": {"airState.powerSave.hum": False}
         }
@@ -91,7 +107,27 @@ class FakeWideqCoordinator:
         self.controls.append((device_id, ctrl_key, deepcopy(kwargs)))
 
     def snapshot_for(self, _device_id: str) -> dict[str, Any]:
-        return {}
+        return dict(self.snapshots.get(_device_id, {}))
+
+    async def async_control_and_verify(
+        self,
+        device_id: str,
+        ctrl_key: str,
+        *,
+        request_factory,
+        readback_delays,
+        verifier,
+    ) -> None:
+        request = request_factory()
+        if self.control_error is not None:
+            raise self.control_error
+        self.controls.append((device_id, ctrl_key, deepcopy(request)))
+        if device_id in self.post_snapshots:
+            self.snapshots[device_id] = deepcopy(self.post_snapshots[device_id])
+        if not verifier(self.snapshot_for(device_id)):
+            raise HomeAssistantError(
+                "LG ThinQ acknowledged the command but appliance state was not verified"
+            )
 
     def power_save_snapshot_for(self, device_id: str) -> dict[str, Any]:
         return dict(self.power_save.get(device_id, {}))
@@ -111,7 +147,6 @@ class FakeWideqCoordinator:
     ) -> None:
         self.power_save.setdefault(device_id, {})[path] = bool(value)
 
-
 def _pat_switch(key: str, coordinator: FakePatCoordinator) -> MyLgSwitch:
     description = next(
         item for item in SWITCHES_BY_TYPE[DEVICE_TYPE_AIR_CONDITIONER]
@@ -124,12 +159,16 @@ def _wideq_switch(
     key: str,
     wideq: FakeWideqCoordinator,
     pat: FakePatCoordinator,
+    *,
+    local_provider: Any = None,
 ) -> MyLgWideqSwitch:
     description = next(
         item for item in WIDEQ_SWITCHES_BY_TYPE[DEVICE_TYPE_AIR_CONDITIONER]
         if item.key == key
     )
-    return MyLgWideqSwitch(wideq, pat, description)  # type: ignore[arg-type]
+    return MyLgWideqSwitch(
+        wideq, pat, description, local_provider=local_provider
+    )  # type: ignore[arg-type]
 
 
 class AcClimateControlContractTests(unittest.IsolatedAsyncioTestCase):
@@ -232,23 +271,20 @@ class AcSwitchControlContractTests(unittest.IsolatedAsyncioTestCase):
             await switch.async_turn_on()
         self.assertFalse(switch.is_on)
 
-    async def test_comfort_power_save_uses_verified_setting_info_shape(self) -> None:
+    async def test_comfort_power_save_stays_closed_without_echo_contract(
+        self,
+    ) -> None:
         pat = FakePatCoordinator("COOL")
         wideq = FakeWideqCoordinator()
         switch = _wideq_switch("comfortable_power_save", wideq, pat)
 
-        await switch.async_turn_on()
-        self.assertEqual(
-            wideq.controls,
-            [
-                (
-                    "test-device",
-                    "settingInfo",
-                    {"data_key": "airState.powerSave.hum", "value": 1},
-                )
-            ],
-        )
-        self.assertTrue(switch.is_on)
+        self.assertFalse(switch.available)
+        with self.assertRaisesRegex(
+            HomeAssistantError, "no exact acknowledgement/state verification"
+        ):
+            await switch.async_turn_on()
+        self.assertEqual(wideq.controls, [])
+        self.assertFalse(switch.is_on)
 
     async def test_comfort_power_save_mode_gate_and_failed_ack_are_safe(self) -> None:
         pat = FakePatCoordinator("AUTO")
@@ -261,17 +297,164 @@ class AcSwitchControlContractTests(unittest.IsolatedAsyncioTestCase):
 
         pat.data["airConJobMode"]["currentJobMode"] = "COOL"
         wideq.control_error = HomeAssistantError("rejected")
-        with self.assertRaisesRegex(HomeAssistantError, "rejected"):
+        with self.assertRaisesRegex(
+            HomeAssistantError, "no exact acknowledgement/state verification"
+        ):
             await switch.async_turn_on()
         self.assertFalse(switch.is_on)
 
-        # Turning off remains available in every mode so a stale/active mode can
-        # always be cleared; a successful control is reflected after its ack.
+        # Turning off remains mode-independent, but an unverified field still
+        # cannot be sent or optimistically reflected.
         wideq.control_error = None
         pat.data["airConJobMode"]["currentJobMode"] = "AUTO"
         wideq.power_save["test-device"]["airState.powerSave.hum"] = True
-        await switch.async_turn_off()
+        with self.assertRaisesRegex(
+            HomeAssistantError, "no exact acknowledgement/state verification"
+        ):
+            await switch.async_turn_off()
+        self.assertTrue(switch.is_on)
+        self.assertEqual(wideq.controls, [])
+
+    async def test_comfort_power_save_prefers_healthy_local_readback(self) -> None:
+        pat = FakePatCoordinator("COOL")
+        pat.model = "CST_570004_WW"
+        wideq = FakeWideqCoordinator()
+        wideq.power_save["test-device"]["airState.powerSave.hum"] = False
+        local = SimpleNamespace(
+            mode="preferred",
+            profile_id="cst570-core-state-v1",
+            model_id=pat.model,
+            snapshot_schema_version=3,
+            profile=SimpleNamespace(
+                availability_policy="attested-session",
+                fields={
+                    "comfort_energy_saving.enabled": SimpleNamespace(
+                        value_type="boolean",
+                        exposure="state",
+                    )
+                },
+            ),
+            shadow_healthy=True,
+            field_value=lambda semantic_id: (
+                True
+                if semantic_id == "comfort_energy_saving.enabled"
+                else None
+            ),
+        )
+        switch = _wideq_switch(
+            "comfortable_power_save", wideq, pat, local_provider=local
+        )
+
+        self.assertTrue(switch.is_on)
+        self.assertFalse(switch.available)
+
+        local.shadow_healthy = False
         self.assertFalse(switch.is_on)
+
+        local.shadow_healthy = True
+        local.snapshot_schema_version = 1
+        self.assertFalse(switch.is_on)
+
+        local.snapshot_schema_version = 3
+        local.mode = "shadow"
+        self.assertFalse(switch.is_on)
+
+
+class VacuumWideqControlContractTests(unittest.IsolatedAsyncioTestCase):
+    @staticmethod
+    def _control(name: str):
+        return next(
+            control
+            for control in iter_wideq_field_controls("HWWA9X3C_F2U")
+            if control.control_name == name
+        )
+
+    async def test_verified_field_uses_exact_template_and_fresh_echo(self) -> None:
+        pat = FakePatCoordinator()
+        pat.model = "HWWA9X3C_F2U"
+        pat.alias = "Test Vacuum"
+        wideq = FakeWideqCoordinator()
+        wideq.snapshots[pat.device_id] = {"qmState.aiSuctionForce": "OFF"}
+        wideq.post_snapshots[pat.device_id] = {
+            "qmState.aiSuctionForce": "ON"
+        }
+        entity = MyLgWideqCatalogSelect(
+            wideq,  # type: ignore[arg-type]
+            pat,  # type: ignore[arg-type]
+            self._control("QMControl_AiSuctionForce"),
+            False,
+            False,
+        )
+
+        self.assertTrue(entity.available)
+        await entity.async_select_option("ON")
+
+        self.assertEqual(
+            wideq.controls,
+            [
+                (
+                    "test-device",
+                    "QMControl_AiSuctionForce",
+                    {
+                        "payload": {
+                            "ctrlKey": "QMControl_AiSuctionForce",
+                            "command": "Set",
+                            "dataSetList": {
+                                "qmState": {
+                                    "aiSuctionForce": "ON",
+                                    "controlDataType": "AI_SUCTION_FORCE",
+                                    "controlDataValueLength": 1,
+                                }
+                            },
+                        }
+                    },
+                )
+            ],
+        )
+        self.assertEqual(entity.current_option, "ON")
+
+    async def test_ack_without_matching_echo_does_not_change_entity_state(
+        self,
+    ) -> None:
+        pat = FakePatCoordinator()
+        pat.model = "HWWA9X3C_F2U"
+        pat.alias = "Test Vacuum"
+        wideq = FakeWideqCoordinator()
+        wideq.snapshots[pat.device_id] = {"qmState.waterSupply": "LOW"}
+        entity = MyLgWideqCatalogSelect(
+            wideq,  # type: ignore[arg-type]
+            pat,  # type: ignore[arg-type]
+            self._control("QMControl_WaterSupply"),
+            False,
+            False,
+        )
+
+        with self.assertRaisesRegex(HomeAssistantError, "was not verified"):
+            await entity.async_select_option("HIGH")
+
+        self.assertEqual(entity.current_option, "LOW")
+
+    async def test_unverified_vacuum_field_is_unavailable_and_never_sent(
+        self,
+    ) -> None:
+        pat = FakePatCoordinator()
+        pat.model = "HWWA9X3C_F2U"
+        wideq = FakeWideqCoordinator()
+        wideq.snapshots[pat.device_id] = {"qmState.remoteUvc": "OFF"}
+        entity = MyLgWideqCatalogSelect(
+            wideq,  # type: ignore[arg-type]
+            pat,  # type: ignore[arg-type]
+            self._control("QMControl_RemoteUvc"),
+            False,
+            False,
+        )
+
+        self.assertFalse(entity.available)
+        with self.assertRaisesRegex(
+            HomeAssistantError, "no exact acknowledgement/state verification"
+        ):
+            await entity.async_select_option("ON")
+        self.assertEqual(wideq.controls, [])
 
 
 if __name__ == "__main__":

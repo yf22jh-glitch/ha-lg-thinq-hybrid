@@ -10,6 +10,11 @@ POWER_SAVE_FIELDS = {
     "dehumidification": "airState.powerSave.dry",
 }
 
+LOCAL_COMFORT_POWER_SAVE_SEMANTIC = "comfort_energy_saving.enabled"
+LOCAL_COMFORT_POWER_SAVE_PROFILES = {
+    "cst570-core-state-v1": "CST_570004_WW",
+}
+
 
 def _boolean_flag(value: Any) -> bool | None:
     """Normalize ThinQ numeric/boolean power-save flags."""
@@ -40,6 +45,59 @@ def ac_power_save_cache(snapshot: dict[str, Any]) -> dict[str, bool]:
         if flag is not None:
             cached[path] = flag
     return cached
+
+
+def local_comfort_power_save_configured(
+    provider: Any, model_id: str | None
+) -> bool:
+    """Return whether one provider has the exact static Local overlay contract.
+
+    Runtime health is deliberately excluded so an eligible preferred provider
+    stays subscribed while offline and can publish its recovery immediately.
+    """
+    if provider is None:
+        return False
+    if getattr(provider, "mode", None) != "preferred":
+        return False
+    if getattr(provider, "snapshot_schema_version", None) != 3:
+        return False
+    profile_id = getattr(provider, "profile_id", None)
+    if (
+        LOCAL_COMFORT_POWER_SAVE_PROFILES.get(profile_id) != model_id
+        or getattr(provider, "model_id", None) != model_id
+    ):
+        return False
+    profile = getattr(provider, "profile", None)
+    fields = getattr(profile, "fields", {})
+    contract = fields.get(LOCAL_COMFORT_POWER_SAVE_SEMANTIC)
+    return not (
+        getattr(profile, "availability_policy", None) != "attested-session"
+        or getattr(contract, "value_type", None) != "boolean"
+        or getattr(contract, "exposure", None) != "state"
+    )
+
+
+def local_comfort_power_save_value(
+    provider: Any, model_id: str | None
+) -> bool | None:
+    """Return an exact, healthy Local readback for the current pilot model."""
+    if not local_comfort_power_save_configured(provider, model_id):
+        return None
+    if not getattr(provider, "shadow_healthy", False):
+        return None
+    value = provider.field_value(LOCAL_COMFORT_POWER_SAVE_SEMANTIC)
+    return value if type(value) is bool else None
+
+
+def ac_power_save_snapshot_with_local(
+    snapshot: dict[str, Any], provider: Any, model_id: str | None
+) -> dict[str, Any]:
+    """Overlay only the attested Local comfort flag on the cloud snapshot."""
+    merged = dict(snapshot)
+    local_value = local_comfort_power_save_value(provider, model_id)
+    if local_value is not None:
+        merged[POWER_SAVE_FIELDS["comfortable"]] = local_value
+    return merged
 
 
 def ac_power_save_flags(snapshot: dict[str, Any]) -> dict[str, bool | None]:
@@ -74,3 +132,18 @@ def ac_power_save_attributes(snapshot: dict[str, Any]) -> dict[str, Any]:
         "power_save_source": "wideq_snapshot",
         "percentage_level_supported": False,
     }
+
+
+def ac_power_save_attributes_with_local(
+    snapshot: dict[str, Any], provider: Any, model_id: str | None
+) -> dict[str, Any]:
+    """Describe the exact per-field provider mix after a Local overlay."""
+    attributes = ac_power_save_attributes(
+        ac_power_save_snapshot_with_local(snapshot, provider, model_id)
+    )
+    if local_comfort_power_save_value(provider, model_id) is not None:
+        attributes["power_save_source"] = "mixed_local_wideq"
+        attributes["comfortable_power_save_provider"] = "local"
+    else:
+        attributes["comfortable_power_save_provider"] = "wideq"
+    return attributes

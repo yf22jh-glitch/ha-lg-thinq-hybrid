@@ -12,6 +12,7 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_AIR_PURIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
+from .pat_control import build_pat_control_request
 
 POWER_ON = "POWER_ON"
 POWER_OFF = "POWER_OFF"
@@ -54,8 +55,7 @@ class MyLgAirPurifierFan(MyLgEntity, FanEntity):
         return self._get("airFlow", "windStrength")
 
     async def _control(self, payload: dict[str, Any]) -> None:
-        await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)  # optimistic
+        await self.coordinator.async_control(build_pat_control_request(payload))
 
     async def async_turn_on(
         self,

@@ -1,12 +1,16 @@
 {
   "schema_version": 1,
-  "semantics_revision": 26,
+  "semantics_revision": 30,
   "profiles": [
     {
       "profile_id": "dhum-water-tank-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -25,7 +29,11 @@
       "profile_id": "dhum-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -115,10 +123,116 @@
       ]
     },
     {
+      "profile_id": "dhum-core-state-v2",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        30
+      ],
+      "model_id": "DHUM_056905_WW",
+      "platform": "thinq2",
+      "availability_policy": "attested-session",
+      "fields": [
+        {
+          "semantic_id": "water_tank.full",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-bidirectional-local-interlock-correlation"
+          ]
+        },
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.direction",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.target_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.blocked",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-derived-exact-device-water-tank-interlock"
+          ]
+        },
+        {
+          "semantic_id": "operation.block_reason",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-derived-exact-device-water-tank-interlock"
+          ]
+        },
+        {
+          "semantic_id": "display.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks"
+          ]
+        }
+      ]
+    },
+    {
       "profile_id": "styler-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -150,10 +264,60 @@
       ]
     },
     {
+      "profile_id": "styler-core-state-v2",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        28,
+        29,
+        30
+      ],
+      "model_id": "ST_R_ETH01Y_",
+      "platform": "thinq2",
+      "availability_policy": "attested-session",
+      "fields": [
+        {
+          "semantic_id": "cycle.course",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-target-envelope+exact-modeljson+exact-local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "cycle.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-target-envelope+exact-modeljson+exact-local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "option.no_interrupt_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-local-wideq-transition-correlation"
+          ]
+        },
+        {
+          "semantic_id": "display.current_time_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+4-on-off-local-cloud-cycles"
+          ]
+        }
+      ]
+    },
+    {
       "profile_id": "dishwasher-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "D121110",
       "platform": "thinq2",
@@ -271,7 +435,11 @@
       "profile_id": "kimchi-aabb-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "3REK2G03VI230D_2",
       "platform": "thinq2",
@@ -322,7 +490,11 @@
       "profile_id": "kimchi-thinq1-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "2REK1D04AR170",
       "platform": "thinq1",
@@ -389,7 +561,11 @@
       "profile_id": "fridge-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "2REFO1DBN3K_U",
       "platform": "thinq2",
@@ -465,7 +641,11 @@
       "profile_id": "oven-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "WMLJ32RS",
       "platform": "thinq2",
@@ -536,7 +716,11 @@
       "profile_id": "air-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "AIR_910604_WW",
       "platform": "thinq2",
@@ -698,10 +882,37 @@
       ]
     },
     {
+      "profile_id": "air-tower-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        27,
+        28,
+        29,
+        30
+      ],
+      "model_id": "AIR_2C0001_WW",
+      "platform": "thinq2",
+      "availability_policy": "attested-session",
+      "fields": [
+        {
+          "semantic_id": "energy_saving.ai_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-7-writes+7-immediate-readbacks"
+          ]
+        }
+      ]
+    },
+    {
       "profile_id": "humidifier-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "HUM_056905_WW",
       "platform": "thinq2",
@@ -956,7 +1167,11 @@
       "profile_id": "cst170-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "CST_170004_WW",
       "platform": "thinq2",
@@ -1133,10 +1348,15 @@
       "profile_id": "cst570-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "CST_570004_WW",
       "platform": "thinq2",
+      "availability_policy": "attested-session",
       "fields": [
         {
           "semantic_id": "operation.power_requested",
@@ -1302,7 +1522,11 @@
       "profile_id": "washtower-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "WTL_KPK_BDH_KR_01",
       "platform": "thinq2",
@@ -1391,7 +1615,11 @@
       "profile_id": "purifier-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "1WPD4CMIDR__3",
       "platform": "thinq2",
@@ -1466,7 +1694,11 @@
       "profile_id": "cooktop-left-front-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        26
+        26,
+        27,
+        28,
+        29,
+        30
       ],
       "model_id": "WBEF3",
       "platform": "thinq2",
@@ -1503,6 +1735,158 @@
           "unit": "s",
           "confidence": [
             "confirmed-partial-exact-modeljson+local-cycle+local-wideq-correlation"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "wireless-vacuum-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        30
+      ],
+      "model_id": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "availability_policy": "attested-session",
+      "authoritative_invalidations": true,
+      "fields": [
+        {
+          "semantic_id": "suction.ai_adjustment_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks-per-setting"
+          ]
+        },
+        {
+          "semantic_id": "battery.life_extension_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks-per-setting"
+          ]
+        },
+        {
+          "semantic_id": "operation.auto_stop_and_go_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks-per-setting"
+          ]
+        },
+        {
+          "semantic_id": "mop.suction_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks-per-setting"
+          ]
+        },
+        {
+          "semantic_id": "display.charging_brightness",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-one-complete-4-value-write+ack+immediate-readback-cycle"
+          ],
+          "allowed_values": [
+            "very_low",
+            "low",
+            "high",
+            "very_high"
+          ]
+        },
+        {
+          "semantic_id": "suction.default_level",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-one-complete-enum-write+ack+immediate-readback-cycle"
+          ],
+          "allowed_values": [
+            "normal",
+            "high",
+            "turbo",
+            "eco"
+          ]
+        },
+        {
+          "semantic_id": "mop.water_supply_level",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-3-low+3-high-writes+acks+immediate-readbacks"
+          ],
+          "allowed_values": [
+            "low",
+            "high"
+          ]
+        },
+        {
+          "semantic_id": "mop.steam_supply_level",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-3-low+3-high-steam-writes+acks+immediate-readbacks"
+          ],
+          "allowed_values": [
+            "low",
+            "high"
+          ]
+        },
+        {
+          "semantic_id": "sound.charging_volume",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-complete-3-value-write+ack+immediate-readback-cycle"
+          ],
+          "allowed_values": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        {
+          "semantic_id": "sound.settings_button_volume",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-complete-4-value-settings-sound-write+ack+immediate-readback-cycle"
+          ],
+          "allowed_values": [
+            "high",
+            "medium",
+            "low",
+            "off"
+          ]
+        },
+        {
+          "semantic_id": "sound.charging_melody",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-complete-5-value-write+ack+immediate-readback-cycle"
+          ],
+          "allowed_values": [
+            "melody_1",
+            "melody_2",
+            "melody_3",
+            "melody_4",
+            "melody_5"
+          ]
+        },
+        {
+          "semantic_id": "sound.dust_emptying_melody",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-complete-3-value-wire-readback+bounded-cloud-cycle"
+          ],
+          "allowed_values": [
+            "melody_1",
+            "melody_2",
+            "melody_3"
           ]
         }
       ]

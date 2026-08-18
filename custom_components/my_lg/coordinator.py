@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
+from copy import deepcopy
 import logging
 from datetime import timedelta
 from typing import Any
@@ -12,7 +15,17 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from thinqconnect.thinq_api import ThinQAPIException
 
-from .const import DOMAIN, PAT_FALLBACK_INTERVAL
+from .const import (
+    DOMAIN,
+    PAT_CONTROL_CALL_TIMEOUT,
+    PAT_CONTROL_READBACK_DELAYS,
+    PAT_FALLBACK_INTERVAL,
+)
+from .pat_control import (
+    PatControlRequest,
+    failed_pat_requirement,
+    pat_state_verified,
+)
 
 # LG control errors that have a clear user action; anything else surfaces the
 # raw error name/code.
@@ -24,6 +37,8 @@ _CONTROL_HINTS: dict[str, str] = {
 }
 
 _LOGGER = logging.getLogger(__name__)
+
+PatControlRequestFactory = Callable[[Any], PatControlRequest]
 
 
 def deep_merge(base: dict[str, Any], delta: dict[str, Any]) -> dict[str, Any]:
@@ -62,6 +77,7 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.alias: str = info.get("alias") or self.device_id
         self.model: str = info.get("modelName", "")
         self.profile: dict | None = None
+        self._control_lock = asyncio.Lock()
 
         super().__init__(
             hass,
@@ -166,14 +182,149 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return any(isinstance(p, dict) and group in p for p in prop)
         return False
 
-    async def async_control(self, payload: dict[str, Any]) -> None:
-        """Post a control payload, translating LG API errors to friendly ones."""
+    async def _async_fresh_control_status(self) -> Any:
+        """Fetch one non-debounced status snapshot for control verification."""
+        if getattr(self.hass, "is_stopping", False):
+            raise HomeAssistantError(
+                f"{self.alias}: Home Assistant is stopping; command blocked"
+            )
         try:
-            await self.api.async_post_device_control(self.device_id, payload)
-        except ThinQAPIException as err:
-            hint = _CONTROL_HINTS.get(str(err.code))
-            detail = hint or f"{err.error_name} ({err.code})"
-            raise HomeAssistantError(f"{self.alias}: {detail}") from err
+            async with asyncio.timeout(PAT_CONTROL_CALL_TIMEOUT):
+                status = await self.api.async_get_device_status(self.device_id)
+        except TimeoutError as err:
+            raise HomeAssistantError(
+                f"{self.alias}: fresh PAT status timed out; command blocked"
+            ) from err
+        except Exception as err:  # noqa: BLE001 - fail closed before control
+            raise HomeAssistantError(
+                f"{self.alias}: fresh PAT status failed; command blocked"
+            ) from err
+        if isinstance(status, list):
+            merged: Any = status
+        elif isinstance(status, dict):
+            base = dict(self.data) if isinstance(self.data, dict) else {}
+            merged = deep_merge(base, status)
+        else:
+            raise HomeAssistantError(
+                f"{self.alias}: fresh PAT status shape is invalid; command blocked"
+            )
+        self.async_set_updated_data(merged)
+        # Verification must use only fields present in this physical response;
+        # retained MQTT-only fields in ``merged`` are dashboard state, not proof
+        # of a fresh command echo.
+        return status
+
+    async def async_control(
+        self,
+        request: PatControlRequest | PatControlRequestFactory,
+    ) -> None:
+        """Require fresh pre-state, API ACK, and exact fresh state readback.
+
+        Raw dictionaries are deliberately rejected. Every caller must first
+        construct a :class:`PatControlRequest`, which proves that each encoded
+        payload leaf has a corresponding decoded status echo. A factory is used
+        for read-modify-write commands so preservation values are derived only
+        from the fresh snapshot obtained while this device lock is held.
+        """
+        if not isinstance(request, PatControlRequest) and not callable(request):
+            raise HomeAssistantError(
+                f"{self.alias}: PAT command has no verified echo contract"
+            )
+
+        async with self._control_lock:
+            pre_state = await self._async_fresh_control_status()
+            if callable(request):
+                try:
+                    request = request(pre_state)
+                except HomeAssistantError:
+                    raise
+                except Exception as err:  # noqa: BLE001 - invalid factory is blocked
+                    raise HomeAssistantError(
+                        f"{self.alias}: PAT command contract could not be built"
+                    ) from err
+            if not isinstance(request, PatControlRequest):
+                raise HomeAssistantError(
+                    f"{self.alias}: PAT command factory returned no verified contract"
+                )
+            if not request.payload or not request.expectations:
+                raise HomeAssistantError(
+                    f"{self.alias}: PAT command has an incomplete echo contract"
+                )
+            if not self.control_contract_available(request):
+                raise HomeAssistantError(
+                    f"{self.alias}: PAT command has an incomplete echo contract"
+                )
+
+            failed_requirement = failed_pat_requirement(
+                pre_state, request.requirements
+            )
+            if failed_requirement is not None:
+                raise HomeAssistantError(
+                    f"{self.alias}: {failed_requirement}"
+                )
+
+            # An already-satisfied idempotent setting needs no outbound command.
+            # This is evaluated only after the fresh status request above, so a
+            # stale dashboard cache can never suppress an intended write.
+            if pat_state_verified(pre_state, request.expectations):
+                return
+
+            try:
+                async with asyncio.timeout(PAT_CONTROL_CALL_TIMEOUT):
+                    # A successful return is the ThinQ Connect HTTP/API ACK.
+                    await self.api.async_post_device_control(
+                        self.device_id, deepcopy(dict(request.payload))
+                    )
+            except ThinQAPIException as err:
+                hint = _CONTROL_HINTS.get(str(err.code))
+                detail = hint or f"{err.error_name} ({err.code})"
+                raise HomeAssistantError(f"{self.alias}: {detail}") from err
+            except TimeoutError as err:
+                raise HomeAssistantError(
+                    f"{self.alias}: PAT control acknowledgement timed out"
+                ) from err
+            except HomeAssistantError:
+                raise
+            except Exception as err:  # noqa: BLE001 - surface a bounded HA error
+                raise HomeAssistantError(
+                    f"{self.alias}: PAT control acknowledgement failed"
+                ) from err
+
+            ack_at = asyncio.get_running_loop().time()
+            last_error: HomeAssistantError | None = None
+            for delay in PAT_CONTROL_READBACK_DELAYS:
+                remaining = ack_at + delay - asyncio.get_running_loop().time()
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+                try:
+                    post_state = await self._async_fresh_control_status()
+                except HomeAssistantError as err:
+                    last_error = err
+                    continue
+                if pat_state_verified(post_state, request.expectations):
+                    return
+
+            detail = (
+                "fresh post-command state did not match the complete echo contract"
+                if last_error is None
+                else "fresh post-command state could not be verified"
+            )
+            raise HomeAssistantError(
+                f"{self.alias}: PAT acknowledgement received, but {detail}"
+            )
+
+    async def async_unverified_control(self, payload: dict[str, Any]) -> None:
+        """Always block legacy/raw PAT controls before any network request."""
+        del payload
+        raise HomeAssistantError(
+            f"{self.alias}: PAT command has no verified echo contract"
+        )
+
+    def control_contract_available(
+        self, request: PatControlRequest | None
+    ) -> bool:
+        """Return whether a control has a complete profile-backed echo contract."""
+        return request is not None and bool(request.expectations)
 
     def supports_field(self, group: str, field: str) -> bool:
         """True if the profile advertises a specific field within a property group."""

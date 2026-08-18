@@ -22,6 +22,14 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
+from .local_provider import LocalSemanticShadowProvider
+from .pat_control import PatStateRequirement, build_pat_control_request
+from .power_save import (
+    ac_power_save_snapshot_with_local,
+    local_comfort_power_save_configured,
+    local_comfort_power_save_value,
+)
+from .wideq_control import exact_wideq_field_spec
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -215,11 +223,30 @@ async def async_setup_entry(
                     and coordinator.model not in wdesc.supported_models
                 ):
                     continue
+                if (
+                    exact_wideq_field_spec(
+                        coordinator.model,
+                        wdesc.ctrl_key,
+                        wdesc.data_key,
+                        wdesc.use_dataset,
+                    )
+                    is None
+                ):
+                    continue
                 if wdesc.key in UNSUPPORTED_WIDEQ_AC_FEATURES_BY_MODEL.get(
                     coordinator.model, frozenset()
                 ):
                     continue
-                entities.append(MyLgWideqSwitch(wideq, coordinator, wdesc))
+                entities.append(
+                    MyLgWideqSwitch(
+                        wideq,
+                        coordinator,
+                        wdesc,
+                        local_provider=getattr(
+                            entry.runtime_data, "local_providers", {}
+                        ).get(coordinator.device_id),
+                    )
+                )
 
     async_add_entities(entities)
 
@@ -238,24 +265,36 @@ class MyLgSwitch(MyLgEntity, SwitchEntity):
         d = self.entity_description
         return self._get(d.group, d.field) == d.on_value
 
+    def _job_mode_error(self) -> str:
+        if self.entity_description.key == "power_save":
+            return "일반 절전은 냉방 모드에서만 사용할 수 있어요."
+        return "특수 바람 기능은 냉방 또는 제습 모드에서만 사용할 수 있어요."
+
     async def _set(self, value: Any) -> None:
         d = self.entity_description
         payload = {d.group: {d.field: value}}
-        await self.coordinator.async_control(payload)
-        if d.optimistic:
-            self.coordinator.handle_mqtt_status(payload)
+        requirements = (
+            (
+                PatStateRequirement(
+                    ("airConJobMode", "currentJobMode"),
+                    d.allowed_job_modes,
+                    self._job_mode_error(),
+                ),
+            )
+            if d.allowed_job_modes
+            else ()
+        )
+        await self.coordinator.async_control(
+            build_pat_control_request(payload, requirements=requirements)
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         d = self.entity_description
         if d.allowed_job_modes:
             job_mode = self._get("airConJobMode", "currentJobMode")
             if job_mode not in d.allowed_job_modes:
-                if d.key == "power_save":
-                    detail = "일반 절전은 냉방 모드에서만 사용할 수 있어요."
-                else:
-                    detail = "특수 바람 기능은 냉방 또는 제습 모드에서만 사용할 수 있어요."
                 raise HomeAssistantError(
-                    f"{self.coordinator.alias}: {detail}"
+                    f"{self.coordinator.alias}: {self._job_mode_error()}"
                 )
         await self._set(self.entity_description.on_value)
 
@@ -273,15 +312,36 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
         wideq_coordinator: WideqCoordinator,
         pat_coordinator: PatDeviceCoordinator,
         description: MyLgWideqSwitchDescription,
+        *,
+        local_provider: LocalSemanticShadowProvider | None = None,
     ) -> None:
         super().__init__(wideq_coordinator, pat_coordinator, description.key)
         self.entity_description = description
+        self._local_provider = local_provider
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (
+            self.entity_description.key == "comfortable_power_save"
+            and local_comfort_power_save_configured(
+                self._local_provider, self._pat_coordinator.model
+            )
+        ):
+            self.async_on_remove(
+                self._local_provider.async_add_listener(
+                    self.async_write_ha_state
+                )
+            )
 
     @property
     def is_on(self) -> bool:
         d = self.entity_description
         snapshot = (
-            self.coordinator.power_save_snapshot_for(self._device_id)
+            ac_power_save_snapshot_with_local(
+                self.coordinator.power_save_snapshot_for(self._device_id),
+                self._local_provider,
+                self._pat_coordinator.model,
+            )
             if d.key == "comfortable_power_save"
             else self._snapshot
         )
@@ -294,11 +354,21 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
     @property
     def available(self) -> bool:
         d = self.entity_description
+        if not self._wideq_field_write_available(
+            d.ctrl_key, d.data_key, d.use_dataset
+        ):
+            return False
         if d.key == "comfortable_power_save":
-            return self.coordinator.power_save_field_available(
-                self._device_id, d.data_key
+            return (
+                local_comfort_power_save_value(
+                    self._local_provider, self._pat_coordinator.model
+                )
+                is not None
+                or self.coordinator.power_save_field_available(
+                    self._device_id, d.data_key
+                )
             )
-        return super().available
+        return d.data_key in self._snapshot
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -306,6 +376,14 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
         if self.entity_description.key == "comfortable_power_save":
             attrs.update(
                 self.coordinator.power_save_diagnostic_attributes(self._device_id)
+            )
+            attrs["comfortable_power_save_provider"] = (
+                "local"
+                if local_comfort_power_save_value(
+                    self._local_provider, self._pat_coordinator.model
+                )
+                is not None
+                else "wideq"
             )
         return attrs
 
@@ -325,7 +403,6 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
             d.data_key,
             d.on_value,
             d.use_dataset,
-            power_save_only=d.key == "comfortable_power_save",
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -335,5 +412,4 @@ class MyLgWideqSwitch(MyLgWideqEntity, SwitchEntity):
             d.data_key,
             d.off_value,
             d.use_dataset,
-            power_save_only=d.key == "comfortable_power_save",
         )

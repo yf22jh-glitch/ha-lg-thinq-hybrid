@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.exceptions import HomeAssistantError
+
 try:
     # HA 2023.8+ location; used by official integrations.
     from homeassistant.helpers.device_registry import DeviceInfo
@@ -12,8 +14,19 @@ except ImportError:  # pragma: no cover - fallback for older/newer reorgs
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .control_router import (
+    ControlValidationError,
+    build_wideq_request,
+    control_readback_verified,
+    control_uses_experimental_values,
+    control_verification_schedule,
+    pat_priority_requested,
+    prepare_control_verification,
+    remote_control_authorized,
+)
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
+from .wideq_control import verified_wideq_field_spec
 
 
 class MyLgEntity(CoordinatorEntity[PatDeviceCoordinator]):
@@ -83,29 +96,116 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
     def extra_state_attributes(self) -> dict[str, Any]:
         return self.coordinator.diagnostic_attributes
 
+    def _wideq_field_write_available(
+        self,
+        control_name: str,
+        data_key: str,
+        use_dataset: bool,
+        *,
+        shape: str | None = None,
+        allow_hazardous: bool = False,
+        allow_experimental: bool = False,
+    ) -> bool:
+        """Return whether an exact verified field write is currently eligible."""
+        spec = verified_wideq_field_spec(
+            self._pat_coordinator.model,
+            control_name,
+            data_key,
+            use_dataset,
+            shape=shape,
+        )
+        if spec is None or self.coordinator.circuit_open or not self._snapshot:
+            return False
+        risk = spec.get("risk", "low")
+        if risk == "hazardous" and not allow_hazardous:
+            return False
+        if risk == "experimental" and not allow_experimental:
+            return False
+        return risk not in {"operation", "hazardous"} or remote_control_authorized(
+            self._pat_coordinator.model,
+            pat_data=self._pat_coordinator.data,
+            wideq_snapshot=self._snapshot,
+        )
+
     async def _wideq_set(
         self,
-        ctrl_key: str,
+        control_name: str,
         data_key: str,
         value: Any,
         use_dataset: bool,
         *,
-        optimistic: bool = True,
-        power_save_only: bool = False,
+        shape: str | None = None,
+        allow_hazardous: bool = False,
+        allow_experimental: bool = False,
     ) -> None:
-        """Send one control and optimistically reflect the new value."""
-        if use_dataset:
-            await self.coordinator.async_control(
-                self._device_id, ctrl_key, data_set_list={data_key: value}
+        """Send one exact-model field write and prove its fresh state echo."""
+        spec = verified_wideq_field_spec(
+            self._pat_coordinator.model,
+            control_name,
+            data_key,
+            use_dataset,
+            shape=shape,
+        )
+        if spec is None:
+            raise HomeAssistantError(
+                f"{self._pat_coordinator.alias}: this WideQ field has no exact "
+                "acknowledgement/state verification contract"
             )
-        else:
-            await self.coordinator.async_control(
-                self._device_id, ctrl_key, data_key=data_key, value=value
+        values = {data_key: value}
+        risk = spec.get("risk", "low")
+        if risk == "hazardous" and not allow_hazardous:
+            raise HomeAssistantError(
+                f"{self._pat_coordinator.alias}: hazardous WideQ controls are locked"
             )
-        if optimistic:
-            if power_save_only:
-                self.coordinator.apply_power_save_optimistic(
-                    self._device_id, data_key, value
+        if (
+            risk == "experimental"
+            or control_uses_experimental_values(spec, values)
+        ) and not allow_experimental:
+            raise HomeAssistantError(
+                f"{self._pat_coordinator.alias}: experimental WideQ controls are locked"
+            )
+        duplicate = pat_priority_requested(spec, values)
+        if duplicate:
+            raise HomeAssistantError(
+                f"{self._pat_coordinator.alias}: this field is authoritative through PAT"
+            )
+        try:
+            readback_delays = control_verification_schedule(spec, values)
+        except ControlValidationError as err:
+            raise HomeAssistantError(
+                f"{self._pat_coordinator.alias}: {err}"
+            ) from err
+
+        def request_factory() -> dict[str, Any]:
+            snapshot = self.coordinator.snapshot_for(self._device_id)
+            if risk in {"operation", "hazardous"} and not remote_control_authorized(
+                self._pat_coordinator.model,
+                pat_data=self._pat_coordinator.data,
+                wideq_snapshot=snapshot,
+            ):
+                raise HomeAssistantError(
+                    f"{self._pat_coordinator.alias}: enable remote control on the "
+                    "appliance first"
                 )
-            else:
-                self.coordinator.apply_optimistic(self._device_id, data_key, value)
+            try:
+                prepare_control_verification(spec, values, snapshot)
+                return build_wideq_request(
+                    spec,
+                    command=None,
+                    values=values,
+                    snapshot=snapshot,
+                )
+            except ControlValidationError as err:
+                raise HomeAssistantError(
+                    f"{self._pat_coordinator.alias}: {err}"
+                ) from err
+
+        await self.coordinator.async_control_and_verify(
+            self._device_id,
+            spec["ctrl_key"],
+            request_factory=request_factory,
+            readback_delays=readback_delays,
+            verifier=lambda fresh: control_readback_verified(
+                spec, values, fresh
+            ),
+        )

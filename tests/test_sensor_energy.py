@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from homeassistant.components.sensor import SensorStateClass
@@ -89,6 +90,70 @@ class EnergyEntityContractTests(unittest.TestCase):
         self.assertEqual(
             entity.extra_state_attributes["power_source"],
             "pat_confirmed_power_off",
+        )
+
+    def test_power_save_summary_prefers_attested_local_comfort_state(self) -> None:
+        wideq = MagicMock()
+        wideq.data = {}
+        wideq.diagnostic_attributes = {}
+        wideq.power_save_snapshot_for.return_value = {
+            "airState.powerSave.basic": False,
+            "airState.powerSave.hum": False,
+        }
+        wideq.power_save_available.return_value = True
+        wideq.power_save_diagnostic_attributes.return_value = {}
+        pat = FakePatCoordinator("POWER_ON")
+        pat.model = "CST_570004_WW"
+        local = SimpleNamespace(
+            mode="preferred",
+            profile_id="cst570-core-state-v1",
+            model_id=pat.model,
+            snapshot_schema_version=3,
+            profile=SimpleNamespace(
+                availability_policy="attested-session",
+                fields={
+                    "comfort_energy_saving.enabled": SimpleNamespace(
+                        value_type="boolean",
+                        exposure="state",
+                    )
+                },
+            ),
+            shadow_healthy=True,
+            field_value=lambda semantic_id: (
+                True
+                if semantic_id == "comfort_energy_saving.enabled"
+                else None
+            ),
+        )
+        description = next(
+            item for item in WIDEQ_AC_SENSORS if item.key == "power_save_mode"
+        )
+        entity = WideqDeviceSensor(
+            wideq,
+            pat,
+            description,
+            local_provider=local,
+        )
+
+        self.assertEqual(entity.native_value, "comfortable")
+        self.assertEqual(
+            entity.extra_state_attributes["comfortable_power_save_provider"],
+            "local",
+        )
+        self.assertEqual(
+            entity.extra_state_attributes["power_save_source"],
+            "mixed_local_wideq",
+        )
+
+        local.shadow_healthy = False
+        self.assertEqual(entity.native_value, "off")
+        self.assertEqual(
+            entity.extra_state_attributes["comfortable_power_save_provider"],
+            "wideq",
+        )
+        self.assertEqual(
+            entity.extra_state_attributes["power_save_source"],
+            "wideq_snapshot",
         )
 
 

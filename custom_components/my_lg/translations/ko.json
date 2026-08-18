@@ -31,7 +31,8 @@
           "allow_hazardous_controls": "위험 조리 제어 활성화",
           "allow_experimental_controls": "실험 모델 제어 활성화",
           "rethink_event_token": "Rethink 기기 등록 이벤트 연동 토큰 (선택)",
-          "local_bindings": "버전이 고정된 읽기 전용 Local binding JSON ([]로 비활성화, 저장된 binding의 비밀번호는 빈 값으로 유지)"
+        "local_bindings": "버전이 고정된 읽기 전용 Local binding JSON ([]로 비활성화, 저장된 binding의 비밀번호는 빈 값으로 유지)",
+        "local_schema_one_rollback_confirmation": "v3 서비스 중지와 retained topic 초기화 후 입력하는 일회성 복귀 확인문구 (정확히: I CONFIRM V3 SERVICE STOPPED AND RETAINED TOPICS RESET; ROLLBACK <binding_id> FROM SCHEMA 3 TO SCHEMA 1)"
         }
       }
     },
@@ -137,11 +138,114 @@
           "dehumidification": "절전 제습",
           "mixed": "복합 절전"
         }
+      },
+      "airflow_direction": {
+        "name": "바람 방향"
+      },
+      "error_code": {
+        "name": "오류 코드"
+      },
+      "operation_block_reason": {
+        "name": "운전 차단 사유"
+      },
+      "vacuum_charging_brightness": {
+        "name": "충전 표시부 밝기",
+        "state": {
+          "very_low": "어둡게",
+          "low": "보통",
+          "high": "밝게",
+          "very_high": "매우 밝게"
+        }
+      },
+      "vacuum_default_suction_level": {
+        "name": "기본 흡입력",
+        "state": {
+          "normal": "표준",
+          "high": "강",
+          "turbo": "터보",
+          "eco": "저전력"
+        }
+      },
+      "vacuum_water_supply_level": {
+        "name": "물 공급량",
+        "state": {
+          "low": "낮음",
+          "high": "높음"
+        }
+      },
+      "vacuum_steam_supply_level": {
+        "name": "물걸레 공급 방식",
+        "state": {
+          "low": "온수 물걸레",
+          "high": "안심 스팀"
+        }
+      },
+      "vacuum_charging_volume": {
+        "name": "충전 음량",
+        "state": {
+          "high": "크게",
+          "medium": "보통",
+          "low": "작게"
+        }
+      },
+      "vacuum_settings_button_volume": {
+        "name": "설정 버튼 음량",
+        "state": {
+          "high": "크게",
+          "medium": "보통",
+          "low": "작게",
+          "off": "꺼짐"
+        }
+      },
+      "vacuum_charging_melody": {
+        "name": "충전 멜로디",
+        "state": {
+          "melody_1": "럭키",
+          "melody_2": "구슬",
+          "melody_3": "얼음",
+          "melody_4": "산들바람",
+          "melody_5": "성운"
+        }
+      },
+      "vacuum_dust_emptying_melody": {
+        "name": "먼지 비움 멜로디",
+        "state": {
+          "melody_1": "이슬",
+          "melody_2": "새싹",
+          "melody_3": "나비"
+        }
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "물탱크 가득참"
+      },
+      "status_display": {
+        "name": "상태 표시부"
+      },
+      "ai_energy_saving": {
+        "name": "AI 절전"
+      },
+      "current_time_display": {
+        "name": "현재 시간 표시"
+      },
+      "operation_blocked": {
+        "name": "운전 차단"
+      },
+      "no_interrupt": {
+        "name": "방해 금지 옵션"
+      },
+      "vacuum_ai_suction_adjustment": {
+        "name": "AI 표준 흡입력 조절"
+      },
+      "vacuum_battery_life_extension": {
+        "name": "배터리 수명 연장"
+      },
+      "vacuum_auto_stop_and_go": {
+        "name": "자동 멈춤·재시작"
+      },
+      "vacuum_mop_suction": {
+        "name": "물걸레 동시 흡입"
       },
       "door": {
         "name": "문"

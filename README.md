@@ -16,8 +16,8 @@
 | 3.5 | 워시타워·스타일러 상세 (wideq: 코스·spin·물온도·잠금·에너지 등) | ✅ |
 | 3.6 | ThinQ 앱 에너지 이력 (제습기·인덕션·오븐·정수기·스타일러·냉장고) | ✅ |
 | 5 | **전 기기(16종) 커버** — 공청기·가습기·냉장고·식세기·정수기·오븐·쿡탑 + 완료알림 event | ✅ |
-| 6 | **쓰기 제어** — AC swing·풍향/풍속·절전, 냉장고/냉동고 온도(Number), 세탁/건조/스타일러 운전 START·STOP(Button), 위생건조·제습 풍속 등(wideq 제어) | ✅ |
-| 7 | **전체 RAW/모델 기능 카탈로그** — 모든 읽기 경로, PAT 누락 제어, WideQ 93개 제어 그룹과 복합 명령 | ✅ (신규 기능 기본 비활성) |
+| 6 | **검증된 쓰기 제어** — fresh pre-state + API ACK + fresh state echo가 정확히 대응하는 PAT/WideQ 제어만 실행 | ✅ (미검증 동작 차단) |
+| 7 | **전체 RAW/모델 기능 카탈로그** — 모든 읽기 경로, PAT 누락 제어, WideQ 113개 제어 그룹과 복합 명령 | ✅ (신규 기능 기본 비활성) |
 | 4 | 실 HA 설치 + 대시보드 전환 + 공식·구 fork 제거 | ✅(운영 중) |
 
 Stage 5로 공식 `lg_thinq` + 구 `smartthinq` 둘 다 대체 가능(전 기기 PAT + 필요 필드 wideq).
@@ -40,20 +40,30 @@ Stage 2부터 공식 PAT가 못 주는 값(에어컨 실시간 전력, 기기별
   생길 때까지 `unavailable`로 유지한다.
 - PAT와 WideQ가 중복되면 PAT/MQTT를 우선하며, 중복 WideQ 제어는 raw
   서비스에서도 거부한다.
+- PAT 쓰기는 명령 직전 REST 상태, ThinQ Connect API ACK, ACK 뒤 5/10초
+  fresh REST 상태를 순서대로 확인한다. payload의 모든 leaf가 공식 profile의
+  읽기 필드에 정확히 대응해야 하며, 대응하지 않는 write-only 동작은 엔티티를
+  unavailable로 유지하고 실제 요청 전에 차단한다. 현재 세탁/건조/스타일러
+  START·STOP·POWER_*는 상태 전이와 1:1 echo 계약이 없어 차단 상태다.
 - 모델이 enum/range를 명시한 WideQ 단일 필드는 기본 비활성
   `select`/`number`/`text` 엔티티로 제공한다.
 - 복합 코스·프리셋·레시피 명령은 `my_lg.wideq_command` 서비스에서 모델
-  payload와 필드·enum·범위를 검증한 뒤 실행한다. 미검증 값 계약은 통합
-  옵션의 실험 제어를 켜야 한다.
+  payload와 필드·enum·범위를 검증한다. 정확한 사전 상태, HTTP ACK, bounded
+  post-command 상태 readback 계약까지 있는 제어만 실행하며 나머지는 전송 전에
+  거부한다. 미검증 값 계약은 실험 옵션만으로 이 경계를 우회할 수 없다.
 - 오븐/인덕션 조리 시작은 기본 잠금이며, 위험 제어 옵션과 기기의
   remote-control 허용 상태가 모두 확인되어야 한다.
-- 제어는 snapshot 폴링과 같은 rate limiter/circuit breaker를 통과하고,
-  제어 직후 확인용 추가 poll은 발생시키지 않는다.
+- 제어는 snapshot 폴링과 같은 rate limiter/circuit breaker를 통과한다. 검증된
+  복합 쓰기는 ACK 뒤 최대 2회의 bounded readback으로 실제 상태 전이를 확인한다.
 
-현재 카탈로그 기준으로 14개 모델의 WideQ 읽기 경로 1,493개와 제어 그룹
-93개를 포함한다. 실제 16대 RAW로 수행한 오프라인 구성 감사에서는 총
-2,732개 엔티티가 생성됐고, 2,550개가 기본 비활성, unique ID 중복과 구성 중
-WideQ 호출은 각각 0개/0회였다.
+현재 집의 exact inventory는 18대/16개 모델이고, WideQ 읽기 경로 1,636개와
+제어 그룹 113개를 포함한다. 신규 `AIR_2C0001_WW`는 exact 빈 control scope로
+고정해 다른 공기청정기 제어를 상속하지 않는다. `HWWA9X3C_F2U`의 ModelJSON
+제어 20개 중 실제 쓰기·ACK·상태 echo가 입증된 단일 필드 12개만 5/10초 fresh
+readback 계약으로 허용하고, 나머지 8개 제어 그룹은 전송 전에 차단한다.
+두 기기 추가 전 16대 RAW로 수행한 오프라인
+구성 감사에서는 총 2,732개 엔티티가 생성됐고, 2,550개가 기본 비활성,
+unique ID 중복과 구성 중 WideQ 호출은 각각 0개/0회였다.
 
 ## 설치 (HACS 커스텀 레포)
 

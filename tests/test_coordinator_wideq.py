@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -88,6 +89,23 @@ class FakeStore:
         self.data = data
 
 
+class DelayedFakeStore(FakeStore):
+    """Store double that exposes HA's deferred payload callback semantics."""
+
+    def __init__(self, data=None) -> None:
+        super().__init__(data)
+        self.pending_data_func = None
+
+    def async_delay_save(self, data_func, delay=0) -> None:
+        self.save_calls += 1
+        self.pending_data_func = data_func
+
+    def flush(self) -> None:
+        assert self.pending_data_func is not None
+        self.data = self.pending_data_func()
+        self.pending_data_func = None
+
+
 class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.hass = HomeAssistant(str(Path("/tmp/lg-ha-coordinator-test")))
@@ -168,6 +186,269 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(self.client.poll_calls, 0)
         self.assertEqual(self.client.control_device_ids, ["wideq-device"])
+
+    async def test_verified_control_polls_prestate_then_ack_then_poststate(
+        self,
+    ) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+        phases: list[str] = []
+
+        async def fresh() -> bool:
+            phases.append("poll")
+            self.coordinator._last_success_at = datetime.now(timezone.utc)
+            self.coordinator.data = {
+                "device": {
+                    "state": "READY" if phases.count("poll") == 1 else "DONE"
+                }
+            }
+            return True
+
+        async def control(device_id, ctrl_key, **kwargs):
+            phases.append("ack")
+
+        def request_factory():
+            phases.append("build")
+            self.assertEqual(
+                self.coordinator.snapshot_for("device")["state"], "READY"
+            )
+            return {"command": "Set"}
+
+        with (
+            patch.object(
+                self.coordinator,
+                "_async_verification_refresh",
+                side_effect=fresh,
+            ),
+            patch.object(self.client, "async_control", side_effect=control),
+            patch("asyncio.sleep", new=AsyncMock()),
+        ):
+            await self.coordinator.async_control_and_verify(
+                "device",
+                "verifiedCtrl",
+                request_factory=request_factory,
+                readback_delays=(5,),
+                verifier=lambda snapshot: snapshot.get("state") == "DONE",
+            )
+
+        self.assertEqual(phases, ["poll", "build", "ack", "poll"])
+
+    async def test_verified_control_blocks_before_write_when_prestate_poll_fails(
+        self,
+    ) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+
+        with patch.object(
+            self.coordinator,
+            "_async_verification_refresh",
+            new=AsyncMock(return_value=False),
+        ):
+            with self.assertRaisesRegex(HomeAssistantError, "pre-command"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5,),
+                    verifier=lambda snapshot: True,
+                )
+
+        self.assertEqual(self.client.control_calls, 0)
+
+    async def test_verified_control_requires_ack_before_poststate_poll(self) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+        self.coordinator._last_success_at = datetime.now(timezone.utc)
+        refresh = AsyncMock(return_value=True)
+
+        with (
+            patch.object(
+                self.coordinator,
+                "_async_verification_refresh",
+                new=refresh,
+            ),
+            patch.object(
+                self.client,
+                "async_control",
+                new=AsyncMock(side_effect=RuntimeError("rejected")),
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "rejected"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5,),
+                    verifier=lambda snapshot: True,
+                )
+
+        refresh.assert_awaited_once_with()
+
+    async def test_verified_control_fails_closed_after_bounded_poststate_reads(
+        self,
+    ) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+        self.coordinator._last_success_at = datetime.now(timezone.utc)
+
+        with (
+            patch.object(
+                self.coordinator,
+                "_async_verification_refresh",
+                new=AsyncMock(return_value=True),
+            ) as refresh,
+            patch("asyncio.sleep", new=AsyncMock()) as sleep,
+        ):
+            with self.assertRaisesRegex(HomeAssistantError, "not verified"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5, 10),
+                    verifier=lambda snapshot: False,
+                )
+
+        self.assertEqual(self.client.control_calls, 1)
+        self.assertEqual(refresh.await_count, 3)
+        # Two bounded verification waits plus FakeClient's zero-yield ACK.
+        self.assertEqual(sleep.await_count, 3)
+
+    async def test_verified_control_blocks_if_prestate_expires_in_rate_limit(
+        self,
+    ) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+        self.coordinator._last_success_at = datetime.now(timezone.utc)
+
+        async def expire_snapshot() -> None:
+            assert self.coordinator._last_success_at is not None
+            self.coordinator._last_success_at -= timedelta(seconds=31)
+
+        with (
+            patch.object(
+                self.coordinator,
+                "_async_verification_refresh",
+                new=AsyncMock(return_value=True),
+            ),
+            patch.object(self.limiter, "acquire", side_effect=expire_snapshot),
+        ):
+            with self.assertRaisesRegex(HomeAssistantError, "snapshot expired"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5,),
+                    verifier=lambda snapshot: True,
+                )
+
+        self.assertEqual(self.client.control_calls, 0)
+
+    async def test_verified_control_requires_identity_from_fresh_prestate(
+        self,
+    ) -> None:
+        self.coordinator._last_success_at = datetime.now(timezone.utc)
+
+        with patch.object(
+            self.coordinator,
+            "_async_verification_refresh",
+            new=AsyncMock(return_value=True),
+        ):
+            with self.assertRaisesRegex(HomeAssistantError, "exact WideQ identity"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5,),
+                    verifier=lambda snapshot: True,
+                )
+
+        self.assertEqual(self.client.poll_calls, 0)
+        self.assertEqual(self.client.control_calls, 0)
+
+    async def test_verified_control_rate_limit_wait_is_bounded(self) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+        self.coordinator._last_success_at = datetime.now(timezone.utc)
+
+        async def never_acquires() -> None:
+            await asyncio.sleep(60)
+
+        with (
+            patch.object(
+                self.coordinator,
+                "_async_verification_refresh",
+                new=AsyncMock(return_value=True),
+            ),
+            patch.object(self.limiter, "acquire", side_effect=never_acquires),
+            patch(
+                "custom_components.my_lg.coordinator_wideq."
+                "_CONTROL_VERIFICATION_PRESTATE_MAX_AGE",
+                0.001,
+            ),
+        ):
+            with self.assertRaisesRegex(HomeAssistantError, "snapshot expired"):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=(5,),
+                    verifier=lambda snapshot: True,
+                )
+
+        self.assertEqual(self.client.control_calls, 0)
+
+    async def test_verification_refresh_timeout_is_bounded_and_cleans_flag(
+        self,
+    ) -> None:
+        async def never_finishes() -> None:
+            await asyncio.sleep(60)
+
+        with (
+            patch(
+                "custom_components.my_lg.coordinator_wideq."
+                "_CONTROL_VERIFICATION_REFRESH_TIMEOUT",
+                0.001,
+            ),
+            patch.object(
+                self.coordinator,
+                "async_refresh",
+                side_effect=never_finishes,
+            ),
+        ):
+            self.assertFalse(
+                await self.coordinator._async_verification_refresh()
+            )
+
+        self.assertEqual(self.coordinator._control_verification_refreshes, 0)
+
+    async def test_verification_refresh_skips_optional_energy_history(self) -> None:
+        coordinator = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            {"device": "aircon"},
+            pat_devices=self.pat_devices,
+        )
+
+        self.assertTrue(await coordinator._async_verification_refresh())
+
+        self.assertEqual(self.client.poll_calls, 1)
+        self.assertEqual(self.client.energy_calls, 0)
+
+    async def test_verified_control_rejects_invalid_offsets_without_write(
+        self,
+    ) -> None:
+        self.coordinator._pat_to_wideq = {"device": "wideq-device"}
+
+        for delays in ((10, 5), (5, 5), (float("nan"),), (float("inf"),)):
+            with self.subTest(delays=delays), self.assertRaisesRegex(
+                HomeAssistantError, "schedule is invalid"
+            ):
+                await self.coordinator.async_control_and_verify(
+                    "device",
+                    "verifiedCtrl",
+                    request_factory=lambda: {"command": "Set"},
+                    readback_delays=delays,
+                    verifier=lambda snapshot: True,
+                )
+
+        self.assertEqual(self.client.control_calls, 0)
 
     async def test_duplicate_restored_mapping_is_re_resolved_before_control(self) -> None:
         mapping_store = FakeStore(
@@ -297,7 +578,7 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertNotIn("energy_today", store.data["items"]["device"])
 
-    async def test_power_save_optimistic_value_wins_until_field_is_polled(
+    async def test_power_save_optimistic_value_survives_one_stale_poll_within_grace(
         self,
     ) -> None:
         self.coordinator.data = {
@@ -311,6 +592,10 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
 
         self.coordinator.apply_power_save_optimistic(
             "device", "airState.powerSave.hum", 1
+        )
+        self.assertIn(
+            ("device", "airState.powerSave.hum"),
+            self.coordinator._power_save_readback_refresh,
         )
 
         # The acknowledged command must win over the retained pre-command
@@ -342,8 +627,21 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             ]
         )
 
-        # Once that exact field is observed, the poll is authoritative and may
-        # correct the optimistic value.
+        # One exact but contradictory response immediately after the command
+        # can still be the pre-command snapshot. It must not flicker the UI.
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.hum": 0}}
+        )
+        self.assertTrue(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+
+        pending = self.coordinator._power_save_pending["device"][
+            "airState.powerSave.hum"
+        ]
+        pending.applied_at -= timedelta(seconds=91)
         self.coordinator._update_power_save_cache(
             {"device": {"airState.powerSave.hum": 0}}
         )
@@ -351,6 +649,187 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.coordinator.power_save_snapshot_for("device")[
                 "airState.powerSave.hum"
             ]
+        )
+
+    async def test_matching_power_save_poll_confirms_pending_immediately(
+        self,
+    ) -> None:
+        store = FakeStore()
+        self.coordinator._power_save_store = store
+        self.coordinator.data = {
+            "device": {"airState.powerSave.hum": 0}
+        }
+        self.coordinator._update_power_save_cache(self.coordinator.data)
+        baseline_save_calls = store.save_calls
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.hum": 1}}
+        )
+
+        self.assertNotIn("device", self.coordinator._power_save_pending)
+        self.assertNotIn(
+            ("device", "airState.powerSave.hum"),
+            self.coordinator._power_save_readback_refresh,
+        )
+        self.assertEqual(store.save_calls, baseline_save_calls + 2)
+        self.assertTrue(
+            store.data["items"]["device"]["airState.powerSave.hum"]
+        )
+        self.assertTrue(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+
+    async def test_delayed_power_save_readback_schedules_exactly_one_refresh(
+        self,
+    ) -> None:
+        path = "airState.powerSave.hum"
+        self.coordinator.apply_power_save_optimistic("device", path, 1)
+        pending = self.coordinator._power_save_pending["device"][path]
+        self.coordinator._power_save_readback_refresh[("device", path)].cancel()
+
+        with patch.object(
+            self.coordinator,
+            "async_request_refresh",
+            new=AsyncMock(),
+        ) as refresh:
+            self.coordinator._request_power_save_readback(
+                "device", path, pending.applied_at
+            )
+            await asyncio.sleep(0)
+
+        refresh.assert_awaited_once_with()
+        self.assertNotIn(
+            ("device", path),
+            self.coordinator._power_save_readback_refresh,
+        )
+        self.coordinator.cancel_power_save_pending()
+
+    async def test_omitted_power_save_readback_expires_to_unavailable(
+        self,
+    ) -> None:
+        self.coordinator.data = {
+            "device": {"airState.powerSave.hum": 0}
+        }
+        self.coordinator._update_power_save_cache(self.coordinator.data)
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+        pending = self.coordinator._power_save_pending["device"][
+            "airState.powerSave.hum"
+        ]
+        pending.applied_at -= timedelta(seconds=91)
+
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.basic": 0}}
+        )
+
+        self.assertNotIn("device", self.coordinator._power_save_pending)
+        self.assertNotIn(
+            "airState.powerSave.hum",
+            self.coordinator.power_save_snapshot_for("device"),
+        )
+
+    async def test_omitted_power_save_readback_without_baseline_becomes_unknown(
+        self,
+    ) -> None:
+        self.coordinator.data = {"device": {}}
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+        pending = self.coordinator._power_save_pending["device"][
+            "airState.powerSave.hum"
+        ]
+        pending.applied_at -= timedelta(seconds=91)
+
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.basic": 0}}
+        )
+
+        self.assertNotIn(
+            "airState.powerSave.hum",
+            self.coordinator.power_save_snapshot_for("device"),
+        )
+
+    async def test_delayed_store_never_serializes_unverified_optimistic_value(
+        self,
+    ) -> None:
+        store = DelayedFakeStore()
+        self.coordinator._power_save_store = store
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.hum": 0}}
+        )
+        self.assertIsNotNone(store.pending_data_func)
+
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+        store.flush()
+
+        self.assertNotIn(
+            "device",
+            store.data["items"],
+        )
+        self.assertTrue(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+
+    async def test_pending_timer_expires_without_a_followup_poll(self) -> None:
+        self.coordinator.data = {
+            "device": {"airState.powerSave.hum": 0}
+        }
+        self.coordinator._update_power_save_cache(self.coordinator.data)
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+        applied_at = self.coordinator._power_save_pending["device"][
+            "airState.powerSave.hum"
+        ].applied_at
+
+        self.coordinator._expire_power_save_pending(
+            "device", "airState.powerSave.hum", applied_at
+        )
+
+        self.assertNotIn("device", self.coordinator._power_save_pending)
+        self.assertNotIn(
+            "airState.powerSave.hum",
+            self.coordinator.power_save_snapshot_for("device"),
+        )
+
+    async def test_unverified_value_stays_absent_across_unload_and_restore(
+        self,
+    ) -> None:
+        store = FakeStore()
+        self.coordinator._power_save_store = store
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.hum": 0}}
+        )
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+
+        await self.coordinator.async_persist_power_save()
+        self.assertNotIn("device", store.data["items"])
+
+        restored = WideqCoordinator(
+            self.hass,
+            None,
+            self.client,
+            self.limiter,
+            lambda: 600,
+            pat_devices=self.pat_devices,
+            power_save_store=store,
+        )
+        await restored.async_restore_power_save()
+        self.assertNotIn(
+            "airState.powerSave.hum",
+            restored.power_save_snapshot_for("device"),
         )
 
     async def test_power_save_optimistic_off_notifies_before_stale_poll(

@@ -17,9 +17,12 @@ from .const import (
 from .control_router import (
     ControlValidationError,
     build_wideq_request,
+    control_readback_verified,
+    control_verification_schedule,
     control_uses_experimental_values,
     pat_priority_requested,
-    remote_control_enabled,
+    prepare_control_verification,
+    remote_control_authorized,
 )
 from .feature_catalog import get_wideq_control
 
@@ -101,34 +104,43 @@ async def _handle_wideq_command(hass: HomeAssistant, call: ServiceCall) -> None:
             "Experimental model controls are locked in the integration options"
         )
 
-    snapshot = wideq.snapshot_for(coordinator.device_id)
-    if risk in {"operation", "hazardous"} and not (
-        remote_control_enabled(coordinator.data)
-        or remote_control_enabled(snapshot)
-    ):
-        raise HomeAssistantError(
-            f"{coordinator.alias}: enable remote control on the appliance first"
-        )
+    values = dict(call.data.get("data", {}))
 
     def request_factory() -> dict[str, object]:
         try:
+            current_snapshot = wideq.snapshot_for(coordinator.device_id)
+            if risk in {"operation", "hazardous"} and not remote_control_authorized(
+                coordinator.model,
+                pat_data=coordinator.data,
+                wideq_snapshot=current_snapshot,
+            ):
+                raise ControlValidationError(
+                    "remote control was disabled before the command was sent"
+                )
+            prepare_control_verification(spec, values, current_snapshot)
             return build_wideq_request(
                 spec,
                 command=call.data.get("command"),
-                values=call.data.get("data", {}),
+                values=values,
                 # Read under the coordinator's command/I/O locks so composite
                 # preservation fields cannot be stale due to another command.
-                snapshot=wideq.snapshot_for(coordinator.device_id),
+                snapshot=current_snapshot,
             )
         except ControlValidationError as err:
             raise HomeAssistantError(f"{coordinator.alias}: {err}") from err
 
-    # Every shape, including get/actions and ThinQ1, still passes through the
-    # shared limiter and open-circuit rejection. No follow-up poll is issued.
-    await wideq.async_control(
+    # Mutating composite writes are accepted only with an audited model-state
+    # transition and bounded post-ACK snapshot verification.
+    try:
+        readback_delays = control_verification_schedule(spec, values)
+    except ControlValidationError as err:
+        raise HomeAssistantError(f"{coordinator.alias}: {err}") from err
+    await wideq.async_control_and_verify(
         coordinator.device_id,
         spec["ctrl_key"],
         request_factory=request_factory,
+        readback_delays=readback_delays,
+        verifier=lambda fresh: control_readback_verified(spec, values, fresh),
     )
 
 

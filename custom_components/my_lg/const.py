@@ -57,6 +57,7 @@ DEVICE_TYPE_KIMCHI_REFRIGERATOR = "DEVICE_KIMCHI_REFRIGERATOR"
 DEVICE_TYPE_WATER_PURIFIER = "DEVICE_WATER_PURIFIER"
 DEVICE_TYPE_OVEN = "DEVICE_OVEN"
 DEVICE_TYPE_COOKTOP = "DEVICE_COOKTOP"
+DEVICE_TYPE_STICK_CLEANER = "DEVICE_STICK_CLEANER"
 
 # Whitelist: device types this integration sets up. Stage 5 = all our devices
 # (my_lg fully replaces both the official lg_thinq and the smartthinq fork).
@@ -73,6 +74,7 @@ SUPPORTED_DEVICE_TYPES: set[str] = {
     DEVICE_TYPE_WATER_PURIFIER,
     DEVICE_TYPE_OVEN,
     DEVICE_TYPE_COOKTOP,
+    DEVICE_TYPE_STICK_CLEANER,
 }
 
 # --- MQTT push message types (thinqconnect) ---
@@ -96,6 +98,10 @@ MQTT_SUBSCRIPTION_REFRESH_INTERVAL = 86400
 PAT_DEVICE_LIST_TIMEOUT = 30
 PAT_PREPARE_CONCURRENCY = 3
 PAT_PREPARE_CALL_TIMEOUT = 15
+# Verified writes fetch one fresh pre-state, wait for the ThinQ Connect API ACK,
+# then fetch fresh readback at these absolute offsets after acknowledgement.
+PAT_CONTROL_CALL_TIMEOUT = 30
+PAT_CONTROL_READBACK_DELAYS = (5.0, 10.0)
 MQTT_SETUP_CALL_TIMEOUT = 20
 MQTT_SUBSCRIBE_CONCURRENCY = 3
 MQTT_SUBSCRIBE_CALL_TIMEOUT = 15
@@ -140,3 +146,7 @@ WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY = 5
 WIDEQ_DEVICE_MAP_STORE_VERSION = 1
 WIDEQ_POWER_SAVE_STORE_VERSION = 1
 WIDEQ_POWER_SAVE_STORE_SAVE_DELAY = 5
+# A successful settingInfo response can be followed by one cached pre-command
+# snapshot. Keep the acknowledged value briefly while exact readback catches up.
+WIDEQ_POWER_SAVE_PENDING_MISMATCH_GRACE = 90
+WIDEQ_POWER_SAVE_READBACK_DELAY = 5

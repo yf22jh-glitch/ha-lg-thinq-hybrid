@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 from types import ModuleType
+from types import SimpleNamespace
 import unittest
 
 
@@ -19,10 +20,50 @@ my_lg.__path__ = [str(PACKAGE)]
 from custom_components.my_lg.power_save import (  # noqa: E402
     ac_power_save_attributes,
     ac_power_save_mode,
+    local_comfort_power_save_configured,
 )
 
 
 class AcPowerSaveTests(unittest.TestCase):
+    @staticmethod
+    def _local_provider(*, mode: str = "preferred", healthy: bool = True):
+        return SimpleNamespace(
+            mode=mode,
+            profile_id="cst570-core-state-v1",
+            model_id="CST_570004_WW",
+            snapshot_schema_version=3,
+            profile=SimpleNamespace(
+                availability_policy="attested-session",
+                fields={
+                    "comfort_energy_saving.enabled": SimpleNamespace(
+                        value_type="boolean",
+                        exposure="state",
+                    )
+                },
+            ),
+            shadow_healthy=healthy,
+        )
+
+    def test_local_listener_gate_is_static_and_preferred_only(self) -> None:
+        provider = self._local_provider(healthy=False)
+        self.assertTrue(
+            local_comfort_power_save_configured(provider, "CST_570004_WW")
+        )
+
+        provider.mode = "shadow"
+        self.assertFalse(
+            local_comfort_power_save_configured(provider, "CST_570004_WW")
+        )
+        provider.mode = "preferred"
+        provider.snapshot_schema_version = 2
+        self.assertFalse(
+            local_comfort_power_save_configured(provider, "CST_570004_WW")
+        )
+        provider.snapshot_schema_version = 3
+        self.assertFalse(
+            local_comfort_power_save_configured(provider, "OTHER_MODEL")
+        )
+
     def test_reports_comfortable_power_save(self) -> None:
         snapshot = {
             "airState.powerSave.basic": 0.0,

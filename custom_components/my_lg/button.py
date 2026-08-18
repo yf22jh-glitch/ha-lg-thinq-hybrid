@@ -16,6 +16,7 @@ from typing import Any
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
@@ -25,11 +26,18 @@ from .const import (
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
     OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
-from .control_router import build_wideq_request, remote_control_enabled
+from .control_router import (
+    build_wideq_request,
+    control_readback_verified,
+    control_verification_schedule,
+    prepare_control_verification,
+    remote_control_authorized,
+)
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature_catalog import get_wideq_control
+from .pat_control import PatControlRequest, build_pat_control_request
 from .value_access import stable_feature_key
 
 
@@ -38,10 +46,19 @@ class MyLgButtonDescription(ButtonEntityDescription):
     """Button that posts a fixed control payload on press."""
 
     payload: dict[str, Any]
+    verified_request: PatControlRequest | None = None
 
 
-def _op(key: str, payload: dict[str, Any]) -> MyLgButtonDescription:
-    return MyLgButtonDescription(key=key, translation_key=key, payload=payload)
+def _op(
+    key: str,
+    payload: dict[str, Any],
+) -> MyLgButtonDescription:
+    return MyLgButtonDescription(
+        key=key,
+        translation_key=key,
+        payload=payload,
+        verified_request=None,
+    )
 
 
 def _washer(mode: str) -> dict[str, Any]:
@@ -69,6 +86,7 @@ STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
         key="styler_power_on",
         translation_key="styler_power_on",
         payload={"operation": {"stylerOperationMode": "POWER_ON"}},
+        verified_request=None,
         entity_category=EntityCategory.CONFIG,
         entity_registry_enabled_default=False,
     ),
@@ -176,8 +194,23 @@ class MyLgButton(MyLgEntity, ButtonEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
+    @property
+    def available(self) -> bool:
+        return (
+            super().available
+            and self.coordinator.control_contract_available(
+                self.entity_description.verified_request
+            )
+        )
+
     async def async_press(self) -> None:
-        await self.coordinator.async_control(self.entity_description.payload)
+        request = self.entity_description.verified_request
+        if request is None:
+            await self.coordinator.async_unverified_control(
+                self.entity_description.payload
+            )
+            return
+        await self.coordinator.async_control(request)
 
 
 class MyLgTimerClearButton(MyLgEntity, ButtonEntity):
@@ -194,8 +227,7 @@ class MyLgTimerClearButton(MyLgEntity, ButtonEntity):
     async def async_press(self) -> None:
         desc = self.entity_description
         payload = {desc.group: {desc.field: "UNSET"}}
-        await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)
+        await self.coordinator.async_control(build_pat_control_request(payload))
 
 
 class MyLgWideqActionButton(MyLgWideqEntity, ButtonEntity):
@@ -227,7 +259,11 @@ class MyLgWideqActionButton(MyLgWideqEntity, ButtonEntity):
 
     @property
     def available(self) -> bool:
-        if self.coordinator.circuit_open or not self._snapshot:
+        if (
+            self.coordinator.circuit_open
+            or not self._snapshot
+            or not isinstance(self._spec.get("verification"), dict)
+        ):
             return False
         risk = self._spec.get("risk", "low")
         if risk == "hazardous" and not self._allow_hazardous:
@@ -235,15 +271,38 @@ class MyLgWideqActionButton(MyLgWideqEntity, ButtonEntity):
         if risk == "experimental" and not self._allow_experimental:
             return False
         if risk in {"operation", "hazardous"}:
-            return remote_control_enabled(
-                self._pat_coordinator.data
-            ) or remote_control_enabled(self._snapshot)
+            return remote_control_authorized(
+                self._pat_coordinator.model,
+                pat_data=self._pat_coordinator.data,
+                wideq_snapshot=self._snapshot,
+            )
         return True
 
     async def async_press(self) -> None:
-        request = build_wideq_request(
-            self._spec, command=None, values={}, snapshot=self._snapshot
-        )
-        await self.coordinator.async_control(
-            self._device_id, self._spec["ctrl_key"], **request
+        delays = control_verification_schedule(self._spec, {})
+
+        def request_factory() -> dict[str, Any]:
+            snapshot = self.coordinator.snapshot_for(self._device_id)
+            risk = self._spec.get("risk", "low")
+            if risk in {"operation", "hazardous"} and not remote_control_authorized(
+                self._pat_coordinator.model,
+                pat_data=self._pat_coordinator.data,
+                wideq_snapshot=snapshot,
+            ):
+                raise HomeAssistantError(
+                    "LG ThinQ remote control was disabled before the command was sent"
+                )
+            prepare_control_verification(self._spec, {}, snapshot)
+            return build_wideq_request(
+                self._spec, command=None, values={}, snapshot=snapshot
+            )
+
+        await self.coordinator.async_control_and_verify(
+            self._device_id,
+            self._spec["ctrl_key"],
+            request_factory=request_factory,
+            readback_delays=delays,
+            verifier=lambda fresh: control_readback_verified(
+                self._spec, {}, fresh
+            ),
         )

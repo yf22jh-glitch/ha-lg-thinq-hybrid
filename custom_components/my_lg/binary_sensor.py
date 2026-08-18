@@ -84,6 +84,72 @@ PAT_BINARY_BY_TYPE: dict[str, tuple[MyLgBinaryDescription, ...]] = {
 }
 
 
+@dataclass(frozen=True, kw_only=True)
+class LocalSemanticBinaryDescription(BinarySensorEntityDescription):
+    """One read-only boolean explicitly promoted by an exact Local profile."""
+
+    semantic_id: str
+
+
+LOCAL_BINARY_BY_PROFILE: dict[str, tuple[LocalSemanticBinaryDescription, ...]] = {
+    "dhum-core-state-v2": (
+        LocalSemanticBinaryDescription(
+            key="status_display",
+            translation_key="status_display",
+            semantic_id="display.enabled",
+        ),
+        LocalSemanticBinaryDescription(
+            key="operation_blocked",
+            translation_key="operation_blocked",
+            semantic_id="operation.blocked",
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            entity_registry_enabled_default=False,
+        ),
+    ),
+    "air-tower-core-state-v1": (
+        LocalSemanticBinaryDescription(
+            key="ai_energy_saving",
+            translation_key="ai_energy_saving",
+            semantic_id="energy_saving.ai_enabled",
+        ),
+    ),
+    "styler-core-state-v2": (
+        LocalSemanticBinaryDescription(
+            key="current_time_display",
+            translation_key="current_time_display",
+            semantic_id="display.current_time_enabled",
+        ),
+        LocalSemanticBinaryDescription(
+            key="no_interrupt",
+            translation_key="no_interrupt",
+            semantic_id="option.no_interrupt_enabled",
+        ),
+    ),
+    "wireless-vacuum-core-state-v1": (
+        LocalSemanticBinaryDescription(
+            key="vacuum_ai_suction_adjustment",
+            translation_key="vacuum_ai_suction_adjustment",
+            semantic_id="suction.ai_adjustment_enabled",
+        ),
+        LocalSemanticBinaryDescription(
+            key="vacuum_battery_life_extension",
+            translation_key="vacuum_battery_life_extension",
+            semantic_id="battery.life_extension_enabled",
+        ),
+        LocalSemanticBinaryDescription(
+            key="vacuum_auto_stop_and_go",
+            translation_key="vacuum_auto_stop_and_go",
+            semantic_id="operation.auto_stop_and_go_enabled",
+        ),
+        LocalSemanticBinaryDescription(
+            key="vacuum_mop_suction",
+            translation_key="vacuum_mop_suction",
+            semantic_id="mop.suction_enabled",
+        ),
+    ),
+}
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: MyLgConfigEntry,
@@ -102,6 +168,28 @@ async def async_setup_entry(
             for coordinator in data.coordinators.values()
             if coordinator.device_type == DEVICE_TYPE_DEHUMIDIFIER
         ]
+    # Fields promoted from exact Rethink profiles are separate read-only
+    # entities. They share the PAT device identity, while existing PAT/WideQ
+    # entities and controls retain their current providers and precedence.
+    for pat_device_id, provider in data.local_providers.items():
+        coordinator = data.coordinators.get(pat_device_id)
+        if (
+            coordinator is None
+            or coordinator.device_id != pat_device_id
+            or coordinator.model != provider.model_id
+        ):
+            continue
+        for desc in LOCAL_BINARY_BY_PROFILE.get(provider.profile_id, ()):
+            contract = provider.profile.fields.get(desc.semantic_id)
+            if (
+                provider.profile.availability_policy == "attested-session"
+                and contract is not None
+                and contract.value_type == "boolean"
+                and contract.exposure == "state"
+            ):
+                entities.append(
+                    LocalSemanticBinarySensor(provider, coordinator, desc)
+                )
     # PAT binary sensors (door, rinse refill, ...).
     for coordinator in data.coordinators.values():
         for desc in PAT_BINARY_BY_TYPE.get(coordinator.device_type, ()):
@@ -122,6 +210,52 @@ class MyLgBinarySensor(MyLgEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         return self.entity_description.is_on_fn(self.coordinator)
+
+
+class LocalSemanticBinarySensor(BinarySensorEntity):
+    """One fail-closed boolean sourced only from an exact Local profile."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    entity_description: LocalSemanticBinaryDescription
+
+    def __init__(
+        self,
+        provider: LocalSemanticShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        description: LocalSemanticBinaryDescription,
+    ) -> None:
+        self._provider = provider
+        self.entity_description = description
+        self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pat_coordinator.device_id)},
+            name=pat_coordinator.alias,
+            manufacturer="LG",
+            model=pat_coordinator.model or pat_coordinator.device_type,
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Publish accepted Local state and availability changes immediately."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._provider.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def available(self) -> bool:
+        return (
+            self._provider.shadow_healthy
+            and type(self._provider.field_value(self.entity_description.semantic_id))
+            is bool
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        if not self.available:
+            return None
+        value = self._provider.field_value(self.entity_description.semantic_id)
+        return value if type(value) is bool else None
 
 
 class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntity):

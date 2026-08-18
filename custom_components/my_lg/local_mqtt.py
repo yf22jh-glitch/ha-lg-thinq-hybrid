@@ -47,7 +47,7 @@ def _result_code(value: object) -> int | None:
 
 
 class LocalPilotMqttSubscriber:
-    """Receive three exact QoS 1 topics for one read-only Local binding."""
+    """Receive the exact QoS 1 topics for one read-only Local binding."""
 
     def __init__(
         self,
@@ -374,6 +374,13 @@ class LocalPilotMqttSubscriber:
         if self._stopping or not self._connected or client is not self._client:
             return
         if topic not in self.provider.topics:
+            self._apply_message(topic, payload, qos, retained)
+            return
+        if payload == b"":
+            # A retained deletion invalidates every partial candidate.  Paho
+            # normally delivers a live retained tombstone with retain=False,
+            # so payload length—not that delivery flag—is the deletion signal.
+            self._retained_bootstrap.clear()
             self._apply_message(topic, payload, qos, retained)
             return
         if not self.provider.transport_ready:

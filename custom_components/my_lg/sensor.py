@@ -21,6 +21,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyLgConfigEntry
@@ -43,7 +44,14 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
-from .power_save import ac_power_save_attributes, ac_power_save_mode
+from .local_provider import LocalSemanticShadowProvider
+from .power_save import (
+    ac_power_save_attributes_with_local,
+    ac_power_save_mode,
+    ac_power_save_snapshot_with_local,
+    local_comfort_power_save_configured,
+    local_comfort_power_save_value,
+)
 from .raw_sensor import RawSensorManager
 
 
@@ -355,7 +363,9 @@ WIDEQ_AC_SENSORS: tuple[WideqSensorDescription, ...] = (
             "mixed",
         ],
         value_fn=ac_power_save_mode,
-        attribute_fn=ac_power_save_attributes,
+        # This base descriptor is reused for every device.  Entity-level code
+        # adds the optional Local overlay and its per-field source metadata.
+        attribute_fn=None,
     ),
     WideqSensorDescription(
         key="energy_current",
@@ -497,6 +507,108 @@ WIDEQ_SENSORS_BY_TYPE: dict[str, tuple[WideqSensorDescription, ...]] = {
 }
 
 
+@dataclass(frozen=True, kw_only=True)
+class LocalSemanticSensorDescription(SensorEntityDescription):
+    """One read-only scalar explicitly promoted by an exact Local profile."""
+
+    semantic_id: str
+    value_type: str = "string"
+
+
+LOCAL_SENSOR_BY_PROFILE: dict[
+    str, tuple[LocalSemanticSensorDescription, ...]
+] = {
+    "dhum-core-state-v2": (
+        LocalSemanticSensorDescription(
+            key="airflow_direction",
+            translation_key="airflow_direction",
+            semantic_id="airflow.direction",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+        ),
+        LocalSemanticSensorDescription(
+            key="error_code",
+            translation_key="error_code",
+            semantic_id="error.code",
+            value_type="number",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+        ),
+        LocalSemanticSensorDescription(
+            key="operation_block_reason",
+            translation_key="operation_block_reason",
+            semantic_id="operation.block_reason",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+        ),
+    ),
+    "wireless-vacuum-core-state-v1": (
+        LocalSemanticSensorDescription(
+            key="vacuum_charging_brightness",
+            translation_key="vacuum_charging_brightness",
+            semantic_id="display.charging_brightness",
+            device_class=SensorDeviceClass.ENUM,
+            options=["very_low", "low", "high", "very_high"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_default_suction_level",
+            translation_key="vacuum_default_suction_level",
+            semantic_id="suction.default_level",
+            device_class=SensorDeviceClass.ENUM,
+            options=["normal", "high", "turbo", "eco"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_water_supply_level",
+            translation_key="vacuum_water_supply_level",
+            semantic_id="mop.water_supply_level",
+            device_class=SensorDeviceClass.ENUM,
+            options=["low", "high"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_steam_supply_level",
+            translation_key="vacuum_steam_supply_level",
+            semantic_id="mop.steam_supply_level",
+            device_class=SensorDeviceClass.ENUM,
+            options=["low", "high"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_charging_volume",
+            translation_key="vacuum_charging_volume",
+            semantic_id="sound.charging_volume",
+            device_class=SensorDeviceClass.ENUM,
+            options=["high", "medium", "low"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_settings_button_volume",
+            translation_key="vacuum_settings_button_volume",
+            semantic_id="sound.settings_button_volume",
+            device_class=SensorDeviceClass.ENUM,
+            options=["high", "medium", "low", "off"],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_charging_melody",
+            translation_key="vacuum_charging_melody",
+            semantic_id="sound.charging_melody",
+            device_class=SensorDeviceClass.ENUM,
+            options=[
+                "melody_1",
+                "melody_2",
+                "melody_3",
+                "melody_4",
+                "melody_5",
+            ],
+        ),
+        LocalSemanticSensorDescription(
+            key="vacuum_dust_emptying_melody",
+            translation_key="vacuum_dust_emptying_melody",
+            semantic_id="sound.dust_emptying_melody",
+            device_class=SensorDeviceClass.ENUM,
+            options=["melody_1", "melody_2", "melody_3"],
+        ),
+    )
+}
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: MyLgConfigEntry,
@@ -522,8 +634,43 @@ async def async_setup_entry(
         if data.wideq_coordinator is not None:
             for wdesc in WIDEQ_SENSORS_BY_TYPE.get(coordinator.device_type, ()):
                 entities.append(
-                    WideqDeviceSensor(data.wideq_coordinator, coordinator, wdesc)
+                    WideqDeviceSensor(
+                        data.wideq_coordinator,
+                        coordinator,
+                        wdesc,
+                        local_provider=getattr(data, "local_providers", {}).get(
+                            coordinator.device_id
+                        ),
+                    )
                 )
+    for pat_device_id, provider in data.local_providers.items():
+        coordinator = data.coordinators.get(pat_device_id)
+        if (
+            coordinator is None
+            or coordinator.device_id != pat_device_id
+            or coordinator.model != provider.model_id
+        ):
+            continue
+        for desc in LOCAL_SENSOR_BY_PROFILE.get(provider.profile_id, ()):
+            contract = provider.profile.fields.get(desc.semantic_id)
+            if (
+                provider.profile.availability_policy == "attested-session"
+                and contract is not None
+                and contract.value_type == desc.value_type
+                and contract.exposure == "state"
+                and (
+                    (
+                        desc.options is None
+                        and contract.allowed_values is None
+                    )
+                    or (
+                        contract.allowed_values is not None
+                        and tuple(desc.options or ())
+                        == contract.allowed_values
+                    )
+                )
+            ):
+                entities.append(LocalSemanticSensor(provider, coordinator, desc))
     async_add_entities(entities)
 
     # The complete audited RAW inventory is registered disabled by default.
@@ -556,6 +703,57 @@ class MyLgSensor(MyLgEntity, SensorEntity):
         return self.entity_description.value_fn(self.coordinator)
 
 
+class LocalSemanticSensor(SensorEntity):
+    """One fail-closed scalar sourced only from an exact Local profile."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    entity_description: LocalSemanticSensorDescription
+
+    def __init__(
+        self,
+        provider: LocalSemanticShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        description: LocalSemanticSensorDescription,
+    ) -> None:
+        self._provider = provider
+        self.entity_description = description
+        self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pat_coordinator.device_id)},
+            name=pat_coordinator.alias,
+            manufacturer="LG",
+            model=pat_coordinator.model or pat_coordinator.device_type,
+        )
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._provider.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def available(self) -> bool:
+        value = self._provider.field_value(self.entity_description.semantic_id)
+        if not self._provider.shadow_healthy:
+            return False
+        if self.entity_description.value_type == "string":
+            return isinstance(value, str) and (
+                self.entity_description.options is None
+                or value in self.entity_description.options
+            )
+        if self.entity_description.value_type == "number":
+            return type(value) in (int, float)
+        return False
+
+    @property
+    def native_value(self) -> Any:
+        if not self.available:
+            return None
+        value = self._provider.field_value(self.entity_description.semantic_id)
+        return value
+
+
 class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     """A wideq-only value read from the wideq snapshot, mapped by device alias."""
 
@@ -567,10 +765,13 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
         wideq_coordinator: WideqCoordinator,
         pat_coordinator: PatDeviceCoordinator,
         description: WideqSensorDescription,
+        *,
+        local_provider: LocalSemanticShadowProvider | None = None,
     ) -> None:
         super().__init__(wideq_coordinator)
         self._device_id = pat_coordinator.device_id
         self._pat_coordinator = pat_coordinator
+        self._local_provider = local_provider
         self.entity_description = description
         self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
@@ -600,6 +801,17 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             self.async_on_remove(
                 self._pat_coordinator.async_add_listener(self.async_write_ha_state)
             )
+        if (
+            self.entity_description.key == "power_save_mode"
+            and local_comfort_power_save_configured(
+                self._local_provider, self._pat_coordinator.model
+            )
+        ):
+            self.async_on_remove(
+                self._local_provider.async_add_listener(
+                    self.async_write_ha_state
+                )
+            )
 
     @property
     def available(self) -> bool:
@@ -608,7 +820,13 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
                 self._device_id, self.entity_description.history_key
             )
         if self.entity_description.key == "power_save_mode":
-            return self.coordinator.power_save_available(self._device_id)
+            return (
+                local_comfort_power_save_value(
+                    self._local_provider, self._pat_coordinator.model
+                )
+                is not None
+                or self.coordinator.power_save_available(self._device_id)
+            )
         if (
             self.entity_description.key == "energy_current"
             and self._ac_power_is_off()
@@ -632,7 +850,11 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
             return 0.0
 
         snapshot = (
-            self.coordinator.power_save_snapshot_for(self._device_id)
+            ac_power_save_snapshot_with_local(
+                self.coordinator.power_save_snapshot_for(self._device_id),
+                self._local_provider,
+                self._pat_coordinator.model,
+            )
             if self.entity_description.key == "power_save_mode"
             else self.coordinator.snapshot_for(self._device_id)
         )
@@ -647,9 +869,21 @@ class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(self.coordinator.diagnostic_attributes)
-        if self.entity_description.attribute_fn is not None:
+        if self.entity_description.key == "power_save_mode":
+            attrs.update(
+                ac_power_save_attributes_with_local(
+                    self.coordinator.power_save_snapshot_for(self._device_id),
+                    self._local_provider,
+                    self._pat_coordinator.model,
+                )
+            )
+        elif self.entity_description.attribute_fn is not None:
             snapshot = (
-                self.coordinator.power_save_snapshot_for(self._device_id)
+                ac_power_save_snapshot_with_local(
+                    self.coordinator.power_save_snapshot_for(self._device_id),
+                    self._local_provider,
+                    self._pat_coordinator.model,
+                )
                 if self.entity_description.key == "power_save_mode"
                 else self.coordinator.snapshot_for(self._device_id)
             )

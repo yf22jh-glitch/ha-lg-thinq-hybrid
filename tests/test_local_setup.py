@@ -10,7 +10,12 @@ from typing import ClassVar
 from unittest.mock import AsyncMock, patch
 
 import custom_components.my_lg as integration
-from custom_components.my_lg.const import DEVICE_TYPE_DEHUMIDIFIER
+from custom_components.my_lg.const import (
+    DEVICE_TYPE_AIR_PURIFIER,
+    DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_STICK_CLEANER,
+    DEVICE_TYPE_STYLER,
+)
 from custom_components.my_lg.local_provider import (
     LOCAL_PROVIDER_MODE_SHADOW,
     OPT_LOCAL_BINDING_ID,
@@ -114,14 +119,16 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
     async def test_configuration_and_catalogue_io_run_off_event_loop(self) -> None:
         loop_thread = threading.get_ident()
         worker_threads: list[int] = []
-        original = integration.local_shadow_configurations
+        original = integration.isolated_local_shadow_configurations
 
         def observed(options_value):
             worker_threads.append(threading.get_ident())
             return original(options_value)
 
         with (
-            patch.object(integration, "local_shadow_configurations", observed),
+            patch.object(
+                integration, "isolated_local_shadow_configurations", observed
+            ),
             patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber),
         ):
             await integration._setup_local_shadows(
@@ -221,7 +228,7 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
     async def test_non_dhum_profile_starts_without_wideq_and_stays_shadow_only(
         self,
     ) -> None:
-        pat_id = "pat-styler-001"
+        pat_id = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
         runtime = integration.MyLgData(
             api=object(),
             coordinators={
@@ -237,13 +244,14 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
             options={
                 OPT_LOCAL_BINDINGS: [
                     {
-                        "schema_version": 1,
+                        "schema_version": 2,
                         "mode": "shadow",
                         "profile_id": "styler-core-state-v1",
                         "model_id": "ST_R_ETH01Y_",
                         "platform": "thinq2",
                         "pat_device_id": pat_id,
                         "binding_id": "pilot_styler_provider_001",
+                        "binding_generation": 1,
                         "mqtt_password": "private-test-password",
                     }
                 ]
@@ -256,6 +264,8 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
         provider = runtime.local_providers[pat_id]
         self.assertEqual(provider.profile_id, "styler-core-state-v1")
         self.assertEqual(provider.model_id, "ST_R_ETH01Y_")
+        self.assertEqual(provider.snapshot_schema_version, 2)
+        self.assertEqual(provider.publication_plan_revision, 1)
         self.assertEqual(
             set(provider.profile.fields),
             {
@@ -265,6 +275,221 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
             },
         )
         self.assertIsNone(runtime.wideq_coordinator)
+
+    async def test_schema_three_setup_pins_cohort_wire_without_changing_pat_key(
+        self,
+    ) -> None:
+        pat_id = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+        runtime = integration.MyLgData(
+            api=object(),
+            coordinators={
+                pat_id: SimpleNamespace(
+                    device_id=pat_id,
+                    device_type=DEVICE_TYPE_AIR_PURIFIER,
+                    model="AIR_2C0001_WW",
+                )
+            },
+            wideq_coordinator=None,
+        )
+        entry = SimpleNamespace(
+            options={
+                OPT_LOCAL_BINDINGS: [
+                    {
+                        "schema_version": 3,
+                        "mode": "shadow",
+                        "profile_id": "air-tower-core-state-v1",
+                        "model_id": "AIR_2C0001_WW",
+                        "platform": "thinq2",
+                        "pat_device_id": pat_id,
+                        "binding_id": "pilot_air_tower_cohort_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password",
+                    }
+                ]
+            }
+        )
+
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(set(runtime.local_providers), {pat_id})
+        provider = runtime.local_providers[pat_id]
+        self.assertEqual(provider.snapshot_schema_version, 3)
+        self.assertEqual(provider.publication_plan_revision, 2)
+        self.assertIsNotNone(provider.identity_expectation)
+        self.assertIs(
+            runtime.local_mqtt_subscribers[pat_id].provider,
+            provider,
+        )
+
+    async def test_identity_bound_uppercase_uuid_resolves_lowercase_pat_anchor(
+        self,
+    ) -> None:
+        pat_id = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+        runtime = integration.MyLgData(
+            api=object(),
+            coordinators={
+                pat_id: SimpleNamespace(
+                    device_id=pat_id,
+                    device_type=DEVICE_TYPE_AIR_PURIFIER,
+                    model="AIR_2C0001_WW",
+                )
+            },
+            wideq_coordinator=None,
+        )
+        entry = SimpleNamespace(
+            options={
+                OPT_LOCAL_BINDINGS: [
+                    {
+                        "schema_version": 3,
+                        "mode": "shadow",
+                        "profile_id": "air-tower-core-state-v1",
+                        "model_id": "AIR_2C0001_WW",
+                        "platform": "thinq2",
+                        "pat_device_id": pat_id.upper(),
+                        "binding_id": "pilot_air_tower_upper_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password",
+                    }
+                ]
+            }
+        )
+
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(set(runtime.local_providers), {pat_id})
+        self.assertEqual(set(runtime.local_mqtt_subscribers), {pat_id})
+
+    async def test_new_verified_profiles_start_as_exact_identity_bound_shadows(
+        self,
+    ) -> None:
+        dhum_id = "11111111-2222-4333-8444-555555555551"
+        tower_id = "11111111-2222-4333-8444-555555555552"
+        styler_id = "11111111-2222-4333-8444-555555555553"
+        vacuum_id = "11111111-2222-4333-8444-555555555554"
+        runtime = integration.MyLgData(
+            api=object(),
+            coordinators={
+                dhum_id: SimpleNamespace(
+                    device_id=dhum_id,
+                    device_type=DEVICE_TYPE_DEHUMIDIFIER,
+                    model="DHUM_056905_WW",
+                ),
+                tower_id: SimpleNamespace(
+                    device_id=tower_id,
+                    device_type=DEVICE_TYPE_AIR_PURIFIER,
+                    model="AIR_2C0001_WW",
+                ),
+                styler_id: SimpleNamespace(
+                    device_id=styler_id,
+                    device_type=DEVICE_TYPE_STYLER,
+                    model="ST_R_ETH01Y_",
+                ),
+                vacuum_id: SimpleNamespace(
+                    device_id=vacuum_id,
+                    device_type=DEVICE_TYPE_STICK_CLEANER,
+                    model="HWWA9X3C_F2U",
+                ),
+            },
+            wideq_coordinator=None,
+        )
+        entry = SimpleNamespace(
+            options={
+                OPT_LOCAL_BINDINGS: [
+                    {
+                        "schema_version": 2,
+                        "mode": "shadow",
+                        "profile_id": "dhum-core-state-v2",
+                        "model_id": "DHUM_056905_WW",
+                        "platform": "thinq2",
+                        "pat_device_id": dhum_id,
+                        "binding_id": "pilot_dhum_display_provider_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password-dhum",
+                    },
+                    {
+                        "schema_version": 2,
+                        "mode": "shadow",
+                        "profile_id": "air-tower-core-state-v1",
+                        "model_id": "AIR_2C0001_WW",
+                        "platform": "thinq2",
+                        "pat_device_id": tower_id,
+                        "binding_id": "pilot_air_tower_provider_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password-tower",
+                    },
+                    {
+                        "schema_version": 2,
+                        "mode": "shadow",
+                        "profile_id": "styler-core-state-v2",
+                        "model_id": "ST_R_ETH01Y_",
+                        "platform": "thinq2",
+                        "pat_device_id": styler_id,
+                        "binding_id": "pilot_styler_provider_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password-styler",
+                    },
+                    {
+                        "schema_version": 2,
+                        "mode": "shadow",
+                        "profile_id": "wireless-vacuum-core-state-v1",
+                        "model_id": "HWWA9X3C_F2U",
+                        "platform": "thinq2",
+                        "pat_device_id": vacuum_id,
+                        "binding_id": "pilot_vacuum_provider_001",
+                        "binding_generation": 1,
+                        "mqtt_password": "private-test-password-vacuum",
+                    },
+                ]
+            }
+        )
+
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(
+            set(runtime.local_providers),
+            {dhum_id, tower_id, styler_id, vacuum_id},
+        )
+        self.assertEqual(
+            runtime.local_providers[dhum_id].profile_id,
+            "dhum-core-state-v2",
+        )
+        self.assertIn(
+            "display.enabled",
+            runtime.local_providers[dhum_id].profile.fields,
+        )
+        self.assertEqual(
+            runtime.local_providers[tower_id].profile_id,
+            "air-tower-core-state-v1",
+        )
+        self.assertEqual(
+            set(runtime.local_providers[tower_id].profile.fields),
+            {"energy_saving.ai_enabled"},
+        )
+        self.assertEqual(
+            runtime.local_providers[styler_id].profile_id,
+            "styler-core-state-v2",
+        )
+        self.assertIn(
+            "display.current_time_enabled",
+            runtime.local_providers[styler_id].profile.fields,
+        )
+        self.assertEqual(
+            runtime.local_providers[vacuum_id].profile_id,
+            "wireless-vacuum-core-state-v1",
+        )
+        self.assertEqual(
+            len(runtime.local_providers[vacuum_id].profile.fields),
+            12,
+        )
+        self.assertTrue(
+            all(
+                provider.identity_expectation is not None
+                for provider in runtime.local_providers.values()
+            )
+        )
 
     async def test_one_binding_start_failure_does_not_remove_a_healthy_binding(
         self,
@@ -285,6 +510,49 @@ class LocalShadowSetupTests(unittest.IsolatedAsyncioTestCase):
             if item.provider.binding_id == "pilot_dhum_provider_002"
         )
         self.assertEqual(failed.stopped, 1)
+
+    async def test_invalid_stored_binding_does_not_disable_healthy_legacy_shadow(
+        self,
+    ) -> None:
+        healthy_id = "legacy-cst570-pat-001"
+        runtime = integration.MyLgData(
+            api=object(),
+            coordinators={
+                healthy_id: SimpleNamespace(
+                    device_id=healthy_id,
+                    device_type="WASHER",
+                    model="CST_570004_WW",
+                )
+            },
+            wideq_coordinator=None,
+        )
+        healthy = {
+            "schema_version": 1,
+            "mode": "shadow",
+            "profile_id": "cst570-core-state-v1",
+            "model_id": "CST_570004_WW",
+            "platform": "thinq2",
+            "pat_device_id": healthy_id,
+            "binding_id": "pilot_cst570_legacy_001",
+            "mqtt_password": "private-test-password",
+        }
+        entry = SimpleNamespace(
+            options={
+                OPT_LOCAL_BINDINGS: [
+                    healthy,
+                    {**healthy, "schema_version": 99, "binding_id": "bad_binding_0000001"},
+                ]
+            }
+        )
+
+        with patch.object(integration, "LocalPilotMqttSubscriber", FakeSubscriber):
+            await integration._setup_local_shadows(self.hass, entry, runtime)
+
+        self.assertEqual(set(runtime.local_providers), {healthy_id})
+        self.assertEqual(
+            runtime.local_providers[healthy_id].snapshot_schema_version,
+            1,
+        )
 
     async def test_stop_failure_is_isolated_and_all_bindings_are_detached(self) -> None:
         runtime = data(multiple=True)

@@ -90,6 +90,12 @@ def model_read_paths(data: dict[str, Any]) -> set[tuple[str, ...]]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("model_dir", nargs="?", default="/tmp/lg_models")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUTPUT,
+        help="catalogue output path",
+    )
     args = parser.parse_args()
     pat = json.loads((ROOT / "lg_pat_dump.json").read_text(encoding="utf-8"))
     wideq = json.loads((ROOT / "lg_wideq_dump.json").read_text(encoding="utf-8"))
@@ -129,7 +135,7 @@ def main() -> None:
             source[model] = sorted({tuple(path) for path in paths})
             source[model] = [list(path) for path in source[model]]
 
-    OUTPUT.write_text(
+    args.output.write_text(
         json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -29,6 +31,8 @@ from .const import (
     WIDEQ_ENERGY_HISTORY_INTERVAL,
     WIDEQ_ENERGY_HISTORY_STORE_SAVE_DELAY,
     WIDEQ_POWER_SAVE_STORE_SAVE_DELAY,
+    WIDEQ_POWER_SAVE_PENDING_MISMATCH_GRACE,
+    WIDEQ_POWER_SAVE_READBACK_DELAY,
     WIDEQ_PROBE_INTERVAL,
 )
 from .device_identity import (
@@ -42,6 +46,16 @@ from .wideq_client import WideqClient, is_server_unavailable
 
 _LOGGER = logging.getLogger(__name__)
 _ENERGY_KEYS = ("today", "month")
+_CONTROL_VERIFICATION_REFRESH_TIMEOUT = 30.0
+_CONTROL_VERIFICATION_PRESTATE_MAX_AGE = 30.0
+
+
+@dataclass
+class _PowerSavePending:
+    """One acknowledged command awaiting a non-stale exact readback."""
+
+    value: bool
+    applied_at: datetime
 
 
 class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -87,9 +101,19 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._unmatched_pat_ids: set[str] = set(self._pat_devices)
         self._power_save_store = power_save_store
         self._power_save_cache: dict[str, dict[str, bool]] = {}
-        self._power_save_pending: dict[str, dict[str, bool]] = {}
+        self._power_save_pending: dict[
+            str, dict[str, _PowerSavePending]
+        ] = {}
+        self._power_save_pending_expiry: dict[
+            tuple[str, str], asyncio.TimerHandle
+        ] = {}
+        self._power_save_readback_refresh: dict[
+            tuple[str, str], asyncio.TimerHandle
+        ] = {}
+        self._power_save_unverified: set[tuple[str, str]] = set()
         self._power_save_restored_fields: set[tuple[str, str]] = set()
         self._power_save_cache_saved_at: str | None = None
+        self._control_verification_refreshes = 0
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -117,7 +141,10 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 # coordinator failure. A successful recovery probe skips this
                 # optional batch once, so a just-recovered service receives only
                 # the single probe request.
-                if self._fail_count == 0:
+                if (
+                    self._fail_count == 0
+                    and self._control_verification_refreshes == 0
+                ):
                     await self._async_refresh_energy_history()
         except Exception as err:  # noqa: BLE001
             self._fail_count += 1
@@ -258,9 +285,17 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         return {
             "saved_at": self._power_save_cache_saved_at,
             "items": {
-                device_id: dict(item)
+                device_id: {
+                    path: value
+                    for path, value in item.items()
+                    if (device_id, path) not in self._power_save_unverified
+                }
                 for device_id, item in self._power_save_cache.items()
-                if device_id in self._pat_devices and item
+                if device_id in self._pat_devices
+                and any(
+                    (device_id, path) not in self._power_save_unverified
+                    for path in item
+                )
             },
         }
 
@@ -277,27 +312,124 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     ) -> None:
         """Merge verified power-save flags from a successful WideQ poll."""
         changed = False
+        now = datetime.now(timezone.utc)
         for device_id, snapshot in snapshots.items():
             if device_id not in self._pat_devices or not isinstance(snapshot, dict):
                 continue
             safe_fields = ac_power_save_cache(snapshot)
-            if not safe_fields:
-                continue
             current = dict(self._power_save_cache.get(device_id, {}))
             pending = self._power_save_pending.get(device_id)
             for path, value in safe_fields.items():
+                pending_field = None if pending is None else pending.get(path)
+                if (
+                    pending_field is not None
+                    and value != pending_field.value
+                    and (now - pending_field.applied_at).total_seconds()
+                    < WIDEQ_POWER_SAVE_PENDING_MISMATCH_GRACE
+                ):
+                    # LG may return the pre-command snapshot once immediately
+                    # after acknowledging settingInfo. Retain the pending value
+                    # until the grace expires or an exact matching poll arrives.
+                    continue
+                if pending_field is not None:
+                    # Persist the now-verified value even when the optimistic
+                    # cache already contained the same boolean.
+                    changed = True
+                if (device_id, path) in self._power_save_unverified:
+                    # An exact post-command field is a persisted transition
+                    # even when its boolean equals the old pre-command cache.
+                    changed = True
                 if current.get(path) != value:
                     changed = True
                 current[path] = value
-                if pending is not None:
-                    pending.pop(path, None)
+                self._drop_power_save_pending(device_id, path)
+                self._power_save_unverified.discard((device_id, path))
                 self._power_save_restored_fields.discard((device_id, path))
-            self._power_save_cache[device_id] = current
-            if pending is not None and not pending:
-                self._power_save_pending.pop(device_id, None)
+            if safe_fields:
+                self._power_save_cache[device_id] = current
+
+            # A successful device snapshot that omits the commanded field does
+            # not verify it.  Give LG one bounded propagation window, then
+            # discard the provisional value and mask the pre-command snapshot
+            # until a later exact field readback arrives.
+            for path, pending_field in tuple(
+                self._power_save_pending.get(device_id, {}).items()
+            ):
+                if path in safe_fields:
+                    continue
+                if (
+                    now - pending_field.applied_at
+                ).total_seconds() >= WIDEQ_POWER_SAVE_PENDING_MISMATCH_GRACE:
+                    if self._drop_power_save_pending(device_id, path):
+                        self._power_save_unverified.add((device_id, path))
+                        if path in current:
+                            current.pop(path)
+                            if current:
+                                self._power_save_cache[device_id] = current
+                            else:
+                                self._power_save_cache.pop(device_id, None)
+                        changed = True
         if changed:
             self._power_save_cache_saved_at = datetime.now(timezone.utc).isoformat()
             self._schedule_power_save_save()
+
+    def _drop_power_save_pending(self, device_id: str, path: str) -> bool:
+        """Remove one provisional flag and its bounded expiry callback."""
+        pending = self._power_save_pending.get(device_id)
+        if pending is None or pending.pop(path, None) is None:
+            return False
+        if not pending:
+            self._power_save_pending.pop(device_id, None)
+        handle = self._power_save_pending_expiry.pop((device_id, path), None)
+        if handle is not None:
+            handle.cancel()
+        handle = self._power_save_readback_refresh.pop((device_id, path), None)
+        if handle is not None:
+            handle.cancel()
+        return True
+
+    @callback
+    def _request_power_save_readback(
+        self, device_id: str, path: str, applied_at: datetime
+    ) -> None:
+        """Request one bounded post-command snapshot through the coordinator."""
+        self._power_save_readback_refresh.pop((device_id, path), None)
+        pending = self._power_save_pending.get(device_id, {}).get(path)
+        if pending is None or pending.applied_at != applied_at:
+            return
+        self.hass.async_create_task(self.async_request_refresh())
+
+    @callback
+    def _expire_power_save_pending(
+        self, device_id: str, path: str, applied_at: datetime
+    ) -> None:
+        """Stop presenting an acknowledged value that never received readback."""
+        self._power_save_pending_expiry.pop((device_id, path), None)
+        pending = self._power_save_pending.get(device_id, {}).get(path)
+        if pending is None or pending.applied_at != applied_at:
+            return
+        if self._drop_power_save_pending(device_id, path):
+            self._power_save_unverified.add((device_id, path))
+            current = dict(self._power_save_cache.get(device_id, {}))
+            current.pop(path, None)
+            if current:
+                self._power_save_cache[device_id] = current
+            else:
+                self._power_save_cache.pop(device_id, None)
+            self._power_save_cache_saved_at = datetime.now(timezone.utc).isoformat()
+            self._schedule_power_save_save()
+            self.async_update_listeners()
+
+    @callback
+    def cancel_power_save_pending(self) -> None:
+        """Cancel every provisional flag during config-entry shutdown."""
+        for handle in self._power_save_pending_expiry.values():
+            handle.cancel()
+        for handle in self._power_save_readback_refresh.values():
+            handle.cancel()
+        self._power_save_pending_expiry.clear()
+        self._power_save_readback_refresh.clear()
+        self._power_save_pending.clear()
 
     async def async_restore_power_save(self) -> None:
         """Restore only non-metering power-save flags without polling WideQ."""
@@ -326,14 +458,33 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
     async def async_persist_power_save(self) -> None:
         """Flush the safe mode cache during config-entry unload."""
+        self.cancel_power_save_pending()
         if self._power_save_store is not None:
             await self._power_save_store.async_save(self._power_save_payload())
 
     def power_save_snapshot_for(self, device_id: str) -> dict[str, Any]:
         """Return live/cache flags with acknowledged commands shown pending poll."""
-        merged: dict[str, Any] = dict(self._power_save_cache.get(device_id, {}))
-        merged.update(ac_power_save_cache(self.snapshot_for(device_id)))
-        merged.update(self._power_save_pending.get(device_id, {}))
+        # ``self.data`` is replaced by DataUpdateCoordinator only after
+        # ``_async_update_data`` returns.  During that short hand-off the
+        # retained snapshot can therefore predate the value already accepted
+        # into the verified cache.  Start with the retained live snapshot and
+        # let the newer cache win so an exact readback cannot flicker back to
+        # the pre-command value.
+        merged: dict[str, Any] = ac_power_save_cache(
+            self.snapshot_for(device_id)
+        )
+        merged.update(self._power_save_cache.get(device_id, {}))
+        for unverified_device_id, path in self._power_save_unverified:
+            if unverified_device_id == device_id:
+                merged.pop(path, None)
+        merged.update(
+            {
+                path: pending.value
+                for path, pending in self._power_save_pending.get(
+                    device_id, {}
+                ).items()
+            }
+        )
         return merged
 
     def power_save_field_available(self, device_id: str, path: str) -> bool:
@@ -365,13 +516,38 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         safe = ac_power_save_cache({path: value})
         if path not in safe:
             return
-        current = dict(self._power_save_cache.get(device_id, {}))
-        current[path] = safe[path]
-        self._power_save_cache[device_id] = current
+        self._drop_power_save_pending(device_id, path)
+        self._power_save_unverified.add((device_id, path))
+        applied_at = datetime.now(timezone.utc)
         pending = dict(self._power_save_pending.get(device_id, {}))
-        pending[path] = safe[path]
+        pending[path] = _PowerSavePending(
+            value=safe[path], applied_at=applied_at
+        )
         self._power_save_pending[device_id] = pending
+        self._power_save_pending_expiry[(device_id, path)] = (
+            self.hass.loop.call_later(
+                WIDEQ_POWER_SAVE_PENDING_MISMATCH_GRACE,
+                self._expire_power_save_pending,
+                device_id,
+                path,
+                applied_at,
+            )
+        )
+        self._power_save_readback_refresh[(device_id, path)] = (
+            self.hass.loop.call_later(
+                WIDEQ_POWER_SAVE_READBACK_DELAY,
+                self._request_power_save_readback,
+                device_id,
+                path,
+                applied_at,
+            )
+        )
         self._power_save_restored_fields.discard((device_id, path))
+        # Invalidate any persisted pre-command value immediately.  The pending
+        # target remains memory-only until an exact post-command poll confirms
+        # it; a restart must never resurrect the old boolean as current.
+        self._power_save_cache_saved_at = applied_at.isoformat()
+        self._schedule_power_save_save()
         self.async_update_listeners()
 
     @property
@@ -762,7 +938,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         *,
         request_factory: Callable[[], dict[str, Any]] | None = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Any:
         """Send one wideq control command for a device (rate-limited)."""
         if self.circuit_open:
             raise HomeAssistantError(
@@ -773,41 +949,190 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # its lock for the duration of network I/O.
         lock = self._control_locks.setdefault(device_id, asyncio.Lock())
         async with lock:
-            async with self._io_lock:
-                # Re-check after waiting: a prior command or scheduled poll may
-                # have opened the circuit while this caller was queued.
-                if self.circuit_open:
-                    raise HomeAssistantError(
-                        "LG ThinQ wideq service is unavailable; waiting for recovery probe"
-                    )
-                wideq_device_id = self._pat_to_wideq.get(device_id)
-                if wideq_device_id is None:
-                    # Controls are allowed before the deliberately delayed first
-                    # poll. Resolve once under the same global I/O lock, count
-                    # that physical snapshot request separately, and retain it.
-                    await self.rate_limiter.acquire()
-                    devices = await self.client.async_get_snapshots()
-                    snapshots = self._resolve_devices(devices)
-                    if snapshots:
-                        current = dict(self.data or {})
-                        current.update(snapshots)
-                        self.async_set_updated_data(current)
-                    wideq_device_id = self._pat_to_wideq.get(device_id)
-                if wideq_device_id is None:
-                    reason = (
-                        "ambiguous alias/model"
-                        if device_id in self._ambiguous_pat_ids
-                        else "no matching WideQ device"
-                    )
-                    raise HomeAssistantError(
-                        f"LG ThinQ WideQ identity unavailable: {reason}"
-                    )
-                if request_factory is not None:
-                    kwargs = request_factory()
-                await self.rate_limiter.acquire()
-                await self.client.async_control(
-                    wideq_device_id, ctrl_key, **kwargs
+            return await self._async_control_once(
+                device_id,
+                ctrl_key,
+                request_factory=request_factory,
+                **kwargs,
+            )
+
+    async def _async_control_once(
+        self,
+        device_id: str,
+        ctrl_key: str,
+        *,
+        request_factory: Callable[[], dict[str, Any]] | None = None,
+        required_snapshot_max_age: float | None = None,
+        require_resolved_identity: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        """Send one command while the caller owns the per-device lock."""
+        async with self._io_lock:
+            # Re-check after waiting: a prior command or scheduled poll may
+            # have opened the circuit while this caller was queued.
+            if self.circuit_open:
+                raise HomeAssistantError(
+                    "LG ThinQ wideq service is unavailable; waiting for recovery probe"
                 )
+            wideq_device_id = self._pat_to_wideq.get(device_id)
+            if wideq_device_id is None and require_resolved_identity:
+                raise HomeAssistantError(
+                    "LG ThinQ command blocked because the fresh snapshot did not "
+                    "resolve an exact WideQ identity"
+                )
+            if wideq_device_id is None:
+                # Controls are allowed before the deliberately delayed first
+                # poll. Resolve once under the same global I/O lock, count
+                # that physical snapshot request separately, and retain it.
+                await self.rate_limiter.acquire()
+                devices = await self.client.async_get_snapshots()
+                snapshots = self._resolve_devices(devices)
+                if snapshots:
+                    current = dict(self.data or {})
+                    current.update(snapshots)
+                    self.async_set_updated_data(current)
+                wideq_device_id = self._pat_to_wideq.get(device_id)
+            if wideq_device_id is None:
+                reason = (
+                    "ambiguous alias/model"
+                    if device_id in self._ambiguous_pat_ids
+                    else "no matching WideQ device"
+                )
+                raise HomeAssistantError(
+                    f"LG ThinQ WideQ identity unavailable: {reason}"
+                )
+            if required_snapshot_max_age is None:
+                await self.rate_limiter.acquire()
+            else:
+                try:
+                    async with asyncio.timeout(required_snapshot_max_age):
+                        await self.rate_limiter.acquire()
+                except TimeoutError as err:
+                    raise HomeAssistantError(
+                        "LG ThinQ command blocked because the verified pre-command "
+                        "snapshot expired while waiting for the rate limiter"
+                    ) from err
+            if required_snapshot_max_age is not None:
+                snapshot_age = (
+                    None
+                    if self._last_success_at is None
+                    else (
+                        datetime.now(timezone.utc) - self._last_success_at
+                    ).total_seconds()
+                )
+                if snapshot_age is None or snapshot_age > required_snapshot_max_age:
+                    raise HomeAssistantError(
+                        "LG ThinQ command blocked because the verified pre-command "
+                        "snapshot expired while waiting for the rate limiter"
+                    )
+            if request_factory is not None:
+                kwargs = request_factory()
+                if not isinstance(kwargs, dict):
+                    raise HomeAssistantError(
+                        "WideQ request factory did not return a request mapping"
+                    )
+            return await self.client.async_control(
+                wideq_device_id, ctrl_key, **kwargs
+            )
+
+    async def _async_verification_refresh(self) -> bool:
+        """Perform one non-debounced fresh poll unless the circuit is open.
+
+        ``async_request_refresh`` may be coalesced by Home Assistant's debouncer,
+        which is appropriate for dashboard events but cannot prove that a
+        snapshot was obtained after a physical command. The public direct
+        refresh entry point performs exactly one update and provides its own
+        serialization on Home Assistant versions that support concurrent
+        refresh locking; this coordinator's I/O lock protects older versions.
+        """
+        if (
+            self.circuit_open
+            or getattr(self, "_shutdown_requested", False)
+            or self.hass.is_stopping
+        ):
+            return False
+        self._control_verification_refreshes += 1
+        try:
+            async with asyncio.timeout(_CONTROL_VERIFICATION_REFRESH_TIMEOUT):
+                await self.async_refresh()
+        except TimeoutError:
+            _LOGGER.warning(
+                "wideq verification refresh timed out after %.0fs",
+                _CONTROL_VERIFICATION_REFRESH_TIMEOUT,
+            )
+            return False
+        finally:
+            self._control_verification_refreshes -= 1
+        return self.last_update_success and not self.circuit_open
+
+    async def async_control_and_verify(
+        self,
+        device_id: str,
+        ctrl_key: str,
+        *,
+        request_factory: Callable[[], dict[str, Any]],
+        readback_delays: tuple[float, ...],
+        verifier: Callable[[dict[str, Any]], bool],
+    ) -> None:
+        """Require a fresh pre-state, API ACK, and bounded fresh readback."""
+        if (
+            not callable(request_factory)
+            or not callable(verifier)
+            or not readback_delays
+            or len(readback_delays) > 3
+            or any(
+                isinstance(delay, bool)
+                or not isinstance(delay, (int, float))
+                or not math.isfinite(delay)
+                or delay <= 0
+                or delay > 30
+                for delay in readback_delays
+            )
+            or any(
+                later <= earlier
+                for earlier, later in zip(
+                    readback_delays, readback_delays[1:]
+                )
+            )
+        ):
+            raise HomeAssistantError("WideQ verification schedule is invalid")
+        lock = self._control_locks.setdefault(device_id, asyncio.Lock())
+        async with lock:
+            # Preconditions and read-modify-write preservation values must come
+            # from a poll started after this invocation, not a retained
+            # dashboard snapshot that may be minutes old.
+            if not await self._async_verification_refresh():
+                raise HomeAssistantError(
+                    "LG ThinQ command blocked because a fresh pre-command "
+                    "snapshot could not be verified"
+                )
+            # A return from the client is the control-sync HTTP/API ACK. Any
+            # rejection raises and therefore cannot enter readback verification.
+            await self._async_control_once(
+                device_id,
+                ctrl_key,
+                request_factory=request_factory,
+                required_snapshot_max_age=(
+                    _CONTROL_VERIFICATION_PRESTATE_MAX_AGE
+                ),
+                require_resolved_identity=True,
+            )
+            # Catalog offsets are absolute seconds after ACK, not cumulative
+            # sleeps. Network time spent on an earlier poll therefore cannot
+            # silently stretch the advertised verification window.
+            loop = asyncio.get_running_loop()
+            acknowledged_at = loop.time()
+            for offset in readback_delays:
+                remaining = acknowledged_at + offset - loop.time()
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+                if not await self._async_verification_refresh():
+                    break
+                if verifier(self.snapshot_for(device_id)):
+                    return
+        raise HomeAssistantError(
+            "LG ThinQ acknowledged the command but appliance state was not verified"
+        )
 
     def apply_optimistic(self, device_id: str, key: str, value: Any) -> None:
         """Reflect a just-sent value immediately; the next poll confirms it.

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from typing import Any
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -23,9 +24,11 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
+from .pat_control import build_pat_control_request
 from .value_access import is_meaningful
 from .wideq_control import (
     control_risk_allowed,
+    exact_wideq_field_spec,
     iter_wideq_field_controls,
     normalize_option,
 )
@@ -162,6 +165,16 @@ async def async_setup_entry(
         )
         for coordinator in entry.runtime_data.coordinators.values():
             for wdesc in WIDEQ_SELECTS_BY_TYPE.get(coordinator.device_type, ()):
+                if (
+                    exact_wideq_field_spec(
+                        coordinator.model,
+                        wdesc.ctrl_key,
+                        wdesc.data_key,
+                        wdesc.use_dataset,
+                    )
+                    is None
+                ):
+                    continue
                 entities.append(MyLgWideqSelect(wideq, coordinator, wdesc))
             for control in iter_wideq_field_controls(coordinator.model):
                 if control.value_type == "enum" and control.options:
@@ -196,8 +209,7 @@ class MyLgSelect(MyLgEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         d = self.entity_description
         payload = {d.group: {d.field: option}}
-        await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)
+        await self.coordinator.async_control(build_pat_control_request(payload))
 
 
 class MyLgWideqSelect(MyLgWideqEntity, SelectEntity):
@@ -225,6 +237,13 @@ class MyLgWideqSelect(MyLgWideqEntity, SelectEntity):
             return self._reverse.get(int(raw))
         except (TypeError, ValueError):
             return None
+
+    @property
+    def available(self) -> bool:
+        d = self.entity_description
+        return self._wideq_field_write_available(
+            d.ctrl_key, d.data_key, d.use_dataset
+        ) and is_meaningful(self._snapshot.get(d.data_key))
 
     async def async_select_option(self, option: str) -> None:
         d = self.entity_description
@@ -259,6 +278,7 @@ class MyLgWideqCatalogSelect(MyLgWideqEntity, SelectEntity):
     def available(self) -> bool:
         if not control_risk_allowed(
             self._control,
+            model=self._pat_coordinator.model,
             allow_hazardous=self._hazardous_controls_allowed,
             allow_experimental=self._experimental_controls_allowed,
             pat_data=self._pat_coordinator.data,
@@ -280,9 +300,11 @@ class MyLgWideqCatalogSelect(MyLgWideqEntity, SelectEntity):
         if option.lstrip("-").isdigit():
             value = int(option)
         await self._wideq_set(
-            self._control.ctrl_key,
+            self._control.control_name,
             self._control.field,
             value,
             self._control.use_dataset,
-            optimistic=self._control.risk == "low",
+            shape=self._control.shape,
+            allow_hazardous=self._hazardous_controls_allowed,
+            allow_experimental=self._experimental_controls_allowed,
         )

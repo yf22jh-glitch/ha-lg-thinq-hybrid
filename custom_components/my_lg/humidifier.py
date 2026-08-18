@@ -16,6 +16,7 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_DEHUMIDIFIER, DEVICE_TYPE_HUMIDIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
+from .pat_control import build_pat_control_request
 
 POWER_ON = "POWER_ON"
 POWER_OFF = "POWER_OFF"
@@ -89,8 +90,7 @@ class MyLgHumidifier(MyLgEntity, HumidifierEntity):
         return self._get(self._cfg["job_group"], "currentJobMode")
 
     async def _control(self, payload: dict[str, Any]) -> None:
-        await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)
+        await self.coordinator.async_control(build_pat_control_request(payload))
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._control({"operation": {self._cfg["op_key"]: POWER_ON}})

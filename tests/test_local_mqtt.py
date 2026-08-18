@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.util
+import json
 import sys
 import unittest
 from datetime import datetime, timezone
@@ -13,6 +14,13 @@ from unittest.mock import AsyncMock, patch
 
 from tests.test_local_provider import (
     BINDING_ID,
+    IDENTITY_BINDING,
+    IDENTITY_GENERATION,
+    PAT_ID_A,
+    PUBLICATION_SESSION_ONE,
+    PUBLICATION_SESSION_TWO,
+    SESSION_ONE,
+    SESSION_TWO,
     availability_payload,
     runtime_payload,
     state_payload,
@@ -38,6 +46,127 @@ def _load(name: str):
 local = _load("local_provider")
 local_mqtt = _load("local_mqtt")
 NOW = datetime(2026, 8, 13, 1, 0, tzinfo=timezone.utc)
+
+
+def cohort_profile():
+    return local.LocalSemanticProfile(
+        profile_id="synthetic-cohort-v1",
+        model_id="AIR_910604_WW",
+        platform="thinq2",
+        semantics_revision=30,
+        fields={
+            "feature.enabled": local.LocalSemanticFieldContract(
+                value_type="boolean",
+                exposure="state",
+                confidence=("confirmed-synthetic",),
+            )
+        },
+    )
+
+
+def cohort_expectation():
+    profile = cohort_profile()
+    return local.LocalPilotIdentityExpectation(
+        binding_id=IDENTITY_BINDING,
+        binding_generation=IDENTITY_GENERATION,
+        model_id=profile.model_id,
+        platform=profile.platform,
+        pat_device_id_proof_sha256=local.create_local_pat_device_identity_proof(
+            binding_id=IDENTITY_BINDING,
+            model_id=profile.model_id,
+            platform=profile.platform,
+            pat_device_id=PAT_ID_A,
+        ),
+    )
+
+
+def cohort_provider():
+    return local.LocalSemanticShadowProvider(
+        IDENTITY_BINDING,
+        cohort_profile(),
+        identity_expectation=cohort_expectation(),
+        snapshot_schema_version=3,
+        now=lambda: NOW,
+    )
+
+
+def cohort_state(
+    cohort_generation: int,
+    *,
+    session_id: str = PUBLICATION_SESSION_ONE,
+    sequence: int = 1,
+    value: bool = True,
+) -> bytes:
+    expectation = cohort_expectation()
+    return json.dumps(
+        {
+            "schema_version": 3,
+            "semantics_revision": 30,
+            "binding_id": IDENTITY_BINDING,
+            "binding_generation": IDENTITY_GENERATION,
+            "pat_device_id_proof_sha256": expectation.pat_device_id_proof_sha256,
+            "cohort_generation": cohort_generation,
+            "model_id": expectation.model_id,
+            "platform": expectation.platform,
+            "session_id": session_id,
+            "sequence": sequence,
+            "published_at": "2026-08-13T00:59:59.000Z",
+            "fields": {
+                "feature.enabled": {
+                    "value": value,
+                    "value_type": "boolean",
+                    "observed_at": "2026-08-13T00:59:58.000Z",
+                    "confidence": "confirmed-synthetic",
+                    "exposure": "state",
+                }
+            },
+            "diagnostics": {
+                "rejected_frames": 0,
+                "unresolved_fields": 0,
+                "invalid_values": 0,
+                "unsupported_frames": 0,
+            },
+        },
+        separators=(",", ":"),
+    ).encode()
+
+
+def cohort_availability(
+    cohort_generation: int,
+    *,
+    session_id: str = PUBLICATION_SESSION_ONE,
+    state_sequence: int = 1,
+    status: str = "online",
+) -> bytes:
+    expectation = cohort_expectation()
+    return json.dumps(
+        {
+            "schema_version": 3,
+            "status": status,
+            "session_id": session_id,
+            "observed_at": "2026-08-13T01:00:00.000Z",
+            "binding_generation": IDENTITY_GENERATION,
+            "pat_device_id_proof_sha256": expectation.pat_device_id_proof_sha256,
+            "cohort_generation": cohort_generation,
+            "state_sequence": state_sequence,
+        },
+        separators=(",", ":"),
+    ).encode()
+
+
+def cohort_identity() -> bytes:
+    expectation = cohort_expectation()
+    return json.dumps(
+        {
+            "schema_version": 1,
+            "binding_id": IDENTITY_BINDING,
+            "binding_generation": IDENTITY_GENERATION,
+            "model_id": expectation.model_id,
+            "platform": expectation.platform,
+            "pat_device_id_proof_sha256": expectation.pat_device_id_proof_sha256,
+        },
+        separators=(",", ":"),
+    ).encode()
 
 
 class FakeClient:
@@ -568,6 +697,108 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(provider.session_id, "session_dhum_provider_002")
         await subscriber.async_stop()
 
+    async def test_v3_bootstrap_waits_for_one_exact_cohort_then_live_supersedes(
+        self,
+    ) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = cohort_provider()
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            asyncio.get_running_loop(),
+            provider,
+            host="127.0.0.1",
+            port=18883,
+            username=f"shadow-{IDENTITY_BINDING}",
+            password="private-test-password",
+            mqtt_module=mqtt_module,
+        )
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+        client.on_connect(client, None, {}, 0)
+        client.on_subscribe(client, None, 41, [1, 1, 1, 1])
+
+        # The broker can expose a mixed retained window. It must not become
+        # transport-ready until a live retained repair completes one cohort.
+        for topic, payload in (
+            (
+                provider.state_topic,
+                cohort_state(2, session_id=PUBLICATION_SESSION_TWO),
+            ),
+            (provider.availability_topic, cohort_availability(1)),
+            (
+                provider.runtime_availability_topic,
+                runtime_payload(
+                    "online",
+                    service_instance_id=PUBLICATION_SESSION_TWO,
+                ),
+            ),
+            (provider.identity_topic, cohort_identity()),
+        ):
+            client.on_message(
+                client,
+                None,
+                SimpleNamespace(topic=topic, payload=payload, qos=1, retain=True),
+            )
+        await asyncio.sleep(0)
+        self.assertFalse(provider.transport_ready)
+        self.assertFalse(provider.shadow_healthy)
+        self.assertEqual(subscriber.rejected_messages, 1)
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.availability_topic,
+                payload=cohort_availability(
+                    2,
+                    session_id=PUBLICATION_SESSION_TWO,
+                ),
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertTrue(provider.transport_ready)
+        self.assertTrue(provider.shadow_healthy)
+        self.assertEqual(provider.cohort_generation, 2)
+
+        # A higher live cohort may supersede without an intermediate device
+        # offline, but state-first must immediately make every entity unavailable.
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.state_topic,
+                payload=cohort_state(
+                    3,
+                    session_id=PUBLICATION_SESSION_TWO,
+                    value=False,
+                ),
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertFalse(provider.shadow_healthy)
+        self.assertIs(provider.field_value("feature.enabled"), False)
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.availability_topic,
+                payload=cohort_availability(
+                    3,
+                    session_id=PUBLICATION_SESSION_TWO,
+                ),
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertTrue(provider.shadow_healthy)
+        self.assertEqual(provider.cohort_generation, 3)
+        await subscriber.async_stop()
+
     async def test_invalid_messages_are_isolated_and_never_escape_callback_thread(
         self,
     ) -> None:
@@ -592,6 +823,48 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(provider.rejected_messages, 1)
         self.assertEqual(subscriber.rejected_messages, 1)
         self.assertIsNone(provider.shadow_value)
+        await subscriber.async_stop()
+
+    async def test_tombstone_discards_every_partial_bootstrap_candidate(self) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = self.provider()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+        client.on_connect(client, None, {}, 0)
+        client.on_subscribe(client, None, 41, [1, 1, 1])
+
+        for topic, payload in (
+            (provider.state_topic, state_payload()),
+            (provider.availability_topic, availability_payload("online")),
+        ):
+            client.on_message(
+                client,
+                None,
+                SimpleNamespace(topic=topic, payload=payload, qos=1, retain=True),
+            )
+        await asyncio.sleep(0)
+        self.assertEqual(set(subscriber._retained_bootstrap), {
+            provider.state_topic,
+            provider.availability_topic,
+        })
+
+        # A live delivery of a retained delete normally has retain=False.
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.state_topic,
+                payload=b"",
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertEqual(subscriber._retained_bootstrap, {})
+        self.assertFalse(provider.transport_ready)
+        self.assertIsNone(provider.shadow_value)
+        self.assertEqual(subscriber.rejected_messages, 0)
         await subscriber.async_stop()
 
     async def test_transport_does_not_coerce_malformed_message_metadata(self) -> None:

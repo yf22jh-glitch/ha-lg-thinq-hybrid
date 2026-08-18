@@ -7,6 +7,7 @@ from datetime import time
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
@@ -23,6 +24,10 @@ from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
 from .feature import FeatureAccess
 from .feature_catalog import discover_pat_features
+from .pat_control import (
+    build_cooktop_pat_request,
+    build_pat_control_request,
+)
 
 
 @dataclass(frozen=True)
@@ -146,8 +151,7 @@ class PatTimerEntity(MyLgEntity, TimeEntity):
         if self._write_minute and self._spec.minute_field:
             fields[self._spec.minute_field] = value.minute
         payload = {self._spec.group: fields}
-        await self.coordinator.async_control(payload)
-        self.coordinator.handle_mqtt_status(payload)
+        await self.coordinator.async_control(build_pat_control_request(payload))
 
 
 class CooktopTimerEntity(MyLgEntity, TimeEntity):
@@ -197,13 +201,15 @@ class CooktopTimerEntity(MyLgEntity, TimeEntity):
             return None
 
     async def async_set_value(self, value: time) -> None:
-        payload = {
-            "power": {
-                "powerLevel": self.coordinator.get_zone(
-                    self._location, "power", "powerLevel", default=0
-                )
-            },
-            "timer": {"remainHour": value.hour, "remainMinute": value.minute},
-            "location": {"locationName": self._location},
-        }
-        await self.coordinator.async_control(payload)
+        if not self._hazardous_controls_allowed:
+            raise HomeAssistantError(
+                f"{self.coordinator.alias}: 위험 제어 승인이 없어 쿡탑 명령을 차단했어요."
+            )
+        await self.coordinator.async_control(
+            lambda state: build_cooktop_pat_request(
+                state,
+                self._location,
+                remain_hour=value.hour,
+                remain_minute=value.minute,
+            )
+        )

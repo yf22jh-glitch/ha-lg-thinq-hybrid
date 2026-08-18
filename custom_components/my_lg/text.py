@@ -72,6 +72,7 @@ class MyLgWideqCatalogText(MyLgWideqEntity, TextEntity):
     def available(self) -> bool:
         if not control_risk_allowed(
             self._control,
+            model=self._pat_coordinator.model,
             allow_hazardous=self._hazardous_controls_allowed,
             allow_experimental=self._experimental_controls_allowed,
             pat_data=self._pat_coordinator.data,
@@ -90,9 +91,11 @@ class MyLgWideqCatalogText(MyLgWideqEntity, TextEntity):
 
     async def async_set_value(self, value: str) -> None:
         await self._wideq_set(
-            self._control.ctrl_key,
+            self._control.control_name,
             self._control.field,
             value,
             self._control.use_dataset,
-            optimistic=self._control.risk == "low",
+            shape=self._control.shape,
+            allow_hazardous=self._hazardous_controls_allowed,
+            allow_experimental=self._experimental_controls_allowed,
         )

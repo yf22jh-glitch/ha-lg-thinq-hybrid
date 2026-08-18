@@ -66,7 +66,7 @@ from .local_provider import (
     LocalProviderConfigurationError,
     LocalSemanticShadowProvider,
     LocalWaterTankShadowProvider,
-    local_shadow_configurations,
+    isolated_local_shadow_configurations,
 )
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
@@ -374,14 +374,21 @@ async def _setup_local_shadows(
 ) -> None:
     """Start each exact Local shadow binding with failure isolation."""
     try:
-        configs = await hass.async_add_executor_job(
-            local_shadow_configurations, entry.options
+        configs, rejected_config_count = await hass.async_add_executor_job(
+            isolated_local_shadow_configurations, entry.options
         )
     except LocalProviderConfigurationError:
         _LOGGER.error("Rethink Local shadow options are invalid; provider disabled")
         return
     if not configs:
         return
+
+    if rejected_config_count:
+        _LOGGER.error(
+            "Rethink Local shadow bindings rejected independently (count=%d); "
+            "healthy read-only bindings remain eligible",
+            rejected_config_count,
+        )
 
     for config in configs:
         pat_coordinator = data.coordinators.get(config.pat_device_id)
@@ -404,10 +411,18 @@ async def _setup_local_shadows(
         provider: LocalSemanticShadowProvider
         if config.profile_id == LOCAL_DHUM_WATER_TANK_PROFILE_ID:
             provider = LocalWaterTankShadowProvider(
-                config.binding_id, profile=config.profile
+                config.binding_id,
+                profile=config.profile,
+                identity_expectation=config.identity_expectation,
+                snapshot_schema_version=config.snapshot_schema_version,
             )
         else:
-            provider = LocalSemanticShadowProvider(config.binding_id, config.profile)
+            provider = LocalSemanticShadowProvider(
+                config.binding_id,
+                config.profile,
+                identity_expectation=config.identity_expectation,
+                snapshot_schema_version=config.snapshot_schema_version,
+            )
         subscriber = LocalPilotMqttSubscriber(
             hass.loop,
             provider,

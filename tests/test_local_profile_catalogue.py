@@ -124,8 +124,54 @@ class LocalProfileCatalogueTests(unittest.TestCase):
             list(profiles),
             [profile["profile_id"] for profile in raw["profiles"]],
         )
-        self.assertEqual(len(profiles), 15)
-        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 161)
+        self.assertEqual(len(profiles), 19)
+        self.assertEqual(
+            sum(len(profile.fields) for profile in profiles.values()),
+            189,
+        )
+        self.assertEqual(
+            profiles["dhum-core-state-v2"].supported_semantics_revisions,
+            (30,),
+        )
+        self.assertIn("display.enabled", profiles["dhum-core-state-v2"].fields)
+        self.assertEqual(
+            profiles["air-tower-core-state-v1"].supported_semantics_revisions,
+            (27, 28, 29, 30),
+        )
+        self.assertEqual(
+            set(profiles["air-tower-core-state-v1"].fields),
+            {"energy_saving.ai_enabled"},
+        )
+        self.assertEqual(
+            profiles["styler-core-state-v2"].supported_semantics_revisions,
+            (28, 29, 30),
+        )
+        self.assertIn(
+            "display.current_time_enabled",
+            profiles["styler-core-state-v2"].fields,
+        )
+        vacuum = profiles["wireless-vacuum-core-state-v1"]
+        self.assertEqual(vacuum.supported_semantics_revisions, (30,))
+        self.assertTrue(vacuum.authoritative_invalidations)
+        self.assertEqual(len(vacuum.fields), 12)
+        self.assertEqual(
+            vacuum.fields["display.charging_brightness"].allowed_values,
+            ("very_low", "low", "high", "very_high"),
+        )
+        self.assertEqual(
+            {
+                profile.profile_id
+                for profile in profiles.values()
+                if profile.availability_policy == "attested-session"
+            },
+            {
+                "dhum-core-state-v2",
+                "air-tower-core-state-v1",
+                "styler-core-state-v2",
+                "wireless-vacuum-core-state-v1",
+                "cst570-core-state-v1",
+            },
+        )
         for raw_profile in raw["profiles"]:
             profile = profiles[raw_profile["profile_id"]]
             self.assertEqual(
@@ -138,6 +184,14 @@ class LocalProfileCatalogueTests(unittest.TestCase):
             self.assertEqual(profile.model_id, raw_profile["model_id"])
             self.assertEqual(profile.platform, raw_profile["platform"])
             self.assertEqual(
+                profile.authoritative_invalidations,
+                raw_profile.get("authoritative_invalidations", False),
+            )
+            self.assertEqual(
+                profile.availability_policy,
+                raw_profile.get("availability_policy"),
+            )
+            self.assertEqual(
                 list(profile.fields),
                 [field["semantic_id"] for field in raw_profile["fields"]],
             )
@@ -147,6 +201,14 @@ class LocalProfileCatalogueTests(unittest.TestCase):
                 self.assertEqual(field.exposure, raw_field["exposure"])
                 self.assertEqual(field.unit, raw_field.get("unit"))
                 self.assertEqual(field.confidence, tuple(raw_field["confidence"]))
+                self.assertEqual(
+                    field.allowed_values,
+                    (
+                        tuple(raw_field["allowed_values"])
+                        if "allowed_values" in raw_field
+                        else None
+                    ),
+                )
 
     def test_catalogue_validation_fails_closed(self) -> None:
         source = json.loads(BUNDLED_CATALOGUE.read_bytes())
@@ -169,6 +231,44 @@ class LocalProfileCatalogueTests(unittest.TestCase):
         unknown_exposure = json.loads(json.dumps(source))
         unknown_exposure["profiles"][0]["fields"][0]["exposure"] = "diagnostic"
         cases.append(("exposure", unknown_exposure))
+
+        unauthorized_invalidation_policy = json.loads(json.dumps(source))
+        unauthorized_invalidation_policy["profiles"][0][
+            "authoritative_invalidations"
+        ] = False
+        cases.append(
+            ("false authoritative invalidation policy", unauthorized_invalidation_policy)
+        )
+
+        unknown_availability_policy = json.loads(json.dumps(source))
+        unknown_availability_policy["profiles"][0]["availability_policy"] = (
+            "ttl-guess"
+        )
+        cases.append(("availability policy", unknown_availability_policy))
+
+        null_availability_policy = json.loads(json.dumps(source))
+        null_availability_policy["profiles"][0]["availability_policy"] = None
+        cases.append(("null availability policy", null_availability_policy))
+
+        duplicate_allowed_value = json.loads(json.dumps(source))
+        vacuum_profile = next(
+            profile
+            for profile in duplicate_allowed_value["profiles"]
+            if profile["profile_id"] == "wireless-vacuum-core-state-v1"
+        )
+        enum_field = next(
+            field for field in vacuum_profile["fields"] if "allowed_values" in field
+        )
+        enum_field["allowed_values"].append(enum_field["allowed_values"][0])
+        cases.append(("duplicate enum value", duplicate_allowed_value))
+
+        null_allowed_values = json.loads(json.dumps(source))
+        null_allowed_values["profiles"][0]["fields"][0]["allowed_values"] = None
+        cases.append(("null allowed values", null_allowed_values))
+
+        null_unit = json.loads(json.dumps(source))
+        null_unit["profiles"][0]["fields"][0]["unit"] = None
+        cases.append(("null unit", null_unit))
 
         for name, value in cases:
             with self.subTest(name=name):

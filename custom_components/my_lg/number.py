@@ -10,9 +10,8 @@ Write payload mirrors the thinqconnect SDK: the value goes to the
 
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -21,6 +20,7 @@ from homeassistant.components.number import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
@@ -31,17 +31,25 @@ from .const import (
     DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
-    OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+    OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature import FeatureAccess
 from .feature_catalog import discover_pat_features
+from .pat_control import (
+    PatStateRequirement,
+    build_cooktop_pat_request,
+    build_pat_control_request,
+)
 from .value_access import is_meaningful
-from .wideq_control import iter_wideq_field_controls
-from .wideq_control import control_risk_allowed
+from .wideq_control import (
+    control_risk_allowed,
+    exact_wideq_field_spec,
+    iter_wideq_field_controls,
+)
 
 # Fallback °C ranges when the profile doesn't pin them per compartment.
 _FALLBACK_RANGE: dict[str, tuple[int, int]] = {
@@ -127,6 +135,16 @@ async def async_setup_entry(
         )
         for coord in entry.runtime_data.coordinators.values():
             for wdesc in WIDEQ_NUMBERS_BY_TYPE.get(coord.device_type, ()):
+                if (
+                    exact_wideq_field_spec(
+                        coord.model,
+                        wdesc.ctrl_key,
+                        wdesc.data_key,
+                        False,
+                    )
+                    is None
+                ):
+                    continue
                 entities.append(MyLgWideqNumber(wideq, coord, wdesc))
             for control in iter_wideq_field_controls(coord.model):
                 if control.value_type == "range":
@@ -172,9 +190,31 @@ class MyLgFridgeTargetTemp(MyLgEntity, NumberEntity):
                 "targetTemperatureC": int(value),
             }
         }
-        await self.coordinator.async_control(payload)
-        # Status temperature is a location-keyed list; a genuine value arrives
-        # via the next DEVICE_STATUS push, so no optimistic merge here.
+        selector = f"@location={self._location}"
+        await self.coordinator.async_control(
+            build_pat_control_request(
+                payload,
+                echo_contract={
+                    ("temperatureInUnits", "locationName"): (
+                        "temperature",
+                        selector,
+                        "locationName",
+                    ),
+                    ("temperatureInUnits", "targetTemperatureC"): (
+                        "temperature",
+                        selector,
+                        "targetTemperature",
+                    ),
+                },
+                requirements=(
+                    PatStateRequirement(
+                        ("temperature", selector, "locationName"),
+                        (self._location,),
+                        "냉장고 칸의 fresh 상태를 확인할 수 없어 온도 명령을 차단했어요.",
+                    ),
+                ),
+            )
+        )
 
 
 class MyLgWideqNumber(MyLgWideqEntity, NumberEntity):
@@ -201,6 +241,13 @@ class MyLgWideqNumber(MyLgWideqEntity, NumberEntity):
         # 0 = humidification off / no target set; show nothing rather than a
         # value below the valid range.
         return value if value >= self.native_min_value else None
+
+    @property
+    def available(self) -> bool:
+        d = self.entity_description
+        return self._wideq_field_write_available(
+            d.ctrl_key, d.data_key, False
+        ) and is_meaningful(self._snapshot.get(d.data_key))
 
     async def async_set_native_value(self, value: float) -> None:
         d = self.entity_description
@@ -234,8 +281,7 @@ class MyLgPatRangeNumber(MyLgEntity, NumberEntity):
         result: Any = int(value) if float(value).is_integer() else value
         for token in reversed(self._feature.path):
             result = {token: result}
-        await self.coordinator.async_control(result)
-        self.coordinator.handle_mqtt_status(result)
+        await self.coordinator.async_control(build_pat_control_request(result))
 
 
 class MyLgCooktopPower(MyLgEntity, NumberEntity):
@@ -283,19 +329,16 @@ class MyLgCooktopPower(MyLgEntity, NumberEntity):
         return value if isinstance(value, (int, float)) else None
 
     async def async_set_native_value(self, value: float) -> None:
-        payload = {
-            "power": {"powerLevel": int(value)},
-            "timer": {
-                "remainHour": self.coordinator.get_zone(
-                    self._location, "timer", "remainHour", default=0
-                ),
-                "remainMinute": self.coordinator.get_zone(
-                    self._location, "timer", "remainMinute", default=0
-                ),
-            },
-            "location": {"locationName": self._location},
-        }
-        await self.coordinator.async_control(payload)
+        if not self._hazardous_controls_allowed:
+            raise HomeAssistantError(
+                f"{self.coordinator.alias}: 위험 제어 승인이 없어 쿡탑 명령을 차단했어요."
+            )
+        target = int(value)
+        await self.coordinator.async_control(
+            lambda state: build_cooktop_pat_request(
+                state, self._location, power_level=target
+            )
+        )
 
 
 class MyLgWideqCatalogNumber(MyLgWideqEntity, NumberEntity):
@@ -325,6 +368,7 @@ class MyLgWideqCatalogNumber(MyLgWideqEntity, NumberEntity):
     def available(self) -> bool:
         if not control_risk_allowed(
             self._control,
+            model=self._pat_coordinator.model,
             allow_hazardous=self._hazardous_controls_allowed,
             allow_experimental=self._experimental_controls_allowed,
             pat_data=self._pat_coordinator.data,
@@ -347,9 +391,11 @@ class MyLgWideqCatalogNumber(MyLgWideqEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         send_value: Any = int(value) if float(value).is_integer() else value
         await self._wideq_set(
-            self._control.ctrl_key,
+            self._control.control_name,
             self._control.field,
             send_value,
             self._control.use_dataset,
-            optimistic=self._control.risk == "low",
+            shape=self._control.shape,
+            allow_hazardous=self._hazardous_controls_allowed,
+            allow_experimental=self._experimental_controls_allowed,
         )

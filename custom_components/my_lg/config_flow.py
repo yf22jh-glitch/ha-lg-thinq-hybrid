@@ -42,6 +42,7 @@ from .const import (
 )
 from .local_provider import (
     OPT_LOCAL_BINDINGS,
+    OPT_LOCAL_SCHEMA_ONE_ROLLBACK_CONFIRMATION,
     LocalProviderConfigurationError,
     local_bindings_for_form,
     merge_local_shadow_options,
@@ -152,7 +153,11 @@ class MyLgOptionsFlow(OptionsFlow):
                     {
                         key: value
                         for key, value in user_input.items()
-                        if key != OPT_LOCAL_BINDINGS
+                        if key
+                        not in (
+                            OPT_LOCAL_BINDINGS,
+                            OPT_LOCAL_SCHEMA_ONE_ROLLBACK_CONFIRMATION,
+                        )
                     }
                 )
             else:
@@ -204,6 +209,10 @@ class MyLgOptionsFlow(OptionsFlow):
                     OPT_LOCAL_BINDINGS,
                     default=local_bindings_default,
                 ): vol.All(str, vol.Length(max=64 * 1024)),
+                vol.Optional(
+                    OPT_LOCAL_SCHEMA_ONE_ROLLBACK_CONFIRMATION,
+                    default="",
+                ): vol.All(str, vol.Length(max=256)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

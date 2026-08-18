@@ -22,6 +22,12 @@ from . import MyLgConfigEntry
 from .const import DEVICE_TYPE_AIR_CONDITIONER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
+from .pat_control import (
+    PatControlRequest,
+    PatStateExpectation,
+    PatStateRequirement,
+    build_pat_control_request,
+)
 
 # ThinQ jobMode <-> HA HVACMode
 JOBMODE_TO_HVAC = {
@@ -172,16 +178,22 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
         return SWING_OFF
 
     # --- write ---
-    async def _control(self, payload: dict[str, Any]) -> None:
-        await self.coordinator.async_control(payload)
-        # optimistic: reflect immediately; MQTT push confirms shortly after.
-        self.coordinator.handle_mqtt_status(payload)
+    async def _control(self, request: PatControlRequest) -> None:
+        await self.coordinator.async_control(request)
 
     async def async_turn_on(self) -> None:
-        await self._control({"operation": {"airConOperationMode": POWER_ON}})
+        await self._control(
+            build_pat_control_request(
+                {"operation": {"airConOperationMode": POWER_ON}}
+            )
+        )
 
     async def async_turn_off(self) -> None:
-        await self._control({"operation": {"airConOperationMode": POWER_OFF}})
+        await self._control(
+            build_pat_control_request(
+                {"operation": {"airConOperationMode": POWER_OFF}}
+            )
+        )
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         if hvac_mode == HVACMode.OFF:
@@ -189,10 +201,18 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             return
         # Turn power on first if needed (control is rejected while POWER_OFF).
         if self._get("operation", "airConOperationMode") != POWER_ON:
-            await self._control({"operation": {"airConOperationMode": POWER_ON}})
+            await self._control(
+                build_pat_control_request(
+                    {"operation": {"airConOperationMode": POWER_ON}}
+                )
+            )
         job = HVAC_TO_JOBMODE.get(hvac_mode)
         if job:
-            await self._control({"airConJobMode": {"currentJobMode": job}})
+            await self._control(
+                build_pat_control_request(
+                    {"airConJobMode": {"currentJobMode": job}}
+                )
+            )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         temp = kwargs.get(ATTR_TEMPERATURE)
@@ -213,16 +233,31 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             raise HomeAssistantError(
                 f"{self.coordinator.alias}: 현재 운전 모드에서는 온도를 설정할 수 없어요."
             )
-        await self._control({"temperature": {field: temp}})
-        # The climate entity reads the normalized targetTemperature field.
-        # Reflect it immediately while waiting for the next MQTT status push.
-        if field != "targetTemperature":
-            self.coordinator.handle_mqtt_status(
-                {"temperature": {"targetTemperature": temp}}
+        payload = {"temperature": {field: temp}}
+        await self._control(
+            build_pat_control_request(
+                payload,
+                echo_contract={
+                    ("temperature", field): PatStateExpectation(
+                        ("temperature", "targetTemperature"), temp
+                    )
+                },
+                requirements=(
+                    PatStateRequirement(
+                        ("airConJobMode", "currentJobMode"),
+                        (job_mode,),
+                        "운전 모드가 명령 준비 중 바뀌어 온도 설정을 차단했어요.",
+                    ),
+                ),
             )
+        )
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        await self._control({"airFlow": {"windStrength": fan_mode}})
+        await self._control(
+            build_pat_control_request(
+                {"airFlow": {"windStrength": fan_mode}}
+            )
+        )
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         # LG applies only one windDirection field per command — sending both
@@ -231,9 +266,23 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
         # set_wind_rotate_left_right / set_wind_rotate_up_down.
         if self._swing_lr:
             await self._control(
-                {"windDirection": {"rotateLeftRight": swing_mode in (SWING_HORIZONTAL, SWING_BOTH)}}
+                build_pat_control_request(
+                    {
+                        "windDirection": {
+                            "rotateLeftRight": swing_mode
+                            in (SWING_HORIZONTAL, SWING_BOTH)
+                        }
+                    }
+                )
             )
         if self._swing_ud:
             await self._control(
-                {"windDirection": {"rotateUpDown": swing_mode in (SWING_VERTICAL, SWING_BOTH)}}
+                build_pat_control_request(
+                    {
+                        "windDirection": {
+                            "rotateUpDown": swing_mode
+                            in (SWING_VERTICAL, SWING_BOTH)
+                        }
+                    }
+                )
             )

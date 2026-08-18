@@ -16,8 +16,7 @@
           "refState.activeSaving": {
             "options": [
               "OFF",
-              "ON",
-              "IGNORE"
+              "ON"
             ],
             "type": "enum",
             "verified": true
@@ -25,11 +24,6 @@
           "refState.convertibleTemp": {
             "max": 255,
             "min": 0,
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
             "step": 1,
             "type": "range",
             "verified": true
@@ -37,8 +31,7 @@
           "refState.displayLock": {
             "options": [
               "UNLOCK",
-              "LOCK",
-              "IGNORE"
+              "LOCK"
             ],
             "type": "enum",
             "verified": true
@@ -46,8 +39,7 @@
           "refState.ecoFriendly": {
             "options": [
               "OFF",
-              "ON",
-              "IGNORE"
+              "ON"
             ],
             "type": "enum",
             "verified": true
@@ -56,8 +48,7 @@
             "options": [
               "OFF",
               "EXPRESS_ON",
-              "RAPID_ON",
-              "IGNORE"
+              "RAPID_ON"
             ],
             "type": "enum",
             "verified": true
@@ -65,11 +56,6 @@
           "refState.freezerTemp": {
             "max": 255,
             "min": 0,
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
             "step": 1,
             "type": "range",
             "verified": true
@@ -82,8 +68,7 @@
               "REPLACE",
               "SMART_STORAGE_POWER",
               "SMART_STORAGE_OFF",
-              "SMART_STORAGE_ON",
-              "IGNORE"
+              "SMART_STORAGE_ON"
             ],
             "type": "enum",
             "verified": true
@@ -91,11 +76,6 @@
           "refState.fridgeTemp": {
             "max": 255,
             "min": 0,
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
             "step": 1,
             "type": "range",
             "verified": true
@@ -103,8 +83,7 @@
           "refState.sabbathMode": {
             "options": [
               "OFF",
-              "ON",
-              "IGNORE"
+              "ON"
             ],
             "type": "enum",
             "verified": true
@@ -115,8 +94,7 @@
               "NIGHT_ON",
               "CUSTOM_ON",
               "SMARTGRID_DR_ON",
-              "SMARTGRID_DD_ON",
-              "IGNORE"
+              "SMARTGRID_DD_ON"
             ],
             "type": "enum",
             "verified": true
@@ -124,8 +102,7 @@
           "refState.smartSavingRun": {
             "options": [
               "STOP",
-              "RUN",
-              "IGNORE"
+              "RUN"
             ],
             "type": "enum",
             "verified": true
@@ -144,8 +121,7 @@
               "9_MONTH",
               "10_MONTH",
               "11_MONTH",
-              "12_MONTH",
-              "IGNORE"
+              "12_MONTH"
             ],
             "type": "enum",
             "verified": true
@@ -383,6 +359,10 @@
     "subdevices": {}
   },
   "3REK2G03VI230D_2": {
+    "controls": {},
+    "subdevices": {}
+  },
+  "AIR_2C0001_WW": {
     "controls": {},
     "subdevices": {}
   },
@@ -2767,6 +2747,18 @@
             "verified": true
           },
           "dishwasher.course": {
+            "options": [
+              "AUTO",
+              "HEAVY/INTENSIVE",
+              "DELICATE",
+              "TURBO",
+              "NORMAL/ECO",
+              "RINSE",
+              "REFRESH",
+              "EXPRESS",
+              "MACHINE_CLEAN",
+              "DOWNLOAD_CYCLE"
+            ],
             "type": "reference",
             "verified": true
           },
@@ -2854,6 +2846,12 @@
             "verified": true
           },
           "dishwasher.smartCourse": {
+            "options": [
+              "POTS_PANS",
+              "CASSEROLES",
+              "GLASSWARES",
+              "NIGHT_CARE"
+            ],
             "type": "reference",
             "verified": true
           },
@@ -3248,6 +3246,878 @@
     "controls": {},
     "subdevices": {}
   },
+  "HWWA9X3C_F2U": {
+    "controls": {
+      "QMControl_AiSuctionForce": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_AiSuctionForce",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.aiSuctionForce": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "aiSuctionForce": "OFF",
+            "controlDataType": "AI_SUCTION_FORCE",
+            "controlDataValueLength": 1
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.aiSuctionForce"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.aiSuctionForce"
+          ]
+        },
+        "writable_fields": [
+          "qmState.aiSuctionForce"
+        ]
+      },
+      "QMControl_AutoDustEmptyingDockFrequency": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_AutoDustEmptyingDockFrequency",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.autoDustEmptyingDockFrequency": {
+            "max": 10,
+            "min": 1,
+            "step": 1,
+            "type": "number",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "autoDustEmptyingDockFrequency": 1,
+            "controlDataType": "AUTO_DUST_EMPTYING_DOCK_FREQUENCY",
+            "controlDataValueLength": 1
+          }
+        },
+        "writable_fields": [
+          "qmState.autoDustEmptyingDockFrequency"
+        ]
+      },
+      "QMControl_BatteryLifeMode": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_BatteryLifeMode",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.batteryLifeMode": {
+            "options": [
+              "NOT_USE",
+              "USE"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "batteryLifeMode": "NOT_USE",
+            "controlDataType": "BATTERY_LIFE_MODE",
+            "controlDataValueLength": 1
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.batteryLifeMode"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.batteryLifeMode"
+          ]
+        },
+        "writable_fields": [
+          "qmState.batteryLifeMode"
+        ]
+      },
+      "QMControl_Brightness": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_Brightness",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.brightness": {
+            "options": [
+              "VERY_HIGH",
+              "HIGH",
+              "LOW",
+              "VERY_LOW",
+              "OFF"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "brightness": "VERY_HIGH",
+            "controlDataType": "BRIGHTNESS",
+            "controlDataValueLength": 1
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.brightness"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.brightness"
+          ]
+        },
+        "writable_fields": [
+          "qmState.brightness"
+        ]
+      },
+      "QMControl_ChargingMelody": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_ChargingMelody",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.chargingMelody": {
+            "options": [
+              "MELODY_1",
+              "MELODY_2",
+              "MELODY_3",
+              "MELODY_4",
+              "MELODY_5"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "chargingMelody": "MELODY_1",
+            "controlDataType": "CHARGING_MELODY",
+            "controlDataValueLength": 1
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.chargingMelody"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.chargingMelody"
+          ]
+        },
+        "writable_fields": [
+          "qmState.chargingMelody"
+        ]
+      },
+      "QMControl_DustEmptyingMelody": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_DustEmptyingMelody",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.dustEmptyingMelody": {
+            "options": [
+              "MELODY_1",
+              "MELODY_2",
+              "MELODY_3"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "DUST_EMPTYING_MELODY",
+            "controlDataValueLength": 1,
+            "dustEmptyingMelody": "MELODY_1"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.dustEmptyingMelody"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.dustEmptyingMelody"
+          ]
+        },
+        "writable_fields": [
+          "qmState.dustEmptyingMelody"
+        ]
+      },
+      "QMControl_DustEmptyingMode": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_DustEmptyingMode",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.dustEmptyingMode": {
+            "options": [
+              "MANUAL",
+              "AUTO"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "DUST_EMPTYING_MODE",
+            "controlDataValueLength": 1,
+            "dustEmptyingMode": "MANUAL"
+          }
+        },
+        "writable_fields": [
+          "qmState.dustEmptyingMode"
+        ]
+      },
+      "QMControl_LcdBrightness": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_LcdBrightness",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.lcdBrightness": {
+            "options": [
+              "VERY_HIGH",
+              "HIGH",
+              "LOW",
+              "VERY_LOW"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "LCD_BRIGHTNESS",
+            "controlDataValueLength": 1,
+            "lcdBrightness": "VERY_HIGH"
+          }
+        },
+        "writable_fields": [
+          "qmState.lcdBrightness"
+        ]
+      },
+      "QMControl_MopWithSucking": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_MopWithSucking",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.mopWithSucking": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "MOP_SETTING",
+            "controlDataValueLength": 1,
+            "mopWithSucking": "OFF"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.mopWithSucking"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.mopWithSucking"
+          ]
+        },
+        "writable_fields": [
+          "qmState.mopWithSucking"
+        ]
+      },
+      "QMControl_RemoteDustEmptying": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_RemoteDustEmptying",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.remoteDustEmptying": {
+            "options": [
+              "ON",
+              "ROBOT_ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "REMOTE_DUST_EMPTYING",
+            "controlDataValueLength": 1,
+            "remoteDustEmptying": "OFF"
+          }
+        },
+        "writable_fields": [
+          "qmState.remoteDustEmptying"
+        ]
+      },
+      "QMControl_RemoteUvc": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_RemoteUvc",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.remoteUvc": {
+            "options": [
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "REMOTE_UVC",
+            "controlDataValueLength": 1,
+            "remoteUvc": "OFF"
+          }
+        },
+        "writable_fields": [
+          "qmState.remoteUvc"
+        ]
+      },
+      "QMControl_ReserveDustEmptying": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_ReserveDustEmptying",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.reserveDustEmptying_dayOfWeek": {
+            "max": 127,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "qmState.reserveDustEmptying_enable": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          },
+          "qmState.reserveDustEmptying_hour": {
+            "max": 255,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "qmState.reserveDustEmptying_min": {
+            "max": 59,
+            "min": 0,
+            "step": 1,
+            "type": "range",
+            "verified": true
+          },
+          "qmState.reserveDustEmptying_repeat": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "RESERVE_DUST_EMPTYING",
+            "controlDataValueLength": 5,
+            "reserveDustEmptying_dayOfWeek": "0",
+            "reserveDustEmptying_enable": "OFF",
+            "reserveDustEmptying_hour": "0",
+            "reserveDustEmptying_min": "0",
+            "reserveDustEmptying_repeat": "OFF"
+          }
+        },
+        "writable_fields": [
+          "qmState.reserveDustEmptying_enable",
+          "qmState.reserveDustEmptying_repeat",
+          "qmState.reserveDustEmptying_dayOfWeek",
+          "qmState.reserveDustEmptying_hour",
+          "qmState.reserveDustEmptying_min"
+        ]
+      },
+      "QMControl_ReserveDustEmptyingEnable": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_ReserveDustEmptyingEnable",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.reserveDustEmptying_enable": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "operation",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "RESERVE_DUST_EMPTYING",
+            "controlDataValueLength": 1,
+            "reserveDustEmptying_enable": "OFF"
+          }
+        },
+        "writable_fields": [
+          "qmState.reserveDustEmptying_enable"
+        ]
+      },
+      "QMControl_RobotDustEmptyingMode": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_RobotDustEmptyingMode",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.robotDustEmptyingMode": {
+            "options": [
+              "MANUAL",
+              "AUTO"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "ROBOT_DUST_EMPTYING_MODE",
+            "controlDataValueLength": 1,
+            "robotDustEmptyingMode": "MANUAL"
+          }
+        },
+        "writable_fields": [
+          "qmState.robotDustEmptyingMode"
+        ]
+      },
+      "QMControl_SettingButtonSound": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_SettingButtonSound",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.settingButtonSound": {
+            "options": [
+              "HIGH",
+              "MID",
+              "LOW",
+              "OFF"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "SETTING_BUTTON_SOUND",
+            "controlDataValueLength": 1,
+            "settingButtonSound": "OFF"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.settingButtonSound"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.settingButtonSound"
+          ]
+        },
+        "writable_fields": [
+          "qmState.settingButtonSound"
+        ]
+      },
+      "QMControl_SteamSupply": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_SteamSupply",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.steamSupply": {
+            "options": [
+              "OFF",
+              "LOW",
+              "HIGH"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "STEAM_SUPPLY",
+            "controlDataValueLength": 1,
+            "steamSupply": "LOW"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.steamSupply"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.steamSupply"
+          ]
+        },
+        "writable_fields": [
+          "qmState.steamSupply"
+        ]
+      },
+      "QMControl_StopAndGoSetting": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_StopAndGoSetting",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.stopAndGoSetting": {
+            "options": [
+              "OFF",
+              "ON"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "STOP_AND_GO_SETTING",
+            "controlDataValueLength": 1,
+            "stopAndGoSetting": "OFF"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.stopAndGoSetting"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.stopAndGoSetting"
+          ]
+        },
+        "writable_fields": [
+          "qmState.stopAndGoSetting"
+        ]
+      },
+      "QMControl_SuctionForce": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_SuctionForce",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.suctionForce": {
+            "options": [
+              "NORMAL",
+              "HIGH",
+              "TURBO",
+              "ECO"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "SUCTION_FORCE",
+            "controlDataValueLength": 1,
+            "suctionForce": "NORMAL"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.suctionForce"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.suctionForce"
+          ]
+        },
+        "writable_fields": [
+          "qmState.suctionForce"
+        ]
+      },
+      "QMControl_Volume": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_Volume",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.volume": {
+            "options": [
+              "HIGH",
+              "MID",
+              "LOW"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "VOLUME",
+            "controlDataValueLength": 1,
+            "volume": "HIGH"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.volume"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.volume"
+          ]
+        },
+        "writable_fields": [
+          "qmState.volume"
+        ]
+      },
+      "QMControl_WaterSupply": {
+        "base": {},
+        "commands": [
+          "Set"
+        ],
+        "ctrl_key": "QMControl_WaterSupply",
+        "experimental_fields": [],
+        "fields": {
+          "qmState.waterSupply": {
+            "options": [
+              "OFF",
+              "LOW",
+              "HIGH"
+            ],
+            "type": "enum",
+            "verified": true
+          }
+        },
+        "parameterless": false,
+        "platform": "thinq2",
+        "requires_data": true,
+        "risk": "low",
+        "shape": "template",
+        "template": {
+          "qmState": {
+            "controlDataType": "WATER_SUPPLY",
+            "controlDataValueLength": 1,
+            "waterSupply": "LOW"
+          }
+        },
+        "verification": {
+          "echo_fields": [
+            "qmState.waterSupply"
+          ],
+          "mode": "field_echo",
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": [
+            "qmState.waterSupply"
+          ]
+        },
+        "writable_fields": [
+          "qmState.waterSupply"
+        ]
+      }
+    },
+    "subdevices": {}
+  },
   "ST_R_ETH01Y_": {
     "controls": {
       "downloadCourse": {
@@ -3270,6 +4140,50 @@
             "verified": true
           },
           "styler.course": {
+            "options": [
+              "STYLING_STANDARD_1",
+              "STYLING_AI_2",
+              "STYLING_SPEED_3",
+              "STYLING_POWER_4",
+              "STYLING_SUITS_COATS_5",
+              "STYLING_WOOL_6",
+              "STYLING_SILK_CARE_7",
+              "STYLING_CASHMERE_8",
+              "SANITARY_FINEDUST_9",
+              "SANITARY_STANDARD_10",
+              "SANITARY_VIRUS_11",
+              "DRY_STEAM_13",
+              "DRY_AI_14",
+              "DRY_DEHUMIDITY_15",
+              "SANITARY_BEDDING_17",
+              "STYLING_FUR_18",
+              "DRY_PADDING_19",
+              "STYLING_PADDING_20",
+              "DRY_YOGA_21",
+              "DRY_DELICATE_22",
+              "DRY_TIME_23",
+              "STYLING_NIGHTDRY_24",
+              "STYLING_SCHOOL_25",
+              "STYLING_FUNTIONAL_26",
+              "DRY_SNOW_RAIN_27",
+              "DRY_WARM_BLANKET_28",
+              "STYLING_SCARVES_29",
+              "DRY_SWIMSUIT_30",
+              "SANITARY_BABY_WEAR_31",
+              "STYLING_STORED_ITEMS_33",
+              "DRY_WARM_COAT_34",
+              "STYLING_YOGA_35",
+              "DRY_WOOL_36",
+              "SANITARY_DOLL_37",
+              "DRY_RAINY_SEASON_38",
+              "SANITARY_SUIT_SCHOOL_39",
+              "STYLING_REMOVE_STATIC_40",
+              "STYLING_SILENT_41",
+              "STYLING_JEANS_42",
+              "STYLING_KNIT_CARDIGAN_43",
+              "STYLING_PANTS_44",
+              "DRY_WET_REFRESH_46"
+            ],
             "type": "reference",
             "verified": true
           },
@@ -3302,18 +4216,16 @@
             "verified": true
           },
           "styler.reserveTimeHour": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 19,
+            "min": 3,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "styler.reserveTimeMinute": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 59,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
@@ -3515,6 +4427,35 @@
             "controlDataValueLength": 1
           }
         },
+        "verification": {
+          "echo_fields": [],
+          "postconditions": {
+            "styler.state": [
+              "PAUSE"
+            ]
+          },
+          "preconditions": {
+            "styler.state": [
+              "RESERVED",
+              "DETECTING",
+              "PRESTEAM",
+              "STERILIZE",
+              "STEAM_SPRAY",
+              "REFRESH",
+              "DRYING",
+              "AIRCARE",
+              "DEHUME",
+              "STEAMER_RUNNING",
+              "STEAMER_CLEANING",
+              "STEAMER_CLEANING_AUTO"
+            ]
+          },
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": []
+        },
         "writable_fields": []
       },
       "remoteMaintain": {
@@ -3567,6 +4508,50 @@
             "verified": true
           },
           "styler.course": {
+            "options": [
+              "STYLING_STANDARD_1",
+              "STYLING_AI_2",
+              "STYLING_SPEED_3",
+              "STYLING_POWER_4",
+              "STYLING_SUITS_COATS_5",
+              "STYLING_WOOL_6",
+              "STYLING_SILK_CARE_7",
+              "STYLING_CASHMERE_8",
+              "SANITARY_FINEDUST_9",
+              "SANITARY_STANDARD_10",
+              "SANITARY_VIRUS_11",
+              "DRY_STEAM_13",
+              "DRY_AI_14",
+              "DRY_DEHUMIDITY_15",
+              "SANITARY_BEDDING_17",
+              "STYLING_FUR_18",
+              "DRY_PADDING_19",
+              "STYLING_PADDING_20",
+              "DRY_YOGA_21",
+              "DRY_DELICATE_22",
+              "DRY_TIME_23",
+              "STYLING_NIGHTDRY_24",
+              "STYLING_SCHOOL_25",
+              "STYLING_FUNTIONAL_26",
+              "DRY_SNOW_RAIN_27",
+              "DRY_WARM_BLANKET_28",
+              "STYLING_SCARVES_29",
+              "DRY_SWIMSUIT_30",
+              "SANITARY_BABY_WEAR_31",
+              "STYLING_STORED_ITEMS_33",
+              "DRY_WARM_COAT_34",
+              "STYLING_YOGA_35",
+              "DRY_WOOL_36",
+              "SANITARY_DOLL_37",
+              "DRY_RAINY_SEASON_38",
+              "SANITARY_SUIT_SCHOOL_39",
+              "STYLING_REMOVE_STATIC_40",
+              "STYLING_SILENT_41",
+              "STYLING_JEANS_42",
+              "STYLING_KNIT_CARDIGAN_43",
+              "STYLING_PANTS_44",
+              "DRY_WET_REFRESH_46"
+            ],
             "type": "reference",
             "verified": true
           },
@@ -3595,18 +4580,16 @@
             "verified": true
           },
           "styler.reserveTimeHour": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 19,
+            "min": 3,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "styler.reserveTimeMinute": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 59,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
@@ -3654,6 +4637,50 @@
             "verified": true
           },
           "styler.course": {
+            "options": [
+              "STYLING_STANDARD_1",
+              "STYLING_AI_2",
+              "STYLING_SPEED_3",
+              "STYLING_POWER_4",
+              "STYLING_SUITS_COATS_5",
+              "STYLING_WOOL_6",
+              "STYLING_SILK_CARE_7",
+              "STYLING_CASHMERE_8",
+              "SANITARY_FINEDUST_9",
+              "SANITARY_STANDARD_10",
+              "SANITARY_VIRUS_11",
+              "DRY_STEAM_13",
+              "DRY_AI_14",
+              "DRY_DEHUMIDITY_15",
+              "SANITARY_BEDDING_17",
+              "STYLING_FUR_18",
+              "DRY_PADDING_19",
+              "STYLING_PADDING_20",
+              "DRY_YOGA_21",
+              "DRY_DELICATE_22",
+              "DRY_TIME_23",
+              "STYLING_NIGHTDRY_24",
+              "STYLING_SCHOOL_25",
+              "STYLING_FUNTIONAL_26",
+              "DRY_SNOW_RAIN_27",
+              "DRY_WARM_BLANKET_28",
+              "STYLING_SCARVES_29",
+              "DRY_SWIMSUIT_30",
+              "SANITARY_BABY_WEAR_31",
+              "STYLING_STORED_ITEMS_33",
+              "DRY_WARM_COAT_34",
+              "STYLING_YOGA_35",
+              "DRY_WOOL_36",
+              "SANITARY_DOLL_37",
+              "DRY_RAINY_SEASON_38",
+              "SANITARY_SUIT_SCHOOL_39",
+              "STYLING_REMOVE_STATIC_40",
+              "STYLING_SILENT_41",
+              "STYLING_JEANS_42",
+              "STYLING_KNIT_CARDIGAN_43",
+              "STYLING_PANTS_44",
+              "DRY_WET_REFRESH_46"
+            ],
             "type": "reference",
             "verified": true
           },
@@ -3686,18 +4713,16 @@
             "verified": true
           },
           "styler.reserveTimeHour": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 19,
+            "min": 3,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "styler.reserveTimeMinute": {
-            "options": [
-              "min",
-              "max"
-            ],
+            "max": 59,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
@@ -3858,6 +4883,25 @@
             "controlDataValueLength": 0
           }
         },
+        "verification": {
+          "echo_fields": [],
+          "postconditions": {
+            "styler.state": [
+              "INITIAL"
+            ]
+          },
+          "preconditions": {
+            "styler.state": [
+              "POWEROFF",
+              "SLEEP"
+            ]
+          },
+          "readback_delays_s": [
+            5,
+            10
+          ],
+          "required_request_fields": []
+        },
         "writable_fields": []
       }
     },
@@ -3894,38 +4938,30 @@
         "experimental_fields": [],
         "fields": {
           "cooktopState.controlPowerLevel": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 10,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "cooktopState.controlSelectedBurner": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 5,
+            "min": 1,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "cooktopState.controlTimerHour": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 11,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
           "cooktopState.controlTimerMin": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 59,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           }
@@ -3990,11 +5026,9 @@
         "experimental_fields": [],
         "fields": {
           "cooktopState.cooktopTimerDefault": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 60,
+            "min": 5,
+            "step": 1,
             "type": "range",
             "verified": true
           }
@@ -5289,11 +6323,9 @@
         ],
         "fields": {
           "ovenState.lowerTimerHour": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 11,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
@@ -5306,11 +6338,9 @@
             "verified": false
           },
           "ovenState.upperTimerHour": {
-            "options": [
-              "min",
-              "max",
-              "step"
-            ],
+            "max": 11,
+            "min": 0,
+            "step": 1,
             "type": "range",
             "verified": true
           },
@@ -5707,10 +6737,6 @@
             "washerDryer.reserveTimeHour": {
               "max": 19,
               "min": 3,
-              "options": [
-                "min",
-                "max"
-              ],
               "step": 1,
               "type": "range",
               "verified": true
@@ -5718,11 +6744,6 @@
             "washerDryer.reserveTimeMinute": {
               "max": 30,
               "min": 0,
-              "options": [
-                "min",
-                "max",
-                "pickerOffset"
-              ],
               "step": 1,
               "type": "range",
               "verified": true
@@ -5746,10 +6767,6 @@
             "washerDryer.timeSetting": {
               "max": 240,
               "min": 30,
-              "options": [
-                "min",
-                "max"
-              ],
               "step": 1,
               "type": "range",
               "verified": true
@@ -6057,10 +7074,6 @@
             "washerDryer.reserveTimeHour": {
               "max": 19,
               "min": 3,
-              "options": [
-                "min",
-                "max"
-              ],
               "step": 1,
               "type": "range",
               "verified": true
@@ -6068,11 +7081,6 @@
             "washerDryer.reserveTimeMinute": {
               "max": 30,
               "min": 0,
-              "options": [
-                "min",
-                "max",
-                "pickerOffset"
-              ],
               "step": 1,
               "type": "range",
               "verified": true

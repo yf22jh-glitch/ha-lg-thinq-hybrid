@@ -31,7 +31,8 @@
           "allow_hazardous_controls": "Enable hazardous cooking controls",
           "allow_experimental_controls": "Enable experimental model controls",
           "rethink_event_token": "Rethink lifecycle relay token (optional)",
-          "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)"
+        "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)",
+        "local_schema_one_rollback_confirmation": "One-use rollback confirmation after stopping v3 and resetting its retained topics (exactly: I CONFIRM V3 SERVICE STOPPED AND RETAINED TOPICS RESET; ROLLBACK <binding_id> FROM SCHEMA 3 TO SCHEMA 1)"
         }
       }
     },
@@ -137,11 +138,114 @@
           "dehumidification": "Dehumidification power save",
           "mixed": "Combined power save"
         }
+      },
+      "airflow_direction": {
+        "name": "Airflow direction"
+      },
+      "error_code": {
+        "name": "Error code"
+      },
+      "operation_block_reason": {
+        "name": "Operation block reason"
+      },
+      "vacuum_charging_brightness": {
+        "name": "Charging display brightness",
+        "state": {
+          "very_low": "Very low",
+          "low": "Low",
+          "high": "High",
+          "very_high": "Very high"
+        }
+      },
+      "vacuum_default_suction_level": {
+        "name": "Default suction level",
+        "state": {
+          "normal": "Normal",
+          "high": "High",
+          "turbo": "Turbo",
+          "eco": "Eco"
+        }
+      },
+      "vacuum_water_supply_level": {
+        "name": "Water supply level",
+        "state": {
+          "low": "Low",
+          "high": "High"
+        }
+      },
+      "vacuum_steam_supply_level": {
+        "name": "Mop supply mode",
+        "state": {
+          "low": "Warm-water mop",
+          "high": "Safe steam"
+        }
+      },
+      "vacuum_charging_volume": {
+        "name": "Charging volume",
+        "state": {
+          "high": "High",
+          "medium": "Medium",
+          "low": "Low"
+        }
+      },
+      "vacuum_settings_button_volume": {
+        "name": "Settings button volume",
+        "state": {
+          "high": "High",
+          "medium": "Medium",
+          "low": "Low",
+          "off": "Off"
+        }
+      },
+      "vacuum_charging_melody": {
+        "name": "Charging melody",
+        "state": {
+          "melody_1": "Lucky",
+          "melody_2": "Marble",
+          "melody_3": "Ice",
+          "melody_4": "Breeze",
+          "melody_5": "Nebula"
+        }
+      },
+      "vacuum_dust_emptying_melody": {
+        "name": "Dust-emptying melody",
+        "state": {
+          "melody_1": "Dew",
+          "melody_2": "Sprout",
+          "melody_3": "Butterfly"
+        }
       }
     },
     "binary_sensor": {
       "water_tank_full": {
         "name": "Water tank full"
+      },
+      "status_display": {
+        "name": "Status display"
+      },
+      "ai_energy_saving": {
+        "name": "AI energy saving"
+      },
+      "current_time_display": {
+        "name": "Current time display"
+      },
+      "operation_blocked": {
+        "name": "Operation blocked"
+      },
+      "no_interrupt": {
+        "name": "No-interrupt option"
+      },
+      "vacuum_ai_suction_adjustment": {
+        "name": "AI suction adjustment"
+      },
+      "vacuum_battery_life_extension": {
+        "name": "Battery life extension"
+      },
+      "vacuum_auto_stop_and_go": {
+        "name": "Auto stop and go"
+      },
+      "vacuum_mop_suction": {
+        "name": "Mop suction"
       },
       "door": {
         "name": "Door"
