@@ -22,17 +22,21 @@
   "options": {
     "step": {
       "init": {
-        "title": "Polling intervals",
-        "description": "wideq polling intervals (seconds). Minimums are enforced to avoid triggering LG's rate limit.",
+        "title": "Polling and Local shadow",
+        "description": "Configure guarded wideq polling and the optional read-only Rethink Local pilot. Local shadow never changes the existing entity state.",
         "data": {
           "ac_active_interval": "Air conditioner active interval (min 60s)",
           "appliance_active_interval": "Appliance active interval (min 300s)",
           "idle_interval": "Idle baseline interval (min 600s)",
           "allow_hazardous_controls": "Enable hazardous cooking controls",
           "allow_experimental_controls": "Enable experimental model controls",
-          "rethink_event_token": "Rethink lifecycle relay token (optional)"
+          "rethink_event_token": "Rethink lifecycle relay token (optional)",
+          "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)"
         }
       }
+    },
+    "error": {
+      "local_shadow_invalid": "The Local shadow bindings are invalid, duplicated, or outside an exact published profile."
     }
   },
   "entity": {

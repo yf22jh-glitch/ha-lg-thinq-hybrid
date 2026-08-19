@@ -48,18 +48,26 @@ from .const import (
     PLATFORMS,
     SUPPORTED_DEVICE_TYPES,
     WATER_PUSH_CODES,
-    WIDEQ_ENERGY_HISTORY_STORE_VERSION,
-    WIDEQ_ENERGY_HISTORY_PREVIOUS_STORE_VERSION,
+    WIDEQ_DEVICE_MAP_STORE_VERSION,
     WIDEQ_ENERGY_HISTORY_LEGACY_STORE_VERSION,
+    WIDEQ_ENERGY_HISTORY_PREVIOUS_STORE_VERSION,
+    WIDEQ_ENERGY_HISTORY_STORE_VERSION,
     WIDEQ_MAX_CALLS_PER_HOUR,
     WIDEQ_MIN_CALL_SPACING,
-    WIDEQ_DEVICE_MAP_STORE_VERSION,
     WIDEQ_POWER_SAVE_STORE_VERSION,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
+from .local_mqtt import LOCAL_PILOT_MQTT_PORT, LocalPilotMqttSubscriber
+from .local_provider import (
+    LOCAL_DHUM_WATER_TANK_PROFILE_ID,
+    LocalProviderConfigurationError,
+    LocalSemanticShadowProvider,
+    LocalWaterTankShadowProvider,
+    local_shadow_configurations,
+)
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
 from .rethink_event_relay import CONF_RETHINK_EVENT_TOKEN, RethinkEventRelay
@@ -89,9 +97,7 @@ def _is_ac_active(coordinator: PatDeviceCoordinator) -> bool:
     if coordinator.device_type == DEVICE_TYPE_DEHUMIDIFIER:
         # Preserve the existing 600s behavior while powered on; WATER_IS_FULL
         # push still requests a prompt refresh and this cadence later sees clear.
-        return (
-            coordinator.get("operation", "dehumidifierOperationMode") == POWER_ON
-        )
+        return coordinator.get("operation", "dehumidifierOperationMode") == POWER_ON
     return (
         coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
         and coordinator.get("operation", "airConOperationMode") == POWER_ON
@@ -107,10 +113,7 @@ def _is_appliance_active(coordinator: PatDeviceCoordinator) -> bool:
             for part in ("washer", "dryer")
         )
     if coordinator.device_type == DEVICE_TYPE_STYLER:
-        return (
-            coordinator.get("runState", "currentState")
-            not in _INACTIVE_RUN_STATES
-        )
+        return coordinator.get("runState", "currentState") not in _INACTIVE_RUN_STATES
     return False
 
 
@@ -138,6 +141,12 @@ class MyLgData:
     mqtt: MyLgMqtt | None = None
     wideq_client: WideqClient | None = None
     wideq_coordinator: WideqCoordinator | None = None
+    local_providers: dict[str, LocalSemanticShadowProvider] = field(
+        default_factory=dict
+    )
+    local_mqtt_subscribers: dict[str, LocalPilotMqttSubscriber] = field(
+        default_factory=dict
+    )
     startup_metrics: StartupMetrics | None = None
 
 
@@ -196,7 +205,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     )
 
     if not data.coordinators:
-        _LOGGER.warning("my_lg: no supported devices found (Stage 1 = air conditioners)")
+        _LOGGER.warning(
+            "my_lg: no supported devices found (Stage 1 = air conditioners)"
+        )
 
     # Dispatch DEVICE_PUSH notifications to that device's event entity, and on a
     # water-tank push also refresh wideq promptly (rate-limited).
@@ -233,10 +244,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # Home Assistant event loop.
     await hass.async_add_executor_job(load_catalogs)
 
+    # Rethink Local is connected only as a read-only sidecar.  Start it after
+    # every potentially blocking setup read, immediately before entity setup.
+    await _setup_local_shadows(hass, entry, data)
     entry.runtime_data = data
-    async_register_services(hass)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
+    try:
+        async_register_services(hass)
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
+    except Exception:
+        await _stop_local_shadows(data)
+        raise
     return True
 
 
@@ -285,9 +303,7 @@ async def _setup_wideq(
     }
 
     opts = entry.options
-    ac_active_interval = opts.get(
-        OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL
-    )
+    ac_active_interval = opts.get(OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL)
     appliance_active_interval = opts.get(
         OPT_APPLIANCE_ACTIVE_INTERVAL, DEFAULT_APPLIANCE_ACTIVE_INTERVAL
     )
@@ -353,10 +369,96 @@ async def _setup_wideq(
     # avoidance). The first poll fires one interval after entities subscribe.
 
 
+async def _setup_local_shadows(
+    hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData
+) -> None:
+    """Start each exact Local shadow binding with failure isolation."""
+    try:
+        configs = await hass.async_add_executor_job(
+            local_shadow_configurations, entry.options
+        )
+    except LocalProviderConfigurationError:
+        _LOGGER.error("Rethink Local shadow options are invalid; provider disabled")
+        return
+    if not configs:
+        return
+
+    for config in configs:
+        pat_coordinator = data.coordinators.get(config.pat_device_id)
+        if pat_coordinator is None or pat_coordinator.model != config.model_id:
+            _LOGGER.error(
+                "Rethink Local shadow target does not match its pinned model; "
+                "binding disabled"
+            )
+            continue
+        if config.profile_id == LOCAL_DHUM_WATER_TANK_PROFILE_ID and (
+            pat_coordinator.device_type != DEVICE_TYPE_DEHUMIDIFIER
+            or data.wideq_coordinator is None
+        ):
+            _LOGGER.error(
+                "Rethink Local dehumidifier shadow requires its existing WideQ "
+                "water-tank provider; binding disabled"
+            )
+            continue
+
+        provider: LocalSemanticShadowProvider
+        if config.profile_id == LOCAL_DHUM_WATER_TANK_PROFILE_ID:
+            provider = LocalWaterTankShadowProvider(
+                config.binding_id, profile=config.profile
+            )
+        else:
+            provider = LocalSemanticShadowProvider(config.binding_id, config.profile)
+        subscriber = LocalPilotMqttSubscriber(
+            hass.loop,
+            provider,
+            host="127.0.0.1",
+            port=LOCAL_PILOT_MQTT_PORT,
+            username=config.mqtt_username,
+            password=config.mqtt_password,
+        )
+        try:
+            await subscriber.async_start()
+        except Exception:  # noqa: BLE001 - one binding must not block another
+            try:
+                await subscriber.async_stop()
+            except Exception:  # noqa: BLE001 - best-effort partial-start cleanup
+                _LOGGER.warning("Rethink Local shadow partial-start cleanup failed")
+            _LOGGER.exception(
+                "Rethink Local shadow transport could not start; cloud providers "
+                "remain active"
+            )
+            continue
+        data.local_providers[config.pat_device_id] = provider
+        data.local_mqtt_subscribers[config.pat_device_id] = subscriber
+
+    if data.local_providers:
+        _LOGGER.info(
+            "Rethink Local read-only shadow providers started (count=%d; "
+            "operational owners unchanged)",
+            len(data.local_providers),
+        )
+
+
+async def _stop_local_shadows(data: MyLgData) -> None:
+    """Detach all Local shadows, isolating every subscriber shutdown."""
+    subscribers = tuple(data.local_mqtt_subscribers.values())
+    data.local_providers.clear()
+    data.local_mqtt_subscribers.clear()
+    for subscriber in subscribers:
+        try:
+            await subscriber.async_stop()
+        except Exception:  # noqa: BLE001 - continue stopping the remaining bindings
+            _LOGGER.exception("Rethink Local shadow transport shutdown failed")
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if not unload_ok:
+        return False
     data: MyLgData | None = getattr(entry, "runtime_data", None)
+    if data:
+        await _stop_local_shadows(data)
     if data and data.mqtt:
         await data.mqtt.async_stop()
     if data and data.wideq_coordinator:
@@ -365,7 +467,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
         await data.wideq_coordinator.async_persist_device_map()
     if data and data.wideq_client:
         await data.wideq_client.async_close()
-    return unload_ok
+    return True
 
 
 async def _async_reload_on_options(hass: HomeAssistant, entry: MyLgConfigEntry) -> None:

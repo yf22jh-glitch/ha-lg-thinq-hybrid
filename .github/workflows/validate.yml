@@ -41,7 +41,7 @@ jobs:
           # older HA (2026.2), so the "latest" test would be misleading.
           python-version: "3.14"
       - name: Install latest Home Assistant + deps
-        run: pip install --upgrade homeassistant thinqconnect xmltodict
+        run: pip install --upgrade homeassistant thinqconnect xmltodict paho-mqtt==2.1.0
       - name: Import all integration modules
         run: |
           export PYTHONPATH="$PWD/custom_components"
@@ -49,7 +49,8 @@ jobs:
           import importlib
           for m in [
               "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
-              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
+              "my_lg.mqtt", "my_lg.local_mqtt", "my_lg.local_provider",
+              "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
               "my_lg.wideq_client", "my_lg.entity",
               "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
               "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",
@@ -77,7 +78,7 @@ jobs:
       - name: Install minimum supported dependencies
         run: >-
           pip install homeassistant==2024.11.3 thinqconnect==1.0.12
-          xmltodict "josepy<2"
+          xmltodict "josepy<2" paho-mqtt==1.6.1
       - name: Import all integration modules
         run: |
           export PYTHONPATH="$PWD/custom_components"
@@ -85,7 +86,8 @@ jobs:
           import importlib
           for m in [
               "my_lg", "my_lg.compat", "my_lg.const", "my_lg.coordinator", "my_lg.coordinator_wideq",
-              "my_lg.mqtt", "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
+              "my_lg.mqtt", "my_lg.local_mqtt", "my_lg.local_provider",
+              "my_lg.rate_limiter", "my_lg.startup", "my_lg.device_identity",
               "my_lg.wideq_client", "my_lg.entity",
               "my_lg.feature", "my_lg.value_access", "my_lg.control_router", "my_lg.services",
               "my_lg.feature_catalog", "my_lg.raw_sensor", "my_lg.time", "my_lg.text",

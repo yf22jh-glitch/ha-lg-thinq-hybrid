@@ -1,0 +1,1511 @@
+{
+  "schema_version": 1,
+  "semantics_revision": 26,
+  "profiles": [
+    {
+      "profile_id": "dhum-water-tank-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "DHUM_056905_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "water_tank.full",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-bidirectional-local-interlock-correlation"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "dhum-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "DHUM_056905_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "water_tank.full",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-bidirectional-local-interlock-correlation"
+          ]
+        },
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.direction",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.target_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.blocked",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-derived-exact-device-water-tank-interlock"
+          ]
+        },
+        {
+          "semantic_id": "operation.block_reason",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-derived-exact-device-water-tank-interlock"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "styler-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "ST_R_ETH01Y_",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "cycle.course",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-target-envelope+exact-modeljson+exact-local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "cycle.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-target-envelope+exact-modeljson+exact-local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "option.no_interrupt_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-local-wideq-transition-correlation"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "dishwasher-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "D121110",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "cycle.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.phase",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.course",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.course_type",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.total_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "cycle.reserve_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "door.open",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "lock.child_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "sound.chime_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "consumable.rinse_aid_refill_required",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        },
+        {
+          "semantic_id": "consumable.salt_refill_required",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-layout-cross-validated"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "kimchi-aabb-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "3REK2G03VI230D_2",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "compartment.room1.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+52-command-state-readbacks+18-local-door-transitions"
+          ]
+        },
+        {
+          "semantic_id": "compartment.room3.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+52-command-state-readbacks+18-local-door-transitions"
+          ]
+        },
+        {
+          "semantic_id": "compartment.room4.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+52-command-state-readbacks+18-local-door-transitions"
+          ]
+        },
+        {
+          "semantic_id": "door.any_open",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+52-command-state-readbacks+18-local-door-transitions"
+          ]
+        },
+        {
+          "semantic_id": "filter.one_touch_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+52-command-state-readbacks+18-local-door-transitions"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "kimchi-thinq1-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "2REK1D04AR170",
+      "platform": "thinq1",
+      "fields": [
+        {
+          "semantic_id": "compartment.left_or_top.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "compartment.right.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "compartment.middle.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "compartment.bottom.storage_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "filter.one_touch_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "lock.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        },
+        {
+          "semantic_id": "door.open",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson-byte-layout"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "fridge-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "2REFO1DBN3K_U",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.status",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "door.any_open",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "smart_care.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "ice_maker.1.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "ice_maker.2.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "door_alarm.delay_s",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "s",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "door_alarm.sound",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        },
+        {
+          "semantic_id": "sound.button_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-shared-fridge-offset+exact-target-modeljson+local-record-shape"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "oven-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "WMLJ32RS",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "oven.upper.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "oven.upper.standby_state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "oven.upper.remaining_s",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "s",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "oven.upper.target_time_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "oven.upper.inverter_temperature_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "oven.upper.steam_temperature_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        },
+        {
+          "semantic_id": "microwave.power_level",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-modeljson+local-wideq-correlation-20260809"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "air-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "AIR_910604_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "temperature.current_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm1_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm2_5_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm10_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "filter.main.rated_life_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-temporal-correlation"
+          ]
+        },
+        {
+          "semantic_id": "filter.main.remaining_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-temporal-correlation"
+          ]
+        },
+        {
+          "semantic_id": "filter.upper.rated_life_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-temporal-correlation"
+          ]
+        },
+        {
+          "semantic_id": "filter.upper.remaining_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-temporal-correlation"
+          ]
+        },
+        {
+          "semantic_id": "timer.sleep_remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-model-write-and-countdown"
+          ]
+        },
+        {
+          "semantic_id": "indicator.clean_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-write-and-report"
+          ]
+        },
+        {
+          "semantic_id": "sterilization.air_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-write-and-report"
+          ]
+        },
+        {
+          "semantic_id": "sterilization.uv_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-cloud-name-and-local-variation"
+          ]
+        },
+        {
+          "semantic_id": "humidification.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-cloud-name"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "humidifier-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "HUM_056905_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.product_state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "temperature.current_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.target_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm1_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm2_5_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_quality.pm10_ug_m3",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "µg/m³",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "water_filter.remaining_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "water_tank.level_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "water_tank.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "filter.usage_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidification.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "auto_dry.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "auto_dry.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "auto_operation.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "sleep_mode.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "night_mode.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "hygienic_dry.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "mood_light.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "display.glare_reduction_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "sound.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "sterilization.standby_mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "timer.off_remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "auto_dry.state",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-internal-integration-crosswalk"
+          ]
+        },
+        {
+          "semantic_id": "humidification.reported_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-internal-integration-crosswalk"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "cst170-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "CST_170004_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "temperature.current_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "temperature.target_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "swing.vertical_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "swing.horizontal_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "energy_saving.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "comfort_energy_saving.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "air_clean.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "airflow.auto_temperature_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "airflow.study_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "airflow.quiet_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "airflow.long_distance_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "auto_dry.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "filter.remaining_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "filter.rated_life_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "vane.vertical_position",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "cst570-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "CST_570004_WW",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.power_requested",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "operation.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "fan.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "temperature.current_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "temperature.target_c",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "°C",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "humidity.current_pct",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "%",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "swing.vertical_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "swing.horizontal_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "energy_saving.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "comfort_energy_saving.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "air_clean.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.auto_temperature_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.study_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.quiet_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "airflow.long_distance_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "auto_dry.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "filter.remaining_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "filter.rated_life_h",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "h",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "error.code",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "washtower-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "washer.cycle.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "washer.cycle.reserve_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "washer.cycle.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "washer.cycle.initial_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "dryer.cycle.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "dryer.cycle.reserve_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "dryer.cycle.remaining_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "dryer.cycle.initial_min",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "min",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        },
+        {
+          "semantic_id": "washer.maintenance.tub_clean_count",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "purifier-core-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "1WPD4CMIDR__3",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "operation.status",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "outlet.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "filter.flushing_state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "notification.unused_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "sterilization.high_temperature_state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "auto_care.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "clean_mode.enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        },
+        {
+          "semantic_id": "energy_saving.mode",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_id": "cooktop-left-front-state-v1",
+      "contract_revision": 1,
+      "supported_semantics_revisions": [
+        26
+      ],
+      "model_id": "WBEF3",
+      "platform": "thinq2",
+      "fields": [
+        {
+          "semantic_id": "burner.left_front.state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-partial-exact-modeljson+local-cycle+local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "burner.left_front.power_level",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-partial-exact-modeljson+local-cycle+local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "burner.left_front.elapsed_s",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "s",
+          "confidence": [
+            "confirmed-partial-exact-modeljson+local-cycle+local-wideq-correlation"
+          ]
+        },
+        {
+          "semantic_id": "burner.left_front.remaining_s",
+          "value_type": "number",
+          "exposure": "state",
+          "unit": "s",
+          "confidence": [
+            "confirmed-partial-exact-modeljson+local-cycle+local-wideq-correlation"
+          ]
+        }
+      ]
+    }
+  ]
+}

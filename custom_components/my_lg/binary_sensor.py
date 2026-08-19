@@ -23,10 +23,15 @@ from .const import (
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
+from .local_provider import (
+    WIDEQ_WATER_TANK_KEY,
+    LocalSemanticShadowProvider,
+    WaterTankProviderResolver,
+)
 
 # wideq snapshot key: 1.0 = tank full, 0.0 = ok. (PAT has no equivalent field;
 # only the WATER_IS_FULL edge push — see §11.9.)
-WATER_TANK_KEY = "airState.miscFuncState.watertankLight"
+WATER_TANK_KEY = WIDEQ_WATER_TANK_KEY
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,20 +57,26 @@ def _door_loc(location: str) -> Callable[[PatDeviceCoordinator], bool | None]:
 PAT_BINARY_BY_TYPE: dict[str, tuple[MyLgBinaryDescription, ...]] = {
     DEVICE_TYPE_REFRIGERATOR: (
         MyLgBinaryDescription(
-            key="door", translation_key="door",
-            device_class=BinarySensorDeviceClass.DOOR, is_on_fn=_door_loc("MAIN"),
+            key="door",
+            translation_key="door",
+            device_class=BinarySensorDeviceClass.DOOR,
+            is_on_fn=_door_loc("MAIN"),
         ),
     ),
     DEVICE_TYPE_DISH_WASHER: (
         MyLgBinaryDescription(
-            key="door", translation_key="door",
-            device_class=BinarySensorDeviceClass.DOOR, is_on_fn=_door_flat,
+            key="door",
+            translation_key="door",
+            device_class=BinarySensorDeviceClass.DOOR,
+            is_on_fn=_door_flat,
         ),
         MyLgBinaryDescription(
-            key="rinse_refill", translation_key="rinse_refill",
+            key="rinse_refill",
+            translation_key="rinse_refill",
             device_class=BinarySensorDeviceClass.PROBLEM,
             is_on_fn=lambda c: (
-                None if (v := c.get("dishWashingStatus", "rinseRefill")) is None
+                None
+                if (v := c.get("dishWashingStatus", "rinseRefill")) is None
                 else bool(v)
             ),
         ),
@@ -83,7 +94,11 @@ async def async_setup_entry(
     # wideq-backed water tank (dehumidifier).
     if data.wideq_coordinator is not None:
         entities += [
-            WaterTankFullSensor(data.wideq_coordinator, coordinator)
+            WaterTankFullSensor(
+                data.wideq_coordinator,
+                coordinator,
+                data.local_providers.get(coordinator.device_id),
+            )
             for coordinator in data.coordinators.values()
             if coordinator.device_type == DEVICE_TYPE_DEHUMIDIFIER
         ]
@@ -120,9 +135,11 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
         self,
         wideq_coordinator: WideqCoordinator,
         pat_coordinator: PatDeviceCoordinator,
+        local_provider: LocalSemanticShadowProvider | None = None,
     ) -> None:
         super().__init__(wideq_coordinator)
         self._device_id = pat_coordinator.device_id
+        self._provider_resolver = WaterTankProviderResolver(local_provider)
         self._attr_unique_id = f"{pat_coordinator.device_id}_water_tank_full"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, pat_coordinator.device_id)},
@@ -133,7 +150,9 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
 
     @property
     def available(self) -> bool:
-        return self._device_id in (self.coordinator.data or {})
+        return self._provider_resolver.available(
+            self._device_id in (self.coordinator.data or {})
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
@@ -141,10 +160,6 @@ class WaterTankFullSensor(CoordinatorEntity[WideqCoordinator], BinarySensorEntit
 
     @property
     def is_on(self) -> bool | None:
-        value = self.coordinator.snapshot_for(self._device_id).get(WATER_TANK_KEY)
-        if value is None:
-            return None
-        try:
-            return int(float(value)) == 1
-        except (TypeError, ValueError):
-            return bool(value)
+        return self._provider_resolver.resolve(
+            self.coordinator.snapshot_for(self._device_id)
+        )

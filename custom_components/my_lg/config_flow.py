@@ -7,7 +7,6 @@ import uuid
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -26,11 +25,11 @@ from .const import (
     CONF_LANGUAGE,
     CONF_WIDEQ_CLIENT_ID,
     CONF_WIDEQ_TOKEN,
-    DEFAULT_LANGUAGE,
     DEFAULT_AC_ACTIVE_INTERVAL,
     DEFAULT_APPLIANCE_ACTIVE_INTERVAL,
     DEFAULT_COUNTRY,
     DEFAULT_IDLE_INTERVAL,
+    DEFAULT_LANGUAGE,
     DOMAIN,
     MIN_AC_ACTIVE_INTERVAL,
     MIN_APPLIANCE_ACTIVE_INTERVAL,
@@ -40,6 +39,12 @@ from .const import (
     OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_APPLIANCE_ACTIVE_INTERVAL,
     OPT_IDLE_INTERVAL,
+)
+from .local_provider import (
+    OPT_LOCAL_BINDINGS,
+    LocalProviderConfigurationError,
+    local_bindings_for_form,
+    merge_local_shadow_options,
 )
 from .rethink_event_relay import (
     CONF_RETHINK_EVENT_TOKEN,
@@ -113,9 +118,7 @@ class MyLgConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_WIDEQ_CLIENT_ID, default=""): str,
             }
         )
-        return self.async_show_form(
-            step_id="user", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -129,37 +132,63 @@ class MyLgOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
+        errors: dict[str, str] = {}
         opts = self.config_entry.options
+        form_defaults = dict(opts)
+        try:
+            local_bindings_default = await self.hass.async_add_executor_job(
+                local_bindings_for_form, opts
+            )
+        except LocalProviderConfigurationError:
+            local_bindings_default = "[]"
+        if user_input is not None:
+            try:
+                normalized = await self.hass.async_add_executor_job(
+                    merge_local_shadow_options, user_input, opts
+                )
+            except LocalProviderConfigurationError:
+                errors["base"] = "local_shadow_invalid"
+                form_defaults.update(
+                    {
+                        key: value
+                        for key, value in user_input.items()
+                        if key != OPT_LOCAL_BINDINGS
+                    }
+                )
+            else:
+                return self.async_create_entry(title="", data=normalized)
+
         schema = vol.Schema(
             {
                 vol.Required(
                     OPT_AC_ACTIVE_INTERVAL,
-                    default=opts.get(OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL),
+                    default=form_defaults.get(
+                        OPT_AC_ACTIVE_INTERVAL, DEFAULT_AC_ACTIVE_INTERVAL
+                    ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=MIN_AC_ACTIVE_INTERVAL)),
                 vol.Required(
                     OPT_APPLIANCE_ACTIVE_INTERVAL,
-                    default=opts.get(
+                    default=form_defaults.get(
                         OPT_APPLIANCE_ACTIVE_INTERVAL, DEFAULT_APPLIANCE_ACTIVE_INTERVAL
                     ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=MIN_APPLIANCE_ACTIVE_INTERVAL)),
+                ): vol.All(
+                    vol.Coerce(int), vol.Range(min=MIN_APPLIANCE_ACTIVE_INTERVAL)
+                ),
                 vol.Required(
                     OPT_IDLE_INTERVAL,
-                    default=opts.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL),
+                    default=form_defaults.get(OPT_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL),
                 ): vol.All(vol.Coerce(int), vol.Range(min=MIN_IDLE_INTERVAL)),
                 vol.Optional(
                     OPT_ALLOW_HAZARDOUS_CONTROLS,
-                    default=opts.get(OPT_ALLOW_HAZARDOUS_CONTROLS, False),
+                    default=form_defaults.get(OPT_ALLOW_HAZARDOUS_CONTROLS, False),
                 ): bool,
                 vol.Optional(
                     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
-                    default=opts.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False),
+                    default=form_defaults.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False),
                 ): bool,
                 vol.Optional(
                     CONF_RETHINK_EVENT_TOKEN,
-                    default=opts.get(CONF_RETHINK_EVENT_TOKEN, ""),
+                    default=form_defaults.get(CONF_RETHINK_EVENT_TOKEN, ""),
                 ): vol.Any(
                     "",
                     vol.All(
@@ -171,6 +200,10 @@ class MyLgOptionsFlow(OptionsFlow):
                         vol.Length(min=MIN_TOKEN_LENGTH, max=MAX_TOKEN_LENGTH),
                     ),
                 ),
+                vol.Required(
+                    OPT_LOCAL_BINDINGS,
+                    default=local_bindings_default,
+                ): vol.All(str, vol.Length(max=64 * 1024)),
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
