@@ -57,6 +57,7 @@ DEVICE_TYPE_KIMCHI_REFRIGERATOR = "DEVICE_KIMCHI_REFRIGERATOR"
 DEVICE_TYPE_WATER_PURIFIER = "DEVICE_WATER_PURIFIER"
 DEVICE_TYPE_OVEN = "DEVICE_OVEN"
 DEVICE_TYPE_COOKTOP = "DEVICE_COOKTOP"
+DEVICE_TYPE_STICK_CLEANER = "DEVICE_STICK_CLEANER"
 
 # Whitelist: device types this integration sets up. Stage 5 = all our devices
 # (my_lg fully replaces both the official lg_thinq and the smartthinq fork).
@@ -73,6 +74,7 @@ SUPPORTED_DEVICE_TYPES: set[str] = {
     DEVICE_TYPE_WATER_PURIFIER,
     DEVICE_TYPE_OVEN,
     DEVICE_TYPE_COOKTOP,
+    DEVICE_TYPE_STICK_CLEANER,
 }
 
 # --- MQTT push message types (thinqconnect) ---
