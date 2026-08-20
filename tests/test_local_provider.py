@@ -8,7 +8,7 @@ import json
 import sys
 import re
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 MODULE_PATH = (
@@ -1334,29 +1334,48 @@ class IdentityBoundPublicationTests(unittest.TestCase):
                         retained=False,
                     )
 
-    def test_runtime_retained_delete_remains_a_contract_rejection(self) -> None:
+    def test_runtime_retained_delete_fails_closed_and_tombstones_its_service(self) -> None:
         provider = self.provider(
             pat_device_id=self.PAT_DEVICE_ID, require_identity=True
         )
+        online = runtime_payload("online")
         provider.ingest(
             provider.runtime_availability_topic,
-            runtime_payload("offline"),
+            online,
             qos=1,
             retained=False,
         )
-        rejected_before = provider.rejected_messages
 
-        with self.assertRaises(local.LocalProviderContractError):
+        self.assertTrue(
             provider.ingest(
                 provider.runtime_availability_topic,
                 b"",
                 qos=1,
                 retained=False,
             )
-
+        )
         self.assertEqual(provider._runtime_status, "offline")
-        self.assertEqual(provider._service_instance_id, SERVICE_ONE)
-        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+        self.assertIsNone(provider._runtime_payload)
+        self.assertIn(SERVICE_ONE, provider._tombstoned_service_instances)
+
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                online,
+                qos=1,
+                retained=False,
+            )
+
+        self.assertTrue(
+            provider.ingest(
+                provider.runtime_availability_topic,
+                runtime_payload("online", service_instance_id=SERVICE_TWO),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertEqual(provider._service_instance_id, SERVICE_TWO)
+        self.assertEqual(provider._runtime_status, "online")
 
     def test_live_v2_reset_rotates_to_one_healthy_v3_session(self) -> None:
         provider = self.provider(
@@ -2071,6 +2090,1454 @@ class IdentityBoundPublicationTests(unittest.TestCase):
             ),
             "d5b929818f4499907b08f60238f047af653e50d1630ec4fbc6bf695601ae6f31",
         )
+
+
+class ControlPresenceTests(unittest.TestCase):
+    """Authenticated device presence is a control fence, not a state snapshot."""
+
+    PAT_DEVICE_ID = (
+        "1111111122222222333333334444444455555555666666667777777788888888"
+    )
+    PROFILE_ID = "synthetic-control-presence-v1"
+    MODEL_ID = "SYNTHETIC_CONTROL_MODEL"
+
+    def profile(
+        self,
+        *,
+        platform: str = "thinq2",
+        availability_policy: str = "attested-session",
+        freshness_max_age_ms: int | None = None,
+    ):
+        return local.LocalSemanticProfile(
+            profile_id=self.PROFILE_ID,
+            model_id=self.MODEL_ID,
+            platform=platform,
+            semantics_revision=31,
+            fields={
+                "door.open": local.LocalSemanticFieldContract(
+                    value_type="boolean",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                ),
+                "operation.mode": local.LocalSemanticFieldContract(
+                    value_type="string",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                ),
+                "fan.mode": local.LocalSemanticFieldContract(
+                    value_type="string",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                ),
+                "temperature.target_c": local.LocalSemanticFieldContract(
+                    value_type="number",
+                    exposure="state",
+                    confidence=("confirmed-synthetic",),
+                ),
+            },
+            availability_policy=availability_policy,
+            freshness_max_age_ms=freshness_max_age_ms,
+        )
+
+    def proof(self, *, platform: str = "thinq2") -> str:
+        return local.local_pat_device_identity_proof(
+            BINDING_ID,
+            self.MODEL_ID,
+            platform,
+            self.PAT_DEVICE_ID,
+        )
+
+    def provider(self, *, clock=None, platform: str = "thinq2"):
+        profile = (
+            self.profile()
+            if platform == "thinq2"
+            else self.profile(
+                platform="thinq1",
+                availability_policy="device-report",
+                freshness_max_age_ms=45 * 60 * 1000,
+            )
+        )
+        return local.LocalSemanticShadowProvider(
+            BINDING_ID,
+            profile,
+            pat_device_id=self.PAT_DEVICE_ID,
+            require_identity=True,
+            now=clock or (lambda: NOW),
+        )
+
+    def presence(
+        self,
+        *,
+        status: str = "online",
+        evidence: str = "attested-session",
+        binding_generation: int = 1,
+        sequence: int = 1,
+        proof: str | None = None,
+        profile_id: str | None = None,
+        service_instance_id: str = SERVICE_ONE,
+        observed_at: str = "2026-08-13T00:59:57.000Z",
+        valid_until=None,
+        platform: str = "thinq2",
+    ) -> bytes:
+        return json.dumps(
+            {
+                "schema_version": 1,
+                "status": status,
+                "evidence": evidence,
+                "binding_generation": binding_generation,
+                "sequence": sequence,
+                "pat_device_id_proof_sha256": proof or self.proof(platform=platform),
+                "profile_id": profile_id or self.PROFILE_ID,
+                "service_instance_id": service_instance_id,
+                "observed_at": observed_at,
+                "valid_until": valid_until,
+            },
+            separators=(",", ":"),
+        ).encode()
+
+    def state(
+        self,
+        *,
+        sequence: int = 1,
+        cohort_generation: int = 1,
+        binding_generation: int = 1,
+        published_at: str = "2026-08-13T00:59:59.000Z",
+        tuple_observed_at: dict[str, str] | None = None,
+    ) -> bytes:
+        tuple_clocks = tuple_observed_at or {}
+        default_observed_at = "2026-08-13T00:59:58.000Z"
+        return json.dumps(
+            {
+                "schema_version": 3,
+                "semantics_revision": 31,
+                "binding_id": BINDING_ID,
+                "model_id": self.MODEL_ID,
+                "platform": "thinq2",
+                "session_id": SESSION_ONE,
+                "sequence": sequence,
+                "binding_generation": binding_generation,
+                "cohort_generation": cohort_generation,
+                "pat_device_id_proof_sha256": self.proof(),
+                "published_at": published_at,
+                "fields": {
+                    "door.open": {
+                        "value": True,
+                        "value_type": "boolean",
+                        "observed_at": default_observed_at,
+                        "confidence": "confirmed-synthetic",
+                        "exposure": "state",
+                    },
+                    "operation.mode": {
+                        "value": "cool",
+                        "value_type": "string",
+                        "observed_at": tuple_clocks.get(
+                            "operation.mode", default_observed_at
+                        ),
+                        "confidence": "confirmed-synthetic",
+                        "exposure": "state",
+                    },
+                    "fan.mode": {
+                        "value": "high",
+                        "value_type": "string",
+                        "observed_at": tuple_clocks.get(
+                            "fan.mode", default_observed_at
+                        ),
+                        "confidence": "confirmed-synthetic",
+                        "exposure": "state",
+                    },
+                    "temperature.target_c": {
+                        "value": 24,
+                        "value_type": "number",
+                        "observed_at": tuple_clocks.get(
+                            "temperature.target_c", default_observed_at
+                        ),
+                        "confidence": "confirmed-synthetic",
+                        "exposure": "state",
+                    },
+                },
+                "diagnostics": {
+                    "rejected_frames": 0,
+                    "unresolved_fields": 0,
+                    "invalid_values": 0,
+                    "unsupported_frames": 0,
+                },
+            },
+            separators=(",", ":"),
+        ).encode()
+
+    def availability(
+        self,
+        *,
+        state_sequence: int = 1,
+        cohort_generation: int = 1,
+        binding_generation: int = 1,
+        status: str = "online",
+        observed_at: str = "2026-08-13T01:00:00.000Z",
+    ) -> bytes:
+        return json.dumps(
+            {
+                "schema_version": 3,
+                "status": status,
+                "session_id": SESSION_ONE,
+                "observed_at": observed_at,
+                "binding_generation": binding_generation,
+                "cohort_generation": cohort_generation,
+                "pat_device_id_proof_sha256": self.proof(),
+                "state_sequence": state_sequence,
+            },
+            separators=(",", ":"),
+        ).encode()
+
+    @staticmethod
+    def presence_state(provider) -> tuple[object, ...]:
+        return (
+            provider._presence_binding_generation,
+            provider._presence_sequence,
+            provider._presence_status,
+            provider._presence_payload,
+            provider._presence_service_instance_id,
+            provider._presence_observed_at,
+            provider._presence_valid_until,
+            provider._presence_live_received_at,
+            frozenset(provider._tombstoned_presence_service_instances),
+            provider._control_state_current,
+            provider._semantic_transport_current,
+        )
+
+    @staticmethod
+    def full_operational_state(provider) -> tuple[object, ...]:
+        """Snapshot every mutable fence except the intentional rejection count."""
+        return (
+            provider._transport_ready,
+            provider._binding_generation,
+            provider._cohort_generation,
+            provider._session_id,
+            provider._sequence,
+            provider._state_payload,
+            provider._state_published_at,
+            provider._state_availability_coordinate,
+            dict(provider._shadow_fields),
+            provider._device_status,
+            provider._device_availability_payload,
+            provider._device_availability_at,
+            provider._device_availability_coordinate,
+            frozenset(provider._tombstoned_sessions),
+            provider._service_instance_id,
+            provider._runtime_status,
+            provider._runtime_payload,
+            provider._runtime_availability_at,
+            frozenset(provider._tombstoned_service_instances),
+            provider._presence_binding_generation,
+            provider._presence_sequence,
+            provider._presence_status,
+            provider._presence_payload,
+            provider._presence_service_instance_id,
+            provider._presence_observed_at,
+            provider._presence_valid_until,
+            provider._presence_live_received_at,
+            frozenset(provider._tombstoned_presence_service_instances),
+            provider._control_state_current,
+            provider._semantic_transport_current,
+        )
+
+    def test_presence_topic_is_exact_and_control_alive_does_not_need_state(self) -> None:
+        provider = self.provider()
+        self.assertEqual(
+            provider.presence_topic,
+            f"{local.LOCAL_PILOT_PREFIX}/presence/{BINDING_ID}",
+        )
+        self.assertEqual(provider.topics[-1], provider.presence_topic)
+
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=True
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+
+        self.assertFalse(
+            provider.control_alive,
+            "a retained marker alone does not prove a publisher on this MQTT connection",
+        )
+        self.assertTrue(
+            provider.ingest(
+                provider.presence_topic,
+                self.presence(),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.shadow_healthy)
+        provider.set_transport_ready(False)
+        self.assertFalse(provider.control_alive)
+
+    def test_live_presence_receipt_expires_and_resets_on_every_connection(self) -> None:
+        clock = [NOW]
+        provider = self.provider(clock=lambda: clock[0])
+        payload = self.presence()
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=True)
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.presence_topic, payload, qos=1, retained=False
+            )
+        )
+        self.assertTrue(provider.control_alive)
+        clock[0] += timedelta(seconds=240)
+        self.assertTrue(provider.control_alive)
+        clock[0] += timedelta(milliseconds=1)
+        self.assertFalse(provider.control_alive)
+
+        clock[0] += timedelta(seconds=1)
+        self.assertTrue(
+            provider.ingest(
+                provider.presence_topic, payload, qos=1, retained=False
+            )
+        )
+        self.assertTrue(provider.control_alive)
+        provider.set_transport_ready(False)
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+
+    def test_same_physical_presence_heartbeat_never_closes_current_tuple(self) -> None:
+        clock = [NOW]
+        provider = self.provider(clock=lambda: clock[0])
+        payload = self.presence()
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=False)
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        required = (
+            "operation.mode",
+            "fan.mode",
+            "temperature.target_c",
+        )
+        self.assertTrue(provider.control_fields_ready(required))
+
+        clock[0] += timedelta(seconds=60)
+        self.assertTrue(
+            provider.ingest(
+                provider.presence_topic, payload, qos=1, retained=False
+            )
+        )
+        self.assertTrue(provider.control_fields_ready(required))
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(sequence=2),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_fields_ready(required))
+
+    def test_semantic_health_and_control_presence_remain_independent(self) -> None:
+        provider = self.provider()
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(status="offline"),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.shadow_healthy)
+        self.assertFalse(provider.control_alive)
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                sequence=2, observed_at="2026-08-13T01:00:01.000Z"
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+        provider.ingest(
+            provider.state_topic,
+            self.state(sequence=1, cohort_generation=2),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.shadow_healthy)
+        self.assertTrue(
+            provider.control_alive,
+            "a state cohort transition must not erase authenticated presence",
+        )
+
+    def test_control_alive_requires_the_current_online_runtime_instance(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online", service_instance_id=SERVICE_TWO),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                service_instance_id=SERVICE_TWO,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload(
+                "offline",
+                service_instance_id=SERVICE_TWO,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_alive)
+
+    def test_presence_contract_rejects_mismatches_without_mutation(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        before = self.presence_state(provider)
+        rejected_before = provider.rejected_messages
+        invalid_payloads = []
+        for overrides in (
+            {"evidence": "device-report"},
+            {"profile_id": "wrong-profile"},
+            {"proof": "0" * 64},
+            {"valid_until": "2026-08-13T01:45:00.000Z"},
+            {"observed_at": "2026-08-13T01:05:00.001Z"},
+            {"sequence": 0},
+        ):
+            invalid_payloads.append(self.presence(**overrides))
+        extra_key = json.loads(self.presence())
+        extra_key["unexpected"] = True
+        invalid_payloads.append(json.dumps(extra_key).encode())
+
+        for payload in invalid_payloads:
+            with self.assertRaises(local.LocalProviderContractError):
+                provider.ingest(
+                    provider.presence_topic, payload, qos=1, retained=False
+                )
+        self.assertEqual(self.presence_state(provider), before)
+        self.assertEqual(
+            provider.rejected_messages,
+            rejected_before + len(invalid_payloads),
+        )
+
+    def test_presence_cursor_rejects_regression_collision_and_old_service_replay(
+        self,
+    ) -> None:
+        provider = self.provider()
+        first = self.presence(binding_generation=2, sequence=3)
+        self.assertTrue(
+            provider.ingest(provider.presence_topic, first, qos=1, retained=False)
+        )
+        self.assertFalse(
+            provider.ingest(provider.presence_topic, first, qos=1, retained=False)
+        )
+
+        rejected = (
+            self.presence(
+                binding_generation=1,
+                sequence=99,
+                observed_at="2026-08-13T01:00:02.000Z",
+            ),
+            self.presence(binding_generation=2, sequence=2),
+            self.presence(binding_generation=2, sequence=3, status="offline"),
+        )
+        for payload in rejected:
+            before = self.presence_state(provider)
+            with self.assertRaises(local.LocalProviderContractError):
+                provider.ingest(
+                    provider.presence_topic, payload, qos=1, retained=False
+                )
+            self.assertEqual(self.presence_state(provider), before)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.presence_topic,
+                self.presence(
+                    binding_generation=2,
+                    sequence=1,
+                    service_instance_id=SERVICE_TWO,
+                    observed_at="2026-08-13T01:00:01.000Z",
+                ),
+                qos=1,
+                retained=False,
+            )
+        )
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.presence_topic,
+                self.presence(
+                    binding_generation=2,
+                    sequence=99,
+                    service_instance_id=SERVICE_ONE,
+                    observed_at="2026-08-13T01:00:02.000Z",
+                ),
+                qos=1,
+                retained=False,
+            )
+
+    def test_presence_retained_delete_fails_closed_and_blocks_stale_replay(self) -> None:
+        provider = self.provider()
+        payload = self.presence()
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=True)
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic, payload, qos=1, retained=False
+        )
+        self.assertTrue(provider.control_alive)
+
+        self.assertTrue(
+            provider.ingest(provider.presence_topic, b"", qos=1, retained=False)
+        )
+        self.assertFalse(provider.control_alive)
+        self.assertIsNone(provider._presence_live_received_at)
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.presence_topic, payload, qos=1, retained=False
+            )
+
+    def test_runtime_retained_delete_closes_presence_until_a_new_service_pairs(
+        self,
+    ) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_alive)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.runtime_availability_topic,
+                b"",
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertFalse(provider.control_alive)
+        self.assertIsNone(provider._presence_live_received_at)
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                runtime_payload("online"),
+                qos=1,
+                retained=False,
+            )
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload(
+                "online",
+                service_instance_id=SERVICE_TWO,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                service_instance_id=SERVICE_TWO,
+                sequence=1,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+    def test_live_presence_hands_over_a_stale_retained_runtime_service(self) -> None:
+        provider = self.provider()
+        stale_presence = self.presence()
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (stale_presence, 1, True),
+            }
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+
+        replacement_offline = self.presence(
+            status="offline",
+            service_instance_id=SERVICE_TWO,
+            sequence=1,
+            observed_at="2026-08-13T01:00:00.000Z",
+        )
+        provider.ingest(
+            provider.presence_topic,
+            replacement_offline,
+            qos=1,
+            retained=True,
+        )
+        self.assertEqual(provider._service_instance_id, SERVICE_ONE)
+        self.assertEqual(provider._runtime_status, "online")
+        self.assertNotIn(SERVICE_ONE, provider._tombstoned_service_instances)
+        self.assertFalse(provider.control_alive)
+
+        provider.ingest(
+            provider.presence_topic,
+            replacement_offline,
+            qos=1,
+            retained=False,
+        )
+        self.assertEqual(provider._runtime_status, "offline")
+        self.assertIsNone(provider._runtime_payload)
+        self.assertIn(SERVICE_ONE, provider._tombstoned_service_instances)
+        self.assertIsNotNone(provider._presence_live_received_at)
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload(
+                "online",
+                service_instance_id=SERVICE_TWO,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                service_instance_id=SERVICE_TWO,
+                sequence=2,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                runtime_payload("online"),
+                qos=1,
+                retained=False,
+            )
+
+    def test_live_runtime_matching_retained_presence_hands_over_stale_service(
+        self,
+    ) -> None:
+        provider = self.provider()
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (self.presence(), 1, True),
+            }
+        )
+        replacement_online = self.presence(
+            service_instance_id=SERVICE_TWO,
+            observed_at="2026-08-13T01:00:00.000Z",
+        )
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (replacement_online, 1, True),
+            }
+        )
+        provider.set_transport_ready(True)
+        self.assertEqual(provider._service_instance_id, SERVICE_ONE)
+        self.assertEqual(provider._runtime_status, "online")
+        self.assertFalse(provider.control_alive)
+
+        replacement_runtime = runtime_payload(
+            "online",
+            service_instance_id=SERVICE_TWO,
+            observed_at="2026-08-13T01:00:01.000Z",
+        )
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                replacement_runtime,
+                qos=1,
+                retained=True,
+            )
+        self.assertEqual(provider._service_instance_id, SERVICE_ONE)
+        self.assertNotIn(SERVICE_ONE, provider._tombstoned_service_instances)
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            replacement_runtime,
+            qos=1,
+            retained=False,
+        )
+        self.assertEqual(provider._service_instance_id, SERVICE_TWO)
+        self.assertEqual(provider._runtime_status, "online")
+        self.assertIn(SERVICE_ONE, provider._tombstoned_service_instances)
+        self.assertFalse(provider.control_alive)
+
+        provider.ingest(
+            provider.presence_topic,
+            replacement_online,
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                runtime_payload("online"),
+                qos=1,
+                retained=False,
+            )
+
+    def test_buffered_mismatched_live_presence_is_rejected_atomically(self) -> None:
+        provider = self.provider()
+        before = self.full_operational_state(provider)
+        rejected_before = provider.rejected_messages
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest_control_bootstrap_final_current(
+                {
+                    provider.runtime_availability_topic: (
+                        runtime_payload("online"),
+                        1,
+                        True,
+                    ),
+                    provider.presence_topic: (
+                        self.presence(
+                            status="offline",
+                            service_instance_id=SERVICE_TWO,
+                            observed_at="2026-08-13T01:00:00.000Z",
+                        ),
+                        1,
+                        False,
+                    ),
+                }
+            )
+        self.assertEqual(self.full_operational_state(provider), before)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_buffered_live_presence_rejects_a_mismatched_retained_runtime(
+        self,
+    ) -> None:
+        provider = self.provider()
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (self.presence(), 1, True),
+            }
+        )
+
+        before = self.full_operational_state(provider)
+        rejected_before = provider.rejected_messages
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest_control_bootstrap_final_current(
+                {
+                    provider.runtime_availability_topic: (
+                        runtime_payload(
+                            "online",
+                            service_instance_id=SERVICE_TWO,
+                            observed_at="2026-08-13T01:00:01.000Z",
+                        ),
+                        1,
+                        True,
+                    ),
+                    provider.presence_topic: (self.presence(), 1, False),
+                }
+            )
+        self.assertEqual(self.full_operational_state(provider), before)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_full_buffered_mismatched_live_presence_is_rejected_atomically(
+        self,
+    ) -> None:
+        provider = self.provider()
+        initial = {
+            provider.state_topic: (self.state(), 1, True),
+            provider.availability_topic: (self.availability(), 1, True),
+            provider.runtime_availability_topic: (
+                runtime_payload("online"),
+                1,
+                True,
+            ),
+            provider.presence_topic: (self.presence(), 1, True),
+        }
+        provider.ingest_retained_final_current(initial)
+        repaired = dict(initial)
+        repaired[provider.runtime_availability_topic] = (
+            runtime_payload(
+                "online",
+                service_instance_id=SERVICE_TWO,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            1,
+            True,
+        )
+        repaired[provider.presence_topic] = (self.presence(), 1, False)
+
+        before = self.full_operational_state(provider)
+        rejected_before = provider.rejected_messages
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest_bootstrap_final_current(repaired)
+        self.assertEqual(self.full_operational_state(provider), before)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_thinq1_valid_until_expires_dynamically_and_is_exact(self) -> None:
+        clock = [NOW]
+        provider = self.provider(clock=lambda: clock[0], platform="thinq1")
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                status="offline",
+                evidence="device-report",
+                platform="thinq1",
+                sequence=1,
+                observed_at="2026-08-13T01:00:00.000Z",
+                valid_until="2026-08-13T01:00:00.000Z",
+            ),
+            qos=1,
+            retained=True,
+        )
+        # A restarted publisher first emits offline at startup, then adopts a still-fresh durable
+        # report whose observation predates that startup. Sequence, not the semantic timestamp,
+        # orders those two publications without opening offline -> stale-online replay.
+        valid_until = "2026-08-13T01:44:00.000Z"
+        online = self.presence(
+            evidence="device-report",
+            platform="thinq1",
+            sequence=2,
+            observed_at="2026-08-13T00:59:00.000Z",
+            valid_until=valid_until,
+        )
+        provider.ingest(
+            provider.presence_topic,
+            online,
+            qos=1,
+            retained=True,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic, online, qos=1, retained=False
+        )
+        self.assertTrue(provider.control_alive)
+        clock[0] = NOW + timedelta(minutes=44)
+        provider.ingest(
+            provider.presence_topic, online, qos=1, retained=False
+        )
+        self.assertTrue(provider.control_alive)
+        clock[0] += timedelta(milliseconds=1)
+        self.assertFalse(provider.control_alive)
+
+        other = self.provider(platform="thinq1")
+        with self.assertRaises(local.LocalProviderContractError):
+            other.ingest(
+                other.presence_topic,
+                self.presence(
+                    evidence="device-report",
+                    platform="thinq1",
+                    valid_until="2026-08-13T01:43:59.999Z",
+                    observed_at="2026-08-13T00:59:00.000Z",
+                ),
+                qos=1,
+                retained=True,
+            )
+
+    def test_bootstrap_requires_and_atomically_applies_all_four_topics(self) -> None:
+        provider = self.provider()
+        publications = {
+            provider.state_topic: (self.state(), 1, True),
+            provider.availability_topic: (self.availability(), 1, True),
+            provider.runtime_availability_topic: (
+                runtime_payload("online"),
+                1,
+                True,
+            ),
+            provider.presence_topic: (self.presence(), 1, True),
+        }
+        incomplete = dict(publications)
+        incomplete.pop(provider.presence_topic)
+        before = self.presence_state(provider)
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest_retained_final_current(incomplete)
+        self.assertEqual(self.presence_state(provider), before)
+        self.assertIsNone(provider.session_id)
+
+        self.assertTrue(provider.ingest_retained_final_current(publications))
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.shadow_healthy)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic,
+            publications[provider.presence_topic][0],
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+    def test_no_state_bootstrap_opens_control_before_optional_semantics_arrive(
+        self,
+    ) -> None:
+        provider = self.provider()
+        presence = self.presence()
+        self.assertTrue(
+            provider.ingest_control_bootstrap_final_current(
+                {
+                    provider.runtime_availability_topic: (
+                        runtime_payload("online"),
+                        1,
+                        True,
+                    ),
+                    provider.presence_topic: (presence, 1, True),
+                }
+            )
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic, presence, qos=1, retained=False
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+        self.assertFalse(provider.shadow_healthy)
+
+        self.assertTrue(
+            provider.ingest_semantic_bootstrap_final_current(
+                {
+                    provider.availability_topic: (self.availability(), 1, True),
+                    provider.state_topic: (self.state(), 1, True),
+                }
+            )
+        )
+        self.assertTrue(provider.control_state_ready)
+        self.assertTrue(provider.shadow_healthy)
+
+    def test_buffered_live_presence_can_open_the_atomic_control_bootstrap(self) -> None:
+        provider = self.provider()
+        self.assertTrue(
+            provider.ingest_control_bootstrap_final_current(
+                {
+                    provider.runtime_availability_topic: (
+                        runtime_payload("online"),
+                        1,
+                        True,
+                    ),
+                    # A retained publish is delivered with retain=False to an already subscribed
+                    # client. The subscriber buffers that flag with this connection generation.
+                    provider.presence_topic: (self.presence(), 1, False),
+                }
+            )
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+    def test_reconnect_liveness_pair_cannot_reauthorize_old_semantic_fields(
+        self,
+    ) -> None:
+        provider = self.provider()
+        publications = {
+            provider.state_topic: (self.state(), 1, True),
+            provider.availability_topic: (self.availability(), 1, True),
+            provider.runtime_availability_topic: (
+                runtime_payload("online"),
+                1,
+                True,
+            ),
+            provider.presence_topic: (self.presence(), 1, True),
+        }
+        provider.ingest_retained_final_current(publications)
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_state_ready)
+        provider.ingest(
+            provider.presence_topic,
+            publications[provider.presence_topic][0],
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+
+        provider.set_transport_ready(False)
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: publications[
+                    provider.runtime_availability_topic
+                ],
+                provider.presence_topic: publications[provider.presence_topic],
+            }
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic,
+            publications[provider.presence_topic][0],
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+        self.assertFalse(provider.shadow_healthy)
+
+        provider.ingest_semantic_bootstrap_final_current(
+            {
+                provider.state_topic: publications[provider.state_topic],
+                provider.availability_topic: publications[
+                    provider.availability_topic
+                ],
+            }
+        )
+        self.assertTrue(provider.control_state_ready)
+
+    def test_full_bootstrap_does_not_authorize_state_from_before_presence(self) -> None:
+        provider = self.provider()
+        presence = self.presence(observed_at="2026-08-13T01:00:00.000Z")
+        provider.ingest_retained_final_current(
+            {
+                provider.state_topic: (self.state(), 1, True),
+                provider.availability_topic: (self.availability(), 1, True),
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (
+                    presence,
+                    1,
+                    True,
+                ),
+            }
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic, presence, qos=1, retained=False
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+        provider.ingest(
+            provider.state_topic,
+            self.state(
+                sequence=2,
+                published_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                state_sequence=2,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_state_ready)
+
+    def test_liveness_first_then_old_optional_pair_stays_control_ineligible(
+        self,
+    ) -> None:
+        provider = self.provider()
+        presence = self.presence(observed_at="2026-08-13T01:00:00.000Z")
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (
+                    presence,
+                    1,
+                    True,
+                ),
+            }
+        )
+        provider.set_transport_ready(True)
+        self.assertFalse(provider.control_alive)
+        provider.ingest(
+            provider.presence_topic, presence, qos=1, retained=False
+        )
+        provider.ingest_semantic_bootstrap_final_current(
+            {
+                provider.state_topic: (self.state(), 1, True),
+                provider.availability_topic: (self.availability(), 1, True),
+            }
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+    def test_presence_reconnect_edge_requires_a_post_edge_semantic_pair(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_state_ready)
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                status="offline",
+                sequence=2,
+                observed_at="2026-08-13T01:00:00.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                sequence=3,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+        provider.ingest(
+            provider.state_topic,
+            self.state(
+                sequence=2,
+                published_at="2026-08-13T01:00:02.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                state_sequence=2,
+                observed_at="2026-08-13T01:00:02.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_state_ready)
+
+    def test_partial_state_after_presence_edge_does_not_reauthorize_old_tuple_fields(
+        self,
+    ) -> None:
+        provider = self.provider()
+        required = (
+            "operation.mode",
+            "fan.mode",
+            "temperature.target_c",
+        )
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_fields_ready(required))
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                status="offline",
+                sequence=2,
+                observed_at="2026-08-13T01:00:00.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(
+                sequence=3,
+                observed_at="2026-08-13T01:00:01.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.state_topic,
+            self.state(
+                sequence=2,
+                published_at="2026-08-13T01:00:02.000Z",
+                tuple_observed_at={
+                    "operation.mode": "2026-08-13T01:00:02.000Z",
+                },
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                state_sequence=2,
+                observed_at="2026-08-13T01:00:02.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_alive)
+        self.assertTrue(provider.control_state_ready)
+        self.assertFalse(provider.control_fields_ready(required))
+
+        post_edge = {
+            semantic_id: "2026-08-13T01:00:02.000Z"
+            for semantic_id in required
+        }
+        provider.ingest(
+            provider.state_topic,
+            self.state(
+                sequence=3,
+                published_at="2026-08-13T01:00:03.000Z",
+                tuple_observed_at=post_edge,
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                state_sequence=3,
+                observed_at="2026-08-13T01:00:03.000Z",
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_fields_ready(required))
+
+    def test_runtime_edge_also_closes_composite_state(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_state_ready)
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload(
+                "offline", observed_at="2026-08-13T01:00:01.000Z"
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+    def test_semantic_bootstrap_generation_mismatch_is_atomic(self) -> None:
+        provider = self.provider()
+        provider.ingest_control_bootstrap_final_current(
+            {
+                provider.runtime_availability_topic: (
+                    runtime_payload("online"),
+                    1,
+                    True,
+                ),
+                provider.presence_topic: (
+                    self.presence(binding_generation=2),
+                    1,
+                    True,
+                ),
+            }
+        )
+        before = self.presence_state(provider)
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest_semantic_bootstrap_final_current(
+                {
+                    provider.state_topic: (self.state(), 1, True),
+                    provider.availability_topic: (self.availability(), 1, True),
+                }
+            )
+        self.assertEqual(self.presence_state(provider), before)
+        self.assertIsNone(provider.session_id)
+
+    def test_live_state_generation_mismatch_blocks_only_composite_state(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.state_topic,
+            self.state(binding_generation=2),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(binding_generation=2),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_alive)
+        self.assertFalse(provider.control_state_ready)
+
+        provider.ingest(
+            provider.presence_topic,
+            self.presence(binding_generation=2),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(provider.control_state_ready)
+        provider.ingest(
+            provider.state_topic,
+            self.state(sequence=2, binding_generation=2),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(state_sequence=2, binding_generation=2),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.control_state_ready)
+
+    def test_exact_offline_state_marker_does_not_own_control_liveness(self) -> None:
+        provider = self.provider()
+        provider.ingest(
+            provider.presence_topic, self.presence(), qos=1, retained=False
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(provider.state_topic, self.state(), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(status="offline"),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.control_alive)
+        self.assertTrue(provider.control_state_ready)
+        self.assertFalse(provider.shadow_healthy)
 
 
 class AuthoritativeInvalidationTests(unittest.TestCase):

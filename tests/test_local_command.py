@@ -90,6 +90,79 @@ class LocalCommandClientTest(unittest.TestCase):
         # remain exactly one bridge request, even when a proxy is misconfigured.
         self.assertIs(kwargs["allow_redirects"], False)
 
+    def test_both_climate_commands_carry_the_exact_pre_command_state(self) -> None:
+        expected_state = {
+            "operation.mode": "cool",
+            "fan.mode": "high",
+            "temperature.target_c": 24,
+        }
+        for capability, value in (
+            ("climate.mode_fan_setpoint", "cool|low|24C"),
+            ("climate.power_on_with_setpoint", "cool|high|24C"),
+        ):
+            with self.subTest(capability=capability):
+                session = Session(
+                    Response(200, {"verdict": "confirmed", "state": {}})
+                )
+                client = local_command.LocalCommandClient(
+                    session, "http://bridge:44401"
+                )
+                asyncio.run(
+                    client.async_send(
+                        DEVICE,
+                        capability,
+                        value,
+                        expected_state=expected_state,
+                    )
+                )
+                self.assertEqual(
+                    session.posts[0][1]["json"],
+                    {
+                        "capability": capability,
+                        "value": value,
+                        "expected_state": expected_state,
+                    },
+                )
+
+    def test_a_climate_tuple_without_an_exact_expected_state_is_refused_before_http(
+        self,
+    ) -> None:
+        for expected_state in (
+            None,
+            [
+                "operation.mode",
+                "fan.mode",
+                "temperature.target_c",
+            ],
+            {"operation.mode": "cool", "fan.mode": "high"},
+            {
+                "operation.mode": "cool",
+                "fan.mode": "high",
+                "temperature.target_c": float("inf"),
+            },
+            {
+                "operation.mode": "cool",
+                "fan.mode": "high",
+                "temperature.target_c": 24,
+                "extra": True,
+            },
+        ):
+            with self.subTest(expected_state=expected_state):
+                session = Session(Response(200, {"verdict": "confirmed"}))
+                client = local_command.LocalCommandClient(
+                    session, "http://bridge:44401"
+                )
+                with self.assertRaises(local_command.LocalCommandUnavailable):
+                    asyncio.run(
+                        client.async_send(
+                            DEVICE,
+                            "climate.mode_fan_setpoint",
+                            "cool|low|24C",
+                            expected_state=expected_state,
+                        )
+                    )
+                self.assertEqual(session.posts, [])
+
     def test_already_in_that_state_is_a_confirmation_too(self) -> None:
         _session, result = send(Response(200, {"verdict": "already", "state": {}}))
         self.assertTrue(result.confirmed)

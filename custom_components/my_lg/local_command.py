@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import math
 from typing import Any, Mapping
 
 import aiohttp
@@ -26,6 +27,14 @@ import aiohttp
 CLIMATE_TUPLE_CAPABILITY = "climate.mode_fan_setpoint"
 CLIMATE_POWER_ON_CAPABILITY = "climate.power_on_with_setpoint"
 POWER_CAPABILITY = "operation.power_requested"
+_CLIMATE_CAPABILITIES = frozenset(
+    (CLIMATE_TUPLE_CAPABILITY, CLIMATE_POWER_ON_CAPABILITY)
+)
+_CLIMATE_STATE_FIELDS = (
+    "operation.mode",
+    "fan.mode",
+    "temperature.target_c",
+)
 #: The two swing directions, as single-field settings. CST170 has a codec for both; CST570 has only
 #: the vertical one - its 0x206 frames decode to an already-observed value, so no value has a frame
 #: of its own. A model without a codec refuses and the request goes to the cloud.
@@ -176,6 +185,49 @@ def _fresh(field: Any, now: datetime) -> Any:
     return getattr(field, "value", None)
 
 
+def _validated_expected_state(
+    expected_state: Mapping[str, Any] | None,
+) -> dict[str, str | int | float]:
+    """Return the exact climate compare object accepted by the bridge."""
+    if (
+        not isinstance(expected_state, Mapping)
+        or set(expected_state) != set(_CLIMATE_STATE_FIELDS)
+    ):
+        raise LocalCommandUnavailable(
+            "a climate command requires the exact current mode, fan and target"
+        )
+    mode = expected_state.get("operation.mode")
+    fan = expected_state.get("fan.mode")
+    target = expected_state.get("temperature.target_c")
+    if (
+        type(mode) is not str
+        or type(fan) is not str
+        or type(target) not in (int, float)
+        or not math.isfinite(target)
+    ):
+        raise LocalCommandUnavailable(
+            "a climate command requires a string mode, string fan and finite numeric target"
+        )
+    return {
+        "operation.mode": mode,
+        "fan.mode": fan,
+        "temperature.target_c": target,
+    }
+
+
+def climate_expected_state(
+    shadow: Mapping[str, Any], now: datetime | None = None
+) -> dict[str, str | int | float]:
+    """The appliance tuple HA used before applying the requested changes."""
+    now = now or datetime.now(timezone.utc)
+    return _validated_expected_state(
+        {
+            semantic_id: _fresh(shadow.get(semantic_id), now)
+            for semantic_id in _CLIMATE_STATE_FIELDS
+        }
+    )
+
+
 def climate_tuple(
     shadow: Mapping[str, Any],
     *,
@@ -278,11 +330,29 @@ class LocalCommandClient:
         self._base_url = base_url.rstrip("/")
         self._timeout = aiohttp.ClientTimeout(total=timeout_s)
 
-    async def async_send(self, device_id: str, capability: str, value: str) -> LocalCommandResult:
+    async def async_send(
+        self,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: Mapping[str, Any] | None = None,
+    ) -> LocalCommandResult:
+        if capability in _CLIMATE_CAPABILITIES:
+            request_expected_state = _validated_expected_state(expected_state)
+        elif expected_state is not None:
+            raise LocalCommandUnavailable(
+                "only climate tuple commands may carry expected_state"
+            )
+        else:
+            request_expected_state = None
+        request = {"capability": capability, "value": value}
+        if request_expected_state is not None:
+            request["expected_state"] = request_expected_state
         try:
             async with self._session.post(
                 f"{self._base_url}/control/{device_id}",
-                json={"capability": capability, "value": value},
+                json=request,
                 timeout=self._timeout,
                 # 307/308 preserve POST. Following one could replay a single Home Assistant
                 # request at a second endpoint, violating the one-command invariant.

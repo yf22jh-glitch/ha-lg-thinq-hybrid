@@ -61,18 +61,41 @@ def shadow(age: timedelta = timedelta(seconds=1)) -> dict[str, Field]:
 
 
 class Provider:
-    def __init__(self, fields: dict[str, Field], healthy: bool = True) -> None:
+    def __init__(
+        self,
+        fields: dict[str, Field],
+        healthy: bool = True,
+        alive: bool = True,
+        state_ready: bool = True,
+        fields_ready: bool = True,
+    ) -> None:
         self.shadow_fields = fields
         self.shadow_healthy = healthy
+        self.control_alive = alive
+        self.control_state_ready = state_ready
+        self._fields_ready = fields_ready
+
+    def control_fields_ready(self, semantic_ids: tuple[str, ...]) -> bool:
+        self.requested_control_fields = semantic_ids
+        return self.control_state_ready and self._fields_ready
 
 
 class Sender:
     def __init__(self, outcome: Any = None) -> None:
         self.sent: list[tuple[str, str, str]] = []
+        self.expected_states: list[dict[str, Any] | None] = []
         self._outcome = outcome or LocalCommandResult("confirmed", {})
 
-    async def async_send(self, device_id: str, capability: str, value: str) -> LocalCommandResult:
+    async def async_send(
+        self,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: dict[str, Any] | None = None,
+    ) -> LocalCommandResult:
         self.sent.append((device_id, capability, value))
+        self.expected_states.append(expected_state)
         if isinstance(self._outcome, Exception):
             raise self._outcome
         return self._outcome
@@ -81,8 +104,16 @@ class Sender:
 class SwingRefusingSender(Sender):
     """Confirm climate tuples but refuse the unsupported swing before wire."""
 
-    async def async_send(self, device_id: str, capability: str, value: str) -> LocalCommandResult:
+    async def async_send(
+        self,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: dict[str, Any] | None = None,
+    ) -> LocalCommandResult:
         self.sent.append((device_id, capability, value))
+        self.expected_states.append(expected_state)
         if capability.startswith("swing."):
             raise LocalCommandUnavailable("no codec for this model's swing direction")
         return LocalCommandResult("confirmed", {})
@@ -91,8 +122,16 @@ class SwingRefusingSender(Sender):
 class PowerOffRefusingSender(Sender):
     """Confirm climate tuples but refuse power-off before wire."""
 
-    async def async_send(self, device_id: str, capability: str, value: str) -> LocalCommandResult:
+    async def async_send(
+        self,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: dict[str, Any] | None = None,
+    ) -> LocalCommandResult:
         self.sent.append((device_id, capability, value))
+        self.expected_states.append(expected_state)
         if capability == "operation.power_requested":
             raise LocalCommandUnavailable("power-off codec unavailable")
         return LocalCommandResult("confirmed", {})
@@ -118,6 +157,16 @@ class LocalControlRouterTest(unittest.TestCase):
         # The appliance writes mode, fan and setpoint together, so changing the fan still has to
         # state the other two - and stating a guess would silently move them.
         self.assertEqual(sender.sent, [(BRIDGE, "climate.mode_fan_setpoint", "cool|low|24C")])
+        self.assertEqual(
+            sender.expected_states,
+            [
+                {
+                    "operation.mode": "cool",
+                    "fan.mode": "high",
+                    "temperature.target_c": 24,
+                }
+            ],
+        )
 
     def test_an_appliance_with_no_local_shadow_is_not_addressed_at_all(self) -> None:
         sender = Sender()
@@ -128,13 +177,31 @@ class LocalControlRouterTest(unittest.TestCase):
         # exactly like one where it works.
         self.assertIn("no local shadow", caught.output[0])
 
-    def test_an_unhealthy_shadow_is_not_something_to_build_a_command_from(self) -> None:
+    def test_semantic_health_does_not_replace_authenticated_control_presence(self) -> None:
         sender = Sender()
         provider = Provider(shadow(), healthy=False)
+        result = run(
+            router(sender, provider).async_set_climate(PAT, fan="low", now=NOW)
+        )
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "climate.mode_fan_setpoint", "cool|low|24C")],
+        )
+
+    def test_an_offline_control_presence_is_not_addressed(self) -> None:
+        sender = Sender()
+        provider = Provider(shadow(), alive=False)
         with self.assertLogs(ROUTER_LOGGER, level="INFO") as caught:
-            self.assertIsNone(run(router(sender, provider).async_set_climate(PAT, fan="low", now=NOW)))
+            self.assertIsNone(
+                run(
+                    router(sender, provider).async_set_climate(
+                        PAT, fan="low", now=NOW
+                    )
+                )
+            )
         self.assertEqual(sender.sent, [])
-        self.assertIn("not currently healthy", caught.output[0])
+        self.assertIn("authenticated presence", caught.output[0])
 
     def test_a_normal_sparse_report_is_still_recent_enough_to_compose_from(self) -> None:
         sender = Sender()
@@ -215,6 +282,16 @@ class LocalControlRouterTest(unittest.TestCase):
         # Not a power write: the observed frames all carry the mode, fan and temperature the
         # unit already had, so composing the tuple IS how it is turned on.
         self.assertEqual(sender.sent, [(BRIDGE, "climate.power_on_with_setpoint", "cool|high|24C")])
+        self.assertEqual(
+            sender.expected_states,
+            [
+                {
+                    "operation.mode": "cool",
+                    "fan.mode": "high",
+                    "temperature.target_c": 24,
+                }
+            ],
+        )
 
     def test_powering_on_in_a_mode_is_one_frame_rather_than_two_saying_the_same_thing(self) -> None:
         sender = Sender()
@@ -237,6 +314,63 @@ class LocalControlRouterTest(unittest.TestCase):
             )
         )
         self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "washer.operation.pause", "true")],
+        )
+
+    def test_a_stateless_exact_command_only_needs_authenticated_presence(self) -> None:
+        sender = Sender()
+        provider = Provider({}, healthy=False, alive=True)
+        result = run(
+            router(sender, provider).async_execute(
+                PAT, "washer.operation.pause"
+            )
+        )
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "washer.operation.pause", "true")],
+        )
+        self.assertEqual(sender.expected_states, [None])
+
+    def test_a_state_dependent_tuple_without_state_falls_back_before_wire(self) -> None:
+        sender = Sender()
+        provider = Provider({}, healthy=False, alive=True)
+        self.assertIsNone(
+            run(router(sender, provider).async_set_climate(PAT, fan="low", now=NOW))
+        )
+        self.assertEqual(sender.sent, [])
+
+    def test_a_state_generation_mismatch_blocks_only_composite_commands(self) -> None:
+        sender = Sender()
+        provider = Provider(
+            shadow(), healthy=True, alive=True, state_ready=False
+        )
+        r = router(sender, provider)
+        self.assertIsNone(run(r.async_set_climate(PAT, fan="low", now=NOW)))
+        result = run(r.async_execute(PAT, "washer.operation.pause"))
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "washer.operation.pause", "true")],
+        )
+
+    def test_partial_state_after_presence_edge_blocks_only_composite_commands(self) -> None:
+        sender = Sender()
+        provider = Provider(
+            shadow(), healthy=True, alive=True, state_ready=True, fields_ready=False
+        )
+        r = router(sender, provider)
+
+        self.assertIsNone(run(r.async_set_climate(PAT, fan="low", now=NOW)))
+        result = run(r.async_execute(PAT, "washer.operation.pause"))
+
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            provider.requested_control_fields,
+            ("operation.mode", "fan.mode", "temperature.target_c"),
+        )
         self.assertEqual(
             sender.sent,
             [(BRIDGE, "washer.operation.pause", "true")],
@@ -333,6 +467,21 @@ class LocalControlRouterTest(unittest.TestCase):
             [
                 (BRIDGE, "climate.mode_fan_setpoint", "dry|high|24C"),
                 (BRIDGE, "climate.mode_fan_setpoint", "dry|low|24C"),
+            ],
+        )
+        self.assertEqual(
+            sender.expected_states,
+            [
+                {
+                    "operation.mode": "cool",
+                    "fan.mode": "high",
+                    "temperature.target_c": 24,
+                },
+                {
+                    "operation.mode": "dry",
+                    "fan.mode": "high",
+                    "temperature.target_c": 24,
+                },
             ],
         )
 

@@ -36,6 +36,7 @@ from .local_command import (
     POWER_CAPABILITY,
     LocalCommandResult,
     LocalCommandUnavailable,
+    climate_expected_state,
     climate_tuple,
 )
 
@@ -92,7 +93,14 @@ def _confirmed_tuple(value: str, confirmed_at: datetime) -> _ConfirmedTuple:
 
 
 class _Sender(Protocol):
-    async def async_send(self, device_id: str, capability: str, value: str) -> LocalCommandResult: ...
+    async def async_send(
+        self,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: Mapping[str, Any] | None = None,
+    ) -> LocalCommandResult: ...
 
 
 class _Shadow(Protocol):
@@ -101,6 +109,14 @@ class _Shadow(Protocol):
 
     @property
     def shadow_healthy(self) -> bool: ...
+
+    @property
+    def control_alive(self) -> bool: ...
+
+    @property
+    def control_state_ready(self) -> bool: ...
+
+    def control_fields_ready(self, semantic_ids: tuple[str, ...]) -> bool: ...
 
 
 class LocalControlRouter:
@@ -239,10 +255,17 @@ class LocalControlRouter:
         if provider is None:
             self._not_served(pat_device_id, "no-shadow", "this appliance has no local shadow")
             return None
-        # An unhealthy shadow is one whose readings this project would not act on; a command
-        # built from those readings would be a guess wearing the appliance's own numbers.
-        if not provider.shadow_healthy:
-            self._not_served(pat_device_id, "unhealthy", "the local shadow is not currently healthy")
+        # Presence answers only whether an authenticated appliance connection can receive a
+        # command.  It is deliberately independent of semantic state: parameterless/exact writes
+        # such as pause need no snapshot, while tuple composition applies its own per-field
+        # freshness and mode gates below.  Using `shadow_healthy` here made a quiet but connected
+        # appliance unreachable and made stateless commands depend on unrelated state reports.
+        if not provider.control_alive:
+            self._not_served(
+                pat_device_id,
+                "not-alive",
+                "the appliance's authenticated presence is not online",
+            )
             return None
         device_id = self._bridge_device_id(pat_device_id)
         # The bridge addresses appliances by the id its own connection knows them by. Without
@@ -274,10 +297,21 @@ class LocalControlRouter:
         )
 
     async def _send(
-        self, pat_device_id: str, device_id: str, capability: str, value: str
+        self,
+        pat_device_id: str,
+        device_id: str,
+        capability: str,
+        value: str,
+        *,
+        expected_state: Mapping[str, Any] | None = None,
     ) -> LocalCommandResult | None:
         try:
-            return await self._sender.async_send(device_id, capability, value)
+            return await self._sender.async_send(
+                device_id,
+                capability,
+                value,
+                expected_state=expected_state,
+            )
         except LocalCommandUnavailable as err:
             # Every one of these is raised before a frame leaves, so the caller may go to the cloud.
             self._not_served(pat_device_id, capability, f"{capability}={value}: {err}")
@@ -334,6 +368,14 @@ class LocalControlRouter:
                 self._mark_cloud_tuple_dispatch_locked(pat_device_id)
                 return None
             device_id, provider = target
+            if not provider.control_fields_ready(_CLIMATE_TUPLE_FIELDS):
+                self._not_served(
+                    pat_device_id,
+                    "control-state-fields",
+                    "not every climate tuple field was observed in the authenticated presence epoch",
+                )
+                self._mark_cloud_tuple_dispatch_locked(pat_device_id)
+                return None
             if self._cloud_tuple_barrier_blocks(
                 pat_device_id, provider.shadow_fields
             ):
@@ -348,6 +390,7 @@ class LocalControlRouter:
                 pat_device_id, provider.shadow_fields, command_time
             )
             try:
+                expected_state = climate_expected_state(shadow, command_time)
                 value = climate_tuple(
                     shadow, mode=mode, fan=fan, target_c=target_c, now=command_time
                 )
@@ -358,7 +401,13 @@ class LocalControlRouter:
                 self._not_served(pat_device_id, str(err), str(err))
                 self._mark_cloud_tuple_dispatch_locked(pat_device_id)
                 return None
-            outcome = await self._send(pat_device_id, device_id, capability, value)
+            outcome = await self._send(
+                pat_device_id,
+                device_id,
+                capability,
+                value,
+                expected_state=expected_state,
+            )
             if outcome is None:
                 self._mark_cloud_tuple_dispatch_locked(pat_device_id)
             elif outcome.confirmed:

@@ -113,6 +113,56 @@ class FakeReasonCode:
         self.value = value
 
 
+class FourTopicProvider:
+    """Minimal synthetic provider proving transport treats presence as bootstrap input."""
+
+    def __init__(self) -> None:
+        self.binding_id = BINDING_ID
+        prefix = f"{local.LOCAL_PILOT_PREFIX}"
+        self.topics = (
+            f"{prefix}/state/{BINDING_ID}",
+            f"{prefix}/availability/{BINDING_ID}",
+            f"{prefix}/runtime/{BINDING_ID}/availability",
+            f"{prefix}/presence/{BINDING_ID}",
+        )
+        self.state_topic = self.topics[0]
+        self.availability_topic = self.topics[1]
+        self.runtime_availability_topic = self.topics[2]
+        self.presence_topic = self.topics[3]
+        self.control_presence_enabled = True
+        self.transport_ready = False
+        self.control_bootstrap_calls = []
+        self.semantic_bootstrap_calls = []
+        self.ingest_calls = []
+
+    def set_transport_ready(self, ready):
+        self.transport_ready = ready
+
+    def ingest_control_bootstrap_final_current(self, publications):
+        self.control_bootstrap_calls.append(dict(publications))
+        return True
+
+    def ingest_semantic_bootstrap_final_current(self, publications):
+        self.semantic_bootstrap_calls.append(dict(publications))
+        return True
+
+    def ingest(self, topic, payload, *, qos, retained):
+        self.ingest_calls.append((topic, payload, qos, retained))
+        return True
+
+
+class RecoveringFourTopicProvider(FourTopicProvider):
+    """Reject one cross-service batch and accept its later coherent repair."""
+
+    def ingest_control_bootstrap_final_current(self, publications):
+        self.control_bootstrap_calls.append(dict(publications))
+        runtime = publications[self.runtime_availability_topic][0]
+        presence = publications[self.presence_topic][0]
+        if runtime == b"retained-runtime-b" and presence == b"live-presence-a":
+            raise local.LocalProviderContractError("synthetic service mismatch")
+        return True
+
+
 class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
     def provider(self):
         return local.LocalWaterTankShadowProvider(BINDING_ID, now=lambda: NOW)
@@ -239,6 +289,176 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(provider.rejected_messages, 0)
         await subscriber.async_stop()
 
+    async def test_presence_and_runtime_open_no_state_bootstrap_then_semantics_pair(
+        self,
+    ) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = FourTopicProvider()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+        client.on_connect(client, None, {}, 0)
+        client.on_subscribe(client, None, 41, [1, 1, 1, 1])
+
+        for topic in (provider.presence_topic,):
+            client.on_message(
+                client,
+                None,
+                SimpleNamespace(
+                    topic=topic, payload=b"synthetic", qos=1, retain=True
+                ),
+            )
+        await asyncio.sleep(0)
+        self.assertFalse(provider.transport_ready)
+        self.assertEqual(provider.control_bootstrap_calls, [])
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.runtime_availability_topic,
+                payload=b"synthetic-runtime",
+                qos=1,
+                retain=True,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertTrue(provider.transport_ready)
+        self.assertEqual(
+            set(provider.control_bootstrap_calls[0]),
+            {provider.presence_topic, provider.runtime_availability_topic},
+        )
+        self.assertEqual(provider.semantic_bootstrap_calls, [])
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.availability_topic,
+                payload=b"synthetic-availability",
+                qos=1,
+                retain=True,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertEqual(provider.semantic_bootstrap_calls, [])
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.state_topic,
+                payload=b"synthetic-state",
+                qos=1,
+                retain=True,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertEqual(
+            set(provider.semantic_bootstrap_calls[0]),
+            {provider.state_topic, provider.availability_topic},
+        )
+        self.assertEqual(
+            client.subscriptions,
+            [[(topic, 1) for topic in provider.topics]],
+        )
+        await subscriber.async_stop()
+
+    async def test_mismatched_bootstrap_is_retained_until_runtime_repairs_it(
+        self,
+    ) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = RecoveringFourTopicProvider()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+        client.on_connect(client, None, {}, 0)
+        client.on_subscribe(client, None, 41, [1, 1, 1, 1])
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.runtime_availability_topic,
+                payload=b"retained-runtime-b",
+                qos=1,
+                retain=True,
+            ),
+        )
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.presence_topic,
+                payload=b"live-presence-a",
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertFalse(provider.transport_ready)
+        self.assertEqual(subscriber.rejected_messages, 1)
+        self.assertEqual(
+            set(subscriber._retained_bootstrap),
+            {provider.runtime_availability_topic, provider.presence_topic},
+        )
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=provider.runtime_availability_topic,
+                payload=b"live-runtime-a",
+                qos=1,
+                retain=False,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertTrue(provider.transport_ready)
+        self.assertEqual(len(provider.control_bootstrap_calls), 2)
+        repaired = provider.control_bootstrap_calls[-1]
+        self.assertEqual(
+            repaired[provider.runtime_availability_topic],
+            (b"live-runtime-a", 1, False),
+        )
+        self.assertEqual(
+            repaired[provider.presence_topic],
+            (b"live-presence-a", 1, False),
+        )
+        await subscriber.async_stop()
+
+    async def test_an_old_connection_message_cannot_enter_the_new_bootstrap_buffer(
+        self,
+    ) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = FourTopicProvider()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+
+        client.on_connect(client, None, {}, 0)
+        await asyncio.sleep(0)
+        old_generation = subscriber._active_connection_generation
+        client.on_disconnect(client, None, 0)
+        await asyncio.sleep(0)
+        client.on_connect(client, None, {}, 0)
+        await asyncio.sleep(0)
+        self.assertNotEqual(
+            subscriber._active_connection_generation, old_generation
+        )
+
+        subscriber._dispatch_message(
+            client,
+            provider.presence_topic,
+            b"old-live-presence",
+            1,
+            False,
+            old_generation,
+        )
+
+        self.assertEqual(subscriber._retained_bootstrap, {})
+        self.assertEqual(provider.ingest_calls, [])
+        await subscriber.async_stop()
+
     async def test_denied_suback_retries_with_fresh_mid_and_ignores_stale_ack(
         self,
     ) -> None:
@@ -353,7 +573,9 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         client.on_connect(client, None, {}, 0)
         await asyncio.sleep(0)
 
-        subscriber._connection_lost(client)
+        subscriber._connection_lost(
+            client, subscriber._callback_connection_generation
+        )
         subscriber._subscription_failed(client)
 
         self.assertIsNone(subscriber._subscription_retry_handle)

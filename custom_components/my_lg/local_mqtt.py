@@ -47,7 +47,7 @@ def _result_code(value: object) -> int | None:
 
 
 class LocalPilotMqttSubscriber:
-    """Receive three exact QoS 1 topics for one read-only Local binding."""
+    """Receive one profile's exact QoS 1 topics for a read-only Local binding."""
 
     def __init__(
         self,
@@ -86,6 +86,8 @@ class LocalPilotMqttSubscriber:
         self._password = password
         self._mqtt_module = mqtt_module
         self._client: Any | None = None
+        self._callback_connection_generation = 0
+        self._active_connection_generation = 0
         self._connected = False
         self._subscription_mid: int | None = None
         self._subscription_retry_handle: asyncio.TimerHandle | None = None
@@ -93,6 +95,7 @@ class LocalPilotMqttSubscriber:
         self._subscriptions_ready = False
         self._stopping = False
         self._retained_bootstrap: dict[str, tuple[bytes, int, bool]] = {}
+        self._semantic_bootstrap_pending = False
         self._rejected_messages = 0
 
     @property
@@ -180,6 +183,7 @@ class LocalPilotMqttSubscriber:
         self._cancel_subscription_retry()
         self._subscriptions_ready = False
         self._retained_bootstrap.clear()
+        self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
         if client is None:
             return
@@ -202,11 +206,17 @@ class LocalPilotMqttSubscriber:
     ) -> None:
         if self._stopping:
             return
+        self._callback_connection_generation += 1
+        generation = self._callback_connection_generation
         mqtt = self._mqtt()
         if _result_code(result_code) != mqtt.MQTT_ERR_SUCCESS:
-            self._loop.call_soon_threadsafe(self._connection_lost, client)
+            self._loop.call_soon_threadsafe(
+                self._connection_lost, client, generation
+            )
             return
-        self._loop.call_soon_threadsafe(self._begin_connection, client)
+        self._loop.call_soon_threadsafe(
+            self._begin_connection, client, generation
+        )
 
     def _request_subscription(self, client: Any) -> None:
         """Queue the exact subscription; Paho's subscribe call is non-blocking."""
@@ -230,7 +240,12 @@ class LocalPilotMqttSubscriber:
 
     def _on_connect_fail(self, client: Any, _userdata: object) -> None:
         if not self._stopping:
-            self._loop.call_soon_threadsafe(self._connection_lost, client)
+            self._callback_connection_generation += 1
+            self._loop.call_soon_threadsafe(
+                self._connection_lost,
+                client,
+                self._callback_connection_generation,
+            )
 
     def _on_disconnect(
         self,
@@ -239,7 +254,12 @@ class LocalPilotMqttSubscriber:
         *_callback_values: object,
     ) -> None:
         if not self._stopping:
-            self._loop.call_soon_threadsafe(self._connection_lost, client)
+            self._callback_connection_generation += 1
+            self._loop.call_soon_threadsafe(
+                self._connection_lost,
+                client,
+                self._callback_connection_generation,
+            )
 
     def _on_subscribe(
         self,
@@ -258,7 +278,13 @@ class LocalPilotMqttSubscriber:
         ready = len(grants) == len(self.provider.topics) and all(
             _result_code(value) == 1 for value in grants
         )
-        self._loop.call_soon_threadsafe(self._handle_suback, client, mid, ready)
+        self._loop.call_soon_threadsafe(
+            self._handle_suback,
+            client,
+            mid,
+            ready,
+            self._callback_connection_generation,
+        )
 
     def _on_message(self, client: Any, _userdata: object, message: object) -> None:
         if self._stopping:
@@ -269,7 +295,11 @@ class LocalPilotMqttSubscriber:
             qos = message.qos  # type: ignore[attr-defined]
             retained = message.retain  # type: ignore[attr-defined]
         except AttributeError:
-            self._loop.call_soon_threadsafe(self._note_transport_rejection, client)
+            self._loop.call_soon_threadsafe(
+                self._note_transport_rejection,
+                client,
+                self._callback_connection_generation,
+            )
             return
         if (
             not isinstance(topic, str)
@@ -277,14 +307,30 @@ class LocalPilotMqttSubscriber:
             or type(qos) is not int
             or type(retained) is not bool
         ):
-            self._loop.call_soon_threadsafe(self._note_transport_rejection, client)
+            self._loop.call_soon_threadsafe(
+                self._note_transport_rejection,
+                client,
+                self._callback_connection_generation,
+            )
             return
         self._loop.call_soon_threadsafe(
-            self._dispatch_message, client, topic, payload, qos, retained
+            self._dispatch_message,
+            client,
+            topic,
+            payload,
+            qos,
+            retained,
+            self._callback_connection_generation,
         )
 
-    def _note_transport_rejection(self, client: Any) -> None:
-        if self._stopping or not self._connected or client is not self._client:
+    def _note_transport_rejection(self, client: Any, generation: int) -> None:
+        if (
+            self._stopping
+            or not self._connected
+            or client is not self._client
+            or generation != self._active_connection_generation
+            or generation != self._callback_connection_generation
+        ):
             return
         self._rejected_messages += 1
 
@@ -294,33 +340,47 @@ class LocalPilotMqttSubscriber:
         if handle is not None:
             handle.cancel()
 
-    def _begin_connection(self, client: Any) -> None:
-        if self._stopping or client is not self._client:
+    def _begin_connection(self, client: Any, generation: int) -> None:
+        if (
+            self._stopping
+            or client is not self._client
+            or generation != self._callback_connection_generation
+        ):
             return
+        self._active_connection_generation = generation
         self._cancel_subscription_retry()
         self._subscription_retry_seconds = LOCAL_PILOT_RECONNECT_MIN_SECONDS
         self._connected = True
         self._subscription_mid = None
         self._subscriptions_ready = False
         self._retained_bootstrap.clear()
+        self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
         self._request_subscription(client)
 
-    def _connection_lost(self, client: Any) -> None:
-        if client is not self._client:
+    def _connection_lost(self, client: Any, generation: int) -> None:
+        if (
+            client is not self._client
+            or generation != self._callback_connection_generation
+        ):
             return
         self._connected = False
         self._cancel_subscription_retry()
         self._subscription_mid = None
         self._subscriptions_ready = False
         self._retained_bootstrap.clear()
+        self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
 
-    def _handle_suback(self, client: Any, mid: object, ready: bool) -> None:
+    def _handle_suback(
+        self, client: Any, mid: object, ready: bool, generation: int
+    ) -> None:
         if (
             self._stopping
             or not self._connected
             or client is not self._client
+            or generation != self._active_connection_generation
+            or generation != self._callback_connection_generation
             or type(mid) is not int
             or mid != self._subscription_mid
         ):
@@ -365,13 +425,26 @@ class LocalPilotMqttSubscriber:
         self.provider.set_transport_ready(False)
         if not ready:
             self._retained_bootstrap.clear()
+            self._semantic_bootstrap_pending = False
             return
         self._drain_retained_bootstrap()
 
     def _dispatch_message(
-        self, client: Any, topic: str, payload: bytes, qos: int, retained: bool
+        self,
+        client: Any,
+        topic: str,
+        payload: bytes,
+        qos: int,
+        retained: bool,
+        generation: int,
     ) -> None:
-        if self._stopping or not self._connected or client is not self._client:
+        if (
+            self._stopping
+            or not self._connected
+            or client is not self._client
+            or generation != self._active_connection_generation
+            or generation != self._callback_connection_generation
+        ):
             return
         if topic not in self.provider.topics:
             self._apply_message(topic, payload, qos, retained)
@@ -383,12 +456,43 @@ class LocalPilotMqttSubscriber:
             self._retained_bootstrap[topic] = (payload, qos, retained)
             self._drain_retained_bootstrap()
             return
+        if (
+            self._semantic_bootstrap_pending
+            and topic in (self.provider.state_topic, self.provider.availability_topic)
+        ):
+            if qos != 1:
+                self._apply_message(topic, payload, qos, retained)
+                return
+            self._retained_bootstrap[topic] = (payload, qos, retained)
+            self._drain_semantic_bootstrap()
+            return
         self._apply_message(topic, payload, qos, retained)
 
     def _drain_retained_bootstrap(self) -> None:
-        if not self._subscriptions_ready or set(self._retained_bootstrap) != set(
-            self.provider.topics
-        ):
+        if not self._subscriptions_ready:
+            return
+        if self.provider.control_presence_enabled:
+            required = {
+                self.provider.runtime_availability_topic,
+                self.provider.presence_topic,
+            }
+            if not required.issubset(self._retained_bootstrap):
+                return
+            publications = {
+                topic: self._retained_bootstrap[topic] for topic in required
+            }
+            try:
+                self.provider.ingest_control_bootstrap_final_current(publications)
+            except LocalProviderContractError:
+                self._record_provider_rejection()
+                return
+            for topic in required:
+                self._retained_bootstrap.pop(topic, None)
+            self._semantic_bootstrap_pending = True
+            self.provider.set_transport_ready(True)
+            self._drain_semantic_bootstrap()
+            return
+        if set(self._retained_bootstrap) != set(self.provider.topics):
             return
         try:
             self.provider.ingest_bootstrap_final_current(self._retained_bootstrap)
@@ -397,6 +501,24 @@ class LocalPilotMqttSubscriber:
             return
         self._retained_bootstrap.clear()
         self.provider.set_transport_ready(True)
+
+    def _drain_semantic_bootstrap(self) -> None:
+        if not self._semantic_bootstrap_pending:
+            return
+        required = {self.provider.state_topic, self.provider.availability_topic}
+        if not required.issubset(self._retained_bootstrap):
+            return
+        publications = {
+            topic: self._retained_bootstrap[topic] for topic in required
+        }
+        try:
+            self.provider.ingest_semantic_bootstrap_final_current(publications)
+        except LocalProviderContractError:
+            self._record_provider_rejection()
+            return
+        for topic in required:
+            self._retained_bootstrap.pop(topic, None)
+        self._semantic_bootstrap_pending = False
 
     def _record_provider_rejection(self) -> None:
         self._rejected_messages += 1

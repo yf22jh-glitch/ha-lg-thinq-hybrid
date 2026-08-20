@@ -45,6 +45,7 @@ LOCAL_PROFILE_CATALOGUE_DIGEST_FILENAME = "pilot-profiles.v1.sha256"
 # decoder schema.  Keep the same 8 KiB subscriber limit here.
 MAX_PAYLOAD_BYTES = 8 * 1024
 MAX_FUTURE_SKEW = timedelta(minutes=5)
+CONTROL_PRESENCE_LIVE_TTL = timedelta(seconds=240)
 MAX_TOMBSTONED_GENERATIONS = 10_000
 MAX_JSON_SAFE_INTEGER = 9_007_199_254_740_991
 
@@ -100,6 +101,20 @@ _AVAILABILITY_KEYS_BY_SCHEMA = {
     | {"state_sequence", "schema_version", "cohort_generation"},
 }
 _RUNTIME_AVAILABILITY_KEYS = frozenset({"status", "service_instance_id", "observed_at"})
+_CONTROL_PRESENCE_KEYS = frozenset(
+    {
+        "schema_version",
+        "status",
+        "evidence",
+        "binding_generation",
+        "sequence",
+        "pat_device_id_proof_sha256",
+        "profile_id",
+        "service_instance_id",
+        "observed_at",
+        "valid_until",
+    }
+)
 
 _CATALOGUE_KEYS = frozenset({"schema_version", "semantics_revision", "profiles"})
 _CATALOGUE_PROFILE_REQUIRED_KEYS = frozenset(
@@ -126,8 +141,14 @@ _CATALOGUE_PROFILE_ALLOWED_KEYS = _CATALOGUE_PROFILE_REQUIRED_KEYS | {
 # How the publisher decides a device is online. `device-report` judges it by the
 # appliance's own periodic report rather than by the age of its state, for
 # appliances that can be alive and unchanged for days.
+_AVAILABILITY_POLICY_ATTESTED_SESSION = "attested-session"
 _AVAILABILITY_POLICY_DEVICE_REPORT = "device-report"
-_AVAILABILITY_POLICIES = frozenset({"attested-session", _AVAILABILITY_POLICY_DEVICE_REPORT})
+_AVAILABILITY_POLICIES = frozenset(
+    {
+        _AVAILABILITY_POLICY_ATTESTED_SESSION,
+        _AVAILABILITY_POLICY_DEVICE_REPORT,
+    }
+)
 _CATALOGUE_FIELD_REQUIRED_KEYS = frozenset(
     {"semantic_id", "value_type", "exposure", "confidence"}
 )
@@ -252,6 +273,50 @@ class LocalSemanticShadowField:
     confidence: str
     exposure: Literal["state", "diagnostic"]
     unit: str | None = None
+
+
+@dataclass(frozen=True)
+class _ControlPresencePublication:
+    """One validated state-independent appliance liveness publication."""
+
+    canonical: str
+    status: Literal["online", "offline"]
+    binding_generation: int
+    sequence: int
+    service_instance_id: str
+    observed_at: datetime
+    valid_until: datetime | None
+
+
+@dataclass(frozen=True)
+class _RuntimeFinalCurrentCandidate:
+    canonical: str
+    status: Literal["online", "offline"]
+    service_instance_id: str
+    observed_at: datetime
+    service_changed: bool
+    lwt_regression: bool
+    changed: bool
+
+
+@dataclass(frozen=True)
+class _SemanticFinalCurrentCandidate:
+    session_id: str
+    sequence: int
+    state_canonical: str
+    state_published_at: datetime
+    state_availability_coordinate: tuple[int, int | None, int] | None
+    shadow_fields: Mapping[str, LocalSemanticShadowField]
+    device_status: str
+    availability_canonical: str
+    device_availability_at: datetime
+    device_availability_coordinate: tuple[int, int | None, int] | None
+    binding_generation: int | None
+    cohort_generation: int | None
+    cohort_advanced: bool
+    session_changed: bool
+    legacy_session_changed: bool
+    changed: bool
 
 
 def _catalogue_error() -> None:
@@ -872,7 +937,8 @@ def _utc_now(now: Callable[[], datetime]) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def _timestamp(value: object, name: str, now: datetime) -> datetime:
+def _parsed_timestamp(value: object, name: str) -> datetime:
+    """Parse the publisher's timestamp grammar without imposing a time role."""
     if not isinstance(value, str):
         _contract_error(f"{name} is invalid")
     match = _ISO_TIMESTAMP.fullmatch(value)
@@ -889,7 +955,11 @@ def _timestamp(value: object, name: str, now: datetime) -> datetime:
         parsed = datetime.fromisoformat(value[:-1] + "+00:00" if zone == "Z" else value)
     except ValueError:
         _contract_error(f"{name} is invalid")
-    parsed = parsed.astimezone(timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _timestamp(value: object, name: str, now: datetime) -> datetime:
+    parsed = _parsed_timestamp(value, name)
     if parsed > now + MAX_FUTURE_SKEW:
         _contract_error(f"{name} is too far in the future")
     return parsed
@@ -1180,6 +1250,87 @@ def _parse_runtime_availability(
     return value, status, service_instance_id, observed_at
 
 
+def _parse_control_presence(
+    payload: object,
+    now: datetime,
+    profile: LocalSemanticProfile,
+    expected_proof: str | None,
+) -> _ControlPresencePublication:
+    """Validate authenticated device liveness without consulting state coordinates."""
+    value = _exact_object(
+        _decode_payload(payload),
+        _CONTROL_PRESENCE_KEYS,
+        "control presence",
+    )
+    if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        _contract_error("Local provider control presence schema is unsupported")
+    _identity_fields(value, "control presence", expected_proof)
+    sequence = value["sequence"]
+    if (
+        type(sequence) is not int
+        or sequence < 1
+        or sequence > MAX_JSON_SAFE_INTEGER
+    ):
+        _contract_error("Local provider control presence sequence is invalid")
+    if value["profile_id"] != profile.profile_id:
+        _contract_error("Local provider control presence profile does not match")
+
+    expected_evidence = profile.availability_policy
+    if (
+        expected_evidence not in _AVAILABILITY_POLICIES
+        or value["evidence"] != expected_evidence
+    ):
+        _contract_error("Local provider control presence evidence does not match")
+    status = value["status"]
+    if status not in ("online", "offline"):
+        _contract_error("Local provider control presence status is invalid")
+    service_instance_id = value["service_instance_id"]
+    if not isinstance(service_instance_id, str) or not _SERVICE_INSTANCE_ID.fullmatch(
+        service_instance_id
+    ):
+        _contract_error("Local provider control presence service instance is invalid")
+    observed_at = _timestamp(
+        value["observed_at"], "control presence observed_at", now
+    )
+
+    raw_valid_until = value["valid_until"]
+    valid_until: datetime | None
+    if expected_evidence == _AVAILABILITY_POLICY_ATTESTED_SESSION:
+        if profile.platform != "thinq2" or raw_valid_until is not None:
+            _contract_error("Local provider attested-session validity is invalid")
+        valid_until = None
+    else:
+        if (
+            profile.platform != "thinq1"
+            or profile.freshness_max_age_ms is None
+            or not isinstance(raw_valid_until, str)
+        ):
+            _contract_error("Local provider device-report validity is invalid")
+        # A lease boundary is intentionally in the future while an appliance is online, so it
+        # uses the same exact timestamp grammar without the publication-time future-skew fence.
+        valid_until = _parsed_timestamp(
+            raw_valid_until, "control presence valid_until"
+        )
+        freshness = timedelta(milliseconds=profile.freshness_max_age_ms)
+        if status == "online":
+            if valid_until != observed_at + freshness:
+                _contract_error("Local provider device-report lease is invalid")
+        elif valid_until > observed_at:
+            # Startup offline uses observed_at itself; expiry/offline may retain the earlier lease
+            # boundary, but an offline marker can never promise future liveness.
+            _contract_error("Local provider offline device-report lease is invalid")
+
+    return _ControlPresencePublication(
+        canonical=_canonical_payload(value),
+        status=status,
+        binding_generation=value["binding_generation"],
+        sequence=sequence,
+        service_instance_id=service_instance_id,
+        observed_at=observed_at,
+        valid_until=valid_until,
+    )
+
+
 class LocalSemanticShadowProvider:
     """Consume one exact-profile Local feed without owning an HA entity."""
 
@@ -1229,10 +1380,18 @@ class LocalSemanticShadowProvider:
         self.runtime_availability_topic = (
             f"{LOCAL_PILOT_PREFIX}/runtime/{self.binding_id}/availability"
         )
-        self.topics = (
+        self.presence_topic = f"{LOCAL_PILOT_PREFIX}/presence/{self.binding_id}"
+        self._presence_enabled = self.profile.availability_policy in _AVAILABILITY_POLICIES
+        semantic_topics = (
             self.state_topic,
             self.availability_topic,
             self.runtime_availability_topic,
+        )
+        # The legacy water-tank compatibility feed predates an authenticated liveness policy and
+        # remains a three-topic read-only shadow. Every production control profile declares one of
+        # the two evidence policies and therefore bootstraps the exact fourth presence topic.
+        self.topics = semantic_topics + (
+            (self.presence_topic,) if self._presence_enabled else ()
         )
 
         self._transport_ready = False
@@ -1259,6 +1418,21 @@ class LocalSemanticShadowProvider:
         self._runtime_payload: str | None = None
         self._runtime_availability_at: datetime | None = None
         self._tombstoned_service_instances: set[str] = set()
+
+        self._presence_binding_generation: int | None = None
+        self._presence_sequence = 0
+        self._presence_status = "unknown"
+        self._presence_payload: str | None = None
+        self._presence_service_instance_id: str | None = None
+        self._presence_observed_at: datetime | None = None
+        self._presence_valid_until: datetime | None = None
+        self._presence_live_received_at: datetime | None = None
+        self._tombstoned_presence_service_instances: set[str] = set()
+        # A transport reconnect invalidates operational use of the in-memory semantic tuple until
+        # that connection supplies an exact state+availability pair. Cursor high-waters remain so
+        # the same retained pair can be safely re-adopted without opening replay.
+        self._control_state_current = False
+        self._semantic_transport_current = False
         self._rejected_messages = 0
 
     def _binding_generation_candidate(
@@ -1404,10 +1578,16 @@ class LocalSemanticShadowProvider:
         return self._transport_ready
 
     @property
+    def control_presence_enabled(self) -> bool:
+        """Whether this profile owns the independent authenticated presence topic."""
+        return self._presence_enabled
+
+    @property
     def shadow_healthy(self) -> bool:
         """Return whether all three read-only feed fences currently agree."""
         return (
             self._transport_ready
+            and self._semantic_transport_current
             and bool(self._shadow_fields)
             and self._session_id is not None
             and self._device_status == "online"
@@ -1415,10 +1595,207 @@ class LocalSemanticShadowProvider:
             and self._runtime_status == "online"
         )
 
+    @property
+    def control_alive(self) -> bool:
+        """Return whether an authenticated appliance presence can receive a command.
+
+        This intentionally says nothing about semantic state. Composite commands still inspect
+        their exact fields and observation times, while an exact stateless command may proceed
+        before the appliance has emitted any state at all.
+        """
+        now = _utc_now(self._now)
+        if (
+            not self._presence_enabled
+            or self.expected_proof is None
+            or not self._transport_ready
+            or self._presence_status != "online"
+            or self._runtime_status != "online"
+            or self._presence_service_instance_id is None
+            or self._presence_service_instance_id != self._service_instance_id
+            or self._presence_live_received_at is None
+            or now
+            > self._presence_live_received_at + CONTROL_PRESENCE_LIVE_TTL
+        ):
+            return False
+        return (
+            self._presence_valid_until is None
+            or now <= self._presence_valid_until
+        )
+
+    @property
+    def control_state_ready(self) -> bool:
+        """Whether composite control state belongs to the live binding generation."""
+        return (
+            self._presence_enabled
+            and self._semantic_transport_current
+            and self._control_state_current
+            and self._presence_binding_generation is not None
+            and self._binding_generation == self._presence_binding_generation
+            and self._state_payload is not None
+            and self._state_published_at is not None
+            and self._presence_observed_at is not None
+            and self._state_published_at >= self._presence_observed_at
+            and bool(self._shadow_fields)
+        )
+
+    def control_fields_ready(self, semantic_ids: tuple[str, ...]) -> bool:
+        """Return whether every composite input was observed in this presence epoch.
+
+        A reducer publication can be new while carrying forward fields last observed before the
+        appliance reconnected.  Publication time alone therefore cannot authorize a composite
+        write: each field the encoder will restate must have appliance evidence at or after the
+        authenticated presence edge.
+        """
+        presence_floor = self._presence_observed_at
+        if (
+            not semantic_ids
+            or not self.control_alive
+            or not self.control_state_ready
+            or presence_floor is None
+        ):
+            return False
+        return all(
+            (field := self._shadow_fields.get(semantic_id)) is not None
+            and field.observed_at >= presence_floor
+            for semantic_id in semantic_ids
+        )
+
     def set_transport_ready(self, ready: bool) -> None:
         if type(ready) is not bool:
             raise TypeError("Local provider transport readiness must be boolean")
         self._transport_ready = ready
+        if not ready:
+            self._control_state_current = False
+            self._semantic_transport_current = False
+            self._presence_live_received_at = None
+
+    def _validate_presence_candidate(
+        self, presence: _ControlPresencePublication
+    ) -> tuple[bool, bool, bool]:
+        """Return changed/generation-advanced/service-changed without mutating state."""
+        generation_advanced = (
+            self._presence_binding_generation is not None
+            and presence.binding_generation > self._presence_binding_generation
+        )
+        if (
+            self._presence_binding_generation is not None
+            and presence.binding_generation < self._presence_binding_generation
+        ):
+            _contract_error("Local provider control presence generation regressed")
+        if (
+            not generation_advanced
+            and presence.service_instance_id
+            in self._tombstoned_presence_service_instances
+        ):
+            _contract_error("Local provider control presence service was superseded")
+
+        service_changed = (
+            self._presence_service_instance_id is not None
+            and presence.service_instance_id != self._presence_service_instance_id
+        )
+        if (
+            not generation_advanced
+            and not service_changed
+            and self._presence_service_instance_id is not None
+        ):
+            if presence.sequence < self._presence_sequence:
+                _contract_error("Local provider control presence sequence regressed")
+            if presence.sequence == self._presence_sequence:
+                if presence.canonical == self._presence_payload:
+                    return False, False, False
+                _contract_error("Local provider control presence cursor collided")
+        if (
+            service_changed
+            and len(self._tombstoned_presence_service_instances)
+            >= MAX_TOMBSTONED_GENERATIONS
+        ):
+            _contract_error("Local provider presence service tombstone bound is exhausted")
+        return True, generation_advanced, service_changed
+
+    def _apply_presence_candidate(
+        self,
+        presence: _ControlPresencePublication,
+        *,
+        generation_advanced: bool,
+        service_changed: bool,
+    ) -> None:
+        evidence_edge = (
+            generation_advanced
+            or service_changed
+            or self._presence_sequence != presence.sequence
+            or self._presence_status != presence.status
+            or self._presence_observed_at != presence.observed_at
+        )
+        if service_changed and self._presence_service_instance_id is not None:
+            self._tombstoned_presence_service_instances.add(
+                self._presence_service_instance_id
+            )
+        if generation_advanced:
+            # Binding generation is the outer identity cursor; it may deliberately reuse the
+            # publisher process id, so its accepted service cannot remain tombstoned.
+            self._tombstoned_presence_service_instances.discard(
+                presence.service_instance_id
+            )
+        self._presence_binding_generation = presence.binding_generation
+        self._presence_sequence = presence.sequence
+        self._presence_status = presence.status
+        self._presence_payload = presence.canonical
+        self._presence_service_instance_id = presence.service_instance_id
+        self._presence_observed_at = presence.observed_at
+        self._presence_valid_until = presence.valid_until
+        # A process heartbeat republishes the exact same physical evidence. It refreshes the
+        # live-delivery TTL separately and must not erase a current tuple. Any validated cursor
+        # advance, changed status/service/generation, or evidence timestamp is a real edge and
+        # closes composite state even if two physical events share a millisecond timestamp.
+        if evidence_edge:
+            self._control_state_current = False
+
+    def _apply_presence_delivery(self, now: datetime, retained: bool) -> bool:
+        """Record proof that this MQTT connection saw a live publisher delivery."""
+        received_at = None if retained else now
+        changed = received_at != self._presence_live_received_at
+        self._presence_live_received_at = received_at
+        return changed
+
+    def _ingest_control_presence(
+        self, payload: object, now: datetime, retained: bool
+    ) -> bool:
+        presence = _parse_control_presence(
+            payload, now, self.profile, self.expected_proof
+        )
+        changed, generation_advanced, service_changed = (
+            self._validate_presence_candidate(presence)
+        )
+        runtime_handover_changed = self._apply_live_presence_runtime_handover(
+            presence, retained=retained
+        )
+        if changed:
+            self._apply_presence_candidate(
+                presence,
+                generation_advanced=generation_advanced,
+                service_changed=service_changed,
+            )
+        return (
+            self._apply_presence_delivery(now, retained)
+            or changed
+            or runtime_handover_changed
+        )
+
+    def _ingest_presence_retained_delete(self) -> bool:
+        # Preserve the cursor high-water and service id so a delayed retained replay cannot revive
+        # the deleted online marker. A genuinely new marker for the same service needs a higher
+        # sequence and is still allowed.
+        changed = (
+            self._presence_status != "offline"
+            or self._presence_payload is not None
+            or self._presence_valid_until is not None
+        )
+        self._presence_status = "offline"
+        self._presence_payload = None
+        self._presence_valid_until = None
+        self._presence_live_received_at = None
+        self._control_state_current = False
+        return changed
 
     def ingest(
         self,
@@ -1444,7 +1821,13 @@ class LocalSemanticShadowProvider:
                     return self._ingest_availability_retained_delete()
                 return self._ingest_device_availability(payload, now)
             if topic == self.runtime_availability_topic:
-                return self._ingest_runtime_availability(payload, now)
+                if self._is_retained_delete(payload):
+                    return self._ingest_runtime_retained_delete()
+                return self._ingest_runtime_availability(payload, now, retained)
+            if self._presence_enabled and topic == self.presence_topic:
+                if self._is_retained_delete(payload):
+                    return self._ingest_presence_retained_delete()
+                return self._ingest_control_presence(payload, now, retained)
             _contract_error("Local provider topic is not authorized")
         except LocalProviderContractError:
             self._rejected_messages += 1
@@ -1477,8 +1860,63 @@ class LocalSemanticShadowProvider:
         self._device_availability_coordinate = None
         return changed
 
+    def _validate_runtime_tombstone_capacity(
+        self, *service_instance_ids: str | None
+    ) -> None:
+        additions = {
+            service_instance_id
+            for service_instance_id in service_instance_ids
+            if service_instance_id is not None
+            and service_instance_id not in self._tombstoned_service_instances
+        }
+        if (
+            len(self._tombstoned_service_instances) + len(additions)
+            > MAX_TOMBSTONED_GENERATIONS
+        ):
+            _contract_error("Local provider service tombstone bound is exhausted")
+
+    def _apply_live_presence_runtime_handover(
+        self,
+        presence: _ControlPresencePublication,
+        *,
+        retained: bool,
+    ) -> bool:
+        """Let authenticated live presence fence a stale retained runtime owner."""
+        if (
+            retained
+            or self._service_instance_id is None
+            or self._service_instance_id == presence.service_instance_id
+        ):
+            return False
+        self._validate_runtime_tombstone_capacity(self._service_instance_id)
+        return self._ingest_runtime_retained_delete()
+
+    def _ingest_runtime_retained_delete(self) -> bool:
+        """Fail closed while preserving a fence against the deleted service."""
+        service_instance_id = self._service_instance_id
+        if (
+            service_instance_id is not None
+            and service_instance_id not in self._tombstoned_service_instances
+        ):
+            self._validate_runtime_tombstone_capacity(service_instance_id)
+            self._tombstoned_service_instances.add(service_instance_id)
+        changed = (
+            self._runtime_status != "offline"
+            or self._runtime_payload is not None
+            or self._runtime_availability_at is not None
+            or self._presence_live_received_at is not None
+        )
+        self._runtime_status = "offline"
+        self._runtime_payload = None
+        self._runtime_availability_at = None
+        self._presence_live_received_at = None
+        self._control_state_current = False
+        return changed
+
     def _ingest_state_retained_delete(self) -> bool:
         changed = self._tombstone_current_session_for_retained_delete()
+        self._control_state_current = False
+        self._semantic_transport_current = False
         changed = self._clear_device_availability_for_retained_delete() or changed
         changed = (
             self._session_id is not None
@@ -1499,7 +1937,317 @@ class LocalSemanticShadowProvider:
 
     def _ingest_availability_retained_delete(self) -> bool:
         changed = self._tombstone_current_session_for_retained_delete()
+        self._control_state_current = False
+        self._semantic_transport_current = False
         return self._clear_device_availability_for_retained_delete() or changed
+
+    @staticmethod
+    def _validate_final_current_qos(
+        publications: Mapping[str, tuple[object, int, bool]],
+        *,
+        require_retained: bool,
+    ) -> None:
+        for _payload, qos, retained in publications.values():
+            if (
+                type(qos) is not int
+                or qos != 1
+                or type(retained) is not bool
+                or (require_retained and not retained)
+            ):
+                _contract_error(
+                    "Local provider final-current requires exact MQTT QoS 1"
+                )
+
+    def _semantic_final_current_candidate(
+        self,
+        publications: Mapping[str, tuple[object, int, bool]],
+        now: datetime,
+    ) -> _SemanticFinalCurrentCandidate:
+        snapshot, session_id, sequence, shadow_fields, state_published_at = (
+            _parse_state(
+                publications[self.state_topic][0],
+                self.binding_id,
+                self.profile,
+                now,
+                self.expected_proof,
+                self.require_identity,
+            )
+        )
+        availability, device_status, availability_session, device_at = (
+            _parse_availability(
+                publications[self.availability_topic][0],
+                now,
+                self.expected_proof,
+                self.require_identity,
+            )
+        )
+        if availability_session != session_id:
+            _contract_error(
+                "Local provider final-current availability session does not match"
+            )
+        if device_at < state_published_at:
+            _contract_error(
+                "Local provider availability predates the snapshot it describes"
+            )
+        availability_coordinate = self._assert_availability_describes_snapshot(
+            availability, snapshot, sequence
+        )
+        binding_generation = self._binding_generation_candidate(snapshot)
+        cohort_advanced = self._cohort_advanced_candidate(
+            snapshot, session_id, binding_generation
+        )
+        state_coordinate = self._snapshot_availability_coordinate(
+            snapshot, sequence
+        )
+        state_canonical = _canonical_payload(snapshot)
+        availability_canonical = _canonical_payload(availability)
+        session_changed = self._session_id not in (None, session_id)
+
+        if session_id in self._tombstoned_sessions and not cohort_advanced:
+            _contract_error("Local provider final-current session was superseded")
+        if (
+            not cohort_advanced
+            and not session_changed
+            and self._session_id is not None
+        ):
+            if sequence < self._sequence:
+                _contract_error("Local provider final-current sequence regressed")
+            if sequence == self._sequence and state_canonical != self._state_payload:
+                _contract_error("Local provider final-current cursor collided")
+            if (
+                self._device_availability_at is not None
+                and device_at < self._device_availability_at
+            ):
+                _contract_error(
+                    "Local provider final-current device availability regressed"
+                )
+        legacy_session_changed = session_changed and not cohort_advanced
+        if (
+            legacy_session_changed
+            and len(self._tombstoned_sessions) >= MAX_TOMBSTONED_GENERATIONS
+        ):
+            _contract_error("Local provider session tombstone bound is exhausted")
+
+        return _SemanticFinalCurrentCandidate(
+            session_id=session_id,
+            sequence=sequence,
+            state_canonical=state_canonical,
+            state_published_at=state_published_at,
+            state_availability_coordinate=state_coordinate,
+            shadow_fields=shadow_fields,
+            device_status=device_status,
+            availability_canonical=availability_canonical,
+            device_availability_at=device_at,
+            device_availability_coordinate=availability_coordinate,
+            binding_generation=binding_generation,
+            cohort_generation=snapshot.get("cohort_generation"),
+            cohort_advanced=cohort_advanced,
+            session_changed=session_changed,
+            legacy_session_changed=legacy_session_changed,
+            changed=(
+                session_changed
+                or state_canonical != self._state_payload
+                or availability_canonical != self._device_availability_payload
+            ),
+        )
+
+    def _apply_semantic_final_current(
+        self, candidate: _SemanticFinalCurrentCandidate
+    ) -> None:
+        if candidate.legacy_session_changed and self._session_id is not None:
+            self._tombstoned_sessions.add(self._session_id)
+        if candidate.cohort_advanced:
+            self._tombstoned_sessions.discard(candidate.session_id)
+        self._session_id = candidate.session_id
+        self._sequence = candidate.sequence
+        self._state_payload = candidate.state_canonical
+        self._state_published_at = candidate.state_published_at
+        self._state_availability_coordinate = (
+            candidate.state_availability_coordinate
+        )
+        self._shadow_fields = candidate.shadow_fields
+        self._device_status = candidate.device_status
+        self._device_availability_payload = candidate.availability_canonical
+        self._device_availability_at = candidate.device_availability_at
+        self._device_availability_coordinate = (
+            candidate.device_availability_coordinate
+        )
+        if candidate.binding_generation is not None:
+            self._binding_generation = candidate.binding_generation
+        if candidate.cohort_generation is not None:
+            self._cohort_generation = candidate.cohort_generation
+        self._control_state_current = True
+        self._semantic_transport_current = True
+
+    def _runtime_final_current_candidate(
+        self,
+        runtime: Mapping[str, Any],
+        runtime_status: str,
+        service_instance_id: str,
+        runtime_at: datetime,
+    ) -> _RuntimeFinalCurrentCandidate:
+        runtime_canonical = _canonical_payload(runtime)
+        service_changed = self._service_instance_id not in (
+            None,
+            service_instance_id,
+        )
+        if service_instance_id in self._tombstoned_service_instances:
+            _contract_error(
+                "Local provider final-current service instance was superseded"
+            )
+        runtime_exact_replay = runtime_canonical == self._runtime_payload
+        runtime_lwt_regression = False
+        if (
+            not service_changed
+            and self._service_instance_id is not None
+            and self._runtime_availability_at is not None
+            and runtime_at < self._runtime_availability_at
+            and not runtime_exact_replay
+        ):
+            runtime_lwt_regression = (
+                self._runtime_status == "online" and runtime_status == "offline"
+            )
+            if not runtime_lwt_regression:
+                _contract_error(
+                    "Local provider final-current runtime availability regressed"
+                )
+        if (
+            service_changed
+            and len(self._tombstoned_service_instances)
+            >= MAX_TOMBSTONED_GENERATIONS
+        ):
+            _contract_error("Local provider service tombstone bound is exhausted")
+        return _RuntimeFinalCurrentCandidate(
+            canonical=runtime_canonical,
+            status=runtime_status,
+            service_instance_id=service_instance_id,
+            observed_at=runtime_at,
+            service_changed=service_changed,
+            lwt_regression=runtime_lwt_regression,
+            changed=(
+                service_changed or runtime_canonical != self._runtime_payload
+            ),
+        )
+
+    def _apply_runtime_final_current(
+        self, candidate: _RuntimeFinalCurrentCandidate
+    ) -> None:
+        if candidate.service_changed and self._service_instance_id is not None:
+            self._tombstoned_service_instances.add(self._service_instance_id)
+        self._service_instance_id = candidate.service_instance_id
+        self._runtime_status = candidate.status
+        self._runtime_payload = candidate.canonical
+        if (
+            candidate.service_changed
+            or self._runtime_availability_at is None
+            or candidate.observed_at >= self._runtime_availability_at
+        ):
+            self._runtime_availability_at = candidate.observed_at
+        if candidate.changed:
+            self._control_state_current = False
+
+    def ingest_control_bootstrap_final_current(
+        self,
+        publications: Mapping[str, tuple[object, int, bool]],
+    ) -> bool:
+        """Atomically adopt presence+runtime even when no state topic exists yet."""
+        try:
+            if not self._presence_enabled:
+                _contract_error("Local provider has no control presence contract")
+            if self._transport_ready:
+                _contract_error(
+                    "Local provider control bootstrap requires a disconnected transport"
+                )
+            expected = {self.runtime_availability_topic, self.presence_topic}
+            if set(publications) != expected:
+                _contract_error(
+                    "Local provider control bootstrap set is incomplete"
+                )
+            self._validate_final_current_qos(
+                publications, require_retained=False
+            )
+            now = _utc_now(self._now)
+            runtime, runtime_status, service_instance_id, runtime_at = (
+                _parse_runtime_availability(
+                    publications[self.runtime_availability_topic][0], now
+                )
+            )
+            runtime_candidate = self._runtime_final_current_candidate(
+                runtime, runtime_status, service_instance_id, runtime_at
+            )
+            presence = _parse_control_presence(
+                publications[self.presence_topic][0],
+                now,
+                self.profile,
+                self.expected_proof,
+            )
+            presence_changed, generation_advanced, presence_service_changed = (
+                self._validate_presence_candidate(presence)
+            )
+            presence_retained = publications[self.presence_topic][2]
+            if (
+                not presence_retained
+                and runtime_candidate.service_instance_id
+                != presence.service_instance_id
+            ):
+                _contract_error(
+                    "Local provider buffered runtime does not match live presence"
+                )
+            self._validate_runtime_tombstone_capacity(
+                self._service_instance_id
+                if runtime_candidate.service_changed
+                else None,
+            )
+            self._apply_runtime_final_current(runtime_candidate)
+            if presence_changed:
+                self._apply_presence_candidate(
+                    presence,
+                    generation_advanced=generation_advanced,
+                    service_changed=presence_service_changed,
+                )
+            presence_delivery_changed = self._apply_presence_delivery(
+                now, presence_retained
+            )
+            return (
+                runtime_candidate.changed
+                or presence_changed
+                or presence_delivery_changed
+            )
+        except LocalProviderContractError:
+            self._rejected_messages += 1
+            raise
+
+    def ingest_semantic_bootstrap_final_current(
+        self,
+        publications: Mapping[str, tuple[object, int, bool]],
+    ) -> bool:
+        """Atomically adopt the optional state+availability pair in either order."""
+        try:
+            expected = {self.state_topic, self.availability_topic}
+            if set(publications) != expected:
+                _contract_error(
+                    "Local provider semantic bootstrap set is incomplete"
+                )
+            self._validate_final_current_qos(
+                publications, require_retained=False
+            )
+            candidate = self._semantic_final_current_candidate(
+                publications, _utc_now(self._now)
+            )
+            if (
+                self._presence_enabled
+                and self._presence_binding_generation is not None
+                and candidate.binding_generation
+                != self._presence_binding_generation
+            ):
+                _contract_error(
+                    "Local provider semantic bootstrap generation does not match presence"
+                )
+            self._apply_semantic_final_current(candidate)
+            return candidate.changed
+        except LocalProviderContractError:
+            self._rejected_messages += 1
+            raise
 
     def ingest_retained_final_current(
         self,
@@ -1530,7 +2278,7 @@ class LocalSemanticShadowProvider:
         """Validate and atomically apply one complete bootstrap candidate.
 
         A subscriber can miss the publisher's retained ``offline`` while its
-        socket is down.  A complete, exact three-topic set is therefore the
+        socket is down.  A complete exact topic set is therefore the
         only path allowed to advance to a new session/service generation
         without observing that intermediate publication live.
         """
@@ -1577,6 +2325,31 @@ class LocalSemanticShadowProvider:
                     publications[self.runtime_availability_topic][0], now
                 )
             )
+            presence: _ControlPresencePublication | None = None
+            presence_changed = False
+            presence_generation_advanced = False
+            presence_service_changed = False
+            presence_retained = True
+            if self._presence_enabled:
+                presence = _parse_control_presence(
+                    publications[self.presence_topic][0],
+                    now,
+                    self.profile,
+                    self.expected_proof,
+                )
+                (
+                    presence_changed,
+                    presence_generation_advanced,
+                    presence_service_changed,
+                ) = self._validate_presence_candidate(presence)
+                presence_retained = publications[self.presence_topic][2]
+                if (
+                    not presence_retained
+                    and service_instance_id != presence.service_instance_id
+                ):
+                    _contract_error(
+                        "Local provider buffered runtime does not match live presence"
+                    )
             if availability_session != session_id:
                 _contract_error(
                     "Local provider final-current availability session does not match"
@@ -1589,6 +2362,13 @@ class LocalSemanticShadowProvider:
                 availability, snapshot, sequence
             )
             binding_generation = self._binding_generation_candidate(snapshot)
+            if (
+                presence is not None
+                and binding_generation != presence.binding_generation
+            ):
+                _contract_error(
+                    "Local provider final-current state generation does not match presence"
+                )
             cohort_advanced = self._cohort_advanced_candidate(
                 snapshot, session_id, binding_generation
             )
@@ -1662,10 +2442,14 @@ class LocalSemanticShadowProvider:
                 >= MAX_TOMBSTONED_GENERATIONS
             ):
                 _contract_error("Local provider service tombstone bound is exhausted")
+            self._validate_runtime_tombstone_capacity(
+                self._service_instance_id if service_changed else None,
+            )
 
             changed = (
                 session_changed
                 or service_changed
+                or presence_changed
                 or state_canonical != self._state_payload
                 or availability_canonical != self._device_availability_payload
                 or runtime_canonical != self._runtime_payload
@@ -1703,6 +2487,21 @@ class LocalSemanticShadowProvider:
                 or runtime_at >= self._runtime_availability_at
             ):
                 self._runtime_availability_at = runtime_at
+            if presence is not None and presence_changed:
+                self._apply_presence_candidate(
+                    presence,
+                    generation_advanced=presence_generation_advanced,
+                    service_changed=presence_service_changed,
+                )
+            if presence is not None:
+                changed = (
+                    self._apply_presence_delivery(
+                        now, presence_retained
+                    )
+                    or changed
+                )
+            self._control_state_current = True
+            self._semantic_transport_current = True
             return changed
         except LocalProviderContractError:
             self._rejected_messages += 1
@@ -1755,6 +2554,7 @@ class LocalSemanticShadowProvider:
         cohort_generation = snapshot.get("cohort_generation")
         if cohort_generation is not None:
             self._cohort_generation = cohort_generation
+        self._control_state_current = False
         return True
 
     def _ingest_device_availability(self, payload: object, now: datetime) -> bool:
@@ -1794,9 +2594,15 @@ class LocalSemanticShadowProvider:
         self._device_availability_payload = canonical
         self._device_availability_at = observed_at
         self._device_availability_coordinate = coordinate
+        # This is coordinate/current proof, not liveness. Offline is still a valid exact marker;
+        # independent authenticated presence decides whether a command may be attempted.
+        self._control_state_current = True
+        self._semantic_transport_current = True
         return True
 
-    def _ingest_runtime_availability(self, payload: object, now: datetime) -> bool:
+    def _ingest_runtime_availability(
+        self, payload: object, now: datetime, retained: bool
+    ) -> bool:
         value, status, service_instance_id, observed_at = _parse_runtime_availability(
             payload, now
         )
@@ -1806,17 +2612,21 @@ class LocalSemanticShadowProvider:
         runtime_lwt_regression = False
         if self._service_instance_id is not None:
             if service_instance_id != self._service_instance_id:
-                if self._runtime_status != "offline":
+                presence_authorized_live_handover = (
+                    not retained
+                    and self._presence_payload is not None
+                    and self._presence_service_instance_id == service_instance_id
+                )
+                if (
+                    self._runtime_status != "offline"
+                    and not presence_authorized_live_handover
+                ):
                     _contract_error(
                         "Local provider service rotation requires runtime offline"
                     )
-                if (
-                    len(self._tombstoned_service_instances)
-                    >= MAX_TOMBSTONED_GENERATIONS
-                ):
-                    _contract_error(
-                        "Local provider service tombstone bound is exhausted"
-                    )
+                self._validate_runtime_tombstone_capacity(
+                    self._service_instance_id
+                )
             else:
                 if canonical == self._runtime_payload:
                     return False
@@ -1848,6 +2658,7 @@ class LocalSemanticShadowProvider:
         self._runtime_payload = canonical
         if not runtime_lwt_regression:
             self._runtime_availability_at = observed_at
+        self._control_state_current = False
         return True
 
 
