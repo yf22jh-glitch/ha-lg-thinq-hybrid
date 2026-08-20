@@ -1218,6 +1218,11 @@ class LocalSemanticShadowProvider:
         # carries a byte-identical, valid proof; only refusing to move backwards
         # makes the field mean anything.
         self._binding_generation: int | None = None
+        # Wire schema 3 orders an independent state cursor by cohort before
+        # session and sequence.  Keep its scalar high-water even when a retained
+        # delete clears the current snapshot; otherwise that delete could revive
+        # an already superseded cohort with a reset sequence.
+        self._cohort_generation: int | None = None
         self._now = now or (lambda: datetime.now(timezone.utc))
         self.state_topic = f"{LOCAL_PILOT_PREFIX}/state/{self.binding_id}"
         self.availability_topic = f"{LOCAL_PILOT_PREFIX}/availability/{self.binding_id}"
@@ -1269,6 +1274,44 @@ class LocalSemanticShadowProvider:
         ):
             _contract_error("Local provider binding generation moved backwards")
         return generation
+
+    def _cohort_advanced_candidate(
+        self,
+        snapshot: Mapping[str, Any],
+        session_id: str,
+        binding_generation: int | None,
+    ) -> bool:
+        """Validate schema 3's generation/cohort cursor without mutating it."""
+        cohort_generation = snapshot.get("cohort_generation")
+        if cohort_generation is None:
+            return False
+        if (
+            binding_generation is not None
+            and self._binding_generation is not None
+            and binding_generation > self._binding_generation
+        ):
+            # A binding generation is an outer, separately reset identity
+            # contract. Its existing session/final-current fences decide whether
+            # the transition is allowed; only then may its cohort high-water
+            # start again.
+            return False
+        if self._cohort_generation is None:
+            # The first V3 snapshot still enters through the legacy
+            # session/sequence fences. A cohort becomes an independent cursor
+            # only after this provider has accepted a V3 cohort high-water;
+            # otherwise a V2 -> V3 shape change could smuggle in a reset.
+            return False
+        if cohort_generation < self._cohort_generation:
+            _contract_error("Local provider cohort generation regressed")
+        if cohort_generation > self._cohort_generation:
+            return True
+        if self._session_id is None:
+            _contract_error("Local provider cohort was superseded")
+        if session_id != self._session_id:
+            _contract_error(
+                "Local provider cohort cursor collides with a different session"
+            )
+        return False
 
     @staticmethod
     def _snapshot_availability_coordinate(
@@ -1546,6 +1589,9 @@ class LocalSemanticShadowProvider:
                 availability, snapshot, sequence
             )
             binding_generation = self._binding_generation_candidate(snapshot)
+            cohort_advanced = self._cohort_advanced_candidate(
+                snapshot, session_id, binding_generation
+            )
             state_coordinate = self._snapshot_availability_coordinate(
                 snapshot, sequence
             )
@@ -1558,9 +1604,13 @@ class LocalSemanticShadowProvider:
                 service_instance_id,
             )
 
-            if session_id in self._tombstoned_sessions:
+            if session_id in self._tombstoned_sessions and not cohort_advanced:
                 _contract_error("Local provider final-current session was superseded")
-            if not session_changed and self._session_id is not None:
+            if (
+                not cohort_advanced
+                and not session_changed
+                and self._session_id is not None
+            ):
                 if sequence < self._sequence:
                     _contract_error("Local provider final-current sequence regressed")
                 if (
@@ -1600,8 +1650,9 @@ class LocalSemanticShadowProvider:
                     _contract_error(
                         "Local provider final-current runtime availability regressed"
                     )
+            legacy_session_changed = session_changed and not cohort_advanced
             if (
-                session_changed
+                legacy_session_changed
                 and len(self._tombstoned_sessions) >= MAX_TOMBSTONED_GENERATIONS
             ):
                 _contract_error("Local provider session tombstone bound is exhausted")
@@ -1619,8 +1670,12 @@ class LocalSemanticShadowProvider:
                 or availability_canonical != self._device_availability_payload
                 or runtime_canonical != self._runtime_payload
             )
-            if session_changed and self._session_id is not None:
+            if legacy_session_changed and self._session_id is not None:
                 self._tombstoned_sessions.add(self._session_id)
+            if cohort_advanced:
+                # A higher cohort supersedes by its scalar high-water, including
+                # when it deliberately reuses the publisher session id.
+                self._tombstoned_sessions.discard(session_id)
             if service_changed and self._service_instance_id is not None:
                 self._tombstoned_service_instances.add(self._service_instance_id)
 
@@ -1636,6 +1691,9 @@ class LocalSemanticShadowProvider:
             self._device_availability_coordinate = availability_coordinate
             if binding_generation is not None:
                 self._binding_generation = binding_generation
+            cohort_generation = snapshot.get("cohort_generation")
+            if cohort_generation is not None:
+                self._cohort_generation = cohort_generation
             self._service_instance_id = service_instance_id
             self._runtime_status = runtime_status
             self._runtime_payload = runtime_canonical
@@ -1655,11 +1713,16 @@ class LocalSemanticShadowProvider:
             payload, self.binding_id, self.profile, now, self.expected_proof, self.require_identity
         )
         binding_generation = self._binding_generation_candidate(snapshot)
+        cohort_advanced = self._cohort_advanced_candidate(
+            snapshot, session_id, binding_generation
+        )
         state_coordinate = self._snapshot_availability_coordinate(snapshot, sequence)
         canonical = _canonical_payload(snapshot)
-        if session_id in self._tombstoned_sessions:
+        if session_id in self._tombstoned_sessions and not cohort_advanced:
             _contract_error("Local provider session was superseded")
-        if self._session_id is not None and session_id == self._session_id:
+        if cohort_advanced:
+            pass
+        elif self._session_id is not None and session_id == self._session_id:
             if sequence < self._sequence:
                 _contract_error("Local provider sequence regressed")
             if sequence == self._sequence:
@@ -1672,9 +1735,11 @@ class LocalSemanticShadowProvider:
             if len(self._tombstoned_sessions) >= MAX_TOMBSTONED_GENERATIONS:
                 _contract_error("Local provider session tombstone bound is exhausted")
 
-        if session_id != self._session_id:
-            if self._session_id is not None:
+        if cohort_advanced or session_id != self._session_id:
+            if self._session_id is not None and not cohort_advanced:
                 self._tombstoned_sessions.add(self._session_id)
+            if cohort_advanced:
+                self._tombstoned_sessions.discard(session_id)
             self._device_status = "unknown"
             self._device_availability_payload = None
             self._device_availability_at = None
@@ -1687,6 +1752,9 @@ class LocalSemanticShadowProvider:
         self._shadow_fields = fields
         if binding_generation is not None:
             self._binding_generation = binding_generation
+        cohort_generation = snapshot.get("cohort_generation")
+        if cohort_generation is not None:
+            self._cohort_generation = cohort_generation
         return True
 
     def _ingest_device_availability(self, payload: object, now: datetime) -> bool:

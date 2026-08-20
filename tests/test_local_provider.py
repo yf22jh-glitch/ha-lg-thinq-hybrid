@@ -1112,6 +1112,7 @@ class IdentityBoundPublicationTests(unittest.TestCase):
         schema_version: int = 2,
         *,
         status: str = "online",
+        session_id: str = SESSION_ONE,
         state_sequence: int = 1,
         binding_generation: int = 1,
         cohort_generation: int = 2,
@@ -1119,7 +1120,7 @@ class IdentityBoundPublicationTests(unittest.TestCase):
     ) -> bytes:
         value = {
             "status": status,
-            "session_id": SESSION_ONE,
+            "session_id": session_id,
             "observed_at": observed_at,
         }
         if schema_version != 1:
@@ -1138,6 +1139,120 @@ class IdentityBoundPublicationTests(unittest.TestCase):
                 }
             )
         return json.dumps(value, separators=(",", ":")).encode()
+
+    def healthy_v3_provider(
+        self,
+        *,
+        cohort_generation: int,
+        sequence: int,
+        session_id: str = SESSION_ONE,
+        binding_generation: int = 1,
+    ):
+        provider = self.provider(
+            pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+        )
+        provider.ingest(
+            provider.state_topic,
+            self.payload(
+                3,
+                cohort_generation=cohort_generation,
+                sequence=sequence,
+                session_id=session_id,
+                binding_generation=binding_generation,
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                3,
+                cohort_generation=cohort_generation,
+                state_sequence=sequence,
+                session_id=session_id,
+                binding_generation=binding_generation,
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+        self.assertTrue(provider.shadow_healthy)
+        return provider
+
+    def final_current(
+        self,
+        provider,
+        *,
+        cohort_generation: int,
+        sequence: int,
+        retained: bool,
+        session_id: str = SESSION_ONE,
+        binding_generation: int = 1,
+        published_at: str = "2026-08-13T00:59:59.000Z",
+        observed_at: str = "2026-08-13T00:59:59.000Z",
+    ):
+        return {
+            provider.state_topic: (
+                self.payload(
+                    3,
+                    cohort_generation=cohort_generation,
+                    sequence=sequence,
+                    session_id=session_id,
+                    binding_generation=binding_generation,
+                    published_at=published_at,
+                ),
+                1,
+                retained,
+            ),
+            provider.availability_topic: (
+                self.availability(
+                    3,
+                    cohort_generation=cohort_generation,
+                    state_sequence=sequence,
+                    session_id=session_id,
+                    binding_generation=binding_generation,
+                    observed_at=observed_at,
+                ),
+                1,
+                retained,
+            ),
+            provider.runtime_availability_topic: (
+                runtime_payload("online"),
+                1,
+                retained,
+            ),
+        }
+
+    @staticmethod
+    def operational_state(provider) -> tuple[object, ...]:
+        """Snapshot every mutable fence except the intentional rejection count."""
+        return (
+            provider._transport_ready,
+            provider._binding_generation,
+            provider._cohort_generation,
+            provider._session_id,
+            provider._sequence,
+            provider._state_payload,
+            provider._state_published_at,
+            provider._state_availability_coordinate,
+            dict(provider._shadow_fields),
+            provider._device_status,
+            provider._device_availability_payload,
+            provider._device_availability_at,
+            provider._device_availability_coordinate,
+            frozenset(provider._tombstoned_sessions),
+            provider._service_instance_id,
+            provider._runtime_status,
+            provider._runtime_payload,
+            provider._runtime_availability_at,
+            frozenset(provider._tombstoned_service_instances),
+        )
 
     def test_accepts_a_schema_two_snapshot_whose_proof_matches(self) -> None:
         provider = self.provider(pat_device_id=self.PAT_DEVICE_ID)
@@ -1393,6 +1508,377 @@ class IdentityBoundPublicationTests(unittest.TestCase):
         )
         self.assertTrue(provider.shadow_healthy)
 
+    def test_live_v3_higher_cohort_resets_sequence_and_invalidates_old_health(
+        self,
+    ) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=2, sequence=9)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.state_topic,
+                self.payload(3, cohort_generation=3, sequence=1),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertEqual(provider.sequence, 1)
+        self.assertEqual(provider._device_status, "unknown")
+        self.assertIsNone(provider._device_availability_payload)
+        self.assertIsNone(provider._device_availability_at)
+        self.assertIsNone(provider._device_availability_coordinate)
+        self.assertFalse(provider.shadow_healthy)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.availability_topic,
+                self.availability(3, cohort_generation=3, state_sequence=1),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertTrue(provider.shadow_healthy)
+
+    def test_live_v3_orders_cohort_before_session_and_sequence(self) -> None:
+        cases = (
+            (
+                "cohort regression",
+                {"cohort_generation": 2, "sequence": 99},
+            ),
+            (
+                "same-cohort sequence regression",
+                {"cohort_generation": 3, "sequence": 4},
+            ),
+            (
+                "same-cohort cursor collision",
+                {
+                    "cohort_generation": 3,
+                    "sequence": 5,
+                    "published_at": "2026-08-13T00:59:59.500Z",
+                },
+            ),
+            (
+                "same-cohort session collision",
+                {
+                    "cohort_generation": 3,
+                    "sequence": 6,
+                    "session_id": SESSION_TWO,
+                },
+            ),
+        )
+        for name, overrides in cases:
+            with self.subTest(name=name):
+                provider = self.healthy_v3_provider(
+                    cohort_generation=3, sequence=5
+                )
+                before = self.operational_state(provider)
+                rejected_before = provider.rejected_messages
+
+                with self.assertRaises(local.LocalProviderContractError):
+                    provider.ingest(
+                        provider.state_topic,
+                        self.payload(3, **overrides),
+                        qos=1,
+                        retained=False,
+                    )
+
+                self.assertEqual(self.operational_state(provider), before)
+                self.assertEqual(provider.rejected_messages, rejected_before + 1)
+                self.assertTrue(provider.shadow_healthy)
+
+        provider = self.provider(
+            pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+        )
+        provider.ingest(
+            provider.state_topic,
+            self.payload(3, cohort_generation=3, sequence=5),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(
+            provider.ingest(
+                provider.state_topic,
+                self.payload(
+                    3,
+                    cohort_generation=4,
+                    sequence=1,
+                    session_id=SESSION_TWO,
+                ),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertEqual(provider.session_id, SESSION_TWO)
+        self.assertEqual(provider.sequence, 1)
+        self.assertNotIn(SESSION_ONE, provider._tombstoned_sessions)
+
+    def test_v3_retained_state_delete_preserves_and_enforces_cohort_high_water(
+        self,
+    ) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=3, sequence=5)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.state_topic,
+                b"",
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertEqual(provider._cohort_generation, 3)
+        self.assertIsNone(provider.session_id)
+        self.assertIn(SESSION_ONE, provider._tombstoned_sessions)
+
+        before = self.operational_state(provider)
+        rejected_before = provider.rejected_messages
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                self.payload(
+                    3,
+                    cohort_generation=2,
+                    sequence=99,
+                    session_id=SESSION_TWO,
+                ),
+                qos=1,
+                retained=False,
+            )
+        self.assertEqual(self.operational_state(provider), before)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+        self.assertTrue(
+            provider.ingest(
+                provider.state_topic,
+                self.payload(3, cohort_generation=4, sequence=1),
+                qos=1,
+                retained=False,
+            )
+        )
+        self.assertEqual(provider._cohort_generation, 4)
+        self.assertEqual(provider.session_id, SESSION_ONE)
+        self.assertNotIn(SESSION_ONE, provider._tombstoned_sessions)
+        self.assertEqual(provider._device_status, "unknown")
+        self.assertFalse(provider.shadow_healthy)
+
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(3, cohort_generation=4, state_sequence=1),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.shadow_healthy)
+
+    def test_schema_two_same_session_sequence_reset_remains_rejected(self) -> None:
+        provider = self.provider(
+            pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+        )
+        provider.ingest(
+            provider.state_topic,
+            self.payload(2, sequence=9),
+            qos=1,
+            retained=False,
+        )
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                self.payload(2, sequence=1),
+                qos=1,
+                retained=False,
+            )
+        self.assertEqual(provider.sequence, 9)
+
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                self.payload(3, cohort_generation=1, sequence=1),
+                qos=1,
+                retained=False,
+            )
+        self.assertEqual(provider.sequence, 9)
+        self.assertIsNone(provider._cohort_generation)
+
+    def test_v3_final_current_paths_order_cohort_before_sequence(self) -> None:
+        for method_name, retained in (
+            ("ingest_retained_final_current", True),
+            ("ingest_bootstrap_final_current", False),
+        ):
+            with self.subTest(method=method_name):
+                provider = self.healthy_v3_provider(
+                    cohort_generation=2, sequence=9
+                )
+                provider.set_transport_ready(False)
+
+                publications = self.final_current(
+                    provider,
+                    cohort_generation=3,
+                    sequence=4,
+                    retained=retained,
+                )
+                self.assertTrue(getattr(provider, method_name)(publications))
+                provider.set_transport_ready(True)
+                self.assertEqual(provider.sequence, 4)
+                self.assertTrue(provider.shadow_healthy)
+
+                provider.set_transport_ready(False)
+                before = self.operational_state(provider)
+                rejected_candidates = (
+                    (
+                        "cohort regression",
+                        self.final_current(
+                            provider,
+                            cohort_generation=2,
+                            sequence=99,
+                            retained=retained,
+                        ),
+                    ),
+                    (
+                        "same-cohort sequence regression",
+                        self.final_current(
+                            provider,
+                            cohort_generation=3,
+                            sequence=3,
+                            retained=retained,
+                        ),
+                    ),
+                    (
+                        "same-cohort cursor collision",
+                        self.final_current(
+                            provider,
+                            cohort_generation=3,
+                            sequence=4,
+                            retained=retained,
+                            published_at="2026-08-13T00:59:59.500Z",
+                            observed_at="2026-08-13T00:59:59.500Z",
+                        ),
+                    ),
+                )
+                for name, invalid in rejected_candidates:
+                    with self.subTest(method=method_name, rejection=name):
+                        rejected_before = provider.rejected_messages
+                        with self.assertRaises(local.LocalProviderContractError):
+                            getattr(provider, method_name)(invalid)
+                        self.assertEqual(self.operational_state(provider), before)
+                        self.assertEqual(
+                            provider.rejected_messages,
+                            rejected_before + 1,
+                        )
+
+    def test_v3_final_current_paths_reject_same_cohort_foreign_session_atomically(
+        self,
+    ) -> None:
+        for method_name, retained in (
+            ("ingest_retained_final_current", True),
+            ("ingest_bootstrap_final_current", False),
+        ):
+            with self.subTest(method=method_name):
+                provider = self.healthy_v3_provider(
+                    cohort_generation=3, sequence=5
+                )
+                provider.set_transport_ready(False)
+                before = self.operational_state(provider)
+                rejected_before = provider.rejected_messages
+                foreign = self.final_current(
+                    provider,
+                    cohort_generation=3,
+                    sequence=6,
+                    session_id=SESSION_TWO,
+                    retained=retained,
+                )
+
+                with self.assertRaises(local.LocalProviderContractError):
+                    getattr(provider, method_name)(foreign)
+
+                self.assertEqual(self.operational_state(provider), before)
+                self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_v3_new_binding_generation_can_reset_cohort_via_final_current(
+        self,
+    ) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=9, sequence=9)
+        provider.set_transport_ready(False)
+        final_current = self.final_current(
+            provider,
+            binding_generation=2,
+            cohort_generation=1,
+            sequence=1,
+            session_id=SESSION_TWO,
+            retained=True,
+        )
+
+        self.assertTrue(provider.ingest_retained_final_current(final_current))
+        provider.set_transport_ready(True)
+        self.assertEqual(provider._binding_generation, 2)
+        self.assertEqual(provider._cohort_generation, 1)
+        self.assertEqual(provider.session_id, SESSION_TWO)
+        self.assertEqual(provider.sequence, 1)
+        self.assertTrue(provider.shadow_healthy)
+
+        before = self.operational_state(provider)
+        rejected_before = provider.rejected_messages
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                self.payload(
+                    3,
+                    binding_generation=1,
+                    cohort_generation=99,
+                    sequence=99,
+                ),
+                qos=1,
+                retained=False,
+            )
+        self.assertEqual(self.operational_state(provider), before)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_v3_live_binding_generation_reset_after_retained_delete_fences_old_generation(
+        self,
+    ) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=9, sequence=9)
+        provider.ingest(provider.state_topic, b"", qos=1, retained=False)
+        provider.ingest(provider.availability_topic, b"", qos=1, retained=False)
+
+        provider.ingest(
+            provider.state_topic,
+            self.payload(
+                3,
+                binding_generation=2,
+                cohort_generation=1,
+                sequence=1,
+                session_id=SESSION_TWO,
+            ),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(
+                3,
+                binding_generation=2,
+                cohort_generation=1,
+                state_sequence=1,
+                session_id=SESSION_TWO,
+            ),
+            qos=1,
+            retained=False,
+        )
+        self.assertEqual(provider._binding_generation, 2)
+        self.assertEqual(provider._cohort_generation, 1)
+        self.assertTrue(provider.shadow_healthy)
+
+        before = self.operational_state(provider)
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                self.payload(
+                    3,
+                    binding_generation=1,
+                    cohort_generation=99,
+                    sequence=99,
+                ),
+                qos=1,
+                retained=False,
+            )
+        self.assertEqual(self.operational_state(provider), before)
+
     def test_schema_three_availability_matches_every_state_identity_coordinate(self) -> None:
         for mismatch in (
             {"state_sequence": 2},
@@ -1522,6 +2008,7 @@ class IdentityBoundPublicationTests(unittest.TestCase):
             return (
                 provider._transport_ready,
                 provider._binding_generation,
+                provider._cohort_generation,
                 provider._session_id,
                 provider._sequence,
                 payload_fingerprint(provider._state_payload),
