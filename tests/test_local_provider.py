@@ -1149,6 +1149,154 @@ class IdentityBoundPublicationTests(unittest.TestCase):
         provider.ingest(provider.state_topic, self.payload(3), qos=1, retained=True)
         self.assertIs(provider.field_value("door.open"), True)
 
+    def test_live_state_and_availability_retained_deletes_fail_closed_in_either_order(
+        self,
+    ) -> None:
+        for first_topic in ("state", "availability"):
+            with self.subTest(first_topic=first_topic):
+                provider = self.provider(
+                    pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+                )
+                provider.ingest(
+                    provider.state_topic, self.payload(3), qos=1, retained=False
+                )
+                provider.ingest(
+                    provider.availability_topic,
+                    self.availability(3, status="online"),
+                    qos=1,
+                    retained=False,
+                )
+                provider.ingest(
+                    provider.runtime_availability_topic,
+                    runtime_payload("online"),
+                    qos=1,
+                    retained=False,
+                )
+                provider.set_transport_ready(True)
+                self.assertTrue(provider.shadow_healthy)
+
+                topics = {
+                    "state": provider.state_topic,
+                    "availability": provider.availability_topic,
+                }
+                second_topic = (
+                    "availability" if first_topic == "state" else "state"
+                )
+                self.assertTrue(
+                    provider.ingest(
+                        topics[first_topic], b"", qos=1, retained=False
+                    )
+                )
+                self.assertFalse(provider.shadow_healthy)
+                self.assertIsNone(provider._device_availability_payload)
+                self.assertEqual(provider._device_status, "offline")
+
+                for replay_topic, replay_payload in (
+                    (provider.state_topic, self.payload(3)),
+                    (provider.availability_topic, self.availability(3)),
+                ):
+                    with self.assertRaises(local.LocalProviderContractError):
+                        provider.ingest(
+                            replay_topic,
+                            replay_payload,
+                            qos=1,
+                            retained=False,
+                        )
+
+                provider.ingest(
+                    topics[second_topic], b"", qos=1, retained=False
+                )
+                self.assertIsNone(provider.session_id)
+                self.assertEqual(dict(provider.shadow_fields), {})
+                self.assertIsNone(provider._state_payload)
+                self.assertIn(SESSION_ONE, provider._tombstoned_sessions)
+
+                with self.assertRaises(local.LocalProviderContractError):
+                    provider.ingest(
+                        provider.state_topic,
+                        self.payload(3),
+                        qos=1,
+                        retained=False,
+                    )
+
+    def test_runtime_retained_delete_remains_a_contract_rejection(self) -> None:
+        provider = self.provider(
+            pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("offline"),
+            qos=1,
+            retained=False,
+        )
+        rejected_before = provider.rejected_messages
+
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.runtime_availability_topic,
+                b"",
+                qos=1,
+                retained=False,
+            )
+
+        self.assertEqual(provider._runtime_status, "offline")
+        self.assertEqual(provider._service_instance_id, SERVICE_ONE)
+        self.assertEqual(provider.rejected_messages, rejected_before + 1)
+
+    def test_live_v2_reset_rotates_to_one_healthy_v3_session(self) -> None:
+        provider = self.provider(
+            pat_device_id=self.PAT_DEVICE_ID, require_identity=True
+        )
+        provider.ingest(provider.state_topic, self.payload(2), qos=1, retained=False)
+        provider.ingest(
+            provider.availability_topic,
+            self.availability(2, status="offline"),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("offline"),
+            qos=1,
+            retained=False,
+        )
+        provider.set_transport_ready(True)
+
+        provider.ingest(provider.state_topic, b"", qos=1, retained=False)
+        provider.ingest(provider.availability_topic, b"", qos=1, retained=False)
+        self.assertFalse(provider.shadow_healthy)
+
+        state = json.loads(self.payload(3, session_id=SESSION_TWO))
+        availability = json.loads(self.availability(3, status="online"))
+        availability["session_id"] = SESSION_TWO
+        provider.ingest(
+            provider.state_topic,
+            json.dumps(state).encode(),
+            qos=1,
+            retained=False,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            json.dumps(availability).encode(),
+            qos=1,
+            retained=False,
+        )
+        self.assertFalse(
+            provider.shadow_healthy,
+            "the old offline runtime cannot make the fresh V3 current usable",
+        )
+
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online", service_instance_id=SERVICE_TWO),
+            qos=1,
+            retained=False,
+        )
+        self.assertTrue(provider.shadow_healthy)
+        self.assertEqual(provider.session_id, SESSION_TWO)
+        self.assertIn(SESSION_ONE, provider._tombstoned_sessions)
+        self.assertIn(SERVICE_ONE, provider._tombstoned_service_instances)
+
     def test_refuses_a_snapshot_proving_a_different_appliance(self) -> None:
         provider = self.provider(pat_device_id=self.PAT_DEVICE_ID)
         other = self.proof("1111111111111111222222222222222233333333333333334444444444444444")

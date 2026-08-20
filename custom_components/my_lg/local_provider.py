@@ -1393,8 +1393,12 @@ class LocalSemanticShadowProvider:
                 _contract_error("Local provider retained flag is invalid")
             now = _utc_now(self._now)
             if topic == self.state_topic:
+                if self._is_retained_delete(payload):
+                    return self._ingest_state_retained_delete()
                 return self._ingest_state(payload, now)
             if topic == self.availability_topic:
+                if self._is_retained_delete(payload):
+                    return self._ingest_availability_retained_delete()
                 return self._ingest_device_availability(payload, now)
             if topic == self.runtime_availability_topic:
                 return self._ingest_runtime_availability(payload, now)
@@ -1402,6 +1406,57 @@ class LocalSemanticShadowProvider:
         except LocalProviderContractError:
             self._rejected_messages += 1
             raise
+
+    @staticmethod
+    def _is_retained_delete(payload: object) -> bool:
+        """Recognize the empty MQTT payload used to retract a retained value."""
+        return isinstance(payload, (bytes, bytearray, memoryview)) and not payload
+
+    def _tombstone_current_session_for_retained_delete(self) -> bool:
+        session_id = self._session_id
+        if session_id is None or session_id in self._tombstoned_sessions:
+            return False
+        if len(self._tombstoned_sessions) >= MAX_TOMBSTONED_GENERATIONS:
+            _contract_error("Local provider session tombstone bound is exhausted")
+        self._tombstoned_sessions.add(session_id)
+        return True
+
+    def _clear_device_availability_for_retained_delete(self) -> bool:
+        changed = (
+            self._device_status != "offline"
+            or self._device_availability_payload is not None
+            or self._device_availability_at is not None
+            or self._device_availability_coordinate is not None
+        )
+        self._device_status = "offline"
+        self._device_availability_payload = None
+        self._device_availability_at = None
+        self._device_availability_coordinate = None
+        return changed
+
+    def _ingest_state_retained_delete(self) -> bool:
+        changed = self._tombstone_current_session_for_retained_delete()
+        changed = self._clear_device_availability_for_retained_delete() or changed
+        changed = (
+            self._session_id is not None
+            or self._sequence != 0
+            or self._state_payload is not None
+            or self._state_published_at is not None
+            or self._state_availability_coordinate is not None
+            or bool(self._shadow_fields)
+            or changed
+        )
+        self._session_id = None
+        self._sequence = 0
+        self._state_payload = None
+        self._state_published_at = None
+        self._state_availability_coordinate = None
+        self._shadow_fields = MappingProxyType({})
+        return changed
+
+    def _ingest_availability_retained_delete(self) -> bool:
+        changed = self._tombstone_current_session_for_retained_delete()
+        return self._clear_device_availability_for_retained_delete() or changed
 
     def ingest_retained_final_current(
         self,
@@ -1638,6 +1693,8 @@ class LocalSemanticShadowProvider:
         value, status, session_id, observed_at = _parse_availability(
             payload, now, self.expected_proof, self.require_identity
         )
+        if session_id in self._tombstoned_sessions:
+            _contract_error("Local provider availability session was superseded")
         if self._session_id is None or session_id != self._session_id:
             _contract_error("Local provider availability session does not match")
         coordinate = self._availability_coordinate(value)
