@@ -124,8 +124,10 @@ class LocalProfileCatalogueTests(unittest.TestCase):
             list(profiles),
             [profile["profile_id"] for profile in raw["profiles"]],
         )
-        self.assertEqual(len(profiles), 15)
-        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 161)
+        # Pinned deliberately: the catalogue is a published contract, so growth
+        # should be a decision someone made, not something that drifts in.
+        self.assertEqual(len(profiles), 19)
+        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 189)
         for raw_profile in raw["profiles"]:
             profile = profiles[raw_profile["profile_id"]]
             self.assertEqual(
@@ -192,6 +194,54 @@ class LocalProfileCatalogueTests(unittest.TestCase):
             local._load_local_semantic_profile_catalogue(
                 duplicate_key, digest_sidecar(duplicate_key)
             )
+
+    def test_availability_policy_and_its_window_are_validated_together(self) -> None:
+        """The publisher allows four combinations; only two of them are refused.
+
+        A window with no policy is the field's original purpose - a measured
+        cadence pinned as a freshness SLA - and refusing it would drop every Local
+        binding in the house the first time someone pins one, not just the profile
+        that changed.
+        """
+        source = json.loads(BUNDLED_CATALOGUE.read_bytes())
+
+        def catalogue_with(profile_id: str, **overrides: object) -> bytes:
+            mutated = json.loads(json.dumps(source))
+            for profile in mutated["profiles"]:
+                if profile["profile_id"] != profile_id:
+                    continue
+                for key, value in overrides.items():
+                    if value is None:
+                        profile.pop(key, None)
+                    else:
+                        profile[key] = value
+            return json.dumps(mutated).encode()
+
+        refused = {
+            "device-report without its window": catalogue_with(
+                "kimchi-thinq1-core-state-v1", freshness_max_age_ms=None
+            ),
+            "a window paired with another policy": catalogue_with(
+                "air-tower-core-state-v1", freshness_max_age_ms=60_000
+            ),
+            "a window that is not a positive integer": catalogue_with(
+                "kimchi-thinq1-core-state-v1", freshness_max_age_ms=0
+            ),
+            "a policy nobody implements": catalogue_with(
+                "kimchi-thinq1-core-state-v1", availability_policy="whenever"
+            ),
+        }
+        for name, encoded in refused.items():
+            with self.subTest(refused=name), self.assertRaises(RuntimeError):
+                local._load_local_semantic_profile_catalogue(encoded, digest_sidecar(encoded))
+
+        accepted = catalogue_with("dhum-water-tank-v1", freshness_max_age_ms=90_000)
+        revision, profiles, _digest = local._load_local_semantic_profile_catalogue(
+            accepted, digest_sidecar(accepted)
+        )
+        self.assertEqual(revision, source["semantics_revision"])
+        self.assertEqual(profiles["dhum-water-tank-v1"].freshness_max_age_ms, 90_000)
+        self.assertIsNone(profiles["dhum-water-tank-v1"].availability_policy)
 
     def test_bundled_artifacts_are_byte_identical_to_rethink_when_present(
         self,

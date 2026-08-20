@@ -13,8 +13,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     PERCENTAGE,
+    UnitOfDensity,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
@@ -92,7 +92,7 @@ def _pm(key: str, tkey: str, field: str, dclass: SensorDeviceClass) -> MyLgSenso
         key=key,
         translation_key=tkey,
         device_class=dclass,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
         state_class=SensorStateClass.MEASUREMENT,
         profile_group="airQualitySensor",
         value_fn=lambda c, f=field: c.get("airQualitySensor", f),

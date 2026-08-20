@@ -60,6 +60,8 @@ from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
+from .local_command import LocalCommandClient
+from .local_control_router import LocalControlRouter
 from .local_mqtt import LOCAL_PILOT_MQTT_PORT, LocalPilotMqttSubscriber
 from .local_provider import (
     LOCAL_DHUM_WATER_TANK_PROFILE_ID,
@@ -147,6 +149,7 @@ class MyLgData:
     local_mqtt_subscribers: dict[str, LocalPilotMqttSubscriber] = field(
         default_factory=dict
     )
+    local_control: LocalControlRouter | None = None
     startup_metrics: StartupMetrics | None = None
 
 
@@ -244,9 +247,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # Home Assistant event loop.
     await hass.async_add_executor_job(load_catalogs)
 
-    # Rethink Local is connected only as a read-only sidecar.  Start it after
+    # Rethink Local is a shadow first: it reads, and every entity's state still comes from
+    # LG. It also offers a write path for the few commands the bridge has observed on the
+    # wire, which entities try before the cloud and fall back from silently. Started after
     # every potentially blocking setup read, immediately before entity setup.
     await _setup_local_shadows(hass, entry, data)
+    # Separate from the shadows themselves: this needs the HTTP session, and reaching for it
+    # inside the shadow setup made that function require a fully built Home Assistant.
+    _start_local_control(hass, data)
     entry.runtime_data = data
     try:
         async_register_services(hass)
@@ -404,10 +412,18 @@ async def _setup_local_shadows(
         provider: LocalSemanticShadowProvider
         if config.profile_id == LOCAL_DHUM_WATER_TANK_PROFILE_ID:
             provider = LocalWaterTankShadowProvider(
-                config.binding_id, profile=config.profile
+                config.binding_id,
+                profile=config.profile,
+                pat_device_id=config.pat_device_id,
+                require_identity=config.require_identity,
             )
         else:
-            provider = LocalSemanticShadowProvider(config.binding_id, config.profile)
+            provider = LocalSemanticShadowProvider(
+                config.binding_id,
+                config.profile,
+                pat_device_id=config.pat_device_id,
+                require_identity=config.require_identity,
+            )
         subscriber = LocalPilotMqttSubscriber(
             hass.loop,
             provider,
@@ -437,6 +453,28 @@ async def _setup_local_shadows(
             "operational owners unchanged)",
             len(data.local_providers),
         )
+
+
+def _start_local_control(hass: HomeAssistant, data: MyLgData) -> None:
+    """Offer the local write path where there is a shadow to build a command from.
+
+    Only where: the bridge sends frames observed on the wire, so it can serve some requests
+    and not others, and the appliance's own latest reading is what the rest of a command is
+    taken from. Without the WideQ pairing there is no id to address, so the router is not
+    built at all rather than built to fail one request at a time.
+    """
+    if not data.local_providers:
+        _LOGGER.debug("Rethink Local control not offered: no local shadows are running")
+        return
+    if data.wideq_coordinator is None:
+        _LOGGER.debug("Rethink Local control not offered: WideQ identities are not resolved")
+        return
+    _LOGGER.debug("Rethink Local control offered for %d appliance(s)", len(data.local_providers))
+    data.local_control = LocalControlRouter(
+        LocalCommandClient(async_get_clientsession(hass)),
+        data.local_providers,
+        data.wideq_coordinator.wideq_device_id,
+    )
 
 
 async def _stop_local_shadows(data: MyLgData) -> None:

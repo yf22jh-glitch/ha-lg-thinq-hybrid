@@ -177,6 +177,15 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Serialize stable PAT-to-WideQ identifiers only."""
         return {"pat_to_wideq": dict(self._pat_to_wideq)}
 
+    def wideq_device_id(self, pat_device_id: str) -> str | None:
+        """The id LG's own device list gives this appliance, or None while unresolved.
+
+        The local bridge sits on the appliance's connection to LG and knows it by this id,
+        not by the ThinQ Connect one Home Assistant uses; this is the same pairing the
+        energy history already relies on, exposed rather than reached into.
+        """
+        return self._pat_to_wideq.get(pat_device_id)
+
     def _schedule_device_map_save(self) -> None:
         if self._device_map_store is None:
             return

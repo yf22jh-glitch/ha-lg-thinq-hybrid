@@ -34,7 +34,7 @@ OPT_LOCAL_BINDINGS = "local_bindings"
 LOCAL_BINDING_SCHEMA_VERSION = 1
 LOCAL_DHUM_WATER_TANK_PROFILE_ID = "dhum-water-tank-v1"
 
-LOCAL_PILOT_PREFIX = "lg_rethink_pilot/v1"
+LOCAL_PILOT_PREFIX = "lg_rethink_local/v1"
 LOCAL_WATER_TANK_FIELD = "water_tank.full"
 WIDEQ_WATER_TANK_KEY = "airState.miscFuncState.watertankLight"
 
@@ -57,7 +57,7 @@ _ISO_TIMESTAMP = re.compile(
     r"(?:\.(\d{1,3}))?(Z|[+-](\d{2}):(\d{2}))$"
 )
 
-_SNAPSHOT_KEYS = frozenset(
+_SNAPSHOT_REQUIRED_KEYS = frozenset(
     {
         "schema_version",
         "semantics_revision",
@@ -71,6 +71,19 @@ _SNAPSHOT_KEYS = frozenset(
         "diagnostics",
     }
 )
+# Tombstones retracting a retained value; only profiles that declare
+# `authoritative_invalidations` may send them.
+_SNAPSHOT_OPTIONAL_KEYS = frozenset({"invalidated_fields"})
+# An identity-bound snapshot names the appliance it came from and proves it.
+_SNAPSHOT_IDENTITY_KEYS = frozenset({"binding_generation", "pat_device_id_proof_sha256"})
+_SNAPSHOT_COHORT_KEYS = frozenset({"cohort_generation"})
+_SNAPSHOT_KEYS_BY_SCHEMA = {
+    1: _SNAPSHOT_REQUIRED_KEYS,
+    2: _SNAPSHOT_REQUIRED_KEYS | _SNAPSHOT_IDENTITY_KEYS,
+    3: _SNAPSHOT_REQUIRED_KEYS | _SNAPSHOT_IDENTITY_KEYS | _SNAPSHOT_COHORT_KEYS,
+}
+_INVALIDATION_KEYS = frozenset({"observed_at", "confidence"})
+_PROOF_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _FIELD_REQUIRED_KEYS = frozenset(
     {"value", "value_type", "observed_at", "confidence", "exposure"}
 )
@@ -78,11 +91,18 @@ _FIELD_ALLOWED_KEYS = _FIELD_REQUIRED_KEYS | {"unit"}
 _DIAGNOSTIC_KEYS = frozenset(
     {"rejected_frames", "unresolved_fields", "invalid_values", "unsupported_frames"}
 )
-_AVAILABILITY_KEYS = frozenset({"status", "session_id", "observed_at"})
+_AVAILABILITY_REQUIRED_KEYS = frozenset({"status", "session_id", "observed_at"})
+_AVAILABILITY_KEYS_BY_SCHEMA = {
+    1: _AVAILABILITY_REQUIRED_KEYS,
+    2: _AVAILABILITY_REQUIRED_KEYS | _SNAPSHOT_IDENTITY_KEYS | {"state_sequence"},
+    3: _AVAILABILITY_REQUIRED_KEYS
+    | _SNAPSHOT_IDENTITY_KEYS
+    | {"state_sequence", "schema_version", "cohort_generation"},
+}
 _RUNTIME_AVAILABILITY_KEYS = frozenset({"status", "service_instance_id", "observed_at"})
 
 _CATALOGUE_KEYS = frozenset({"schema_version", "semantics_revision", "profiles"})
-_CATALOGUE_PROFILE_KEYS = frozenset(
+_CATALOGUE_PROFILE_REQUIRED_KEYS = frozenset(
     {
         "profile_id",
         "contract_revision",
@@ -92,10 +112,26 @@ _CATALOGUE_PROFILE_KEYS = frozenset(
         "fields",
     }
 )
+# `availability_policy` governs how the publisher decides a device is online and
+# needs nothing from us; `authoritative_invalidations` does, because only those
+# profiles may send the tombstones that retract a retained value.
+_CATALOGUE_PROFILE_ALLOWED_KEYS = _CATALOGUE_PROFILE_REQUIRED_KEYS | {
+    "availability_policy",
+    "authoritative_invalidations",
+    # A measured cadence pinned as a freshness SLA. A rejected key aborts the
+    # entire catalogue, not one profile, so every binding in Home Assistant would
+    # die at setup rather than the one profile that changed.
+    "freshness_max_age_ms",
+}
+# How the publisher decides a device is online. `device-report` judges it by the
+# appliance's own periodic report rather than by the age of its state, for
+# appliances that can be alive and unchanged for days.
+_AVAILABILITY_POLICY_DEVICE_REPORT = "device-report"
+_AVAILABILITY_POLICIES = frozenset({"attested-session", _AVAILABILITY_POLICY_DEVICE_REPORT})
 _CATALOGUE_FIELD_REQUIRED_KEYS = frozenset(
     {"semantic_id", "value_type", "exposure", "confidence"}
 )
-_CATALOGUE_FIELD_ALLOWED_KEYS = _CATALOGUE_FIELD_REQUIRED_KEYS | {"unit"}
+_CATALOGUE_FIELD_ALLOWED_KEYS = _CATALOGUE_FIELD_REQUIRED_KEYS | {"unit", "allowed_values"}
 _CATALOGUE_DIGEST = re.compile(
     rb"^([0-9a-f]{64})  local/semantic/pilot-profiles\.v1\.json\n$"
 )
@@ -118,6 +154,7 @@ class LocalSemanticFieldContract:
     exposure: Literal["state", "diagnostic"]
     confidence: tuple[str, ...]
     unit: str | None = None
+    allowed_values: tuple[object, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.value_type not in ("boolean", "number", "string"):
@@ -133,6 +170,12 @@ class LocalSemanticFieldContract:
             not isinstance(self.unit, str) or not self.unit or len(self.unit) > 16
         ):
             raise ValueError("Local semantic field unit is invalid")
+        if self.allowed_values is not None and (
+            not self.allowed_values
+            or len(self.allowed_values) > 64
+            or len(set(map(repr, self.allowed_values))) != len(self.allowed_values)
+        ):
+            raise ValueError("Local semantic field allowed values are invalid")
 
 
 @dataclass(frozen=True)
@@ -146,6 +189,9 @@ class LocalSemanticProfile:
     fields: Mapping[str, LocalSemanticFieldContract]
     contract_revision: int = 1
     supported_semantics_revisions: tuple[int, ...] = ()
+    availability_policy: str | None = None
+    authoritative_invalidations: bool = False
+    freshness_max_age_ms: int | None = None
 
     def __post_init__(self) -> None:
         if not _OPAQUE_ID.fullmatch(self.profile_id):
@@ -269,8 +315,34 @@ def _load_local_semantic_profile_catalogue(
     for raw_profile in raw_profiles:
         if (
             not isinstance(raw_profile, dict)
-            or set(raw_profile) != _CATALOGUE_PROFILE_KEYS
+            or not _CATALOGUE_PROFILE_REQUIRED_KEYS.issubset(raw_profile)
+            or not set(raw_profile).issubset(_CATALOGUE_PROFILE_ALLOWED_KEYS)
         ):
+            _catalogue_error()
+        availability_policy = raw_profile.get("availability_policy")
+        authoritative_invalidations = raw_profile.get("authoritative_invalidations")
+        freshness_max_age_ms = raw_profile.get("freshness_max_age_ms")
+        if (availability_policy is not None and availability_policy not in _AVAILABILITY_POLICIES) or (
+            authoritative_invalidations is not None and authoritative_invalidations is not True
+        ):
+            _catalogue_error()
+        if freshness_max_age_ms is not None and (
+            type(freshness_max_age_ms) is not int
+            or freshness_max_age_ms < 1
+            or freshness_max_age_ms > MAX_JSON_SAFE_INTEGER
+        ):
+            _catalogue_error()
+        # Mirror the publisher's two rules rather than pairing the keys. A window
+        # with no policy is the field's original purpose - a measured cadence pinned
+        # as a freshness SLA - and refusing it would drop every Local binding in the
+        # house the first time someone pins one, including bindings that had nothing
+        # to do with the profile that changed.
+        if freshness_max_age_ms is not None and availability_policy not in (
+            None,
+            _AVAILABILITY_POLICY_DEVICE_REPORT,
+        ):
+            _catalogue_error()
+        if availability_policy == _AVAILABILITY_POLICY_DEVICE_REPORT and freshness_max_age_ms is None:
             _catalogue_error()
         profile_id = raw_profile["profile_id"]
         model_id = raw_profile["model_id"]
@@ -310,6 +382,17 @@ def _load_local_semantic_profile_catalogue(
             semantic_id = raw_field["semantic_id"]
             confidence = raw_field["confidence"]
             unit = raw_field.get("unit")
+            allowed_values = raw_field.get("allowed_values")
+            if allowed_values is not None and (
+                not isinstance(allowed_values, list)
+                or not allowed_values
+                or len(allowed_values) > 64
+                or any(
+                    not isinstance(item, (str, int, float, bool)) or isinstance(item, bool) is not (raw_field["value_type"] == "boolean")
+                    for item in allowed_values
+                )
+            ):
+                _catalogue_error()
             if (
                 not isinstance(semantic_id, str)
                 or not _SEMANTIC_ID.fullmatch(semantic_id)
@@ -330,6 +413,7 @@ def _load_local_semantic_profile_catalogue(
                     exposure=raw_field["exposure"],
                     confidence=tuple(confidence),
                     unit=unit,
+                    allowed_values=None if allowed_values is None else tuple(allowed_values),
                 )
             except ValueError:
                 _catalogue_error()
@@ -342,6 +426,9 @@ def _load_local_semantic_profile_catalogue(
                 fields=fields,
                 contract_revision=contract_revision,
                 supported_semantics_revisions=supported,
+                availability_policy=availability_policy,
+                authoritative_invalidations=authoritative_invalidations is True,
+                freshness_max_age_ms=freshness_max_age_ms,
             )
         except ValueError:
             _catalogue_error()
@@ -443,13 +530,14 @@ class LocalShadowConfiguration:
     model_id: str
     platform: Literal["thinq1", "thinq2"]
     _profile: LocalSemanticProfile
+    require_identity: bool = False
 
     @property
     def profile(self) -> LocalSemanticProfile:
         return self._profile
 
 
-_LOCAL_BINDING_KEYS = frozenset(
+_LOCAL_BINDING_REQUIRED_KEYS = frozenset(
     {
         "schema_version",
         "mode",
@@ -461,6 +549,11 @@ _LOCAL_BINDING_KEYS = frozenset(
         "mqtt_password",
     }
 )
+# Whether this binding's publisher has been migrated to an identity-bound
+# manifest. It is opt-in and flipped in the same window as the manifests: a
+# publisher still on the legacy contract emits no proof at all, and demanding one
+# from it would reject every message instead of merely leaving it unverified.
+_LOCAL_BINDING_ALLOWED_KEYS = _LOCAL_BINDING_REQUIRED_KEYS | {"require_identity"}
 _LEGACY_LOCAL_OPTION_KEYS = frozenset(
     {
         OPT_LOCAL_PROVIDER_MODE,
@@ -487,6 +580,7 @@ def _configuration_from_values(
     profile_id: object,
     model_id: object,
     platform: object,
+    require_identity: bool = False,
 ) -> LocalShadowConfiguration:
     if not isinstance(pat_device_id, str) or not _OPAQUE_ID.fullmatch(pat_device_id):
         _configuration_error("Local provider PAT device id is invalid")
@@ -510,6 +604,7 @@ def _configuration_from_values(
         model_id=profile.model_id,
         platform=profile.platform,
         _profile=profile,
+        require_identity=require_identity,
     )
 
 
@@ -557,8 +652,15 @@ def _decode_binding_list(value: object) -> list[object]:
 
 
 def _configuration_from_binding(value: object) -> LocalShadowConfiguration:
-    if not isinstance(value, dict) or set(value) != _LOCAL_BINDING_KEYS:
+    if (
+        not isinstance(value, dict)
+        or not _LOCAL_BINDING_REQUIRED_KEYS.issubset(value)
+        or not set(value).issubset(_LOCAL_BINDING_ALLOWED_KEYS)
+    ):
         _configuration_error("Local provider binding keys are invalid")
+    require_identity = value.get("require_identity", False)
+    if require_identity is not True and require_identity is not False:
+        _configuration_error("Local provider binding identity requirement is invalid")
     if (
         type(value["schema_version"]) is not int
         or value["schema_version"] != LOCAL_BINDING_SCHEMA_VERSION
@@ -573,6 +675,7 @@ def _configuration_from_binding(value: object) -> LocalShadowConfiguration:
         profile_id=value["profile_id"],
         model_id=value["model_id"],
         platform=value["platform"],
+        require_identity=require_identity,
     )
 
 
@@ -604,7 +707,7 @@ def local_shadow_configurations(
 def _configuration_dict(
     config: LocalShadowConfiguration, *, mask_password: bool = False
 ) -> dict[str, object]:
-    return {
+    value: dict[str, object] = {
         "schema_version": LOCAL_BINDING_SCHEMA_VERSION,
         "mode": LOCAL_PROVIDER_MODE_SHADOW,
         "profile_id": config.profile_id,
@@ -614,6 +717,9 @@ def _configuration_dict(
         "binding_id": config.binding_id,
         "mqtt_password": "" if mask_password else config.mqtt_password,
     }
+    if config.require_identity:
+        value["require_identity"] = True
+    return value
 
 
 def migrate_local_shadow_options(options: Mapping[str, object]) -> dict[str, object]:
@@ -797,23 +903,101 @@ def _safe_nonnegative_integer(value: object, name: str) -> int:
     return value
 
 
+_PAT_IDENTITY_PROOF_DOMAIN = b"lg-rethink-pilot/pat-device-identity-proof/v1\0"
+
+
+def local_pat_device_identity_proof(
+    binding_id: str, model_id: str, platform: str, pat_device_id: str
+) -> str:
+    """Recompute the publisher's domain-separated PAT identity proof.
+
+    This is the point of an identity-bound publication: without it a binding is
+    trusted purely because it published on the topic we happen to subscribe to,
+    and a mis-paired appliance would merge its state into another appliance's
+    entities silently. Verified byte-for-byte against the publisher's own
+    proofs for every live binding.
+    """
+
+    digest = hashlib.sha256()
+    digest.update(_PAT_IDENTITY_PROOF_DOMAIN)
+    for name, value in (
+        ("binding_id", binding_id),
+        ("model_id", model_id),
+        ("platform", platform),
+        ("pat_device_id", pat_device_id.lower()),
+    ):
+        encoded = value.encode("utf-8")
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(len(encoded)).encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(encoded)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _identity_fields(
+    value: Mapping[str, Any], name: str, expected_proof: str | None
+) -> None:
+    """Validate the identity a schema 2/3 publication carries."""
+
+    generation = value["binding_generation"]
+    if type(generation) is not int or generation < 1 or generation > MAX_JSON_SAFE_INTEGER:
+        _contract_error(f"Local provider {name} binding generation is invalid")
+    proof = value["pat_device_id_proof_sha256"]
+    if not isinstance(proof, str) or not _PROOF_SHA256.fullmatch(proof):
+        _contract_error(f"Local provider {name} identity proof is invalid")
+    if expected_proof is not None and proof != expected_proof:
+        _contract_error(f"Local provider {name} identity proof does not match this binding")
+    cohort = value.get("cohort_generation")
+    if cohort is not None and (
+        type(cohort) is not int or cohort < 1 or cohort > MAX_JSON_SAFE_INTEGER
+    ):
+        _contract_error(f"Local provider {name} cohort generation is invalid")
+
+
 def _parse_state(
     payload: object,
     expected_binding_id: str,
     profile: LocalSemanticProfile,
     now: datetime,
+    expected_proof: str | None = None,
+    require_identity: bool = False,
 ) -> tuple[
     dict[str, Any],
     str,
     int,
     Mapping[str, LocalSemanticShadowField],
+    datetime,
 ]:
-    snapshot = _exact_object(_decode_payload(payload), _SNAPSHOT_KEYS, "snapshot")
-    if type(snapshot["schema_version"]) is not int or snapshot["schema_version"] != 1:
+    decoded = _decode_payload(payload)
+    if not isinstance(decoded, dict):
+        _contract_error("snapshot keys are invalid")
+    schema_version = decoded.get("schema_version")
+    if type(schema_version) is not int or schema_version not in _SNAPSHOT_KEYS_BY_SCHEMA:
         _contract_error("Local provider snapshot schema is unsupported")
+    allowed = _SNAPSHOT_KEYS_BY_SCHEMA[schema_version]
+    if not allowed.issubset(decoded) or not set(decoded).issubset(
+        allowed | _SNAPSHOT_OPTIONAL_KEYS
+    ):
+        _contract_error("snapshot keys are invalid")
+    snapshot = decoded
+    if schema_version != 1:
+        _identity_fields(snapshot, "snapshot", expected_proof)
+    elif require_identity:
+        # Once a binding's publisher is known to be identity-bound, a publication
+        # without a proof is a downgrade and must not be taken. Before that
+        # migration the publisher genuinely has no proof to send, so demanding one
+        # would reject every message rather than leave it unverified.
+        _contract_error("Local provider snapshot is not identity-bound")
+    # A profile declares the revisions its contract holds across, and the publisher
+    # pins any one of them. Comparing against the catalogue's single current
+    # revision instead rejects a publisher that is a revision behind - including
+    # the publisher we just rolled back to, which is exactly when this side has to
+    # keep working.
     if (
         type(snapshot["semantics_revision"]) is not int
-        or snapshot["semantics_revision"] != profile.semantics_revision
+        or snapshot["semantics_revision"] not in profile.supported_semantics_revisions
     ):
         _contract_error("Local provider semantics revision is unsupported")
     if snapshot["binding_id"] != expected_binding_id:
@@ -833,7 +1017,15 @@ def _parse_state(
     published_at = _timestamp(snapshot["published_at"], "published_at", now)
 
     fields = snapshot["fields"]
-    if not isinstance(fields, dict) or not fields or len(fields) > 256:
+    raw_invalidated = snapshot.get("invalidated_fields")
+    if not isinstance(fields, dict) or (
+        not fields and not isinstance(raw_invalidated, dict)
+    ):
+        # The publisher allows either half to be empty, never both: a snapshot that
+        # retracts every field carries `fields: {}` and the tombstones, and refusing
+        # it leaves the retracted values on display forever.
+        _contract_error("Local provider snapshot fields are invalid")
+    if len(fields) + (len(raw_invalidated) if isinstance(raw_invalidated, dict) else 0) > 256:
         _contract_error("Local provider snapshot fields are invalid")
     shadow_fields: dict[str, LocalSemanticShadowField] = {}
     for semantic_id, raw_field in fields.items():
@@ -861,6 +1053,8 @@ def _parse_state(
             )
         ):
             _contract_error("Local provider semantic field value is invalid")
+        if contract.allowed_values is not None and value not in contract.allowed_values:
+            _contract_error("Local provider semantic field value is outside its allowlist")
         if field["confidence"] not in contract.confidence:
             _contract_error("Local provider semantic field confidence is unsupported")
         if field["exposure"] != contract.exposure:
@@ -881,22 +1075,76 @@ def _parse_state(
             unit=field.get("unit"),
         )
 
+    invalidated = raw_invalidated
+    if invalidated is not None:
+        if not isinstance(invalidated, dict) or not invalidated:
+            # The publisher refuses to emit an empty map, so accepting one here
+            # would accept something it never sends.
+            _contract_error("Local provider snapshot invalidations are invalid")
+        if not profile.authoritative_invalidations:
+            _contract_error("Local provider field invalidations are not authorized by this profile")
+        for semantic_id, raw_invalidation in invalidated.items():
+            contract = profile.fields.get(semantic_id)
+            if contract is None:
+                _contract_error("Local provider semantic invalidation is not authorized")
+            if semantic_id in shadow_fields:
+                _contract_error("Local provider retracted a field it also published")
+            invalidation = _exact_object(
+                raw_invalidation, _INVALIDATION_KEYS, f"semantic invalidation {semantic_id}"
+            )
+            if invalidation["confidence"] not in contract.confidence:
+                _contract_error("Local provider semantic invalidation confidence is unsupported")
+            observed_at = _timestamp(
+                invalidation["observed_at"],
+                f"semantic invalidation {semantic_id} observed_at",
+                now,
+            )
+            if observed_at > published_at:
+                _contract_error("Local provider semantic invalidation is after publication")
+
     diagnostics = _exact_object(
         snapshot["diagnostics"], _DIAGNOSTIC_KEYS, "snapshot diagnostics"
     )
     for name, value in diagnostics.items():
         _safe_nonnegative_integer(value, f"snapshot diagnostics {name}")
 
-    return snapshot, session_id, sequence, MappingProxyType(shadow_fields)
+    return (
+        snapshot,
+        session_id,
+        sequence,
+        MappingProxyType(shadow_fields),
+        published_at,
+    )
 
 
 def _parse_availability(
     payload: object,
     now: datetime,
+    expected_proof: str | None = None,
+    require_identity: bool = False,
 ) -> tuple[dict[str, Any], str, str, datetime]:
+    decoded = _decode_payload(payload)
+    if not isinstance(decoded, dict):
+        _contract_error("device availability keys are invalid")
+    schema_version = decoded.get("schema_version")
+    if schema_version is None:
+        schema_version = 2 if "pat_device_id_proof_sha256" in decoded else 1
+    if type(schema_version) is not int or schema_version not in _AVAILABILITY_KEYS_BY_SCHEMA:
+        _contract_error("Local provider availability schema is unsupported")
     value = _exact_object(
-        _decode_payload(payload), _AVAILABILITY_KEYS, "device availability"
+        decoded, _AVAILABILITY_KEYS_BY_SCHEMA[schema_version], "device availability"
     )
+    if schema_version != 1:
+        _identity_fields(value, "availability", expected_proof)
+        state_sequence = value["state_sequence"]
+        if (
+            type(state_sequence) is not int
+            or state_sequence < 1
+            or state_sequence > MAX_JSON_SAFE_INTEGER
+        ):
+            _contract_error("Local provider availability state sequence is invalid")
+    elif require_identity:
+        _contract_error("Local provider availability is not identity-bound")
     status = value["status"]
     if status not in ("online", "offline"):
         _contract_error("Local provider device availability is invalid")
@@ -942,12 +1190,34 @@ class LocalSemanticShadowProvider:
         binding_id: str,
         profile: LocalSemanticProfile,
         *,
+        pat_device_id: str | None = None,
+        require_identity: bool = False,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.binding_id = validate_binding_id(binding_id)
         if not isinstance(profile, LocalSemanticProfile):
             raise TypeError("Local provider profile is invalid")
         self.profile = profile
+        # With the PAT identity in hand we can recompute the proof the publisher
+        # signs its snapshots with, which is what turns "published on our topic"
+        # into "came from this exact appliance".
+        self.expected_proof = (
+            None
+            if pat_device_id is None
+            else local_pat_device_identity_proof(
+                self.binding_id, profile.model_id, profile.platform, pat_device_id
+            )
+        )
+        if require_identity and self.expected_proof is None:
+            raise LocalProviderConfigurationError(
+                "Local provider cannot require an identity it has no PAT device id to check"
+            )
+        self.require_identity = require_identity
+        # The proof covers the appliance, not which generation of the binding
+        # published. A retained snapshot from a superseded generation therefore
+        # carries a byte-identical, valid proof; only refusing to move backwards
+        # makes the field mean anything.
+        self._binding_generation: int | None = None
         self._now = now or (lambda: datetime.now(timezone.utc))
         self.state_topic = f"{LOCAL_PILOT_PREFIX}/state/{self.binding_id}"
         self.availability_topic = f"{LOCAL_PILOT_PREFIX}/availability/{self.binding_id}"
@@ -964,12 +1234,19 @@ class LocalSemanticShadowProvider:
         self._session_id: str | None = None
         self._sequence = 0
         self._state_payload: str | None = None
+        self._state_published_at: datetime | None = None
+        self._state_availability_coordinate: tuple[int, int | None, int] | None = (
+            None
+        )
         self._shadow_fields: Mapping[str, LocalSemanticShadowField] = MappingProxyType(
             {}
         )
         self._device_status = "unknown"
         self._device_availability_payload: str | None = None
         self._device_availability_at: datetime | None = None
+        self._device_availability_coordinate: tuple[int, int | None, int] | None = (
+            None
+        )
         self._tombstoned_sessions: set[str] = set()
 
         self._service_instance_id: str | None = None
@@ -978,6 +1255,72 @@ class LocalSemanticShadowProvider:
         self._runtime_availability_at: datetime | None = None
         self._tombstoned_service_instances: set[str] = set()
         self._rejected_messages = 0
+
+    def _binding_generation_candidate(
+        self, snapshot: Mapping[str, Any]
+    ) -> int | None:
+        """Validate, but do not commit, one snapshot generation."""
+        generation = snapshot.get("binding_generation")
+        if generation is None:
+            return None
+        if (
+            self._binding_generation is not None
+            and generation < self._binding_generation
+        ):
+            _contract_error("Local provider binding generation moved backwards")
+        return generation
+
+    @staticmethod
+    def _snapshot_availability_coordinate(
+        snapshot: Mapping[str, Any], sequence: int
+    ) -> tuple[int, int | None, int] | None:
+        generation = snapshot.get("binding_generation")
+        if generation is None:
+            return None
+        return generation, snapshot.get("cohort_generation"), sequence
+
+    @staticmethod
+    def _availability_coordinate(
+        availability: Mapping[str, Any],
+    ) -> tuple[int, int | None, int] | None:
+        generation = availability.get("binding_generation")
+        if generation is None:
+            return None
+        return (
+            generation,
+            availability.get("cohort_generation"),
+            availability["state_sequence"],
+        )
+
+    @classmethod
+    def _assert_availability_describes_snapshot(
+        cls,
+        availability: Mapping[str, Any],
+        snapshot: Mapping[str, Any],
+        sequence: int,
+    ) -> tuple[int, int | None, int] | None:
+        state_coordinate = cls._snapshot_availability_coordinate(snapshot, sequence)
+        availability_coordinate = cls._availability_coordinate(availability)
+        if availability_coordinate != state_coordinate:
+            _contract_error(
+                "Local provider availability does not describe this snapshot"
+            )
+        return availability_coordinate
+
+    def _availability_describes_current_state(self) -> bool:
+        # Schema 1 has no state coordinate, so its session-bound marker remains
+        # compatible as None == None only while its observation is causally at
+        # or after the current state publication. Schema 2/3 additionally match
+        # every identity coordinate.
+        return (
+            self._session_id is not None
+            and self._device_availability_payload is not None
+            and self._device_availability_coordinate
+            == self._state_availability_coordinate
+            and self._state_published_at is not None
+            and self._device_availability_at is not None
+            and self._device_availability_at >= self._state_published_at
+        )
 
     @property
     def session_id(self) -> str | None:
@@ -1025,6 +1368,7 @@ class LocalSemanticShadowProvider:
             and bool(self._shadow_fields)
             and self._session_id is not None
             and self._device_status == "online"
+            and self._availability_describes_current_state()
             and self._runtime_status == "online"
         )
 
@@ -1114,11 +1458,21 @@ class LocalSemanticShadowProvider:
                     )
 
             now = _utc_now(self._now)
-            snapshot, session_id, sequence, shadow_fields = _parse_state(
-                publications[self.state_topic][0], self.binding_id, self.profile, now
+            snapshot, session_id, sequence, shadow_fields, state_published_at = _parse_state(
+                publications[self.state_topic][0],
+                self.binding_id,
+                self.profile,
+                now,
+                self.expected_proof,
+                self.require_identity,
             )
             availability, device_status, availability_session, device_at = (
-                _parse_availability(publications[self.availability_topic][0], now)
+                _parse_availability(
+                    publications[self.availability_topic][0],
+                    now,
+                    self.expected_proof,
+                    self.require_identity,
+                )
             )
             runtime, runtime_status, service_instance_id, runtime_at = (
                 _parse_runtime_availability(
@@ -1129,7 +1483,17 @@ class LocalSemanticShadowProvider:
                 _contract_error(
                     "Local provider final-current availability session does not match"
                 )
-
+            if device_at < state_published_at:
+                _contract_error(
+                    "Local provider availability predates the snapshot it describes"
+                )
+            availability_coordinate = self._assert_availability_describes_snapshot(
+                availability, snapshot, sequence
+            )
+            binding_generation = self._binding_generation_candidate(snapshot)
+            state_coordinate = self._snapshot_availability_coordinate(
+                snapshot, sequence
+            )
             state_canonical = _canonical_payload(snapshot)
             availability_canonical = _canonical_payload(availability)
             runtime_canonical = _canonical_payload(runtime)
@@ -1208,10 +1572,15 @@ class LocalSemanticShadowProvider:
             self._session_id = session_id
             self._sequence = sequence
             self._state_payload = state_canonical
+            self._state_published_at = state_published_at
+            self._state_availability_coordinate = state_coordinate
             self._shadow_fields = shadow_fields
             self._device_status = device_status
             self._device_availability_payload = availability_canonical
             self._device_availability_at = device_at
+            self._device_availability_coordinate = availability_coordinate
+            if binding_generation is not None:
+                self._binding_generation = binding_generation
             self._service_instance_id = service_instance_id
             self._runtime_status = runtime_status
             self._runtime_payload = runtime_canonical
@@ -1227,9 +1596,11 @@ class LocalSemanticShadowProvider:
             raise
 
     def _ingest_state(self, payload: object, now: datetime) -> bool:
-        snapshot, session_id, sequence, fields = _parse_state(
-            payload, self.binding_id, self.profile, now
+        snapshot, session_id, sequence, fields, published_at = _parse_state(
+            payload, self.binding_id, self.profile, now, self.expected_proof, self.require_identity
         )
+        binding_generation = self._binding_generation_candidate(snapshot)
+        state_coordinate = self._snapshot_availability_coordinate(snapshot, sequence)
         canonical = _canonical_payload(snapshot)
         if session_id in self._tombstoned_sessions:
             _contract_error("Local provider session was superseded")
@@ -1252,16 +1623,32 @@ class LocalSemanticShadowProvider:
             self._device_status = "unknown"
             self._device_availability_payload = None
             self._device_availability_at = None
+            self._device_availability_coordinate = None
         self._session_id = session_id
         self._sequence = sequence
         self._state_payload = canonical
+        self._state_published_at = published_at
+        self._state_availability_coordinate = state_coordinate
         self._shadow_fields = fields
+        if binding_generation is not None:
+            self._binding_generation = binding_generation
         return True
 
     def _ingest_device_availability(self, payload: object, now: datetime) -> bool:
-        value, status, session_id, observed_at = _parse_availability(payload, now)
+        value, status, session_id, observed_at = _parse_availability(
+            payload, now, self.expected_proof, self.require_identity
+        )
         if self._session_id is None or session_id != self._session_id:
             _contract_error("Local provider availability session does not match")
+        coordinate = self._availability_coordinate(value)
+        if coordinate != self._state_availability_coordinate:
+            _contract_error(
+                "Local provider availability does not describe the current snapshot"
+            )
+        if self._state_published_at is None or observed_at < self._state_published_at:
+            _contract_error(
+                "Local provider availability predates the snapshot it describes"
+            )
         canonical = _canonical_payload(value)
         if (
             self._device_availability_at is not None
@@ -1271,10 +1658,17 @@ class LocalSemanticShadowProvider:
         if status == self._device_status:
             if canonical == self._device_availability_payload:
                 return False
-            _contract_error("Local provider duplicate device availability changed")
+            # The publisher deliberately refreshes an unchanged status after a
+            # newer identity-bound state. Only that stale -> exact transition is
+            # a valid same-status publication; changes at one cursor still collide.
+            if self._availability_describes_current_state():
+                _contract_error(
+                    "Local provider duplicate device availability changed"
+                )
         self._device_status = status
         self._device_availability_payload = canonical
         self._device_availability_at = observed_at
+        self._device_availability_coordinate = coordinate
         return True
 
     def _ingest_runtime_availability(self, payload: object, now: datetime) -> bool:
@@ -1340,6 +1734,8 @@ class LocalWaterTankShadowProvider(LocalSemanticShadowProvider):
         binding_id: str,
         *,
         profile: LocalSemanticProfile | None = None,
+        pat_device_id: str | None = None,
+        require_identity: bool = False,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         exact_profile = _local_semantic_profile(LOCAL_DHUM_WATER_TANK_PROFILE_ID)
@@ -1347,7 +1743,17 @@ class LocalWaterTankShadowProvider(LocalSemanticShadowProvider):
             raise LocalProviderConfigurationError(
                 "Local water-tank provider profile does not match"
             )
-        super().__init__(binding_id, exact_profile, now=now)
+        # This facade covers the DHUM binding, whose publisher is the one that
+        # builds its contract from a declared PAT identity and signs every
+        # publication with it. Dropping the identity here left the only proof this
+        # system actually emits unchecked.
+        super().__init__(
+            binding_id,
+            exact_profile,
+            pat_device_id=pat_device_id,
+            require_identity=require_identity,
+            now=now,
+        )
 
     @property
     def shadow_value(self) -> bool | None:

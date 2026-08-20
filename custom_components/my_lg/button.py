@@ -16,6 +16,7 @@ from typing import Any
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
@@ -30,6 +31,8 @@ from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature_catalog import get_wideq_control
+from .local_command import LocalCommandFailed
+from .local_control_router import LocalControlRouter
 from .value_access import stable_feature_key
 
 
@@ -38,10 +41,18 @@ class MyLgButtonDescription(ButtonEntityDescription):
     """Button that posts a fixed control payload on press."""
 
     payload: dict[str, Any]
+    local_capability: str | None = None
 
 
-def _op(key: str, payload: dict[str, Any]) -> MyLgButtonDescription:
-    return MyLgButtonDescription(key=key, translation_key=key, payload=payload)
+def _op(
+    key: str, payload: dict[str, Any], local_capability: str | None = None
+) -> MyLgButtonDescription:
+    return MyLgButtonDescription(
+        key=key,
+        translation_key=key,
+        payload=payload,
+        local_capability=local_capability,
+    )
 
 
 def _washer(mode: str) -> dict[str, Any]:
@@ -54,16 +65,20 @@ def _dryer(mode: str) -> dict[str, Any]:
 
 WASHTOWER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
     _op("washer_start", _washer("START")),
-    _op("washer_stop", _washer("STOP")),
+    _op("washer_stop", _washer("STOP"), "washer.operation.pause"),
     _op("washer_power_off", _washer("POWER_OFF")),
     _op("dryer_start", _dryer("START")),
-    _op("dryer_stop", _dryer("STOP")),
+    _op("dryer_stop", _dryer("STOP"), "dryer.operation.pause"),
     _op("dryer_power_off", _dryer("POWER_OFF")),
 )
 
 STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
     _op("styler_start", {"operation": {"stylerOperationMode": "START"}}),
-    _op("styler_stop", {"operation": {"stylerOperationMode": "STOP"}}),
+    _op(
+        "styler_stop",
+        {"operation": {"stylerOperationMode": "STOP"}},
+        "styler.operation.pause",
+    ),
     _op("styler_power_off", {"operation": {"stylerOperationMode": "POWER_OFF"}}),
     MyLgButtonDescription(
         key="styler_power_on",
@@ -119,7 +134,9 @@ async def async_setup_entry(
     entities: list[ButtonEntity] = []
     for coordinator in entry.runtime_data.coordinators.values():
         for desc in BUTTONS_BY_TYPE.get(coordinator.device_type, ()):
-            entities.append(MyLgButton(coordinator, desc))
+            entities.append(
+                MyLgButton(coordinator, desc, entry.runtime_data.local_control)
+            )
         for group, field, key in _TIMER_CLEAR_FIELDS:
             if coordinator.supports_field(group, field):
                 entities.append(
@@ -171,12 +188,30 @@ class MyLgButton(MyLgEntity, ButtonEntity):
     entity_description: MyLgButtonDescription
 
     def __init__(
-        self, coordinator: PatDeviceCoordinator, description: MyLgButtonDescription
+        self,
+        coordinator: PatDeviceCoordinator,
+        description: MyLgButtonDescription,
+        local_control: LocalControlRouter | None = None,
     ) -> None:
         super().__init__(coordinator, description.key)
         self.entity_description = description
+        self._local_control = local_control
 
     async def async_press(self) -> None:
+        capability = self.entity_description.local_capability
+        if capability is not None and self._local_control is not None:
+            try:
+                outcome = await self._local_control.async_execute(
+                    self.coordinator.device_id, capability
+                )
+            except LocalCommandFailed as err:
+                # The frame may already be on the wire. Retrying the same press through LG would
+                # be a duplicate command, so surface the uncertainty instead.
+                raise HomeAssistantError(f"{self.coordinator.alias}: {err}") from err
+            if outcome is not None:
+                # Confirmed/already and unverifiable all mean a frame left the bridge. Only a
+                # pre-wire refusal returns None and is safe to offer to the cloud.
+                return
         await self.coordinator.async_control(self.entity_description.payload)
 
 
