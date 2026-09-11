@@ -52,6 +52,9 @@ TLV_READ_CONSUMER_MUTATIONS = (
     "restore-staged-v1",
     "adopt-v2",
     "retire-v1",
+    "adopt-successor-v2",
+    "restore-predecessor-v2",
+    "retire-predecessor-v2",
 )
 EXPECTED_TLV_READ_DESCRIPTOR_COUNT = 355
 EXPECTED_TLV_READ_ENTITY_ROOT_SHA256 = (
@@ -131,6 +134,41 @@ _RETAINED_TLV_READ_PUBLICATION_PIN_GENERATIONS = (
             "semantics_revision": 32,
         }
     ),
+)
+
+# Exact setup-only predecessors for the reviewed CST sem32 -> sem33
+# per-model transition.  These values never authorize an old publication
+# under the new authority: they only let HA construct the provider from its
+# already-durable predecessor state so the admin transition API can advance
+# that binding live.  Each model has one current successor and one retained
+# predecessor; every other model/hash remains fail-closed.
+_REVIEWED_TLV_READ_V2_SUCCESSOR_PREDECESSORS = MappingProxyType(
+    {
+        "CST_170004_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 33,
+                "successor_model_contract_sha256": (
+                    "e884ed3646d166638187a8de3b218853977870b422a8243957e5cd0dc36e0095"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "b6042e904492d2a378186de4fdf2c964aab96d26acb3418703af02816c400912"
+                ),
+            }
+        ),
+        "CST_570004_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 33,
+                "successor_model_contract_sha256": (
+                    "5fee1131795408a685be0d3871a4f83df72411ccef4423055a9ae25cf0fc3c58"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "7b3d28cc729641d852ee9c5ebe768532e5afc3582d486d4ae4cf5c4192202421"
+                ),
+            }
+        ),
+    }
 )
 MAX_TLV_READ_ARTIFACT_BYTES = 2 * 1024 * 1024
 
@@ -399,7 +437,7 @@ _READ_CONSUMER_PIN_KEYS = frozenset(
 _READ_CONSUMER_PIN_SET_KEYS = frozenset(
     {"schema_version", "binding_id", "accepted", "record_sha256"}
 )
-_READ_CONSUMER_BINDING_STATE_KEYS = frozenset(
+_READ_CONSUMER_BINDING_STATE_V1_KEYS = frozenset(
     {
         "schema_version",
         "binding_id",
@@ -409,6 +447,13 @@ _READ_CONSUMER_BINDING_STATE_KEYS = frozenset(
         "adopted_model_contract_sha256",
         "consumer_pin_set",
         "record_sha256",
+    }
+)
+_READ_CONSUMER_BINDING_STATE_V2_KEYS = frozenset(
+    {
+        *_READ_CONSUMER_BINDING_STATE_V1_KEYS,
+        "predecessor_pin",
+        "predecessor_record_sha256",
     }
 )
 _READ_CONSUMER_STATE_INVENTORY_KEYS = frozenset(
@@ -1279,6 +1324,38 @@ class TlvReadPerModelAuthority:
             raise ValueError("TLV read per-model authority is invalid")
 
 
+def _reviewed_tlv_read_v2_predecessor_authority(
+    successor: TlvReadPerModelAuthority | None,
+) -> TlvReadPerModelAuthority | None:
+    """Return one exact setup-only predecessor for a reviewed successor."""
+    if successor is None:
+        return None
+    transition = _REVIEWED_TLV_READ_V2_SUCCESSOR_PREDECESSORS.get(
+        successor.model_id
+    )
+    if transition is None or (
+        transition["successor_semantics_revision"]
+        != successor.semantics_revision
+        or transition["successor_model_contract_sha256"]
+        != successor.model_contract_sha256
+    ):
+        return None
+    return TlvReadPerModelAuthority(
+        profile_id=successor.profile_id,
+        model_id=successor.model_id,
+        platform=successor.platform,
+        semantics_revision=transition["predecessor_semantics_revision"],
+        model_contract_sha256=transition[
+            "predecessor_model_contract_sha256"
+        ],
+        feed_schema_version=successor.feed_schema_version,
+        publication_plan_revision=successor.publication_plan_revision,
+        static_contract_projection_version=(
+            successor.static_contract_projection_version
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class TlvReadConsumerPin:
     """One exact static producer contract accepted for a binding."""
@@ -1323,7 +1400,7 @@ class TlvReadConsumerBindingAuthority:
                 or self.model_authority.model_id != self.profile.model_id
                 or self.model_authority.platform != self.profile.platform
                 or self.model_authority.semantics_revision
-                != self.profile.semantics_revision
+                > self.profile.semantics_revision
             )
         ):
             raise ValueError("TLV read consumer binding authority is invalid")
@@ -1384,6 +1461,24 @@ class TlvReadConsumerBindingAuthority:
             ),
             model_contract_sha256=authority.model_contract_sha256,
         )
+
+    def reviewed_predecessor_pin_for_v2_successor(
+        self, binding_generation: int
+    ) -> TlvReadConsumerPin:
+        """Derive the sole reviewed predecessor of this exact successor."""
+        predecessor = _reviewed_tlv_read_v2_predecessor_authority(
+            self.model_authority
+        )
+        if predecessor is None:
+            raise ValueError(
+                "TLV read v2 successor has no reviewed predecessor authority"
+            )
+        return TlvReadConsumerBindingAuthority(
+            binding_id=self.binding_id,
+            pat_device_id_proof_sha256=self.pat_device_id_proof_sha256,
+            profile=self.profile,
+            model_authority=predecessor,
+        ).pin_for_projection(2, binding_generation)
 
 
 @dataclass(frozen=True)
@@ -1519,6 +1614,8 @@ class TlvReadConsumerBindingState:
     consumer_pin_set: TlvReadConsumerPinSet
     record_sha256: str
     schema_version: int = 1
+    predecessor_pin: TlvReadConsumerPin | None = None
+    predecessor_record_sha256: str | None = None
 
     def __post_init__(self) -> None:
         matching = tuple(
@@ -1529,8 +1626,8 @@ class TlvReadConsumerBindingState:
             == self.adopted_static_read_contract_sha256
             and pin.model_contract_sha256 == self.adopted_model_contract_sha256
         )
-        if (
-            self.schema_version != 1
+        common_invalid = (
+            self.schema_version not in (1, 2)
             or _BINDING_ID.fullmatch(self.binding_id) is None
             or self.consumer_pin_set.binding_id != self.binding_id
             or not _valid_sha256(self.pat_device_id_proof_sha256)
@@ -1546,7 +1643,43 @@ class TlvReadConsumerBindingState:
             )
             or len(matching) != 1
             or not _valid_sha256(self.record_sha256)
-        ):
+        )
+        predecessor_invalid = False
+        if self.schema_version == 1:
+            predecessor_invalid = (
+                self.predecessor_pin is not None
+                or self.predecessor_record_sha256 is not None
+            )
+        elif not isinstance(self.predecessor_pin, TlvReadConsumerPin):
+            predecessor_invalid = True
+        else:
+            adopted_pin = TlvReadConsumerPin(
+                projection_version=self.adopted_projection_version,
+                static_read_contract_sha256=(
+                    self.adopted_static_read_contract_sha256
+                ),
+                model_contract_sha256=self.adopted_model_contract_sha256,
+            )
+            predecessor_pin_set = build_tlv_read_consumer_pin_set(
+                self.binding_id, (self.predecessor_pin,)
+            )
+            predecessor_invalid = (
+                self.adopted_projection_version != 2
+                or self.predecessor_pin.projection_version != 2
+                or self.predecessor_pin == adopted_pin
+                or self.consumer_pin_set.accepted != (adopted_pin,)
+                or not _valid_sha256(self.predecessor_record_sha256)
+                or self.predecessor_record_sha256
+                != tlv_read_consumer_binding_state_record_sha256(
+                    binding_id=self.binding_id,
+                    pat_device_id_proof_sha256=(
+                        self.pat_device_id_proof_sha256
+                    ),
+                    adopted_pin=self.predecessor_pin,
+                    consumer_pin_set=predecessor_pin_set,
+                )
+            )
+        if common_invalid or predecessor_invalid:
             raise ValueError("TLV read consumer binding state is invalid")
 
 
@@ -1590,9 +1723,12 @@ def _consumer_binding_state_core(
     pat_device_id_proof_sha256: str,
     adopted_pin: TlvReadConsumerPin,
     consumer_pin_set: TlvReadConsumerPinSet,
+    schema_version: int = 1,
+    predecessor_pin: TlvReadConsumerPin | None = None,
+    predecessor_record_sha256: str | None = None,
 ) -> dict[str, Any]:
-    return {
-        "schema_version": 1,
+    core = {
+        "schema_version": schema_version,
         "binding_id": binding_id,
         "pat_device_id_proof_sha256": pat_device_id_proof_sha256,
         "adopted_projection_version": adopted_pin.projection_version,
@@ -1602,6 +1738,22 @@ def _consumer_binding_state_core(
         "adopted_model_contract_sha256": adopted_pin.model_contract_sha256,
         "consumer_pin_set": _consumer_pin_set_json(consumer_pin_set),
     }
+    if schema_version == 2:
+        if predecessor_pin is None or predecessor_record_sha256 is None:
+            raise ValueError("TLV read consumer predecessor is incomplete")
+        core.update(
+            {
+                "predecessor_pin": _consumer_pin_json(predecessor_pin),
+                "predecessor_record_sha256": predecessor_record_sha256,
+            }
+        )
+    elif (
+        schema_version != 1
+        or predecessor_pin is not None
+        or predecessor_record_sha256 is not None
+    ):
+        raise ValueError("TLV read consumer binding state schema is invalid")
+    return core
 
 
 def tlv_read_consumer_binding_state_record_sha256(
@@ -1610,6 +1762,9 @@ def tlv_read_consumer_binding_state_record_sha256(
     pat_device_id_proof_sha256: str,
     adopted_pin: TlvReadConsumerPin,
     consumer_pin_set: TlvReadConsumerPinSet,
+    schema_version: int = 1,
+    predecessor_pin: TlvReadConsumerPin | None = None,
+    predecessor_record_sha256: str | None = None,
 ) -> str:
     """Hash one exact durable projection latch and its currently accepted pins."""
     core = _consumer_binding_state_core(
@@ -1617,6 +1772,9 @@ def tlv_read_consumer_binding_state_record_sha256(
         pat_device_id_proof_sha256=pat_device_id_proof_sha256,
         adopted_pin=adopted_pin,
         consumer_pin_set=consumer_pin_set,
+        schema_version=schema_version,
+        predecessor_pin=predecessor_pin,
+        predecessor_record_sha256=predecessor_record_sha256,
     )
     encoded = json.dumps(
         core,
@@ -1636,8 +1794,15 @@ def build_tlv_read_consumer_binding_state(
     pat_device_id_proof_sha256: str,
     adopted_pin: TlvReadConsumerPin,
     consumer_pin_set: TlvReadConsumerPinSet,
+    predecessor_pin: TlvReadConsumerPin | None = None,
+    predecessor_record_sha256: str | None = None,
 ) -> TlvReadConsumerBindingState:
     """Build one canonical binding state from installer-captured exact values."""
+    schema_version = (
+        2
+        if predecessor_pin is not None or predecessor_record_sha256 is not None
+        else 1
+    )
     return TlvReadConsumerBindingState(
         binding_id=binding_id,
         pat_device_id_proof_sha256=pat_device_id_proof_sha256,
@@ -1647,11 +1812,17 @@ def build_tlv_read_consumer_binding_state(
         ),
         adopted_model_contract_sha256=adopted_pin.model_contract_sha256,
         consumer_pin_set=consumer_pin_set,
+        schema_version=schema_version,
+        predecessor_pin=predecessor_pin,
+        predecessor_record_sha256=predecessor_record_sha256,
         record_sha256=tlv_read_consumer_binding_state_record_sha256(
             binding_id=binding_id,
             pat_device_id_proof_sha256=pat_device_id_proof_sha256,
             adopted_pin=adopted_pin,
             consumer_pin_set=consumer_pin_set,
+            schema_version=schema_version,
+            predecessor_pin=predecessor_pin,
+            predecessor_record_sha256=predecessor_record_sha256,
         ),
     )
 
@@ -1660,7 +1831,17 @@ def parse_tlv_read_consumer_binding_state(
     value: object,
 ) -> TlvReadConsumerBindingState:
     """Validate one Store row including both nested and outer self-digests."""
-    if not isinstance(value, Mapping) or set(value) != _READ_CONSUMER_BINDING_STATE_KEYS:
+    if not isinstance(value, Mapping):
+        raise ValueError("TLV read consumer binding state keys are invalid")
+    schema_version = value.get("schema_version")
+    expected_keys = (
+        _READ_CONSUMER_BINDING_STATE_V1_KEYS
+        if schema_version == 1
+        else _READ_CONSUMER_BINDING_STATE_V2_KEYS
+        if schema_version == 2
+        else frozenset()
+    )
+    if set(value) != expected_keys:
         raise ValueError("TLV read consumer binding state keys are invalid")
     binding_id = value["binding_id"]
     if not isinstance(binding_id, str):
@@ -1675,8 +1856,27 @@ def parse_tlv_read_consumer_binding_state(
         ],
         model_contract_sha256=value["adopted_model_contract_sha256"],
     )
+    predecessor_pin = None
+    predecessor_record_sha256 = None
+    if schema_version == 2:
+        raw_predecessor_pin = value["predecessor_pin"]
+        if (
+            not isinstance(raw_predecessor_pin, Mapping)
+            or set(raw_predecessor_pin) != _READ_CONSUMER_PIN_KEYS
+        ):
+            raise ValueError("TLV read consumer predecessor pin is invalid")
+        predecessor_pin = TlvReadConsumerPin(
+            projection_version=raw_predecessor_pin["projection_version"],
+            static_read_contract_sha256=raw_predecessor_pin[
+                "static_read_contract_sha256"
+            ],
+            model_contract_sha256=raw_predecessor_pin[
+                "model_contract_sha256"
+            ],
+        )
+        predecessor_record_sha256 = value["predecessor_record_sha256"]
     parsed = TlvReadConsumerBindingState(
-        schema_version=value["schema_version"],
+        schema_version=schema_version,
         binding_id=binding_id,
         pat_device_id_proof_sha256=value["pat_device_id_proof_sha256"],
         adopted_projection_version=adopted_pin.projection_version,
@@ -1686,12 +1886,17 @@ def parse_tlv_read_consumer_binding_state(
         adopted_model_contract_sha256=adopted_pin.model_contract_sha256,
         consumer_pin_set=pin_set,
         record_sha256=value["record_sha256"],
+        predecessor_pin=predecessor_pin,
+        predecessor_record_sha256=predecessor_record_sha256,
     )
     if parsed.record_sha256 != tlv_read_consumer_binding_state_record_sha256(
         binding_id=binding_id,
         pat_device_id_proof_sha256=parsed.pat_device_id_proof_sha256,
         adopted_pin=adopted_pin,
         consumer_pin_set=pin_set,
+        schema_version=schema_version,
+        predecessor_pin=predecessor_pin,
+        predecessor_record_sha256=predecessor_record_sha256,
     ):
         raise ValueError("TLV read consumer binding state digest changed")
     return parsed
@@ -1711,6 +1916,9 @@ def _consumer_binding_state_json(
             pat_device_id_proof_sha256=state.pat_device_id_proof_sha256,
             adopted_pin=adopted_pin,
             consumer_pin_set=state.consumer_pin_set,
+            schema_version=state.schema_version,
+            predecessor_pin=state.predecessor_pin,
+            predecessor_record_sha256=state.predecessor_record_sha256,
         ),
         "record_sha256": state.record_sha256,
     }
@@ -1911,6 +2119,193 @@ def restore_tlv_read_consumer_staged_source(
     )
 
 
+def _consumer_state_adopted_pin(
+    state: TlvReadConsumerBindingState,
+) -> TlvReadConsumerPin:
+    return TlvReadConsumerPin(
+        projection_version=state.adopted_projection_version,
+        static_read_contract_sha256=state.adopted_static_read_contract_sha256,
+        model_contract_sha256=state.adopted_model_contract_sha256,
+    )
+
+
+def adopt_tlv_read_consumer_successor_v2(
+    source: TlvReadConsumerBindingState,
+    successor_pin: TlvReadConsumerPin,
+) -> TlvReadConsumerBindingState:
+    """Replace one exact singleton v2 pin while retaining exact rollback proof."""
+    checked = validate_tlv_read_consumer_binding_state(source)
+    adopted_pin = _consumer_state_adopted_pin(checked)
+    if (
+        checked.schema_version == 2
+        and adopted_pin == successor_pin
+        and checked.predecessor_pin is not None
+    ):
+        return checked
+    if (
+        checked.schema_version != 1
+        or adopted_pin.projection_version != 2
+        or successor_pin.projection_version != 2
+        or successor_pin == adopted_pin
+        or checked.consumer_pin_set.accepted != (adopted_pin,)
+    ):
+        raise ValueError(
+            "TLV read v2 successor requires one exact singleton predecessor"
+        )
+    successor_pin_set = build_tlv_read_consumer_pin_set(
+        checked.binding_id, (successor_pin,)
+    )
+    return build_tlv_read_consumer_binding_state(
+        binding_id=checked.binding_id,
+        pat_device_id_proof_sha256=checked.pat_device_id_proof_sha256,
+        adopted_pin=successor_pin,
+        consumer_pin_set=successor_pin_set,
+        predecessor_pin=adopted_pin,
+        predecessor_record_sha256=checked.record_sha256,
+    )
+
+
+def restore_tlv_read_consumer_predecessor_v2(
+    source: TlvReadConsumerBindingState,
+    predecessor_pin: TlvReadConsumerPin | None = None,
+) -> TlvReadConsumerBindingState:
+    """Restore the byte-identical predecessor before successor retirement."""
+    checked = validate_tlv_read_consumer_binding_state(source)
+    if checked.schema_version == 1:
+        if (
+            predecessor_pin is not None
+            and _consumer_state_adopted_pin(checked) == predecessor_pin
+            and checked.consumer_pin_set.accepted == (predecessor_pin,)
+        ):
+            return checked
+        raise ValueError("TLV read v2 predecessor is not retained")
+    retained = checked.predecessor_pin
+    if retained is None or (
+        predecessor_pin is not None and retained != predecessor_pin
+    ):
+        raise ValueError("TLV read v2 predecessor is absent or changed")
+    pin_set = build_tlv_read_consumer_pin_set(checked.binding_id, (retained,))
+    restored = build_tlv_read_consumer_binding_state(
+        binding_id=checked.binding_id,
+        pat_device_id_proof_sha256=checked.pat_device_id_proof_sha256,
+        adopted_pin=retained,
+        consumer_pin_set=pin_set,
+    )
+    if restored.record_sha256 != checked.predecessor_record_sha256:
+        raise ValueError("TLV read v2 predecessor digest cannot be reproduced")
+    return restored
+
+
+def retire_tlv_read_consumer_predecessor_v2(
+    source: TlvReadConsumerBindingState,
+    successor_pin: TlvReadConsumerPin | None = None,
+) -> TlvReadConsumerBindingState:
+    """Finalize one v2 successor and make its predecessor irrecoverable."""
+    checked = validate_tlv_read_consumer_binding_state(source)
+    adopted_pin = _consumer_state_adopted_pin(checked)
+    if checked.schema_version == 1:
+        if (
+            successor_pin is not None
+            and adopted_pin == successor_pin
+            and checked.consumer_pin_set.accepted == (successor_pin,)
+        ):
+            return checked
+        raise ValueError("TLV read v2 predecessor is already absent")
+    if successor_pin is not None and adopted_pin != successor_pin:
+        raise ValueError("TLV read v2 successor changed before retirement")
+    pin_set = build_tlv_read_consumer_pin_set(checked.binding_id, (adopted_pin,))
+    return build_tlv_read_consumer_binding_state(
+        binding_id=checked.binding_id,
+        pat_device_id_proof_sha256=checked.pat_device_id_proof_sha256,
+        adopted_pin=adopted_pin,
+        consumer_pin_set=pin_set,
+    )
+
+
+def validate_tlv_read_consumer_state_replacement(
+    current: TlvReadConsumerBindingState,
+    candidate: TlvReadConsumerBindingState,
+) -> TlvReadConsumerBindingState:
+    """Apply one shared monotonic latch predicate to Store and live heads."""
+    before = validate_tlv_read_consumer_binding_state(current)
+    after = validate_tlv_read_consumer_binding_state(candidate)
+    if (
+        before.binding_id != after.binding_id
+        or before.pat_device_id_proof_sha256
+        != after.pat_device_id_proof_sha256
+    ):
+        raise ValueError("TLV read consumer state binding identity changed")
+    if before.record_sha256 == after.record_sha256:
+        return after
+    if after.adopted_projection_version < before.adopted_projection_version:
+        raise ValueError("TLV read consumer projection latch regressed")
+    before_pin = _consumer_state_adopted_pin(before)
+    after_pin = _consumer_state_adopted_pin(after)
+    # The released v1->v2 projection migration produces another schema-1
+    # record.  A schema-2 body is reserved for the reviewed same-projection
+    # successor chain below; allowing it through this generic version latch
+    # would let an unproven predecessor become restorable.
+    if (
+        after.adopted_projection_version > before.adopted_projection_version
+        and after.schema_version == 1
+    ):
+        return after
+    if before_pin == after_pin:
+        return after
+    forward = (
+        before.schema_version == 1
+        and after.schema_version == 2
+        and before.adopted_projection_version == 2
+        and before.consumer_pin_set.accepted == (before_pin,)
+        and after.consumer_pin_set.accepted == (after_pin,)
+        and after.predecessor_pin == before_pin
+        and after.predecessor_record_sha256 == before.record_sha256
+    )
+    restore = (
+        before.schema_version == 2
+        and after.schema_version == 1
+        and before.predecessor_pin == after_pin
+        and before.predecessor_record_sha256 == after.record_sha256
+        and after.consumer_pin_set.accepted == (after_pin,)
+    )
+    if not forward and not restore:
+        raise ValueError("TLV read consumer same-projection replacement refused")
+    return after
+
+
+def _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
+    state: TlvReadConsumerBindingState,
+    authority: TlvReadPerModelAuthority | None,
+) -> bool:
+    """Permit an old CST pin only as the exact adopted singleton setup state."""
+    v2_pins = tuple(
+        pin
+        for pin in state.consumer_pin_set.accepted
+        if pin.projection_version == 2
+    )
+    if not v2_pins:
+        return True
+    if authority is None:
+        return False
+    if all(
+        pin.model_contract_sha256 == authority.model_contract_sha256
+        for pin in v2_pins
+    ):
+        return True
+    predecessor = _reviewed_tlv_read_v2_predecessor_authority(authority)
+    adopted_pin = _consumer_state_adopted_pin(state)
+    return (
+        predecessor is not None
+        and state.schema_version == 1
+        and state.adopted_projection_version == 2
+        and len(v2_pins) == 1
+        and state.consumer_pin_set.accepted == v2_pins
+        and adopted_pin == v2_pins[0]
+        and adopted_pin.model_contract_sha256
+        == predecessor.model_contract_sha256
+    )
+
+
 def transition_tlv_read_consumer_binding_state(
     *,
     operation: Literal[
@@ -1919,12 +2314,16 @@ def transition_tlv_read_consumer_binding_state(
         "restore-staged-v1",
         "adopt-v2",
         "retire-v1",
+        "adopt-successor-v2",
+        "restore-predecessor-v2",
+        "retire-predecessor-v2",
     ],
     current: TlvReadConsumerBindingState | None,
     binding_id: str,
     pat_device_id_proof_sha256: str,
     v1_pin: TlvReadConsumerPin | None = None,
     v2_pin: TlvReadConsumerPin | None = None,
+    predecessor_v2_pin: TlvReadConsumerPin | None = None,
     observed_adopted_pin: TlvReadConsumerPin | None = None,
     expected_current_record_sha256: str | None,
 ) -> TlvReadConsumerBindingState:
@@ -1938,6 +2337,8 @@ def transition_tlv_read_consumer_binding_state(
         and v1_pin.projection_version != 1
         or v2_pin is not None
         and v2_pin.projection_version != 2
+        or predecessor_v2_pin is not None
+        and predecessor_v2_pin.projection_version != 2
         or observed_adopted_pin is not None
         and (
             operation != "stage-v2"
@@ -2002,8 +2403,28 @@ def transition_tlv_read_consumer_binding_state(
         target = adopt_tlv_read_consumer_projection(
             checked_current, staged_v2[0]
         )
-    else:
+    elif operation == "retire-v1":
         target = retire_tlv_read_consumer_source_pin(checked_current)
+    elif operation == "adopt-successor-v2":
+        if v2_pin is None or predecessor_v2_pin is None:
+            raise ValueError("TLV read v2 successor authority is unavailable")
+        target = adopt_tlv_read_consumer_successor_v2(
+            checked_current, v2_pin
+        )
+        if target.predecessor_pin != predecessor_v2_pin:
+            raise ValueError("TLV read v2 successor predecessor changed")
+    elif operation == "restore-predecessor-v2":
+        if predecessor_v2_pin is None:
+            raise ValueError("TLV read v2 predecessor authority is unavailable")
+        target = restore_tlv_read_consumer_predecessor_v2(
+            checked_current, predecessor_v2_pin
+        )
+    else:
+        if v2_pin is None:
+            raise ValueError("TLV read v2 successor authority is unavailable")
+        target = retire_tlv_read_consumer_predecessor_v2(
+            checked_current, v2_pin
+        )
 
     # A crash after persistence but before the phase receipt turns the retry
     # into a no-op. Only a genuine state change consumes the caller's JIT CAS
@@ -2503,7 +2924,11 @@ class TlvReadShadowProvider:
             or model_authority.profile_id != profile.profile_id
             or model_authority.model_id != profile.model_id
             or model_authority.platform != profile.platform
-            or model_authority.semantics_revision != profile.semantics_revision
+            # The v1/full profile follows the released global semantics
+            # revision.  A v2 authority follows only the exact model's
+            # decoder closure, so it may intentionally lag that global
+            # revision but may never claim an unreleased future revision.
+            or model_authority.semantics_revision > profile.semantics_revision
         ):
             raise ValueError("TLV read per-model authority does not match the profile")
         if type(allow_legacy_v1_fallback) is not bool:
@@ -2522,18 +2947,8 @@ class TlvReadShadowProvider:
                 raise ValueError(
                     "TLV read consumer state does not match the exact binding"
                 )
-            v2_pins = tuple(
-                pin
-                for pin in parsed_consumer_state.consumer_pin_set.accepted
-                if pin.projection_version == 2
-            )
-            if v2_pins and (
-                model_authority is None
-                or any(
-                    pin.model_contract_sha256
-                    != model_authority.model_contract_sha256
-                    for pin in v2_pins
-                )
+            if not _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
+                parsed_consumer_state, model_authority
             ):
                 raise ValueError(
                     "TLV read v2 consumer pin does not match per-model authority"
@@ -2713,31 +3128,16 @@ class TlvReadShadowProvider:
         if (
             parsed.binding_id != self.binding_id
             or parsed.pat_device_id_proof_sha256 != self._expected_proof
-            or parsed.adopted_projection_version
-            < self._adopted_projection_version
-            or parsed.adopted_projection_version
-            == self._adopted_projection_version
-            and self._consumer_state is not None
-            and (
-                parsed.adopted_static_read_contract_sha256
-                != self._consumer_state.adopted_static_read_contract_sha256
-                or parsed.adopted_model_contract_sha256
-                != self._consumer_state.adopted_model_contract_sha256
-            )
         ):
-            raise ValueError("TLV read consumer state identity or latch changed")
-        v2_pins = tuple(
-            pin
-            for pin in parsed.consumer_pin_set.accepted
-            if pin.projection_version == 2
-        )
-        if v2_pins and (
-            self._model_authority is None
-            or any(
-                pin.model_contract_sha256
-                != self._model_authority.model_contract_sha256
-                for pin in v2_pins
+            raise ValueError("TLV read consumer state binding identity changed")
+        if self._consumer_state is not None:
+            parsed = validate_tlv_read_consumer_state_replacement(
+                self._consumer_state, parsed
             )
+        elif parsed.adopted_projection_version < self._adopted_projection_version:
+            raise ValueError("TLV read consumer projection latch regressed")
+        if not _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
+            parsed, self._model_authority
         ):
             raise ValueError("TLV read consumer state model authority changed")
         return parsed
@@ -3572,22 +3972,10 @@ async def async_apply_tlv_read_consumer_binding_state(
         if provider is not None:
             parsed = provider.validate_consumer_state_replacement(parsed)
         current = states.get(parsed.binding_id)
-        if (
-            current is not None
-            and (
-                parsed.adopted_projection_version
-                < current.adopted_projection_version
-                or parsed.adopted_projection_version
-                == current.adopted_projection_version
-                and (
-                    parsed.adopted_static_read_contract_sha256
-                    != current.adopted_static_read_contract_sha256
-                    or parsed.adopted_model_contract_sha256
-                    != current.adopted_model_contract_sha256
-                )
+        if current is not None:
+            parsed = validate_tlv_read_consumer_state_replacement(
+                current, parsed
             )
-        ):
-            raise ValueError("TLV read consumer projection latch regression refused")
         candidate = dict(states)
         candidate[parsed.binding_id] = parsed
         # This Store has exactly one writer: the reviewed installation

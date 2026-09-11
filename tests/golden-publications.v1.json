@@ -7,7 +7,7 @@
       "topic": "state/local_golden_publication_fixture",
       "payload": {
         "schema_version": 1,
-        "semantics_revision": 32,
+        "semantics_revision": 33,
         "binding_id": "local_golden_publication_fixture",
         "model_id": "DHUM_056905_WW",
         "platform": "thinq2",
@@ -45,7 +45,7 @@
       "topic": "state/local_golden_publication_fixture",
       "payload": {
         "schema_version": 2,
-        "semantics_revision": 32,
+        "semantics_revision": 33,
         "binding_id": "local_golden_publication_fixture",
         "model_id": "DHUM_056905_WW",
         "platform": "thinq2",
@@ -88,7 +88,7 @@
       "topic": "state/local_golden_publication_fixture",
       "payload": {
         "schema_version": 3,
-        "semantics_revision": 32,
+        "semantics_revision": 33,
         "binding_id": "local_golden_publication_fixture",
         "model_id": "DHUM_056905_WW",
         "platform": "thinq2",

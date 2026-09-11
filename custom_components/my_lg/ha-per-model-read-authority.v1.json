@@ -5,49 +5,49 @@
   "feed_schema_version": 3,
   "publication_plan_revision": 2,
   "static_contract_projection_version": 2,
-  "source_inventory_root_sha256": "131dee5d3fbddebe777dcb836394713cbcd94c15da6e3e0481da8fe8a6a938a5",
+  "source_inventory_root_sha256": "d1027d8fc79a0b453ead37ec1065d3c4a824e5e1193b9a260ad7b48b5f4e5e93",
   "authorities": [
     {
       "profile_id": "1WPD4CMIDR__3:read-sensors-v1",
       "model_id": "1WPD4CMIDR__3",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "5a531132d9ec7893d654228cc46866345205b10d8ead037d6f368aee5e3b4998"
+      "semantics_revision": 32,
+      "model_contract_sha256": "3a42032b5dac2e6064b33ba879e11a12c086d179f01542c3d38a05071ab239fa"
     },
     {
       "profile_id": "2REFO1DBN3K_U:read-sensors-v1",
       "model_id": "2REFO1DBN3K_U",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "b1b6bd3ef2bacc38e7d46a1ba66c3e061f1e481985413326f2aae3305db7d576"
+      "semantics_revision": 32,
+      "model_contract_sha256": "d26de953c793792552c5c65572f0b16bd3e519a055d2c7fae320609101bdf916"
     },
     {
       "profile_id": "2REK1D04AR170:read-sensors-v1",
       "model_id": "2REK1D04AR170",
       "platform": "thinq1",
-      "semantics_revision": 33,
-      "model_contract_sha256": "d156abbc85afa178f13a03ef0bc715c8093a5dbdf7f54e1f5a1038b7e66834a8"
+      "semantics_revision": 32,
+      "model_contract_sha256": "a09ae9b7349c33b2d2e5b96e053895b981f607db4564fbf1dc6045e92a39e208"
     },
     {
       "profile_id": "3REK2G03VI230D_2:read-sensors-v1",
       "model_id": "3REK2G03VI230D_2",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "5b7b47705adc675de79ce185b32d736001af14827b3978473be9772249975f1e"
+      "semantics_revision": 32,
+      "model_contract_sha256": "a97d5e5d0866a1d113ed81dcd7e3146986a5224a1f08ca2fab2158d4b3019511"
     },
     {
       "profile_id": "AIR_2C0001_WW:read-sensors-v1",
       "model_id": "AIR_2C0001_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "7483a246116a490e06fd469cbf2d3b199917777cf922386072311a1f3ad17877"
+      "semantics_revision": 32,
+      "model_contract_sha256": "50714ceb5962b9d5b7ea9c9a143eb82c209d1e6151631e83494a43448b3dc86f"
     },
     {
       "profile_id": "AIR_910604_WW:read-sensors-v1",
       "model_id": "AIR_910604_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "eae79a4035cfe2da9fddd2fde52c437cf4a5936c60dd41177922a48c96c32af6"
+      "semantics_revision": 32,
+      "model_contract_sha256": "789884a6ccb89fbb679d521a8baee6653fe12ade857c0edc433b3eb22ab39e8b"
     },
     {
       "profile_id": "CST_170004_WW:read-sensors-v1",
@@ -67,50 +67,50 @@
       "profile_id": "D121110:read-sensors-v1",
       "model_id": "D121110",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "971c5fd1bdc2458415a680432738141b505c72bb105fe79f3ff0be07e1cf3e68"
+      "semantics_revision": 32,
+      "model_contract_sha256": "72802dacbebd37aef5f686f0c0f2b3da232c420a0656f1a029af86fd65b73eef"
     },
     {
       "profile_id": "DHUM_056905_WW:read-sensors-v1",
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "6f53870312b18a8140d2ed39fd38e2b897e710427796c99caaa53e6fbf8c7393"
+      "semantics_revision": 32,
+      "model_contract_sha256": "875450af69ddbea6ae1d1d800010a0d42cb7c846a9af9f7f6d55672af42caf08"
     },
     {
       "profile_id": "HUM_056905_WW:read-sensors-v1",
       "model_id": "HUM_056905_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "28d64a94e994caf77ab9bbbe97ca2764bcd52cd1083353fdd6a83b26da424e94"
+      "semantics_revision": 32,
+      "model_contract_sha256": "f4e03100a36ed3164ba0d6eb963c68eff54711c01bc33cdd6fbec39fbe80bd19"
     },
     {
       "profile_id": "ST_R_ETH01Y_:read-sensors-v1",
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "07c23e6bd9e5ba520345f617b73a258a599dc4255dda940ed314efb290113c53"
+      "semantics_revision": 32,
+      "model_contract_sha256": "0daae56bb51b50216179f0630c7368084498bf5f7a4f62cb91d1ab5ccbfa3410"
     },
     {
       "profile_id": "WBEF3:read-sensors-v1",
       "model_id": "WBEF3",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "a49cf16146083bb17436e8ca41410b74e31ea5cc23aab72c8f9aefc198d08e64"
+      "semantics_revision": 32,
+      "model_contract_sha256": "72e3fa192e9c246bc9258126e76042a3583a6fbc03958d7407220948d4746e45"
     },
     {
       "profile_id": "WMLJ32RS:read-sensors-v1",
       "model_id": "WMLJ32RS",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "9663e5686bd0b53d39896f2d65732b23752c544a00d5402aa89d86aef22ec584"
+      "semantics_revision": 32,
+      "model_contract_sha256": "9867af144446c0fd5ddcb82c960baf0167dacefc3b248895ae77e0ab9814b7f2"
     },
     {
       "profile_id": "WTL_KPK_BDH_KR_01:read-sensors-v1",
       "model_id": "WTL_KPK_BDH_KR_01",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "9b8f38ec1548433995529613a0e2b63a467ded673b460a58bb1cd05d1460993c"
+      "semantics_revision": 32,
+      "model_contract_sha256": "d6ed11f00a73b87dcb19f1b614e6719587a92592a5215f61c50d361b720ccc2a"
     }
   ],
   "stats": {
@@ -118,5 +118,5 @@
     "thinq1_authority_count": 1,
     "thinq2_authority_count": 14
   },
-  "root_sha256": "e8d0d6fe0de5e2597611661e5e6c4b1457f8f76ef705e218368859ea5cbfa024"
+  "root_sha256": "b10da7f8b547a986b2d29ecb7a2d20ecff8d508ef53c5b790ac81c1847b9f8df"
 }

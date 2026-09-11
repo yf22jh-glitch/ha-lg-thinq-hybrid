@@ -96,7 +96,7 @@ def field_contract(
     )
 
 
-def profile():
+def profile(*, semantics_revision=31):
     fields = (
         field_contract("operation.power_requested", "binary_sensor", ("boolean",)),
         field_contract("humidity.current_pct", "sensor", ("number",), unit="%"),
@@ -136,7 +136,7 @@ def profile():
         read_entity_contract_revision="tlv-read-entities-v1:test",
         read_entity_contract_sha256="c" * 64,
         catalog_sha256="d" * 64,
-        semantics_revision=31,
+        semantics_revision=semantics_revision,
         model_id=MODEL_ID,
         platform="thinq2",
         fields=fields,
@@ -157,9 +157,14 @@ def snapshot_field(value, value_type: str, exposure: str = "state", *, unit=None
 
 
 def envelope(
-    *, sequence=1, source_session_id=SOURCE_SESSION_ID, fields=None, **overrides
+    *,
+    sequence=1,
+    source_session_id=SOURCE_SESSION_ID,
+    fields=None,
+    contract=None,
+    **overrides,
 ):
-    contract = profile()
+    contract = profile() if contract is None else contract
     value = {
         "schema_version": 2,
         "publication_plan_revision": 2,
@@ -226,13 +231,17 @@ def event_envelope(
     return json.dumps(current, separators=(",", ":")).encode()
 
 
-def per_model_authority():
-    contract = profile()
+def per_model_authority(*, contract=None, semantics_revision=None):
+    contract = profile() if contract is None else contract
     return read.TlvReadPerModelAuthority(
         profile_id=contract.profile_id,
         model_id=contract.model_id,
         platform=contract.platform,
-        semantics_revision=contract.semantics_revision,
+        semantics_revision=(
+            contract.semantics_revision
+            if semantics_revision is None
+            else semantics_revision
+        ),
         model_contract_sha256="e" * 64,
         feed_schema_version=read.PER_MODEL_TLV_READ_SCHEMA_VERSION,
         publication_plan_revision=read.TLV_READ_PUBLICATION_PLAN_REVISION,
@@ -243,9 +252,14 @@ def per_model_authority():
 
 
 def v2_envelope(
-    *, sequence=1, source_session_id=SOURCE_SESSION_ID, fields=None, **overrides
+    *,
+    sequence=1,
+    source_session_id=SOURCE_SESSION_ID,
+    fields=None,
+    authority=None,
+    **overrides,
 ):
-    authority = per_model_authority()
+    authority = per_model_authority() if authority is None else authority
     value = {
         "schema_version": authority.feed_schema_version,
         "publication_plan_revision": authority.publication_plan_revision,
@@ -1093,6 +1107,87 @@ class TlvReadProjectionTransitionTests(unittest.TestCase):
             provider.current_topic, payload, qos=1, retained=False
         )
 
+    def test_v1_profile_and_v2_model_revisions_are_independently_fenced(
+        self,
+    ) -> None:
+        contract = profile(semantics_revision=33)
+        model_authority = per_model_authority(
+            contract=contract, semantics_revision=32
+        )
+        binding_authority = read.TlvReadConsumerBindingAuthority(
+            binding_id=BINDING_ID,
+            pat_device_id_proof_sha256=PROOF,
+            profile=contract,
+            model_authority=model_authority,
+        )
+        v1 = envelope(contract=contract)
+        v2 = v2_envelope(authority=model_authority)
+        v1_pin = consumer_pin(v1, 1)
+        v2_pin = consumer_pin(v2, 2)
+        self.assertEqual(binding_authority.pin_for_projection(1, 7), v1_pin)
+        self.assertEqual(binding_authority.pin_for_projection(2, 7), v2_pin)
+
+        primary = FakePrimaryProvider()
+        provider = read.TlvReadShadowProvider(
+            BINDING_ID,
+            PAT_DEVICE_ID,
+            contract,
+            primary,
+            model_authority=model_authority,
+            consumer_state=consumer_state(v2_pin),
+            now=lambda: NOW,
+        )
+        provider.set_transport_ready(True)
+        try:
+            self.assertTrue(self.ingest_current(provider, v2))
+            global_revision_v2 = json.loads(v2)
+            global_revision_v2["semantics_revision"] = 33
+            with self.assertRaises(read.TlvReadProviderContractError):
+                self.ingest_current(
+                    provider,
+                    json.dumps(
+                        global_revision_v2, separators=(",", ":")
+                    ).encode(),
+                )
+        finally:
+            provider.close()
+
+        primary = FakePrimaryProvider()
+        provider = read.TlvReadShadowProvider(
+            BINDING_ID,
+            PAT_DEVICE_ID,
+            contract,
+            primary,
+            model_authority=model_authority,
+            consumer_state=consumer_state(v1_pin),
+            now=lambda: NOW,
+        )
+        provider.set_transport_ready(True)
+        try:
+            self.assertTrue(self.ingest_current(provider, v1))
+        finally:
+            provider.close()
+
+    def test_per_model_authority_cannot_claim_a_future_global_revision(self) -> None:
+        contract = profile(semantics_revision=33)
+        future = per_model_authority(contract=contract, semantics_revision=34)
+        with self.assertRaises(ValueError):
+            read.TlvReadConsumerBindingAuthority(
+                binding_id=BINDING_ID,
+                pat_device_id_proof_sha256=PROOF,
+                profile=contract,
+                model_authority=future,
+            )
+        with self.assertRaises(ValueError):
+            read.TlvReadShadowProvider(
+                BINDING_ID,
+                PAT_DEVICE_ID,
+                contract,
+                FakePrimaryProvider(),
+                model_authority=future,
+                now=lambda: NOW,
+            )
+
     def test_v2_shape_requires_its_exact_staged_pin_and_accepts_events(self) -> None:
         current = v2_envelope()
         v2_pin = consumer_pin(current, 2)
@@ -1220,6 +1315,118 @@ class TlvReadProjectionTransitionTests(unittest.TestCase):
         retired = read.retire_tlv_read_consumer_source_pin(adopted)
         self.assertEqual(retired.consumer_pin_set.accepted, (v2_pin,))
         self.assertIs(read.retire_tlv_read_consumer_source_pin(retired), retired)
+
+    def test_v2_successor_adopt_restore_and_retire_are_exact(self) -> None:
+        predecessor_pin = read.TlvReadConsumerPin(
+            projection_version=2,
+            static_read_contract_sha256="1" * 64,
+            model_contract_sha256="2" * 64,
+        )
+        successor_pin = read.TlvReadConsumerPin(
+            projection_version=2,
+            static_read_contract_sha256="3" * 64,
+            model_contract_sha256="4" * 64,
+        )
+        predecessor = consumer_state(predecessor_pin)
+        predecessor_json = read.tlv_read_consumer_binding_state_json(predecessor)
+
+        adopted = read.adopt_tlv_read_consumer_successor_v2(
+            predecessor, successor_pin
+        )
+        self.assertEqual(adopted.schema_version, 2)
+        self.assertEqual(adopted.consumer_pin_set.accepted, (successor_pin,))
+        self.assertEqual(adopted.predecessor_pin, predecessor_pin)
+        self.assertEqual(
+            adopted.predecessor_record_sha256, predecessor.record_sha256
+        )
+        restored_inventory = read.parse_tlv_read_consumer_state_inventory(
+            read.tlv_read_consumer_state_inventory_json({BINDING_ID: adopted})
+        )
+        self.assertEqual(restored_inventory.bindings[BINDING_ID], adopted)
+
+        restored = read.restore_tlv_read_consumer_predecessor_v2(adopted)
+        self.assertEqual(restored, predecessor)
+        self.assertEqual(
+            read.tlv_read_consumer_binding_state_json(restored),
+            predecessor_json,
+        )
+        self.assertEqual(
+            read.validate_tlv_read_consumer_state_replacement(
+                adopted, restored
+            ),
+            restored,
+        )
+
+        retired = read.retire_tlv_read_consumer_predecessor_v2(adopted)
+        self.assertEqual(retired.schema_version, 1)
+        self.assertEqual(retired.consumer_pin_set.accepted, (successor_pin,))
+        self.assertIsNone(retired.predecessor_pin)
+        self.assertIsNone(retired.predecessor_record_sha256)
+        with self.assertRaisesRegex(ValueError, "predecessor"):
+            read.restore_tlv_read_consumer_predecessor_v2(retired)
+        with self.assertRaises(ValueError):
+            read.validate_tlv_read_consumer_state_replacement(
+                retired, predecessor
+            )
+
+    def test_accepts_the_exact_schema2_state_serialized_and_hashed_by_typescript(
+        self,
+    ) -> None:
+        fixture = json.loads(
+            Path(__file__)
+            .with_name(
+                "read-contract-consumer-successor-state.typescript.v1.json"
+            )
+            .read_text(encoding="utf-8")
+        )
+        parsed = read.parse_tlv_read_consumer_binding_state(fixture)
+
+        self.assertEqual(
+            parsed.record_sha256,
+            "bd9b94efb4243190bd7fce88830be32a8c84a70747f09f1536def4c5ec8fd06d",
+        )
+        self.assertEqual(
+            parsed.predecessor_record_sha256,
+            "c95426c478f1222f7ad8f8a80dcee2a25cbea57c5bed9dcd652e9ce695ce28b3",
+        )
+
+    def test_v2_successor_requires_an_exact_singleton_predecessor(self) -> None:
+        predecessor_pin = read.TlvReadConsumerPin(2, "1" * 64, "2" * 64)
+        successor_pin = read.TlvReadConsumerPin(2, "3" * 64, "4" * 64)
+        v1_pin = read.TlvReadConsumerPin(1, "5" * 64, None)
+        overlap = consumer_state(v1_pin, predecessor_pin, adopted_pin=predecessor_pin)
+        with self.assertRaises(ValueError):
+            read.adopt_tlv_read_consumer_successor_v2(overlap, successor_pin)
+        with self.assertRaises(ValueError):
+            read.build_tlv_read_consumer_binding_state(
+                binding_id=BINDING_ID,
+                pat_device_id_proof_sha256=PROOF,
+                adopted_pin=successor_pin,
+                consumer_pin_set=read.build_tlv_read_consumer_pin_set(
+                    BINDING_ID, (successor_pin,)
+                ),
+                predecessor_pin=predecessor_pin,
+                predecessor_record_sha256="6" * 64,
+            )
+
+    def test_projection_advance_rejects_a_schema2_predecessor_body(self) -> None:
+        v1_pin = read.TlvReadConsumerPin(1, "1" * 64, None)
+        v2_pin = read.TlvReadConsumerPin(2, "2" * 64, "3" * 64)
+        unrelated_v2_pin = read.TlvReadConsumerPin(2, "4" * 64, "5" * 64)
+        source = consumer_state(v1_pin)
+        unrelated = consumer_state(unrelated_v2_pin)
+        forged = read.build_tlv_read_consumer_binding_state(
+            binding_id=BINDING_ID,
+            pat_device_id_proof_sha256=PROOF,
+            adopted_pin=v2_pin,
+            consumer_pin_set=read.build_tlv_read_consumer_pin_set(
+                BINDING_ID, (v2_pin,)
+            ),
+            predecessor_pin=unrelated_v2_pin,
+            predecessor_record_sha256=unrelated.record_sha256,
+        )
+        with self.assertRaisesRegex(ValueError, "replacement refused"):
+            read.validate_tlv_read_consumer_state_replacement(source, forged)
 
     def test_provider_derives_both_pins_while_the_appliance_is_offline(self) -> None:
         primary = FakePrimaryProvider()
@@ -1373,6 +1580,87 @@ class TlvReadProjectionTransitionTests(unittest.TestCase):
             ),
             retired,
         )
+
+    def test_named_v2_successor_transition_is_cas_protected_and_reversible(
+        self,
+    ) -> None:
+        predecessor_pin = read.TlvReadConsumerPin(2, "1" * 64, "2" * 64)
+        successor_pin = read.TlvReadConsumerPin(2, "3" * 64, "4" * 64)
+        source = consumer_state(predecessor_pin)
+        common = {
+            "binding_id": BINDING_ID,
+            "pat_device_id_proof_sha256": PROOF,
+            "v2_pin": successor_pin,
+            "predecessor_v2_pin": predecessor_pin,
+        }
+        with self.assertRaisesRegex(ValueError, "CAS changed"):
+            read.transition_tlv_read_consumer_binding_state(
+                **common,
+                operation="adopt-successor-v2",
+                current=source,
+                expected_current_record_sha256="f" * 64,
+            )
+        adopted = read.transition_tlv_read_consumer_binding_state(
+            **common,
+            operation="adopt-successor-v2",
+            current=source,
+            expected_current_record_sha256=source.record_sha256,
+        )
+        self.assertEqual(
+            read.transition_tlv_read_consumer_binding_state(
+                **common,
+                operation="adopt-successor-v2",
+                current=adopted,
+                expected_current_record_sha256=source.record_sha256,
+            ),
+            adopted,
+        )
+        restored = read.transition_tlv_read_consumer_binding_state(
+            **common,
+            operation="restore-predecessor-v2",
+            current=adopted,
+            expected_current_record_sha256=adopted.record_sha256,
+        )
+        self.assertEqual(restored, source)
+        self.assertEqual(
+            read.transition_tlv_read_consumer_binding_state(
+                **common,
+                operation="restore-predecessor-v2",
+                current=restored,
+                expected_current_record_sha256=adopted.record_sha256,
+            ),
+            source,
+        )
+
+        adopted = read.transition_tlv_read_consumer_binding_state(
+            **common,
+            operation="adopt-successor-v2",
+            current=source,
+            expected_current_record_sha256=source.record_sha256,
+        )
+        retired = read.transition_tlv_read_consumer_binding_state(
+            **common,
+            operation="retire-predecessor-v2",
+            current=adopted,
+            expected_current_record_sha256=adopted.record_sha256,
+        )
+        self.assertEqual(retired.schema_version, 1)
+        self.assertEqual(
+            read.transition_tlv_read_consumer_binding_state(
+                **common,
+                operation="retire-predecessor-v2",
+                current=retired,
+                expected_current_record_sha256=adopted.record_sha256,
+            ),
+            retired,
+        )
+        with self.assertRaisesRegex(ValueError, "predecessor"):
+            read.transition_tlv_read_consumer_binding_state(
+                **common,
+                operation="restore-predecessor-v2",
+                current=retired,
+                expected_current_record_sha256=retired.record_sha256,
+            )
 
     def test_consumer_state_digest_matches_the_typescript_switch_golden(
         self,
@@ -1607,6 +1895,56 @@ class TlvReadConsumerStateApplyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(store.saved), 1)
         self.assertEqual(states, {BINDING_ID: source})
 
+    async def test_v2_successor_push_failure_retries_the_same_candidate(
+        self,
+    ) -> None:
+        predecessor_pin = read.TlvReadConsumerPin(2, "1" * 64, "2" * 64)
+        successor_pin = read.TlvReadConsumerPin(2, "3" * 64, "4" * 64)
+        predecessor = consumer_state(predecessor_pin)
+        successor = read.adopt_tlv_read_consumer_successor_v2(
+            predecessor, successor_pin
+        )
+
+        class FailOnceProvider:
+            binding_id = BINDING_ID
+
+            def __init__(self):
+                self.state = predecessor
+                self.fail = True
+
+            def validate_consumer_state_replacement(self, state):
+                return read.validate_tlv_read_consumer_state_replacement(
+                    self.state, state
+                )
+
+            def replace_consumer_state(self, state):
+                if self.fail:
+                    self.fail = False
+                    raise RuntimeError("synthetic first live push failure")
+                self.state = state
+
+        provider = FailOnceProvider()
+        states = {BINDING_ID: predecessor}
+        store = self.Store()
+        common = {
+            "states": states,
+            "store": store,
+            "lock": asyncio.Lock(),
+            "providers": {BINDING_ID: provider},
+            "state": successor,
+        }
+        with self.assertRaises(read.TlvReadConsumerStatePushError):
+            await read.async_apply_tlv_read_consumer_binding_state(**common)
+        self.assertEqual(states[BINDING_ID], successor)
+        self.assertEqual(provider.state, predecessor)
+
+        applied = await read.async_apply_tlv_read_consumer_binding_state(
+            **common
+        )
+        self.assertEqual(applied, successor)
+        self.assertEqual(provider.state, successor)
+        self.assertEqual(len(store.saved), 2)
+
     async def test_overlapping_applies_observe_the_previous_locked_result(self) -> None:
         v1_pin = consumer_pin(envelope(), 1)
         v2_pin = consumer_pin(v2_envelope(), 2)
@@ -1793,6 +2131,14 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
     def test_compact_per_model_authority_covers_offline_appliances(self) -> None:
         authorities = read.load_tlv_read_per_model_authorities()
         self.assertEqual(len(authorities), 15)
+        self.assertEqual(
+            {
+                model_id: authority.semantics_revision
+                for model_id, authority in authorities.items()
+                if authority.semantics_revision != 32
+            },
+            {"CST_170004_WW": 33, "CST_570004_WW": 33},
+        )
         for model_id in ("DHUM_056905_WW", "ST_R_ETH01Y_"):
             with self.subTest(model_id=model_id):
                 authority = authorities[model_id]
@@ -1821,8 +2167,78 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
         }
         self.assertEqual(
             read.tlv_read_publication_static_contract_sha256(static, 2),
-            "e47519d4bc38fb38ac7f6ac0d122067f831d63d4e4114a5681548746a741f2c0",
+            "c73e4f9bc3c690d40e95d9feb4b2f9a9495ea4d21b17f52817d3b4afdf752d59",
         )
+
+    def test_exact_cst_predecessor_state_survives_successor_package_setup(
+        self,
+    ) -> None:
+        catalogue = read.load_tlv_read_catalogue()
+        authorities = read.load_tlv_read_per_model_authorities()
+        predecessors = {
+            "CST_170004_WW": (
+                "b6042e904492d2a378186de4fdf2c964aab96d26acb3418703af02816c400912"
+            ),
+            "CST_570004_WW": (
+                "7b3d28cc729641d852ee9c5ebe768532e5afc3582d486d4ae4cf5c4192202421"
+            ),
+        }
+        for model_id, predecessor_sha256 in predecessors.items():
+            with self.subTest(model_id=model_id):
+                contract = catalogue[model_id]
+                old_authority = read.TlvReadPerModelAuthority(
+                    profile_id=contract.profile_id,
+                    model_id=model_id,
+                    platform=contract.platform,
+                    semantics_revision=32,
+                    model_contract_sha256=predecessor_sha256,
+                    feed_schema_version=read.PER_MODEL_TLV_READ_SCHEMA_VERSION,
+                    publication_plan_revision=(
+                        read.TLV_READ_PUBLICATION_PLAN_REVISION
+                    ),
+                    static_contract_projection_version=(
+                        read.READ_STATIC_CONTRACT_PROJECTION_VERSION
+                    ),
+                )
+                old_binding_authority = read.TlvReadConsumerBindingAuthority(
+                    binding_id=BINDING_ID,
+                    pat_device_id_proof_sha256=PROOF,
+                    profile=contract,
+                    model_authority=old_authority,
+                )
+                old_pin = old_binding_authority.pin_for_projection(2, 7)
+                old_state = consumer_state(old_pin)
+                primary = FakePrimaryProvider()
+                primary.model_id = model_id
+                provider = read.TlvReadShadowProvider(
+                    BINDING_ID,
+                    PAT_DEVICE_ID,
+                    contract,
+                    primary,
+                    model_authority=authorities[model_id],
+                    consumer_state=old_state,
+                    now=lambda: NOW,
+                )
+                try:
+                    self.assertEqual(provider.consumer_state, old_state)
+                finally:
+                    provider.close()
+
+                foreign_pin = read.TlvReadConsumerPin(
+                    projection_version=2,
+                    static_read_contract_sha256=old_pin.static_read_contract_sha256,
+                    model_contract_sha256="f" * 64,
+                )
+                with self.assertRaises(ValueError):
+                    read.TlvReadShadowProvider(
+                        BINDING_ID,
+                        PAT_DEVICE_ID,
+                        contract,
+                        primary,
+                        model_authority=authorities[model_id],
+                        consumer_state=consumer_state(foreign_pin),
+                        now=lambda: NOW,
+                    )
 
     def test_powered_off_dehumidifier_and_styler_keep_contract_entities(
         self,

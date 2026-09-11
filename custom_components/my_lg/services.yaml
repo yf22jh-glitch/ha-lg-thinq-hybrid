@@ -54,6 +54,9 @@ local_read_consumer_transition:
             - restore-staged-v1
             - adopt-v2
             - retire-v1
+            - adopt-successor-v2
+            - restore-predecessor-v2
+            - retire-predecessor-v2
     binding_id:
       name: Binding ID
       required: true
@@ -61,7 +64,9 @@ local_read_consumer_transition:
         text:
     binding_generation:
       name: Binding generation
-      description: Required only for bootstrap-v1 and stage-v2; captured JIT.
+      description: >-
+        Required for bootstrap-v1, stage-v2, and every v2 successor operation;
+        captured JIT from the exact binding manifest.
       selector:
         number:
           min: 1

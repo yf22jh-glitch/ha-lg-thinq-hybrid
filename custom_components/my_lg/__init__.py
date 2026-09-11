@@ -298,7 +298,13 @@ async def _async_transition_local_read_consumer_state(
     authority = data.local_read_consumer_authorities.get(binding_id)
     if authority is None:
         raise ValueError("TLV read consumer binding authority is unavailable")
-    needs_generation = operation in {"bootstrap-v1", "stage-v2"}
+    needs_generation = operation in {
+        "bootstrap-v1",
+        "stage-v2",
+        "adopt-successor-v2",
+        "restore-predecessor-v2",
+        "retire-predecessor-v2",
+    }
     if needs_generation != (binding_generation is not None):
         raise ValueError("TLV read consumer binding generation presence is invalid")
 
@@ -313,6 +319,7 @@ async def _async_transition_local_read_consumer_state(
 
     v1_pin = None
     v2_pin = None
+    predecessor_v2_pin = None
     observed_adopted_pin = None
     if operation == "bootstrap-v1":
         assert binding_generation is not None
@@ -348,6 +355,37 @@ async def _async_transition_local_read_consumer_state(
                     live_state.adopted_model_contract_sha256
                 ),
             )
+    elif operation in {
+        "adopt-successor-v2",
+        "restore-predecessor-v2",
+        "retire-predecessor-v2",
+    }:
+        assert binding_generation is not None
+        v2_pin = (
+            provider.consumer_pin_for_projection(2, binding_generation)
+            if provider is not None
+            else authority.pin_for_projection(2, binding_generation)
+        )
+        predecessor_v2_pin = (
+            authority.reviewed_predecessor_pin_for_v2_successor(
+                binding_generation
+            )
+        )
+        persisted = data.local_read_consumer_persisted_states.get(binding_id)
+        if (
+            operation == "adopt-successor-v2"
+            and provider is not None
+            and persisted is not None
+            and persisted.schema_version == 1
+            and (
+                provider.consumer_state is None
+                or provider.consumer_state.record_sha256
+                != persisted.record_sha256
+            )
+        ):
+            raise RuntimeError(
+                "TLV read v2 successor predecessor is not the live provider head"
+            )
 
     target = transition_tlv_read_consumer_binding_state(
         operation=operation,  # type: ignore[arg-type]
@@ -356,6 +394,7 @@ async def _async_transition_local_read_consumer_state(
         pat_device_id_proof_sha256=authority.pat_device_id_proof_sha256,
         v1_pin=v1_pin,
         v2_pin=v2_pin,
+        predecessor_v2_pin=predecessor_v2_pin,
         observed_adopted_pin=observed_adopted_pin,
         expected_current_record_sha256=expected_current_record_sha256,
     )
