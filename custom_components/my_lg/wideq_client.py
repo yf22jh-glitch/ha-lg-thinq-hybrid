@@ -153,6 +153,46 @@ def parse_ac_energy_history(
     return result or None
 
 
+def parse_air_purifier_energy_history(
+    history: Any, target_date: date
+) -> dict[str, float] | None:
+    """Parse the verified tower-purifier daily energy field into kWh.
+
+    The ThinQ ``service/aircon`` response for ``AIR_2C0001_WW`` carries its
+    real daily Wh in ``periodicEnergyData`` while ``energyData`` remains zero.
+    A sibling purifier model returns explicit zeroes in every field, so target
+    selection is model-gated before this parser is called.  Once that exact
+    model gate has admitted the verified tower, explicit zero remains valid
+    data (including at the start of a new month).
+    """
+    items = _history_items(history)
+    if items is None:
+        return None
+    today_key = target_date.isoformat()
+    today_wh: float | None = None
+    month_wh = 0.0
+    month_samples = 0
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        used_date = str(item.get("usedDate", ""))
+        if not used_date.startswith(target_date.strftime("%Y-%m")):
+            continue
+        value = _energy_wh(item.get("periodicEnergyData"))
+        if value is None:
+            continue
+        month_wh += value
+        month_samples += 1
+        if used_date[:10] == today_key:
+            today_wh = (today_wh or 0.0) + value
+    result: dict[str, float] = {}
+    if today_wh is not None:
+        result["today"] = round(today_wh / 1000, 3)
+    if month_samples:
+        result["month"] = round(month_wh / 1000, 3)
+    return result or None
+
+
 def parse_device_energy_history(
     history: Any, target_date: date
 ) -> dict[str, float] | None:
@@ -336,6 +376,15 @@ class WideqClient:
                 "&saveEnergyYn=N"
             )
             return parse_ac_energy_history(history, target_date)
+
+        if appliance == "air_purifier":
+            await before_request()
+            history = await self._client.session.get2(
+                f"service/aircon/{wideq_device_id}/energy-history"
+                f"?period=day&startDate={month_start}&endDate={month_end}"
+                "&saveEnergyYn=N"
+            )
+            return parse_air_purifier_energy_history(history, target_date)
 
         if appliance == "fridge":
             today = target_date.isoformat()

@@ -33,3 +33,41 @@ wideq_command:
       description: Allowed field/value overrides from the audited model schema.
       selector:
         object:
+
+local_read_consumer_transition:
+  name: Local read contract installer transition
+  description: >-
+    Internal, administrator-only installer API. It changes only the durable
+    read-contract acceptance state and never sends an appliance, cloud, or MQTT
+    command. The installer supplies JIT binding generation and CAS values; do
+    not call this service manually.
+  fields:
+    operation:
+      name: Operation
+      required: true
+      selector:
+        select:
+          options:
+            - inspect
+            - bootstrap-v1
+            - stage-v2
+            - restore-staged-v1
+            - adopt-v2
+            - retire-v1
+    binding_id:
+      name: Binding ID
+      required: true
+      selector:
+        text:
+    binding_generation:
+      name: Binding generation
+      description: Required only for bootstrap-v1 and stage-v2; captured JIT.
+      selector:
+        number:
+          min: 1
+          mode: box
+    expected_current_record_sha256:
+      name: Expected current record SHA-256
+      description: JIT CAS token from inspect or the preceding transition.
+      selector:
+        text:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -18,6 +19,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 
 from .const import (
+    AIR_PURIFIER_ENERGY_HISTORY_MODELS,
     CONF_ACCESS_TOKEN,
     CONF_CLIENT_ID,
     CONF_COUNTRY,
@@ -29,6 +31,7 @@ from .const import (
     DEFAULT_COUNTRY,
     DEFAULT_IDLE_INTERVAL,
     DEFAULT_LANGUAGE,
+    DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_COOKTOP,
     DEVICE_TYPE_DEHUMIDIFIER,
@@ -61,7 +64,27 @@ from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .local_command import LocalCommandClient
+from .local_control_contract import (
+    LocalControlBindingEligibility,
+    LocalControlEligibilityError,
+    LocalControlEntityContract,
+    LocalControlEntityContractError,
+    load_local_control_entity_contract,
+    local_control_authorized_values,
+    local_control_capability_authorized,
+    local_control_value_authorized,
+    resolve_local_control_binding_eligibility,
+)
+from .local_control_composite_domain import (
+    LocalControlCompositeDomainContract,
+    LocalControlCompositeDomainError,
+    load_local_control_composite_domain_contract,
+)
 from .local_control_router import LocalControlRouter
+from .local_energy_provider import (
+    CumulativeEnergyShadowProvider,
+    cumulative_energy_model_supported,
+)
 from .local_mqtt import LOCAL_PILOT_MQTT_PORT, LocalPilotMqttSubscriber
 from .local_provider import (
     LOCAL_DHUM_WATER_TANK_PROFILE_ID,
@@ -69,6 +92,21 @@ from .local_provider import (
     LocalSemanticShadowProvider,
     LocalWaterTankShadowProvider,
     local_shadow_configurations,
+)
+from .local_read_provider import (
+    TLV_READ_CONSUMER_STATE_STORE_KEY,
+    TLV_READ_CONSUMER_STATE_STORE_VERSION,
+    TlvReadCatalogueError,
+    TlvReadConsumerBindingAuthority,
+    TlvReadConsumerBindingState,
+    TlvReadConsumerPin,
+    TlvReadConsumerStatePushError,
+    TlvReadShadowProvider,
+    async_apply_tlv_read_consumer_binding_state,
+    load_tlv_read_catalogue,
+    load_tlv_read_per_model_authorities,
+    parse_tlv_read_consumer_state_inventory,
+    transition_tlv_read_consumer_binding_state,
 )
 from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
@@ -92,6 +130,29 @@ _INACTIVE_RUN_STATES = {
     "POWER_OFF",
     "RUNNING_END",
 }
+
+
+_ENERGY_HISTORY_APPLIANCE_BY_TYPE = {
+    DEVICE_TYPE_AIR_CONDITIONER: "aircon",
+    DEVICE_TYPE_DEHUMIDIFIER: "aircon",
+    DEVICE_TYPE_REFRIGERATOR: "fridge",
+    DEVICE_TYPE_KIMCHI_REFRIGERATOR: "fridge",
+    DEVICE_TYPE_COOKTOP: "devices",
+    DEVICE_TYPE_OVEN: "devices",
+    DEVICE_TYPE_WATER_PURIFIER: "devices",
+    DEVICE_TYPE_STYLER: "devices",
+}
+
+
+def _energy_history_appliance(device_type: str, model: str) -> str | None:
+    """Return only a live-verified ThinQ energy-history route."""
+    if device_type == DEVICE_TYPE_AIR_PURIFIER:
+        return (
+            "air_purifier"
+            if model in AIR_PURIFIER_ENERGY_HISTORY_MODELS
+            else None
+        )
+    return _ENERGY_HISTORY_APPLIANCE_BY_TYPE.get(device_type)
 
 
 def _is_ac_active(coordinator: PatDeviceCoordinator) -> bool:
@@ -149,11 +210,156 @@ class MyLgData:
     local_mqtt_subscribers: dict[str, LocalPilotMqttSubscriber] = field(
         default_factory=dict
     )
+    local_read_providers: dict[str, TlvReadShadowProvider] = field(
+        default_factory=dict
+    )
+    local_read_consumer_state_store: Store[dict[str, Any]] | None = None
+    local_read_consumer_states: dict[str, TlvReadConsumerBindingState] = field(
+        default_factory=dict
+    )
+    # Store head and live-provider head normally match. They are separate only
+    # across the explicit "durable saved, provider push pending" recovery state.
+    local_read_consumer_persisted_states: dict[
+        str, TlvReadConsumerBindingState
+    ] = field(default_factory=dict)
+    local_read_consumer_authorities: dict[
+        str, TlvReadConsumerBindingAuthority
+    ] = field(default_factory=dict)
+    local_read_consumer_state_lock: asyncio.Lock | None = None
+    local_energy_providers: dict[str, CumulativeEnergyShadowProvider] = field(
+        default_factory=dict
+    )
+    local_control_entity_contract: LocalControlEntityContract | None = None
+    local_control_composite_domain_contract: (
+        LocalControlCompositeDomainContract | None
+    ) = None
+    local_control_binding_eligibility: Mapping[
+        str, LocalControlBindingEligibility
+    ] = field(default_factory=dict)
     local_control: LocalControlRouter | None = None
     startup_metrics: StartupMetrics | None = None
 
+    async def async_transition_local_read_consumer_state(
+        self,
+        *,
+        operation: str,
+        binding_id: str,
+        binding_generation: int | None,
+        expected_current_record_sha256: str | None,
+    ) -> TlvReadConsumerBindingState:
+        """Apply one named, JIT-derived consumer transition."""
+        return await _async_transition_local_read_consumer_state(
+            self,
+            operation=operation,
+            binding_id=binding_id,
+            binding_generation=binding_generation,
+            expected_current_record_sha256=expected_current_record_sha256,
+        )
+
 
 MyLgConfigEntry = ConfigEntry  # ConfigEntry[MyLgData] at type-check time
+
+
+async def _async_apply_local_read_consumer_state(
+    data: MyLgData, state: TlvReadConsumerBindingState
+) -> TlvReadConsumerBindingState:
+    """Durably apply one adapter-owned state, then push it into the provider."""
+    store = data.local_read_consumer_state_store
+    lock = data.local_read_consumer_state_lock
+    if store is None or lock is None:
+        raise RuntimeError("TLV read consumer state Store is unavailable")
+    try:
+        applied = await async_apply_tlv_read_consumer_binding_state(
+            states=data.local_read_consumer_persisted_states,
+            store=store,
+            lock=lock,
+            providers=data.local_read_providers,
+            state=state,
+        )
+    except TlvReadConsumerStatePushError as err:
+        # The exception precisely reports that Store already advanced. Keep a
+        # separate durable head for CAS/retry while the live-provider map stays
+        # at the last state it actually received.
+        data.local_read_consumer_persisted_states[err.binding_id] = err.state
+        raise
+    data.local_read_consumer_states[applied.binding_id] = applied
+    return applied
+
+
+async def _async_transition_local_read_consumer_state(
+    data: MyLgData,
+    *,
+    operation: str,
+    binding_id: str,
+    binding_generation: int | None,
+    expected_current_record_sha256: str | None,
+) -> TlvReadConsumerBindingState:
+    """Derive a named target from HA authority; accept no operator hashes."""
+    authority = data.local_read_consumer_authorities.get(binding_id)
+    if authority is None:
+        raise ValueError("TLV read consumer binding authority is unavailable")
+    needs_generation = operation in {"bootstrap-v1", "stage-v2"}
+    if needs_generation != (binding_generation is not None):
+        raise ValueError("TLV read consumer binding generation presence is invalid")
+
+    matching_providers = tuple(
+        provider
+        for provider in data.local_read_providers.values()
+        if provider.binding_id == binding_id
+    )
+    if len(matching_providers) > 1:
+        raise RuntimeError("TLV read consumer binding has duplicate providers")
+    provider = matching_providers[0] if matching_providers else None
+
+    v1_pin = None
+    v2_pin = None
+    observed_adopted_pin = None
+    if operation == "bootstrap-v1":
+        assert binding_generation is not None
+        v1_pin = (
+            provider.consumer_pin_for_projection(1, binding_generation)
+            if provider is not None
+            else authority.pin_for_projection(1, binding_generation)
+        )
+    elif operation == "stage-v2":
+        assert binding_generation is not None
+        v2_pin = (
+            provider.consumer_pin_for_projection(2, binding_generation)
+            if provider is not None
+            else authority.pin_for_projection(2, binding_generation)
+        )
+        # MQTT acceptance can advance the provider's process-only latch before
+        # the reviewed adapter advances the durable Store row. Feed that exact
+        # pin into the pure transition so a reconciliation stage never lowers
+        # an already-adopted v2 projection. Provider absence remains valid for
+        # offline and not-yet-started appliances.
+        if provider is not None and provider.adopted_projection_version == 2:
+            live_state = provider.consumer_state
+            if live_state is None:
+                raise RuntimeError(
+                    "TLV read live v2 adoption has no consumer state"
+                )
+            observed_adopted_pin = TlvReadConsumerPin(
+                projection_version=live_state.adopted_projection_version,
+                static_read_contract_sha256=(
+                    live_state.adopted_static_read_contract_sha256
+                ),
+                model_contract_sha256=(
+                    live_state.adopted_model_contract_sha256
+                ),
+            )
+
+    target = transition_tlv_read_consumer_binding_state(
+        operation=operation,  # type: ignore[arg-type]
+        current=data.local_read_consumer_persisted_states.get(binding_id),
+        binding_id=binding_id,
+        pat_device_id_proof_sha256=authority.pat_device_id_proof_sha256,
+        v1_pin=v1_pin,
+        v2_pin=v2_pin,
+        observed_adopted_pin=observed_adopted_pin,
+        expected_current_record_sha256=expected_current_record_sha256,
+    )
+    return await _async_apply_local_read_consumer_state(data, target)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool:
@@ -176,7 +382,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         devices = await asyncio.wait_for(
             api.async_get_device_list(), timeout=PAT_DEVICE_LIST_TIMEOUT
         )
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         raise ConfigEntryNotReady(f"device list failed: {err}") from err
 
     data = MyLgData(api=api)
@@ -286,21 +492,13 @@ async def _setup_wideq(
     # response. WashTower is intentionally absent: LG returns zero from its
     # history service for this combined model, so its snapshot counters remain
     # the only truthful energy source.
-    energy_history_appliance_by_type = {
-        DEVICE_TYPE_AIR_CONDITIONER: "aircon",
-        DEVICE_TYPE_DEHUMIDIFIER: "aircon",
-        DEVICE_TYPE_REFRIGERATOR: "fridge",
-        DEVICE_TYPE_KIMCHI_REFRIGERATOR: "fridge",
-        DEVICE_TYPE_COOKTOP: "devices",
-        DEVICE_TYPE_OVEN: "devices",
-        DEVICE_TYPE_WATER_PURIFIER: "devices",
-        DEVICE_TYPE_STYLER: "devices",
-    }
-    energy_history_targets = {
-        coordinator.device_id: energy_history_appliance_by_type[coordinator.device_type]
-        for coordinator in coordinators
-        if coordinator.device_type in energy_history_appliance_by_type
-    }
+    energy_history_targets: dict[str, str] = {}
+    for coordinator in coordinators:
+        appliance = _energy_history_appliance(
+            coordinator.device_type, coordinator.model
+        )
+        if appliance is not None:
+            energy_history_targets[coordinator.device_id] = appliance
     pat_devices = {
         coordinator.device_id: PatDeviceIdentity(
             device_id=coordinator.device_id,
@@ -391,6 +589,108 @@ async def _setup_local_shadows(
     if not configs:
         return
 
+    try:
+        read_profiles = await hass.async_add_executor_job(load_tlv_read_catalogue)
+    except TlvReadCatalogueError:
+        # The primary pilot shadow remains independently useful.  A broken or
+        # missing complete-read artifact must never disable its availability or
+        # control-presence fences.
+        _LOGGER.exception(
+            "Complete TLV read catalogue is invalid; full read entities disabled"
+        )
+        read_profiles = {}
+
+    try:
+        read_model_authorities = await hass.async_add_executor_job(
+            load_tlv_read_per_model_authorities
+        )
+    except TlvReadCatalogueError:
+        # V1 reads and entity creation do not depend on the source-only v2
+        # authority. A broken add-on artifact disables only future v2 pin
+        # staging instead of dropping an offline appliance's entities.
+        _LOGGER.exception(
+            "Per-model TLV read authority is invalid; v2 transition disabled"
+        )
+        read_model_authorities = {}
+
+    read_consumer_store: Store[dict[str, Any]] = Store(
+        hass,
+        TLV_READ_CONSUMER_STATE_STORE_VERSION,
+        f"{DOMAIN}.{TLV_READ_CONSUMER_STATE_STORE_KEY}.{entry.entry_id}",
+    )
+    data.local_read_consumer_state_store = read_consumer_store
+    data.local_read_consumer_state_lock = asyncio.Lock()
+    try:
+        stored_consumer_state = await read_consumer_store.async_load()
+        if stored_consumer_state is None:
+            read_consumer_states: dict[str, TlvReadConsumerBindingState] = {}
+            _LOGGER.warning(
+                "TLV read consumer pin Store is not staged; exact read entities "
+                "will remain unavailable until the installer writes binding pins"
+            )
+        else:
+            read_consumer_states = dict(
+                parse_tlv_read_consumer_state_inventory(
+                    stored_consumer_state
+                ).bindings
+            )
+    except Exception:  # noqa: BLE001 - Store failure must not omit offline entities
+        # Never reinterpret an absent or damaged durable latch as permission to
+        # accept v1. Providers are still created so powered-off appliances keep
+        # their contract-driven entities; only publications remain fail-closed.
+        _LOGGER.exception(
+            "TLV read consumer pin Store is invalid; exact read values disabled"
+        )
+        read_consumer_states = {}
+    data.local_read_consumer_states = read_consumer_states
+    data.local_read_consumer_persisted_states = dict(read_consumer_states)
+
+    try:
+        control_entity_contract = await hass.async_add_executor_job(
+            load_local_control_entity_contract
+        )
+    except LocalControlEntityContractError:
+        # Generic control owners are independent of both Local reads and the
+        # existing Local-first cloud owners. A broken/new artifact disables only
+        # the new owners and must never weaken those other layers.
+        _LOGGER.exception(
+            "Rethink Local control entity contract is invalid; generic controls disabled"
+        )
+    else:
+        # Keep the valid public descriptor catalogue independent from the
+        # private deployment gate.  A malformed or absent gate must fail
+        # writes closed without disabling Local read shadows.
+        data.local_control_entity_contract = control_entity_contract
+        binding_models = {
+            config.binding_id: config.model_id for config in configs
+        }
+        try:
+            eligibility = resolve_local_control_binding_eligibility(
+                entry.options,
+                control_entity_contract,
+                binding_models,
+            )
+        except LocalControlEligibilityError:
+            _LOGGER.error(
+                "Rethink Local private binding eligibility is invalid; generic controls disabled"
+            )
+        else:
+            data.local_control_binding_eligibility = eligibility
+
+    try:
+        data.local_control_composite_domain_contract = (
+            await hass.async_add_executor_job(
+                load_local_control_composite_domain_contract
+            )
+        )
+    except LocalControlCompositeDomainError:
+        # Exact scalar controls and every Local read remain independent. Only
+        # composable climate writes fail closed when this additive authority is
+        # absent, stale or malformed.
+        _LOGGER.exception(
+            "Rethink Local composite control domain is invalid; composite controls disabled"
+        )
+
     for config in configs:
         pat_coordinator = data.coordinators.get(config.pat_device_id)
         if pat_coordinator is None or pat_coordinator.model != config.model_id:
@@ -424,6 +724,50 @@ async def _setup_local_shadows(
                 pat_device_id=config.pat_device_id,
                 require_identity=config.require_identity,
             )
+        read_provider = None
+        energy_provider = None
+        read_profile = read_profiles.get(config.model_id)
+        if read_profile is not None:
+            if not provider.control_presence_enabled:
+                _LOGGER.error(
+                    "Complete TLV read feed requires the V3 authenticated presence "
+                    "profile; full read binding disabled"
+                )
+            else:
+                try:
+                    read_provider = TlvReadShadowProvider(
+                        config.binding_id,
+                        config.pat_device_id,
+                        read_profile,
+                        provider,
+                        model_authority=read_model_authorities.get(
+                            config.model_id
+                        ),
+                        consumer_state=read_consumer_states.get(
+                            config.binding_id
+                        ),
+                    )
+                    data.local_read_consumer_authorities[
+                        config.binding_id
+                    ] = read_provider.consumer_binding_authority
+                except (TypeError, ValueError):
+                    _LOGGER.exception(
+                        "Complete TLV read provider identity is invalid; full read "
+                        "binding disabled"
+                    )
+        if read_provider is not None and cumulative_energy_model_supported(
+            config.model_id
+        ):
+            try:
+                energy_provider = CumulativeEnergyShadowProvider(
+                    config.binding_id,
+                    config.model_id,
+                    provider.expected_proof,
+                )
+            except (TypeError, ValueError):
+                _LOGGER.exception(
+                    "Cumulative-energy provider identity is invalid; energy feed disabled"
+                )
         subscriber = LocalPilotMqttSubscriber(
             hass.loop,
             provider,
@@ -431,14 +775,20 @@ async def _setup_local_shadows(
             port=LOCAL_PILOT_MQTT_PORT,
             username=config.mqtt_username,
             password=config.mqtt_password,
+            read_provider=read_provider,
+            energy_provider=energy_provider,
         )
         try:
             await subscriber.async_start()
-        except Exception:  # noqa: BLE001 - one binding must not block another
+        except Exception:
             try:
                 await subscriber.async_stop()
             except Exception:  # noqa: BLE001 - best-effort partial-start cleanup
                 _LOGGER.warning("Rethink Local shadow partial-start cleanup failed")
+            if read_provider is not None:
+                read_provider.close()
+            if energy_provider is not None:
+                energy_provider.close()
             _LOGGER.exception(
                 "Rethink Local shadow transport could not start; cloud providers "
                 "remain active"
@@ -446,6 +796,10 @@ async def _setup_local_shadows(
             continue
         data.local_providers[config.pat_device_id] = provider
         data.local_mqtt_subscribers[config.pat_device_id] = subscriber
+        if read_provider is not None:
+            data.local_read_providers[config.pat_device_id] = read_provider
+        if energy_provider is not None:
+            data.local_energy_providers[config.pat_device_id] = energy_provider
 
     if data.local_providers:
         _LOGGER.info(
@@ -470,23 +824,97 @@ def _start_local_control(hass: HomeAssistant, data: MyLgData) -> None:
         _LOGGER.debug("Rethink Local control not offered: WideQ identities are not resolved")
         return
     _LOGGER.debug("Rethink Local control offered for %d appliance(s)", len(data.local_providers))
+    def _write_authorized(
+        pat_device_id: str, capability_id: str, local_request_value: str
+    ) -> bool:
+        provider = data.local_providers.get(pat_device_id)
+        contract = data.local_control_entity_contract
+        if provider is None or contract is None:
+            return False
+        composite = data.local_control_composite_domain_contract
+        if (
+            composite is not None
+            and composite.authorizes(
+                provider.model_id, capability_id, local_request_value
+            )
+            and local_control_capability_authorized(
+                contract,
+                data.local_control_binding_eligibility,
+                binding_id=provider.binding_id,
+                model_id=provider.model_id,
+                capability_id=capability_id,
+            )
+        ):
+            return True
+        return local_control_value_authorized(
+            contract,
+            data.local_control_binding_eligibility,
+            binding_id=provider.binding_id,
+            model_id=provider.model_id,
+            capability_id=capability_id,
+            local_request_value=local_request_value,
+        )
+
+    def _authorized_values(
+        pat_device_id: str, capability_id: str
+    ) -> tuple[str, ...]:
+        provider = data.local_providers.get(pat_device_id)
+        contract = data.local_control_entity_contract
+        if provider is None or contract is None:
+            return ()
+        return local_control_authorized_values(
+            contract,
+            data.local_control_binding_eligibility,
+            binding_id=provider.binding_id,
+            model_id=provider.model_id,
+            capability_id=capability_id,
+        )
+
+    def _capability_authorized(
+        pat_device_id: str, capability_id: str
+    ) -> bool:
+        provider = data.local_providers.get(pat_device_id)
+        contract = data.local_control_entity_contract
+        if provider is None or contract is None:
+            return False
+        return local_control_capability_authorized(
+            contract,
+            data.local_control_binding_eligibility,
+            binding_id=provider.binding_id,
+            model_id=provider.model_id,
+            capability_id=capability_id,
+        )
+
     data.local_control = LocalControlRouter(
         LocalCommandClient(async_get_clientsession(hass)),
         data.local_providers,
         data.wideq_coordinator.wideq_device_id,
+        _write_authorized,
+        _authorized_values,
+        _capability_authorized,
     )
 
 
 async def _stop_local_shadows(data: MyLgData) -> None:
     """Detach all Local shadows, isolating every subscriber shutdown."""
     subscribers = tuple(data.local_mqtt_subscribers.values())
+    read_providers = tuple(data.local_read_providers.values())
+    energy_providers = tuple(data.local_energy_providers.values())
     data.local_providers.clear()
     data.local_mqtt_subscribers.clear()
+    data.local_read_providers.clear()
+    data.local_read_consumer_authorities.clear()
+    data.local_energy_providers.clear()
+    data.local_control_binding_eligibility = {}
     for subscriber in subscribers:
         try:
             await subscriber.async_stop()
-        except Exception:  # noqa: BLE001 - continue stopping the remaining bindings
+        except Exception:
             _LOGGER.exception("Rethink Local shadow transport shutdown failed")
+    for provider in read_providers:
+        provider.close()
+    for provider in energy_providers:
+        provider.close()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool:

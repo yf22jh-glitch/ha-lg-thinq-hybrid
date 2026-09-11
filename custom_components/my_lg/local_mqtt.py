@@ -6,12 +6,21 @@ import asyncio
 import hashlib
 import importlib
 import logging
+from datetime import datetime
 from typing import Any
 
+from .local_energy_provider import (
+    CumulativeEnergyProviderContractError,
+    CumulativeEnergyShadowProvider,
+)
 from .local_provider import (
     LocalProviderContractError,
     LocalSemanticShadowProvider,
     validate_binding_id,
+)
+from .local_read_provider import (
+    TlvReadProviderContractError,
+    TlvReadShadowProvider,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -58,6 +67,8 @@ class LocalPilotMqttSubscriber:
         port: int,
         username: str,
         password: str,
+        read_provider: TlvReadShadowProvider | None = None,
+        energy_provider: CumulativeEnergyShadowProvider | None = None,
         mqtt_module: Any | None = None,
     ) -> None:
         if host not in _LOOPBACK_HOSTS:
@@ -84,6 +95,16 @@ class LocalPilotMqttSubscriber:
         self._port = port
         self._username = username
         self._password = password
+        if read_provider is not None and read_provider.binding_id != provider.binding_id:
+            raise LocalMqttConfigurationError(
+                "TLV read provider does not match the pilot binding"
+            )
+        self.read_provider = read_provider
+        if energy_provider is not None and energy_provider.binding_id != provider.binding_id:
+            raise LocalMqttConfigurationError(
+                "Cumulative-energy provider does not match the pilot binding"
+            )
+        self.energy_provider = energy_provider
         self._mqtt_module = mqtt_module
         self._client: Any | None = None
         self._callback_connection_generation = 0
@@ -91,12 +112,23 @@ class LocalPilotMqttSubscriber:
         self._connected = False
         self._subscription_mid: int | None = None
         self._subscription_retry_handle: asyncio.TimerHandle | None = None
+        self._presence_expiry_handle: asyncio.TimerHandle | None = None
+        self._presence_expiry_generation = 0
         self._subscription_retry_seconds = LOCAL_PILOT_RECONNECT_MIN_SECONDS
         self._subscriptions_ready = False
         self._stopping = False
         self._retained_bootstrap: dict[str, tuple[bytes, int, bool]] = {}
         self._semantic_bootstrap_pending = False
         self._rejected_messages = 0
+
+    @property
+    def subscription_topics(self) -> tuple[str, ...]:
+        """Return primary bootstrap topics plus independent read-feed topics."""
+        return (
+            self.provider.topics
+            + (() if self.read_provider is None else self.read_provider.topics)
+            + (() if self.energy_provider is None else self.energy_provider.topics)
+        )
 
     @property
     def rejected_messages(self) -> int:
@@ -165,7 +197,12 @@ class LocalPilotMqttSubscriber:
             self._connected = False
             self._client = None
             self._cancel_subscription_retry()
+            self._cancel_presence_expiry()
             self.provider.set_transport_ready(False)
+            if self.read_provider is not None:
+                self.read_provider.set_transport_ready(False)
+            if self.energy_provider is not None:
+                self.energy_provider.set_transport_ready(False)
             try:
                 await asyncio.to_thread(client.loop_stop)
             except Exception:  # noqa: BLE001 - best-effort partial-start cleanup
@@ -181,10 +218,15 @@ class LocalPilotMqttSubscriber:
         self._client = None
         self._subscription_mid = None
         self._cancel_subscription_retry()
+        self._cancel_presence_expiry()
         self._subscriptions_ready = False
         self._retained_bootstrap.clear()
         self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
+        if self.read_provider is not None:
+            self.read_provider.set_transport_ready(False)
+        if self.energy_provider is not None:
+            self.energy_provider.set_transport_ready(False)
         if client is None:
             return
         try:
@@ -225,7 +267,7 @@ class LocalPilotMqttSubscriber:
         mqtt = self._mqtt()
         try:
             result, mid = client.subscribe(
-                [(topic, 1) for topic in self.provider.topics]
+                [(topic, 1) for topic in self.subscription_topics]
             )
         except Exception:  # noqa: BLE001 - isolate third-party callback failures
             self._subscription_mid = None
@@ -275,7 +317,7 @@ class LocalPilotMqttSubscriber:
             grants = list(granted_qos)  # type: ignore[arg-type]
         except TypeError:
             grants = []
-        ready = len(grants) == len(self.provider.topics) and all(
+        ready = len(grants) == len(self.subscription_topics) and all(
             _result_code(value) == 1 for value in grants
         )
         self._loop.call_soon_threadsafe(
@@ -340,6 +382,55 @@ class LocalPilotMqttSubscriber:
         if handle is not None:
             handle.cancel()
 
+    def _cancel_presence_expiry(self) -> None:
+        self._presence_expiry_generation += 1
+        handle = self._presence_expiry_handle
+        self._presence_expiry_handle = None
+        if handle is not None:
+            handle.cancel()
+
+    def _reschedule_presence_expiry(self) -> None:
+        """Keep one binding-level timer for the live presence authority."""
+        self._cancel_presence_expiry()
+        if self.read_provider is None or self._stopping or not self._subscriptions_ready:
+            return
+        expiry = getattr(self.provider, "read_publication_authority_expiry", None)
+        delay_for = getattr(
+            self.provider, "read_publication_authority_expiry_delay", None
+        )
+        if expiry is None or not callable(delay_for):
+            return
+        delay = delay_for(expiry)
+        if not isinstance(delay, (int, float)) or isinstance(delay, bool) or delay < 0:
+            return
+        generation = self._presence_expiry_generation
+        self._presence_expiry_handle = self._loop.call_later(
+            delay,
+            self._presence_expired,
+            generation,
+            expiry,
+        )
+
+    def _presence_expired(
+        self,
+        generation: int,
+        expiry: tuple[tuple[int, str], datetime],
+    ) -> None:
+        if (
+            generation != self._presence_expiry_generation
+            or self._stopping
+            or not self._subscriptions_ready
+        ):
+            return
+        self._presence_expiry_handle = None
+        expire = getattr(self.provider, "expire_read_publication_authority", None)
+        if callable(expire) and expire(expiry):
+            return
+        # Event-loop clock rounding can fire at the inclusive boundary.  Only
+        # the still-current epoch is rescheduled; a heartbeat makes this
+        # callback stale through its generation token.
+        self._reschedule_presence_expiry()
+
     def _begin_connection(self, client: Any, generation: int) -> None:
         if (
             self._stopping
@@ -349,6 +440,7 @@ class LocalPilotMqttSubscriber:
             return
         self._active_connection_generation = generation
         self._cancel_subscription_retry()
+        self._cancel_presence_expiry()
         self._subscription_retry_seconds = LOCAL_PILOT_RECONNECT_MIN_SECONDS
         self._connected = True
         self._subscription_mid = None
@@ -356,6 +448,10 @@ class LocalPilotMqttSubscriber:
         self._retained_bootstrap.clear()
         self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
+        if self.read_provider is not None:
+            self.read_provider.set_transport_ready(False)
+        if self.energy_provider is not None:
+            self.energy_provider.set_transport_ready(False)
         self._request_subscription(client)
 
     def _connection_lost(self, client: Any, generation: int) -> None:
@@ -366,11 +462,16 @@ class LocalPilotMqttSubscriber:
             return
         self._connected = False
         self._cancel_subscription_retry()
+        self._cancel_presence_expiry()
         self._subscription_mid = None
         self._subscriptions_ready = False
         self._retained_bootstrap.clear()
         self._semantic_bootstrap_pending = False
         self.provider.set_transport_ready(False)
+        if self.read_provider is not None:
+            self.read_provider.set_transport_ready(False)
+        if self.energy_provider is not None:
+            self.energy_provider.set_transport_ready(False)
 
     def _handle_suback(
         self, client: Any, mid: object, ready: bool, generation: int
@@ -422,7 +523,12 @@ class LocalPilotMqttSubscriber:
 
     def _set_subscriptions_ready(self, ready: bool) -> None:
         self._subscriptions_ready = ready
+        self._cancel_presence_expiry()
         self.provider.set_transport_ready(False)
+        if self.read_provider is not None:
+            self.read_provider.set_transport_ready(ready)
+        if self.energy_provider is not None:
+            self.energy_provider.set_transport_ready(ready)
         if not ready:
             self._retained_bootstrap.clear()
             self._semantic_bootstrap_pending = False
@@ -445,6 +551,15 @@ class LocalPilotMqttSubscriber:
             or generation != self._active_connection_generation
             or generation != self._callback_connection_generation
         ):
+            return
+        if self.energy_provider is not None and topic in self.energy_provider.topics:
+            self._apply_energy_message(topic, payload, qos, retained)
+            return
+        if self.read_provider is not None and topic in self.read_provider.topics:
+            # The retained current route has its own lifecycle and never joins
+            # the primary final-current bootstrap set.  Transient events are
+            # accepted only after SUBACK by the read provider itself.
+            self._apply_read_message(topic, payload, qos, retained)
             return
         if topic not in self.provider.topics:
             self._apply_message(topic, payload, qos, retained)
@@ -490,6 +605,7 @@ class LocalPilotMqttSubscriber:
                 self._retained_bootstrap.pop(topic, None)
             self._semantic_bootstrap_pending = True
             self.provider.set_transport_ready(True)
+            self._reschedule_presence_expiry()
             self._drain_semantic_bootstrap()
             return
         if set(self._retained_bootstrap) != set(self.provider.topics):
@@ -535,4 +651,29 @@ class LocalPilotMqttSubscriber:
         try:
             self.provider.ingest(topic, payload, qos=qos, retained=retained)
         except LocalProviderContractError:
+            self._record_provider_rejection()
+        finally:
+            self._reschedule_presence_expiry()
+
+    def _apply_read_message(
+        self, topic: str, payload: bytes, qos: int, retained: bool
+    ) -> None:
+        if self.read_provider is None:
+            self._record_provider_rejection()
+            return
+        try:
+            self.read_provider.ingest(topic, payload, qos=qos, retained=retained)
+        except TlvReadProviderContractError:
+            self._record_provider_rejection()
+
+    def _apply_energy_message(
+        self, topic: str, payload: bytes, qos: int, retained: bool
+    ) -> None:
+        if self.energy_provider is None:
+            self._record_provider_rejection()
+            return
+        try:
+            self.energy_provider.ingest(topic, payload, qos=qos, retained=retained)
+        except CumulativeEnergyProviderContractError:
+            self.energy_provider.reject_current()
             self._record_provider_rejection()

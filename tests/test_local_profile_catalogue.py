@@ -127,7 +127,11 @@ class LocalProfileCatalogueTests(unittest.TestCase):
         # Pinned deliberately: the catalogue is a published contract, so growth
         # should be a decision someone made, not something that drifts in.
         self.assertEqual(len(profiles), 19)
-        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 189)
+        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 191)
+        for profile_id in ("cst170-core-state-v1", "cst570-core-state-v1"):
+            comfort = profiles[profile_id].fields["comfort.preference_step"]
+            self.assertEqual(comfort.value_type, "number")
+            self.assertIsNone(comfort.unit)
         for raw_profile in raw["profiles"]:
             profile = profiles[raw_profile["profile_id"]]
             self.assertEqual(

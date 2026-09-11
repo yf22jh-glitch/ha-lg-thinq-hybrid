@@ -30,30 +30,32 @@ POWER_CAPABILITY = "operation.power_requested"
 _CLIMATE_CAPABILITIES = frozenset(
     (CLIMATE_TUPLE_CAPABILITY, CLIMATE_POWER_ON_CAPABILITY)
 )
-_CLIMATE_STATE_FIELDS = (
+_CLIMATE_COMMON_FIELDS = (
     "operation.mode",
     "fan.mode",
-    "temperature.target_c",
 )
+TEMPERATURE_TARGET_SEMANTIC = "temperature.target_c"
+COMFORT_PREFERENCE_SEMANTIC = "comfort.preference_step"
 #: The two swing directions, as single-field settings. CST170 has a codec for both; CST570 has only
 #: the vertical one - its 0x206 frames decode to an already-observed value, so no value has a frame
 #: of its own. A model without a codec refuses and the request goes to the cloud.
 SWING_VERTICAL_CAPABILITY = "swing.vertical_enabled"
 SWING_HORIZONTAL_CAPABILITY = "swing.horizontal_enabled"
 
-#: Home Assistant's own climate modes, in the bridge's vocabulary. `auto` is deliberately absent: the
-#: setpoint tag carries something other than a temperature there, so a tuple naming one is meaningless.
-#: `climate_tuple` refuses `auto` however it arrives, because the shadow will otherwise supply it for a
-#: request that only meant to change the fan.
+#: Legacy hybrid routing only advertises the modes it already supported locally. The Local-native
+#: climate below has a separate map because its pinned model domain, not cloud fallback behavior,
+#: decides whether AUTO exists.
 HVAC_TO_LOCAL_MODE = {
     "cool": "cool",
     "dry": "dry",
     "fan_only": "fan_only",
 }
+LOCAL_NATIVE_HVAC_TO_MODE = {**HVAC_TO_LOCAL_MODE, "auto": "auto"}
 
-#: The mode in which the setpoint field means something else. Named here rather than only excluded
-#: above, so the rule holds wherever a mode comes from.
-UNWRITABLE_MODE = "auto"
+#: Modes whose target grid differs from the ordinary COOL/DRY/FAN_ONLY carry-over. Crossing this
+#: boundary must use a target that was observed in the destination mode or one the user supplied;
+#: otherwise a mode-only request would silently let the appliance clamp a foreign target.
+MODE_SPECIFIC_TARGET = "auto"
 
 #: The fan step while which the appliance reports a setpoint that is not its stored one. In 파워
 #: 냉방풍 it reports `temperature.target_c` as 18 and returns the real target as soon as the fan
@@ -63,14 +65,16 @@ UNWRITABLE_MODE = "auto"
 #: genuine setpoint and dropped the room seven degrees, silently.
 UNWRITABLE_FAN = "power"
 
-#: LG's own wind-strength names, in the bridge's vocabulary. `POWER` is deliberately absent: the only
-#: observed frame carrying it is `cool|power|18C`, so a local `POWER` request would be encodable only
-#: at one exact mode and temperature and would otherwise be refused after a round trip. The cloud takes
-#: it directly.
+#: LG's own wind-strength names, in the bridge's vocabulary.  The decoder is
+#: the authority for the actual Local domain; this small table only translates
+#: Home Assistant's display spelling.  POWER is safe to offer because the
+#: bridge's composite authority constrains it to cooling and deliberately does
+#: not claim the temporary 18 C readback as a changed setpoint.
 WIND_STRENGTH_TO_LOCAL_FAN = {
     "LOW": "low",
     "MID": "medium",
     "HIGH": "high",
+    "POWER": "power",
     "AUTO": "auto",
 }
 
@@ -156,11 +160,15 @@ def reflects_the_appliance(outcome: "LocalCommandResult | None") -> bool:
 
 
 class LocalCommandUnavailable(RuntimeError):
-    """The local path cannot serve this request; the caller should use the cloud."""
+    """The local path refused before a frame could reach the appliance."""
 
 
 class LocalCommandFailed(RuntimeError):
-    """The bridge refused the command, or the appliance never acknowledged it."""
+    """The bridge returned an invalid or explicit terminal failure."""
+
+
+class LocalCommandPending(RuntimeError):
+    """A command may have reached the wire and must reconcile from readback."""
 
 
 @dataclass(frozen=True)
@@ -189,30 +197,55 @@ def _validated_expected_state(
     expected_state: Mapping[str, Any] | None,
 ) -> dict[str, str | int | float]:
     """Return the exact climate compare object accepted by the bridge."""
-    if (
-        not isinstance(expected_state, Mapping)
-        or set(expected_state) != set(_CLIMATE_STATE_FIELDS)
-    ):
+    if not isinstance(expected_state, Mapping):
         raise LocalCommandUnavailable(
-            "a climate command requires the exact current mode, fan and target"
+            "a climate command requires the exact current mode, fan and mode-dependent argument"
         )
     mode = expected_state.get("operation.mode")
     fan = expected_state.get("fan.mode")
-    target = expected_state.get("temperature.target_c")
+    argument_semantic = (
+        COMFORT_PREFERENCE_SEMANTIC
+        if mode == "auto"
+        else TEMPERATURE_TARGET_SEMANTIC
+    )
+    expected_keys = {*_CLIMATE_COMMON_FIELDS, argument_semantic}
+    if set(expected_state) != expected_keys:
+        raise LocalCommandUnavailable(
+            "a climate command requires exactly one mode-dependent argument"
+        )
+    argument = expected_state.get(argument_semantic)
+    if type(mode) is not str or type(fan) is not str:
+        raise LocalCommandUnavailable(
+            "a climate command requires a string mode and string fan"
+        )
     if (
-        type(mode) is not str
-        or type(fan) is not str
-        or type(target) not in (int, float)
-        or not math.isfinite(target)
+        type(argument) not in (int, float)
+        or not math.isfinite(float(argument))
+        or (
+            argument_semantic == COMFORT_PREFERENCE_SEMANTIC
+            and (type(argument) is not int or argument < -2 or argument > 2)
+        )
     ):
         raise LocalCommandUnavailable(
-            "a climate command requires a string mode, string fan and finite numeric target"
+            "a climate command requires a valid numeric mode-dependent argument"
         )
     return {
         "operation.mode": mode,
         "fan.mode": fan,
-        "temperature.target_c": target,
+        argument_semantic: argument,
     }
+
+
+def climate_state_fields(mode: object) -> tuple[str, str, str]:
+    """Return the exact current-state variant for one decoded mode."""
+    return (
+        *_CLIMATE_COMMON_FIELDS,
+        (
+            COMFORT_PREFERENCE_SEMANTIC
+            if mode == "auto"
+            else TEMPERATURE_TARGET_SEMANTIC
+        ),
+    )
 
 
 def climate_expected_state(
@@ -220,10 +253,12 @@ def climate_expected_state(
 ) -> dict[str, str | int | float]:
     """The appliance tuple HA used before applying the requested changes."""
     now = now or datetime.now(timezone.utc)
+    mode = _fresh(shadow.get("operation.mode"), now)
+    fields = climate_state_fields(mode)
     return _validated_expected_state(
         {
             semantic_id: _fresh(shadow.get(semantic_id), now)
-            for semantic_id in _CLIMATE_STATE_FIELDS
+            for semantic_id in fields
         }
     )
 
@@ -234,9 +269,12 @@ def climate_tuple(
     mode: str | None = None,
     fan: str | None = None,
     target_c: float | None = None,
+    comfort_preference: int | None = None,
+    retained_target_c: float | None = None,
+    retained_comfort_preference: int | None = None,
     now: datetime | None = None,
 ) -> str:
-    """`mode|fan|temperatureC`, taking whatever the request does not name from the appliance.
+    """Render the mode-discriminated tuple without mixing temperature and AUTO comfort.
 
     Raises `LocalCommandUnavailable` when the shadow cannot supply a field the frame must carry - the
     appliance writes mode, fan and setpoint together, so a request to change one of them still has to
@@ -247,24 +285,73 @@ def climate_tuple(
     reported_fan = _fresh(shadow.get("fan.mode"), now)
     resolved_mode = mode if mode is not None else reported_mode
     resolved_fan = fan if fan is not None else reported_fan
+    if target_c is not None and comfort_preference is not None:
+        raise LocalCommandUnavailable(
+            "a climate command cannot set temperature and AUTO comfort together"
+        )
+    if resolved_mode == "auto":
+        if target_c is not None:
+            raise LocalCommandUnavailable(
+                "AUTO takes a comfort preference, not a Celsius target"
+            )
+        if resolved_fan == UNWRITABLE_FAN:
+            raise LocalCommandUnavailable(
+                "power fan is available only in cooling mode"
+            )
+        resolved_preference: Any
+        if comfort_preference is not None:
+            resolved_preference = comfort_preference
+        elif reported_mode == "auto" and reported_fan != UNWRITABLE_FAN:
+            resolved_preference = _fresh(
+                shadow.get(COMFORT_PREFERENCE_SEMANTIC), now
+            )
+        else:
+            resolved_preference = retained_comfort_preference
+        missing = [
+            name
+            for name, value in (
+                ("operation.mode", resolved_mode),
+                ("fan.mode", resolved_fan),
+                (COMFORT_PREFERENCE_SEMANTIC, resolved_preference),
+            )
+            if value is None
+        ]
+        if missing:
+            raise LocalCommandUnavailable(
+                "the appliance has not reported "
+                + ", ".join(missing)
+                + " recently enough to write from"
+            )
+        if (
+            type(resolved_preference) is not int
+            or resolved_preference < -2
+            or resolved_preference > 2
+        ):
+            raise LocalCommandUnavailable(
+                "the reported AUTO comfort preference is not a whole step from -2 to 2"
+            )
+        return f"auto|{resolved_fan}|comfort:{resolved_preference}"
+
+    if comfort_preference is not None:
+        raise LocalCommandUnavailable(
+            "AUTO comfort preference is valid only in AUTO mode"
+        )
+    if target_c is not None and resolved_fan == UNWRITABLE_FAN:
+        # The frame carries a byte in the target slot, but the appliance does
+        # not apply it while power fan is active and reports a temporary 18 C.
+        # Accepting a target request here would promise a setting that cannot
+        # be confirmed or even observed.
+        raise LocalCommandUnavailable(
+            "temperature cannot be changed while the fan is on power"
+        )
     if target_c is not None:
         resolved_temp: Any = target_c
     elif reported_mode is None:
-        # The meaning of 0x1fe depends on the mode: in AUTO it is not a temperature. Fields age
-        # independently, so a fresh-looking target beside a stale/missing mode cannot be classified
-        # and must not be restated as a setpoint. An explicit target above does not depend on it.
+        # Target ranges are mode-dependent. Fields age independently, so a fresh-looking target
+        # beside a stale/missing mode cannot be placed on the right grid and must not be restated.
+        # An explicit target above does not depend on the old mode.
         raise LocalCommandUnavailable(
-            "the appliance has not reported operation.mode recently enough to tell whether its "
-            "setpoint field is a temperature"
-        )
-    elif reported_mode == UNWRITABLE_MODE:
-        # Naming a writable destination mode does not change what the current reading means. In
-        # AUTO, 0x1fe is not a temperature; only an explicitly requested target can supply one for
-        # the tuple that leaves AUTO. Reusing the field here would turn a mode-only request into an
-        # unrequested temperature change.
-        raise LocalCommandUnavailable(
-            "the appliance reports no temperature setpoint in auto mode, so leaving it locally "
-            "requires an explicit target"
+            "the appliance has not reported operation.mode recently enough to classify its setpoint"
         )
     elif reported_fan is None:
         # Whether the reported setpoint is real or the power-fan placeholder is a question about
@@ -275,25 +362,25 @@ def climate_tuple(
             "the appliance has not reported fan.mode recently enough to tell whether its setpoint is real"
         )
     elif reported_fan == UNWRITABLE_FAN:
-        # Not a reading, so it fills nothing in - and said as itself, because "not reported
-        # recently enough" would send the next reader looking at freshness.
-        raise LocalCommandUnavailable(
-            "the appliance reports a placeholder setpoint while the fan is on power, "
-            "so a request that does not state its own cannot be written"
-        )
+        # 18 C is a temporary display value, not the retained setpoint.  The
+        # router remembers only a previously observed non-power target and may
+        # provide it here so leaving/restarting power fan cannot overwrite the
+        # user's real target.  With no such observation we refuse rather than
+        # guess.
+        resolved_temp = retained_target_c
+    elif MODE_SPECIFIC_TARGET in {resolved_mode, reported_mode}:
+        # AUTO's carrier is not a temperature. Leaving AUTO, or crossing between ordinary modes,
+        # therefore uses only a target observed for the destination mode rather than reusing a
+        # different mode's argument.
+        resolved_temp = retained_target_c
     else:
         resolved_temp = _fresh(shadow.get("temperature.target_c"), now)
-    if resolved_fan == UNWRITABLE_FAN:
-        # Asking for the power fan, or leaving it in place: the setpoint cannot be set while it is
-        # on, and the frame must carry one, so there is no tuple to write either way.
+    if resolved_fan == UNWRITABLE_FAN and resolved_mode != "cool":
+        # 파워 냉방풍 is an app-declared cooling-only combination.  Do not
+        # coerce either component behind the user's back.
         raise LocalCommandUnavailable(
-            "the setpoint cannot be stated while the fan is on power, so no tuple can be written"
+            "power fan is available only in cooling mode"
         )
-    if resolved_mode == UNWRITABLE_MODE:
-        # Whether the request named it or the shadow filled it in. In auto the setpoint tag carries
-        # something other than a temperature, so a tuple stating one would write a number into a
-        # field that means something else - and a request to change the fan would do it silently.
-        raise LocalCommandUnavailable("auto mode has no setpoint to state, so no tuple can be written")
     missing = [
         name
         for name, value in (
@@ -351,7 +438,7 @@ class LocalCommandClient:
             request["expected_state"] = request_expected_state
         try:
             async with self._session.post(
-                f"{self._base_url}/control/{device_id}",
+                f"{self._base_url}/control/home-assistant/{device_id}",
                 json=request,
                 timeout=self._timeout,
                 # 307/308 preserve POST. Following one could replay a single Home Assistant
@@ -373,7 +460,9 @@ class LocalCommandClient:
             # before it waits up to twenty seconds for the appliance to report, so a timeout is
             # exactly the case where the write most likely DID happen - offering it to the cloud
             # would be the second command.
-            raise LocalCommandFailed(f"the local bridge did not answer in time: {err}") from err
+            raise LocalCommandPending(
+                f"the local bridge did not answer in time: {err}"
+            ) from err
 
         # A body that is valid JSON but not an object - a proxy's page, a route mismatch - would
         # otherwise raise AttributeError out of this method, past both the exceptions callers
@@ -392,12 +481,12 @@ class LocalCommandClient:
         if status >= 500:
             # Unknown: something threw where the endpoint expected nothing to. Whether a frame
             # went out cannot be told from here, so this is not offered to the cloud.
-            raise LocalCommandFailed(detail)
+            raise LocalCommandPending(detail)
         result = LocalCommandResult(str(fields.get("verdict") or ""), fields.get("state") or {})
         if result.verdict == UNREPORTED:
             # The frame went out and the appliance never accounted for it. Saying so is the point -
             # the alternative is Home Assistant showing a state nothing confirmed.
-            raise LocalCommandFailed("the appliance did not report the change")
+            raise LocalCommandPending("the appliance did not report the change")
         if result.verdict not in KNOWN_VERDICTS:
             raise LocalCommandFailed(f"unexpected verdict {result.verdict!r}")
         # `unverifiable` is returned rather than raised. The frame went out; nothing that arrives

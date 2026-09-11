@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 import importlib.util
-from pathlib import Path
 import sys
 import types
-from typing import Any
 import unittest
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
 
 # Loaded without the integration package, whose __init__ needs a running Home Assistant.
 # The router is deliberately free of Home Assistant imports so this is possible; the relative
@@ -137,11 +137,17 @@ class PowerOffRefusingSender(Sender):
         return LocalCommandResult("confirmed", {})
 
 
-def router(sender: Sender, provider: Provider | None = None, bridge_id: str | None = BRIDGE):
+def router(
+    sender: Sender,
+    provider: Provider | None = None,
+    bridge_id: str | None = BRIDGE,
+    write_authorized=None,
+):
     return LocalControlRouter(
         sender,
         {PAT: provider} if provider is not None else {},
         lambda pat: bridge_id if pat == PAT else None,
+        write_authorized,
     )
 
 
@@ -150,6 +156,44 @@ def run(coro):
 
 
 class LocalControlRouterTest(unittest.TestCase):
+    def test_private_per_value_gate_refuses_before_wire_without_logging_identity_or_value(
+        self,
+    ) -> None:
+        sender = Sender()
+        requested = "private-value-must-not-appear"
+        with self.assertLogs(ROUTER_LOGGER, level="INFO") as caught:
+            result = run(
+                router(
+                    sender,
+                    Provider(shadow()),
+                    write_authorized=lambda _pat, _capability, _value: False,
+                ).async_set_value(PAT, "display.brightness_pct", requested)
+            )
+
+        self.assertIsNone(result)
+        self.assertEqual(sender.sent, [])
+        self.assertIn("display.brightness_pct", caught.output[0])
+        self.assertNotIn(PAT, caught.output[0])
+        self.assertNotIn(requested, caught.output[0])
+
+    def test_private_per_value_gate_allows_only_the_exact_member(self) -> None:
+        sender = Sender()
+        allowed = {"50"}
+        r = router(
+            sender,
+            Provider(shadow()),
+            write_authorized=lambda _pat, capability, value: (
+                capability == "display.brightness_pct" and value in allowed
+            ),
+        )
+
+        refused = run(r.async_set_value(PAT, "display.brightness_pct", "40"))
+        accepted = run(r.async_set_value(PAT, "display.brightness_pct", "50"))
+
+        self.assertIsNone(refused)
+        self.assertTrue(accepted and accepted.confirmed)
+        self.assertEqual(sender.sent, [(BRIDGE, "display.brightness_pct", "50")])
+
     def test_changes_one_field_and_keeps_the_rest_as_the_appliance_reported_them(self) -> None:
         sender = Sender()
         result = run(router(sender, Provider(shadow())).async_set_climate(PAT, fan="low", now=NOW))
@@ -243,19 +287,52 @@ class LocalControlRouterTest(unittest.TestCase):
 
         async def commands() -> None:
             self.assertIsNone(
-                await r.async_set_climate(PAT, target_c=26, now=NOW)
+                await r.async_set_climate(
+                    PAT, target_c=26, now=NOW, cloud_fallback=True
+                )
             )
             # The caller is about to dispatch that intent to the cloud. A concurrent/later tuple
             # request must already be fenced; relying on a second callback after this return leaves
             # a window where retained pre-cloud state can be sent locally.
             self.assertIsNone(
                 await r.async_set_climate(
-                    PAT, fan="low", now=NOW + timedelta(seconds=1)
+                    PAT,
+                    fan="low",
+                    now=NOW + timedelta(seconds=1),
+                    cloud_fallback=True,
                 )
             )
 
         run(commands())
         self.assertEqual(len(sender.sent), 1)
+
+    def test_a_local_only_refusal_does_not_invent_a_cloud_dispatch_barrier(self) -> None:
+        sender = Sender(LocalCommandUnavailable("temporary refusal"))
+        provider = Provider(shadow())
+        r = router(sender, provider)
+
+        self.assertIsNone(
+            run(
+                r.async_set_climate(
+                    PAT,
+                    target_c=26,
+                    now=NOW,
+                    cloud_fallback=False,
+                )
+            )
+        )
+        sender._outcome = LocalCommandResult("confirmed", {})
+        result = run(
+            r.async_set_climate(
+                PAT,
+                fan="low",
+                now=NOW + timedelta(seconds=1),
+                cloud_fallback=False,
+            )
+        )
+
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(sender.sent[-1], (BRIDGE, "climate.mode_fan_setpoint", "cool|low|24C"))
 
     def test_a_frame_that_went_out_unconfirmed_is_never_handed_back_for_a_second_try(self) -> None:
         sender = Sender(LocalCommandFailed("the appliance did not report the change"))
@@ -299,6 +376,80 @@ class LocalControlRouterTest(unittest.TestCase):
         # The power-on frame carries mode, fan and setpoint whatever happens, so following it with
         # a mode write would put two frames on the wire for one press.
         self.assertEqual(sender.sent, [(BRIDGE, "climate.power_on_with_setpoint", "dry|high|24C")])
+
+    def test_power_fan_enters_and_leaves_without_promoting_the_18c_placeholder(self) -> None:
+        sender = Sender()
+        provider = Provider(shadow())
+        r = router(sender, provider)
+
+        async def commands() -> None:
+            entered = await r.async_set_climate(
+                PAT, fan="power", now=NOW, cloud_fallback=False
+            )
+            self.assertTrue(entered and entered.confirmed)
+            self.assertEqual(
+                set(r._confirmed_tuples[PAT].fields),
+                {"operation.mode", "fan.mode"},
+            )
+
+            # Simulate the actual appliance readback while POWER is active.
+            provider.shadow_fields["fan.mode"] = Field(
+                "power", NOW + timedelta(seconds=1)
+            )
+            provider.shadow_fields["temperature.target_c"] = Field(
+                18, NOW + timedelta(seconds=1)
+            )
+            left = await r.async_set_climate(
+                PAT,
+                fan="low",
+                now=NOW + timedelta(seconds=2),
+                cloud_fallback=False,
+            )
+            self.assertTrue(left and left.confirmed)
+
+        run(commands())
+        self.assertEqual(
+            sender.sent,
+            [
+                (BRIDGE, "climate.mode_fan_setpoint", "cool|power|24C"),
+                (BRIDGE, "climate.mode_fan_setpoint", "cool|low|24C"),
+            ],
+        )
+
+    def test_power_fan_after_restart_needs_an_explicit_local_retained_target(self) -> None:
+        at = NOW - timedelta(seconds=1)
+        fields = {
+            "operation.mode": Field("cool", at),
+            "fan.mode": Field("power", at),
+            "temperature.target_c": Field(18, at),
+        }
+        sender = Sender()
+        r = router(sender, Provider(fields))
+
+        self.assertIsNone(
+            run(
+                r.async_set_climate(
+                    PAT,
+                    fan="low",
+                    now=NOW,
+                    cloud_fallback=False,
+                )
+            )
+        )
+        accepted = run(
+            r.async_set_climate(
+                PAT,
+                fan="low",
+                retained_target_c=25.5,
+                now=NOW,
+                cloud_fallback=False,
+            )
+        )
+        self.assertTrue(accepted and accepted.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "climate.mode_fan_setpoint", "cool|low|25.5C")],
+        )
 
     def test_a_boolean_setting_is_named_by_the_caller_and_judged_by_the_bridge(self) -> None:
         sender = Sender()
@@ -381,7 +532,11 @@ class LocalControlRouterTest(unittest.TestCase):
         r = router(sender, Provider(shadow()))
         with self.assertLogs(ROUTER_LOGGER, level="INFO") as caught:
             for target in (24, 24.5, 25, 25.5, 26):
-                run(r.async_set_climate(PAT, target_c=target, now=NOW))
+                run(
+                    r.async_set_climate(
+                        PAT, target_c=target, now=NOW, cloud_fallback=True
+                    )
+                )
         # Five refused setpoints produce two structural causes, not five values: the first codec
         # refusal arms the cloud fence, and the next request reports that it is awaiting a fresh
         # post-cloud tuple. Repeats of either cause stay at debug.
@@ -406,43 +561,94 @@ class LocalControlRouterTest(unittest.TestCase):
 
         # A shadow that has not filled in yet is the usual first refusal; the permanent causes
         # under the same capability come later, and must not be demoted to a level nobody has on.
-        providers[PAT] = Provider({**shadow(), "operation.mode": Field("auto", NOW)})
+        providers[PAT] = Provider(
+            {
+                **shadow(),
+                "fan.mode": Field("power", NOW),
+                "temperature.target_c": Field(18, NOW),
+            }
+        )
         with self.assertLogs(ROUTER_LOGGER, level="INFO") as caught:
             run(r.async_set_climate(PAT, fan="low", now=NOW))
         self.assertEqual(len(caught.records), 1)
-        self.assertIn("auto", caught.output[0])
+        self.assertIn("temperature.target_c", caught.output[0])
 
-    def test_auto_mode_has_no_tuple_to_write_however_it_arrives(self) -> None:
+    def test_auto_in_mode_change_uses_the_exact_reported_preference(self) -> None:
         sender = Sender()
         fields = shadow()
         fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
-        # A request to change only the fan would otherwise take `auto` from the shadow and state
-        # a setpoint in a field that, in auto, carries something else entirely.
-        self.assertIsNone(run(router(sender, Provider(fields)).async_set_climate(PAT, fan="low", now=NOW)))
-        self.assertEqual(sender.sent, [])
+        fields.pop("temperature.target_c")
+        fields["comfort.preference_step"] = Field(0, NOW - timedelta(seconds=1))
 
-    def test_leaving_auto_without_an_explicit_target_never_reuses_its_non_temperature_field(self) -> None:
-        sender = Sender()
-        fields = shadow()
-        fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
-
-        # Naming COOL does not turn AUTO's 0x1fe into a temperature. The cloud can express the
-        # mode-only intent without restating that field, while the local tuple cannot.
-        self.assertIsNone(
-            run(router(sender, Provider(fields)).async_set_climate(PAT, mode="cool", now=NOW))
-        )
-        self.assertIsNone(
-            run(router(sender, Provider(fields)).async_turn_on(PAT, mode="cool", now=NOW))
-        )
-        self.assertEqual(sender.sent, [])
-
-    def test_leaving_auto_is_local_only_when_the_request_states_a_real_target(self) -> None:
-        sender = Sender()
-        fields = shadow()
-        fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
         result = run(
             router(sender, Provider(fields)).async_set_climate(
-                PAT, mode="cool", target_c=24, now=NOW
+                PAT, fan="low", now=NOW, cloud_fallback=False
+            )
+        )
+
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "climate.mode_fan_setpoint", "auto|low|comfort:0")],
+        )
+        self.assertEqual(
+            sender.expected_states,
+            [
+                {
+                    "operation.mode": "auto",
+                    "fan.mode": "high",
+                    "comfort.preference_step": 0,
+                }
+            ],
+        )
+
+    def test_crossing_auto_without_a_destination_target_is_refused_before_wire(self) -> None:
+        sender = Sender()
+        self.assertIsNone(
+            run(
+                router(sender, Provider(shadow())).async_set_climate(
+                    PAT, mode="auto", now=NOW, cloud_fallback=False
+                )
+            )
+        )
+        fields = shadow()
+        fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
+        fields.pop("temperature.target_c")
+        fields["comfort.preference_step"] = Field(0, NOW - timedelta(seconds=1))
+        self.assertIsNone(
+            run(
+                router(sender, Provider(fields)).async_set_climate(
+                    PAT, mode="cool", now=NOW, cloud_fallback=False
+                )
+            )
+        )
+        self.assertEqual(sender.sent, [])
+
+    def test_crossing_auto_uses_a_destination_shadow_or_explicit_target(self) -> None:
+        sender = Sender()
+        result = run(
+            router(sender, Provider(shadow())).async_set_climate(
+                PAT,
+                mode="auto",
+                retained_comfort_preference=0,
+                now=NOW,
+                cloud_fallback=False,
+            )
+        )
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "climate.mode_fan_setpoint", "auto|high|comfort:0")],
+        )
+
+        sender = Sender()
+        fields = shadow()
+        fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
+        fields.pop("temperature.target_c")
+        fields["comfort.preference_step"] = Field(0, NOW - timedelta(seconds=1))
+        result = run(
+            router(sender, Provider(fields)).async_set_climate(
+                PAT, mode="cool", target_c=24, now=NOW, cloud_fallback=False
             )
         )
         self.assertTrue(result and result.confirmed)
@@ -450,6 +656,71 @@ class LocalControlRouterTest(unittest.TestCase):
             sender.sent,
             [(BRIDGE, "climate.mode_fan_setpoint", "cool|high|24C")],
         )
+
+    def test_mode_specific_targets_survive_back_to_back_local_transitions(self) -> None:
+        sender = Sender()
+        fields = shadow()
+        fields["operation.mode"] = Field("auto", NOW - timedelta(seconds=1))
+        fields.pop("temperature.target_c")
+        fields["comfort.preference_step"] = Field(0, NOW - timedelta(seconds=1))
+        provider = Provider(fields)
+        r = router(sender, provider)
+
+        async def commands() -> None:
+            await r.async_set_climate(
+                PAT, fan="low", now=NOW, cloud_fallback=False
+            )
+            for field, value in (
+                ("operation.mode", "cool"),
+                ("fan.mode", "high"),
+                ("temperature.target_c", 24),
+            ):
+                provider.shadow_fields[field] = Field(
+                    value, NOW + timedelta(seconds=1)
+                )
+            await r.async_set_climate(
+                PAT, fan="medium", now=NOW + timedelta(seconds=2), cloud_fallback=False
+            )
+            await r.async_set_climate(
+                PAT, mode="auto", now=NOW + timedelta(seconds=3), cloud_fallback=False
+            )
+
+        run(commands())
+        self.assertEqual(
+            sender.sent[-1],
+            (BRIDGE, "climate.mode_fan_setpoint", "auto|medium|comfort:0"),
+        )
+
+    def test_power_on_can_state_auto_and_preference_in_one_local_frame(self) -> None:
+        sender = Sender()
+        result = run(
+            router(sender, Provider(shadow())).async_turn_on(
+                PAT,
+                mode="auto",
+                comfort_preference=1,
+                now=NOW,
+                cloud_fallback=False,
+            )
+        )
+        self.assertTrue(result and result.confirmed)
+        self.assertEqual(
+            sender.sent,
+            [(BRIDGE, "climate.power_on_with_setpoint", "auto|high|comfort:1")],
+        )
+
+    def test_power_on_auto_without_a_preference_is_refused_before_wire(self) -> None:
+        sender = Sender()
+        result = run(
+            router(sender, Provider(shadow())).async_turn_on(
+                PAT,
+                mode="auto",
+                now=NOW,
+                cloud_fallback=False,
+            )
+        )
+
+        self.assertIsNone(result)
+        self.assertEqual(sender.sent, [])
 
     def test_back_to_back_confirmed_tuples_compose_from_the_appliance_confirmation(self) -> None:
         sender = Sender()

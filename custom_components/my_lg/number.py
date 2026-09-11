@@ -10,9 +10,8 @@ Write payload mirrors the thinqconnect SDK: the value goes to the
 
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -31,17 +30,17 @@ from .const import (
     DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
-    OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+    OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature import FeatureAccess
 from .feature_catalog import discover_pat_features
+from .local_control_entity import local_control_entities_for_domain
 from .value_access import is_meaningful
-from .wideq_control import iter_wideq_field_controls
-from .wideq_control import control_risk_allowed
+from .wideq_control import control_risk_allowed, iter_wideq_field_controls
 
 # Fallback °C ranges when the profile doesn't pin them per compartment.
 _FALLBACK_RANGE: dict[str, tuple[int, int]] = {
@@ -140,6 +139,7 @@ async def async_setup_entry(
                         )
                     )
 
+    entities.extend(local_control_entities_for_domain(entry, "number"))
     async_add_entities(entities)
 
 

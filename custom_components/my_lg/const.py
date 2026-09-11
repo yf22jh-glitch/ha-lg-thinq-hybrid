@@ -6,6 +6,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "my_lg"
 SERVICE_WIDEQ_COMMAND = "wideq_command"
+SERVICE_LOCAL_READ_CONSUMER_TRANSITION = "local_read_consumer_transition"
 
 # Config entry data keys
 CONF_ACCESS_TOKEN = "access_token"
@@ -59,6 +60,14 @@ DEVICE_TYPE_OVEN = "DEVICE_OVEN"
 DEVICE_TYPE_COOKTOP = "DEVICE_COOKTOP"
 DEVICE_TYPE_STICK_CLEANER = "DEVICE_STICK_CLEANER"
 
+# Add a model here only after a read-only ``service/aircon/<id>/energy-history``
+# probe proves that ``periodicEnergyData`` contains a non-zero sample and the
+# response shape is retained as an audit artifact.  An all-zero response is not
+# support evidence: ``AIR_910604_WW`` is the live counterexample.  The parser
+# intentionally preserves real zeroes after this exact model gate admits a
+# previously verified model.
+AIR_PURIFIER_ENERGY_HISTORY_MODELS = frozenset({"AIR_2C0001_WW"})
+
 # Whitelist: device types this integration sets up. Stage 5 = all our devices
 # (my_lg fully replaces both the official lg_thinq and the smartthinq fork).
 SUPPORTED_DEVICE_TYPES: set[str] = {
@@ -110,6 +119,9 @@ OPT_APPLIANCE_ACTIVE_INTERVAL = "appliance_active_interval"
 OPT_IDLE_INTERVAL = "idle_interval"
 OPT_ALLOW_HAZARDOUS_CONTROLS = "allow_hazardous_controls"
 OPT_ALLOW_EXPERIMENTAL_CONTROLS = "allow_experimental_controls"
+# Explicit default-off read-only overlay. Code deployment and activation remain
+# separate, reversible OptionsFlow steps.
+OPT_LOCAL_READ_DUPLICATE_OVERLAY = "local_read_duplicate_overlay"
 
 DEFAULT_AC_ACTIVE_INTERVAL = 600
 DEFAULT_APPLIANCE_ACTIVE_INTERVAL = 300

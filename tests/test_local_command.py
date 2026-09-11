@@ -84,7 +84,10 @@ class LocalCommandClientTest(unittest.TestCase):
         self.assertTrue(result.confirmed)
         self.assertEqual(result.state, {"power": False})
         url, kwargs = session.posts[0]
-        self.assertEqual(url, f"http://bridge:44401/control/{DEVICE}")
+        self.assertEqual(
+            url,
+            f"http://bridge:44401/control/home-assistant/{DEVICE}",
+        )
         self.assertEqual(kwargs["json"], {"capability": "operation.power_requested", "value": "false"})
         # A redirect could replay the POST at another endpoint. One Home Assistant request must
         # remain exactly one bridge request, even when a proxy is misconfigured.
@@ -124,6 +127,23 @@ class LocalCommandClientTest(unittest.TestCase):
                     },
                 )
 
+        auto_state = {
+            "operation.mode": "auto",
+            "fan.mode": "medium",
+            "comfort.preference_step": 0,
+        }
+        session = Session(Response(200, {"verdict": "confirmed", "state": {}}))
+        client = local_command.LocalCommandClient(session, "http://bridge:44401")
+        asyncio.run(
+            client.async_send(
+                DEVICE,
+                "climate.mode_fan_setpoint",
+                "auto|medium|comfort:1",
+                expected_state=auto_state,
+            )
+        )
+        self.assertEqual(session.posts[0][1]["json"]["expected_state"], auto_state)
+
     def test_a_climate_tuple_without_an_exact_expected_state_is_refused_before_http(
         self,
     ) -> None:
@@ -145,6 +165,16 @@ class LocalCommandClientTest(unittest.TestCase):
                 "fan.mode": "high",
                 "temperature.target_c": 24,
                 "extra": True,
+            },
+            {
+                "operation.mode": "auto",
+                "fan.mode": "high",
+                "temperature.target_c": 17,
+            },
+            {
+                "operation.mode": "cool",
+                "fan.mode": "high",
+                "comfort.preference_step": 0,
             },
         ):
             with self.subTest(expected_state=expected_state):
@@ -175,10 +205,10 @@ class LocalCommandClientTest(unittest.TestCase):
                 )
                 self.assertIn("refused", str(err))
 
-    def test_a_change_the_appliance_never_reported_is_a_failure_not_a_fallback(self) -> None:
+    def test_a_change_the_appliance_never_reported_is_pending_not_a_fallback(self) -> None:
         # 202: the bridge sent it. Offering this to the cloud would be a second command.
         send_expecting(
-            Response(202, {"verdict": "unreported", "state": {}}), local_command.LocalCommandFailed
+            Response(202, {"verdict": "unreported", "state": {}}), local_command.LocalCommandPending
         )
 
     def test_a_write_nothing_could_confirm_is_returned_rather_than_raised(self) -> None:
@@ -191,8 +221,8 @@ class LocalCommandClientTest(unittest.TestCase):
     def test_a_verdict_this_does_not_know_is_never_read_as_success(self) -> None:
         send_expecting(Response(202, {"verdict": "who knows"}), local_command.LocalCommandFailed)
 
-    def test_an_error_that_says_nothing_about_the_wire_is_not_offered_to_the_cloud(self) -> None:
-        send_expecting(Response(500, {"error": "boom"}), local_command.LocalCommandFailed)
+    def test_an_error_that_says_nothing_about_the_wire_is_pending_not_retried(self) -> None:
+        send_expecting(Response(500, {"error": "boom"}), local_command.LocalCommandPending)
 
     def test_only_the_gateway_answer_that_forwarded_nothing_may_be_retried(self) -> None:
         # 503: nothing in front of the bridge had anywhere to send it, so the endpoint never ran.
@@ -202,7 +232,7 @@ class LocalCommandClientTest(unittest.TestCase):
         # where the bridge has already sent the frame and is waiting for the appliance.
         for status in (502, 504):
             with self.subTest(status=status):
-                send_expecting(Response(status, {"error": "bad gateway"}), local_command.LocalCommandFailed)
+                send_expecting(Response(status, {"error": "bad gateway"}), local_command.LocalCommandPending)
 
     def test_a_bridge_that_could_not_be_connected_to_did_not_send_anything(self) -> None:
         import aiohttp
@@ -216,8 +246,8 @@ class LocalCommandClientTest(unittest.TestCase):
 
         # The bridge records and sends the frame BEFORE it waits up to twenty seconds for the
         # appliance to report, so a timeout is exactly when the write most likely did happen.
-        send_expecting(TimeoutError("too slow"), local_command.LocalCommandFailed)
-        send_expecting(aiohttp.ServerDisconnectedError(), local_command.LocalCommandFailed)
+        send_expecting(TimeoutError("too slow"), local_command.LocalCommandPending)
+        send_expecting(aiohttp.ServerDisconnectedError(), local_command.LocalCommandPending)
 
     def test_a_connect_phase_failure_leaves_the_request_for_the_cloud(self) -> None:
         import aiohttp
@@ -230,7 +260,7 @@ class LocalCommandClientTest(unittest.TestCase):
 
     def test_a_body_that_is_not_the_endpoint_s_own_json_is_read_from_the_status(self) -> None:
         # A proxy answering with a page. The status still says whether anything was sent.
-        send_expecting(Response(500, ValueError("not json")), local_command.LocalCommandFailed)
+        send_expecting(Response(500, ValueError("not json")), local_command.LocalCommandPending)
         send_expecting(Response(404, ValueError("not json")), local_command.LocalCommandUnavailable)
 
     def test_a_body_that_is_json_but_not_an_object_does_not_escape_as_an_attribute_error(self) -> None:
@@ -325,8 +355,8 @@ class ClimateTupleTest(unittest.TestCase):
         self.assertIn("fan.mode", str(caught.exception))
 
     def test_a_setpoint_cannot_be_reused_without_a_fresh_mode_to_classify_it(self) -> None:
-        # In AUTO, 0x1fe is not a temperature. Per-field observations can age independently, so a
-        # fresh-looking 16 must not become COOL|...|16C merely because the AUTO mode reading expired.
+        # COOL and AUTO use different numeric grids. Per-field observations can age independently,
+        # so a fresh-looking 16 must not be assigned to either grid after its mode reading expired.
         self.shadow["operation.mode"] = SimpleNamespace(
             value="auto", observed_at=self.now - timedelta(minutes=11)
         )
@@ -346,6 +376,47 @@ class ClimateTupleTest(unittest.TestCase):
             "cool|high|24C",
         )
 
+    def test_auto_uses_its_reported_unitless_preference_for_an_in_mode_change(self) -> None:
+        at = self.now - timedelta(seconds=1)
+        self.shadow["operation.mode"] = SimpleNamespace(value="auto", observed_at=at)
+        self.shadow.pop("temperature.target_c")
+        self.shadow["comfort.preference_step"] = SimpleNamespace(value=0, observed_at=at)
+
+        self.assertEqual(
+            local_command.climate_tuple(self.shadow, fan="low", now=self.now),
+            "auto|low|comfort:0",
+        )
+
+    def test_crossing_auto_requires_the_destination_variant_argument(self) -> None:
+        with self.assertRaisesRegex(
+            local_command.LocalCommandUnavailable, "comfort.preference_step"
+        ):
+            local_command.climate_tuple(self.shadow, mode="auto", now=self.now)
+        self.assertEqual(
+            local_command.climate_tuple(
+                self.shadow,
+                mode="auto",
+                retained_comfort_preference=0,
+                now=self.now,
+            ),
+            "auto|high|comfort:0",
+        )
+        self.assertEqual(
+            local_command.climate_tuple(
+                self.shadow,
+                mode="auto",
+                comfort_preference=1,
+                now=self.now,
+            ),
+            "auto|high|comfort:1",
+        )
+        with self.assertRaisesRegex(
+            local_command.LocalCommandUnavailable, "not a Celsius target"
+        ):
+            local_command.climate_tuple(
+                self.shadow, mode="auto", target_c=18, now=self.now
+            )
+
     def test_the_placeholder_setpoint_reported_under_the_power_fan_is_never_written(self) -> None:
         at = self.now - timedelta(seconds=1)
         self.shadow["fan.mode"] = SimpleNamespace(value="power", observed_at=at)
@@ -358,9 +429,15 @@ class ClimateTupleTest(unittest.TestCase):
             local_command.climate_tuple(self.shadow, fan="low", now=self.now)
         with self.assertRaises(local_command.LocalCommandUnavailable):
             local_command.climate_tuple(self.shadow, mode="cool", now=self.now)
-        # A request that states its own setpoint is not filling anything in, so it stands.
+        # A previously observed non-power target may carry the appliance back
+        # out of POWER without turning the temporary 18 into a setting.
         self.assertEqual(
-            local_command.climate_tuple(self.shadow, fan="low", target_c=25, now=self.now),
+            local_command.climate_tuple(
+                self.shadow,
+                fan="low",
+                retained_target_c=25,
+                now=self.now,
+            ),
             "cool|low|25C",
         )
 
@@ -378,9 +455,23 @@ class ClimateTupleTest(unittest.TestCase):
         with self.assertRaises(local_command.LocalCommandUnavailable):
             local_command.climate_tuple(self.shadow, fan="low", now=self.now)
 
-    def test_asking_for_the_power_fan_is_refused_because_the_frame_must_carry_a_setpoint(self) -> None:
+    def test_power_fan_uses_the_current_target_structurally_but_cannot_change_it(self) -> None:
+        self.assertEqual(
+            local_command.climate_tuple(
+                self.shadow, fan="power", now=self.now
+            ),
+            "cool|power|24C",
+        )
         with self.assertRaises(local_command.LocalCommandUnavailable):
             local_command.climate_tuple(self.shadow, fan="power", target_c=25, now=self.now)
+
+    def test_power_fan_is_rejected_outside_cooling_without_coercion(self) -> None:
+        with self.assertRaisesRegex(
+            local_command.LocalCommandUnavailable, "cooling mode"
+        ):
+            local_command.climate_tuple(
+                self.shadow, mode="dry", fan="power", now=self.now
+            )
 
     def test_a_setpoint_that_is_not_a_number_leaves_the_request_for_the_cloud(self) -> None:
         self.shadow["temperature.target_c"] = SimpleNamespace(

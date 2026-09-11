@@ -15,10 +15,13 @@ import custom_components.my_lg as my_lg
 if not hasattr(my_lg, "MyLgConfigEntry"):
     my_lg.MyLgConfigEntry = object
 
-from custom_components.my_lg.const import DEVICE_TYPE_AIR_CONDITIONER
+from custom_components.my_lg.const import (
+    DEVICE_TYPE_AIR_CONDITIONER,
+)
 from custom_components.my_lg.sensor import (
     WASHTOWER_SENSORS,
     WIDEQ_AC_SENSORS,
+    WIDEQ_SENSORS_BY_MODEL,
     WideqDeviceSensor,
 )
 
@@ -69,6 +72,15 @@ class EnergyEntityContractTests(unittest.TestCase):
                 for description in period_descriptions
             )
         )
+
+    def test_only_verified_tower_purifier_model_gets_history_entities(self) -> None:
+        tower = WIDEQ_SENSORS_BY_MODEL.get("AIR_2C0001_WW", ())
+
+        self.assertEqual(
+            {description.key for description in tower},
+            {"energy_today", "energy_month"},
+        )
+        self.assertNotIn("AIR_910604_WW", WIDEQ_SENSORS_BY_MODEL)
 
     def test_pat_confirmed_ac_power_off_reports_zero_without_snapshot(self) -> None:
         wideq = MagicMock()

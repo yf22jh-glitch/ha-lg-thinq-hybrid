@@ -21,8 +21,9 @@ from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
 from .compat import AddConfigEntryEntitiesCallback
-from .const import DEVICE_TYPE_STYLER, DEVICE_TYPE_WASHTOWER
 from .const import (
+    DEVICE_TYPE_STYLER,
+    DEVICE_TYPE_WASHTOWER,
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
     OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
@@ -32,6 +33,7 @@ from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature_catalog import get_wideq_control
 from .local_command import LocalCommandFailed
+from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
 from .value_access import stable_feature_key
 
@@ -179,6 +181,7 @@ async def async_setup_entry(
                             allow_experimental,
                         )
                     )
+    entities.extend(local_control_entities_for_domain(entry, "button"))
     async_add_entities(entities)
 
 

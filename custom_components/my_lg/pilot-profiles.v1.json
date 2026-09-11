@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "semantics_revision": 31,
+  "semantics_revision": 33,
   "profiles": [
     {
       "profile_id": "dhum-water-tank-v1",
@@ -11,7 +11,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -35,7 +37,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -129,7 +133,9 @@
       "profile_id": "dhum-core-state-v2",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -236,7 +242,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -275,7 +283,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -324,7 +334,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "D121110",
       "platform": "thinq2",
@@ -448,7 +460,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "3REK2G03VI230D_2",
       "platform": "thinq2",
@@ -505,7 +519,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "2REK1D04AR170",
       "platform": "thinq1",
@@ -579,7 +595,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "2REFO1DBN3K_U",
       "platform": "thinq2",
@@ -661,7 +679,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "WMLJ32RS",
       "platform": "thinq2",
@@ -738,7 +758,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "AIR_910604_WW",
       "platform": "thinq2",
@@ -908,7 +930,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "AIR_2C0001_WW",
       "platform": "thinq2",
@@ -933,7 +957,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "HUM_056905_WW",
       "platform": "thinq2",
@@ -1194,7 +1220,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "CST_170004_WW",
       "platform": "thinq2",
@@ -1238,6 +1266,14 @@
           "value_type": "number",
           "exposure": "state",
           "unit": "°C",
+          "confidence": [
+            "confirmed-exact-model-live-sweep"
+          ]
+        },
+        {
+          "semantic_id": "comfort.preference_step",
+          "value_type": "number",
+          "exposure": "state",
           "confidence": [
             "confirmed-exact-model-live-sweep"
           ]
@@ -1377,7 +1413,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "CST_570004_WW",
       "platform": "thinq2",
@@ -1421,6 +1459,14 @@
           "value_type": "number",
           "exposure": "state",
           "unit": "°C",
+          "confidence": [
+            "confirmed"
+          ]
+        },
+        {
+          "semantic_id": "comfort.preference_step",
+          "value_type": "number",
+          "exposure": "state",
           "confidence": [
             "confirmed"
           ]
@@ -1552,7 +1598,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "WTL_KPK_BDH_KR_01",
       "platform": "thinq2",
@@ -1647,7 +1695,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "1WPD4CMIDR__3",
       "platform": "thinq2",
@@ -1728,7 +1778,9 @@
         28,
         29,
         30,
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "WBEF3",
       "platform": "thinq2",
@@ -1774,7 +1826,9 @@
       "profile_id": "wireless-vacuum-core-state-v1",
       "contract_revision": 1,
       "supported_semantics_revisions": [
-        31
+        31,
+        32,
+        33
       ],
       "model_id": "HWWA9X3C_F2U",
       "platform": "thinq2",

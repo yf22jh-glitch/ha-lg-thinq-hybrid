@@ -163,6 +163,44 @@ class RecoveringFourTopicProvider(FourTopicProvider):
         return True
 
 
+class FakeReadProvider:
+    """Auxiliary feed proving read topics never join retained primary bootstrap."""
+
+    def __init__(self) -> None:
+        self.binding_id = BINDING_ID
+        self.current_topic = f"{local.LOCAL_PILOT_PREFIX}/read/current/{BINDING_ID}"
+        self.event_topic = f"{local.LOCAL_PILOT_PREFIX}/read/event/{BINDING_ID}"
+        self.topics = (self.current_topic, self.event_topic)
+        self.transport_ready = False
+        self.ingest_calls = []
+
+    def set_transport_ready(self, ready):
+        self.transport_ready = ready
+
+    def ingest(self, topic, payload, *, qos, retained):
+        self.ingest_calls.append((topic, payload, qos, retained))
+        return True
+
+
+class ExpiringFourTopicProvider(FourTopicProvider):
+    """Minimal authority timer seam for stale-callback/cancellation tests."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.read_publication_authority_expiry = (
+            (1, "1" * 32),
+            NOW,
+        )
+        self.expired = []
+
+    def read_publication_authority_expiry_delay(self, expected):
+        return 60.0 if expected == self.read_publication_authority_expiry else None
+
+    def expire_read_publication_authority(self, expected):
+        self.expired.append(expected)
+        return expected == self.read_publication_authority_expiry
+
+
 class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
     def provider(self):
         return local.LocalWaterTankShadowProvider(BINDING_ID, now=lambda: NOW)
@@ -238,6 +276,47 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         raw_client_id = getattr(client, "_client_id", b"")
         self.assertEqual(raw_client_id.decode(), subscriber.client_id)
 
+    async def test_presence_expiry_timer_reschedules_and_unload_cancels_stale_callbacks(
+        self,
+    ) -> None:
+        provider = ExpiringFourTopicProvider()
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            asyncio.get_running_loop(),
+            provider,
+            host="127.0.0.1",
+            port=18883,
+            username=f"shadow-{BINDING_ID}",
+            password="private-test-password",
+            read_provider=FakeReadProvider(),
+            mqtt_module=FakeMqttV1(),
+        )
+        subscriber._subscriptions_ready = True
+        subscriber._reschedule_presence_expiry()
+        first_handle = subscriber._presence_expiry_handle
+        first_generation = subscriber._presence_expiry_generation
+        first_expiry = provider.read_publication_authority_expiry
+        self.assertIsNotNone(first_handle)
+
+        provider.read_publication_authority_expiry = (
+            (1, "1" * 32),
+            NOW.replace(minute=1),
+        )
+        subscriber._reschedule_presence_expiry()
+        second_handle = subscriber._presence_expiry_handle
+        second_generation = subscriber._presence_expiry_generation
+        second_expiry = provider.read_publication_authority_expiry
+        self.assertTrue(first_handle.cancelled())
+        self.assertIsNot(first_handle, second_handle)
+
+        subscriber._presence_expired(first_generation, first_expiry)
+        self.assertIs(subscriber._presence_expiry_handle, second_handle)
+        self.assertEqual(provider.expired, [])
+
+        await subscriber.async_stop()
+        self.assertTrue(second_handle.cancelled())
+        subscriber._presence_expired(second_generation, second_expiry)
+        self.assertEqual(provider.expired, [])
+
     async def test_subscribes_only_exact_qos_one_topics_and_waits_for_suback(
         self,
     ) -> None:
@@ -261,6 +340,54 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
             "SUBACK alone must not trust an old provider generation",
         )
         await subscriber.async_stop()
+
+    async def test_auxiliary_read_topics_share_transport_but_not_primary_bootstrap(
+        self,
+    ) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = self.provider()
+        read_provider = FakeReadProvider()
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            asyncio.get_running_loop(),
+            provider,
+            host="127.0.0.1",
+            port=18883,
+            username=f"shadow-{BINDING_ID}",
+            password="private-test-password",
+            read_provider=read_provider,
+            mqtt_module=mqtt_module,
+        )
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+
+        client.on_connect(client, None, {}, 0)
+        await asyncio.sleep(0)
+        self.assertEqual(
+            client.subscriptions,
+            [[(topic, 1) for topic in provider.topics + read_provider.topics]],
+        )
+        client.on_subscribe(client, None, 41, [1, 1, 1, 1, 1])
+        await asyncio.sleep(0)
+        self.assertTrue(read_provider.transport_ready)
+
+        client.on_message(
+            client,
+            None,
+            SimpleNamespace(
+                topic=read_provider.current_topic,
+                payload=b"read-current",
+                qos=1,
+                retain=True,
+            ),
+        )
+        await asyncio.sleep(0)
+        self.assertEqual(
+            read_provider.ingest_calls,
+            [(read_provider.current_topic, b"read-current", 1, True)],
+        )
+        self.assertNotIn(read_provider.current_topic, subscriber._retained_bootstrap)
+        await subscriber.async_stop()
+        self.assertFalse(read_provider.transport_ready)
 
     async def test_retained_bootstrap_is_applied_in_state_availability_runtime_order(
         self,

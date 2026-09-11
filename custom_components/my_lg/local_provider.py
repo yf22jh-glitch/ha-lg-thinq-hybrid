@@ -36,7 +36,7 @@ LOCAL_DHUM_WATER_TANK_PROFILE_ID = "dhum-water-tank-v1"
 
 LOCAL_PILOT_PREFIX = "lg_rethink_local/v1"
 LOCAL_WATER_TANK_FIELD = "water_tank.full"
-WIDEQ_WATER_TANK_KEY = "airState.miscFuncState.watertankLight"
+WIDEQ_WATER_TANK_KEY = "airState.waterTank.full"
 
 LOCAL_PROFILE_CATALOGUE_FILENAME = "pilot-profiles.v1.json"
 LOCAL_PROFILE_CATALOGUE_DIGEST_FILENAME = "pilot-profiles.v1.sha256"
@@ -46,6 +46,7 @@ LOCAL_PROFILE_CATALOGUE_DIGEST_FILENAME = "pilot-profiles.v1.sha256"
 MAX_PAYLOAD_BYTES = 8 * 1024
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 CONTROL_PRESENCE_LIVE_TTL = timedelta(seconds=240)
+_CONTROL_PRESENCE_EXPIRY_EPSILON_SECONDS = 0.001
 MAX_TOMBSTONED_GENERATIONS = 10_000
 MAX_JSON_SAFE_INTEGER = 9_007_199_254_740_991
 
@@ -1427,6 +1428,9 @@ class LocalSemanticShadowProvider:
         self._presence_observed_at: datetime | None = None
         self._presence_valid_until: datetime | None = None
         self._presence_live_received_at: datetime | None = None
+        self._read_authority_expiry_notified: (
+            tuple[tuple[int, str], datetime] | None
+        ) = None
         self._tombstoned_presence_service_instances: set[str] = set()
         # A transport reconnect invalidates operational use of the in-memory semantic tuple until
         # that connection supplies an exact state+availability pair. Cursor high-waters remain so
@@ -1434,6 +1438,7 @@ class LocalSemanticShadowProvider:
         self._control_state_current = False
         self._semantic_transport_current = False
         self._rejected_messages = 0
+        self._listeners: list[Callable[[], None]] = []
 
     def _binding_generation_candidate(
         self, snapshot: Mapping[str, Any]
@@ -1548,6 +1553,16 @@ class LocalSemanticShadowProvider:
         return self._sequence
 
     @property
+    def binding_generation(self) -> int | None:
+        """Return the accepted V2/V3 binding generation for read cross-fencing."""
+        return self._binding_generation
+
+    @property
+    def cohort_generation(self) -> int | None:
+        """Return the accepted V3 publication cohort for read cross-fencing."""
+        return self._cohort_generation
+
+    @property
     def profile_id(self) -> str:
         return self.profile.profile_id
 
@@ -1564,10 +1579,57 @@ class LocalSemanticShadowProvider:
         """Return an immutable view of the last fully validated field set."""
         return self._shadow_fields
 
+    def async_add_listener(
+        self, update_callback: Callable[[], None]
+    ) -> Callable[[], None]:
+        """Subscribe to committed state, availability, and transport changes."""
+        if not callable(update_callback):
+            raise TypeError("Local provider update listener must be callable")
+        self._listeners.append(update_callback)
+
+        def remove_listener() -> None:
+            try:
+                self._listeners.remove(update_callback)
+            except ValueError:
+                pass
+
+        return remove_listener
+
+    def _notify_listeners(self) -> None:
+        for update_callback in tuple(self._listeners):
+            try:
+                update_callback()
+            except Exception:  # noqa: BLE001 - one HA entity must not block the feed
+                _LOGGER.exception("Rethink Local provider update listener failed")
+
+    def _finish_update(self, changed: bool) -> bool:
+        if changed:
+            self._notify_listeners()
+        return changed
+
     def field_value(self, semantic_id: str) -> bool | float | int | str | None:
-        """Return one diagnostic shadow value; never an operational owner."""
+        """Return one validated Local value; the consumer owns routing policy."""
         field = self._shadow_fields.get(semantic_id)
         return None if field is None else field.value
+
+    def semantic_field_fresh_until(self, semantic_id: str) -> datetime | None:
+        """Return this profile's exact freshness deadline for one retained field."""
+        field = self._shadow_fields.get(semantic_id)
+        max_age_ms = self.profile.freshness_max_age_ms
+        if field is None or max_age_ms is None:
+            return None
+        return field.observed_at + timedelta(milliseconds=max_age_ms)
+
+    def semantic_field_fresh(self, semantic_id: str) -> bool:
+        """Return whether one present field remains inside the profile freshness SLA."""
+        if semantic_id not in self._shadow_fields:
+            return False
+        fresh_until = self.semantic_field_fresh_until(semantic_id)
+        return fresh_until is None or _utc_now(self._now) <= fresh_until
+
+    def semantic_field_available(self, semantic_id: str) -> bool:
+        """Return HA-safe availability for one exact semantic field."""
+        return self.shadow_healthy and self.semantic_field_fresh(semantic_id)
 
     @property
     def rejected_messages(self) -> int:
@@ -1596,6 +1658,82 @@ class LocalSemanticShadowProvider:
         )
 
     @property
+    def read_publication_authority(self) -> tuple[int, str] | None:
+        """Return the authenticated live service identity for read publications.
+
+        Full-read publication does not require a pilot semantic snapshot.  Its
+        authority is the independently authenticated presence generation and
+        runtime service instance; the read feed owns its cohort/source cursor.
+        """
+        if (
+            not self.control_alive
+            or self._presence_binding_generation is None
+            or self._presence_service_instance_id is None
+        ):
+            return None
+        return (
+            self._presence_binding_generation,
+            self._presence_service_instance_id,
+        )
+
+    @property
+    def read_publication_authority_expiry(
+        self,
+    ) -> tuple[tuple[int, str], datetime] | None:
+        """Return the current live-presence epoch and its inclusive deadline."""
+        if (
+            not self._presence_enabled
+            or self.expected_proof is None
+            or not self._transport_ready
+            or self._presence_status != "online"
+            or self._runtime_status != "online"
+            or self._presence_binding_generation is None
+            or self._presence_service_instance_id is None
+            or self._presence_service_instance_id != self._service_instance_id
+            or self._presence_live_received_at is None
+        ):
+            return None
+        deadline = self._presence_live_received_at + CONTROL_PRESENCE_LIVE_TTL
+        if self._presence_valid_until is not None:
+            deadline = min(deadline, self._presence_valid_until)
+        return (
+            (
+                self._presence_binding_generation,
+                self._presence_service_instance_id,
+            ),
+            deadline,
+        )
+
+    def read_publication_authority_expiry_delay(
+        self, expected: tuple[tuple[int, str], datetime]
+    ) -> float | None:
+        """Return the event-loop delay for one still-current expiry epoch."""
+        if (
+            self.read_publication_authority_expiry != expected
+            or self._read_authority_expiry_notified == expected
+        ):
+            return None
+        return max(
+            0.0,
+            (expected[1] - _utc_now(self._now)).total_seconds()
+            + _CONTROL_PRESENCE_EXPIRY_EPSILON_SECONDS,
+        )
+
+    def expire_read_publication_authority(
+        self, expected: tuple[tuple[int, str], datetime]
+    ) -> bool:
+        """Notify listeners once when an unchanged presence epoch expires."""
+        if (
+            self.read_publication_authority_expiry != expected
+            or _utc_now(self._now) <= expected[1]
+            or self._read_authority_expiry_notified == expected
+        ):
+            return False
+        self._read_authority_expiry_notified = expected
+        self._notify_listeners()
+        return True
+
+    @property
     def control_alive(self) -> bool:
         """Return whether an authenticated appliance presence can receive a command.
 
@@ -1603,24 +1741,8 @@ class LocalSemanticShadowProvider:
         their exact fields and observation times, while an exact stateless command may proceed
         before the appliance has emitted any state at all.
         """
-        now = _utc_now(self._now)
-        if (
-            not self._presence_enabled
-            or self.expected_proof is None
-            or not self._transport_ready
-            or self._presence_status != "online"
-            or self._runtime_status != "online"
-            or self._presence_service_instance_id is None
-            or self._presence_service_instance_id != self._service_instance_id
-            or self._presence_live_received_at is None
-            or now
-            > self._presence_live_received_at + CONTROL_PRESENCE_LIVE_TTL
-        ):
-            return False
-        return (
-            self._presence_valid_until is None
-            or now <= self._presence_valid_until
-        )
+        expiry = self.read_publication_authority_expiry
+        return expiry is not None and _utc_now(self._now) <= expiry[1]
 
     @property
     def control_state_ready(self) -> bool:
@@ -1663,11 +1785,25 @@ class LocalSemanticShadowProvider:
     def set_transport_ready(self, ready: bool) -> None:
         if type(ready) is not bool:
             raise TypeError("Local provider transport readiness must be boolean")
+        before = (
+            self._transport_ready,
+            self._control_state_current,
+            self._semantic_transport_current,
+            self._presence_live_received_at,
+        )
         self._transport_ready = ready
         if not ready:
             self._control_state_current = False
             self._semantic_transport_current = False
             self._presence_live_received_at = None
+        after = (
+            self._transport_ready,
+            self._control_state_current,
+            self._semantic_transport_current,
+            self._presence_live_received_at,
+        )
+        if after != before:
+            self._notify_listeners()
 
     def _validate_presence_candidate(
         self, presence: _ControlPresencePublication
@@ -1814,24 +1950,30 @@ class LocalSemanticShadowProvider:
             now = _utc_now(self._now)
             if topic == self.state_topic:
                 if self._is_retained_delete(payload):
-                    return self._ingest_state_retained_delete()
-                return self._ingest_state(payload, now)
-            if topic == self.availability_topic:
+                    changed = self._ingest_state_retained_delete()
+                else:
+                    changed = self._ingest_state(payload, now)
+            elif topic == self.availability_topic:
                 if self._is_retained_delete(payload):
-                    return self._ingest_availability_retained_delete()
-                return self._ingest_device_availability(payload, now)
-            if topic == self.runtime_availability_topic:
+                    changed = self._ingest_availability_retained_delete()
+                else:
+                    changed = self._ingest_device_availability(payload, now)
+            elif topic == self.runtime_availability_topic:
                 if self._is_retained_delete(payload):
-                    return self._ingest_runtime_retained_delete()
-                return self._ingest_runtime_availability(payload, now, retained)
-            if self._presence_enabled and topic == self.presence_topic:
+                    changed = self._ingest_runtime_retained_delete()
+                else:
+                    changed = self._ingest_runtime_availability(payload, now, retained)
+            elif self._presence_enabled and topic == self.presence_topic:
                 if self._is_retained_delete(payload):
-                    return self._ingest_presence_retained_delete()
-                return self._ingest_control_presence(payload, now, retained)
-            _contract_error("Local provider topic is not authorized")
+                    changed = self._ingest_presence_retained_delete()
+                else:
+                    changed = self._ingest_control_presence(payload, now, retained)
+            else:
+                _contract_error("Local provider topic is not authorized")
         except LocalProviderContractError:
             self._rejected_messages += 1
             raise
+        return self._finish_update(changed)
 
     @staticmethod
     def _is_retained_delete(payload: object) -> bool:
@@ -2208,7 +2350,7 @@ class LocalSemanticShadowProvider:
             presence_delivery_changed = self._apply_presence_delivery(
                 now, presence_retained
             )
-            return (
+            changed = (
                 runtime_candidate.changed
                 or presence_changed
                 or presence_delivery_changed
@@ -2216,6 +2358,7 @@ class LocalSemanticShadowProvider:
         except LocalProviderContractError:
             self._rejected_messages += 1
             raise
+        return self._finish_update(changed)
 
     def ingest_semantic_bootstrap_final_current(
         self,
@@ -2244,17 +2387,20 @@ class LocalSemanticShadowProvider:
                     "Local provider semantic bootstrap generation does not match presence"
                 )
             self._apply_semantic_final_current(candidate)
-            return candidate.changed
+            changed = candidate.changed
         except LocalProviderContractError:
             self._rejected_messages += 1
             raise
+        return self._finish_update(changed)
 
     def ingest_retained_final_current(
         self,
         publications: Mapping[str, tuple[object, int, bool]],
     ) -> bool:
         """Atomically adopt one complete retained-only set after a reconnect."""
-        return self._ingest_final_current(publications, require_retained=True)
+        return self._finish_update(
+            self._ingest_final_current(publications, require_retained=True)
+        )
 
     def ingest_bootstrap_final_current(
         self,
@@ -2267,7 +2413,9 @@ class LocalSemanticShadowProvider:
         with ``retain=False``. Those exact QoS 1 messages may repair an
         initially inconsistent retained candidate set before transport-ready.
         """
-        return self._ingest_final_current(publications, require_retained=False)
+        return self._finish_update(
+            self._ingest_final_current(publications, require_retained=False)
+        )
 
     def _ingest_final_current(
         self,
@@ -2698,18 +2846,18 @@ class LocalWaterTankShadowProvider(LocalSemanticShadowProvider):
 
 
 def parse_wideq_water_tank_value(value: object) -> bool | None:
-    """Parse only the exact WideQ 0/1 domain; never guess unknown values."""
+    """Parse only the reviewed WideQ tank-state domain."""
     if type(value) is bool:
         return None
     if value in (0, 0.0, "0", "0.0"):
         return False
-    if value in (1, 1.0, "1", "1.0"):
+    if value in (1, 1.0, "1", "1.0", 2, 2.0, "2", "2.0"):
         return True
     return None
 
 
 class WaterTankProviderResolver:
-    """Resolve the existing entity while Local remains observational only."""
+    """Keep one entity identity while routing its state to one exact owner."""
 
     def __init__(
         self, local_provider: LocalSemanticShadowProvider | None = None
@@ -2723,11 +2871,18 @@ class WaterTankProviderResolver:
         self.invalid_wideq_values = 0
 
     def available(self, wideq_device_available: bool) -> bool:
-        """Preserve the existing WideQ availability owner in shadow mode."""
+        """Use Local exclusively when its provider was configured."""
+        if self.local_provider is not None:
+            return self.local_provider.semantic_field_available(
+                LOCAL_WATER_TANK_FIELD
+            )
         return bool(wideq_device_available)
 
     def resolve(self, wideq_snapshot: object) -> bool | None:
-        """Preserve WideQ as operational owner while Local is shadow-only."""
+        """Resolve Local, or WideQ only when no Local provider exists."""
+        if self.local_provider is not None:
+            value = self.local_provider.field_value(LOCAL_WATER_TANK_FIELD)
+            return value if type(value) is bool else None
         if not isinstance(wideq_snapshot, Mapping):
             self._note_invalid_wideq_value()
             return None

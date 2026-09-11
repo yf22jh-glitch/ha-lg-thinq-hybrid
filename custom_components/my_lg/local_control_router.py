@@ -24,28 +24,37 @@ tested without a running Home Assistant.
 from __future__ import annotations
 
 import asyncio
+import logging
+import math
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import logging
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Protocol
 
 from .local_command import (
     CLIMATE_POWER_ON_CAPABILITY,
     CLIMATE_TUPLE_CAPABILITY,
+    COMFORT_PREFERENCE_SEMANTIC,
     MAX_SHADOW_AGE,
     POWER_CAPABILITY,
+    TEMPERATURE_TARGET_SEMANTIC,
     LocalCommandResult,
     LocalCommandUnavailable,
     climate_expected_state,
+    climate_state_fields,
     climate_tuple,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-_CLIMATE_TUPLE_FIELDS = (
+_CLIMATE_COMMON_FIELDS = (
     "operation.mode",
     "fan.mode",
-    "temperature.target_c",
+)
+_CLIMATE_ALL_FIELDS = (
+    *_CLIMATE_COMMON_FIELDS,
+    TEMPERATURE_TARGET_SEMANTIC,
+    COMFORT_PREFERENCE_SEMANTIC,
 )
 
 
@@ -77,19 +86,35 @@ def _observed_at(field: Any) -> datetime | None:
 
 def _confirmed_tuple(value: str, confirmed_at: datetime) -> _ConfirmedTuple:
     """Turn the tuple we sent and the appliance confirmed back into shadow-shaped fields."""
-    mode, fan, rendered_temperature = value.split("|", 2)
-    if not rendered_temperature.endswith("C"):
-        raise ValueError("confirmed climate tuple has no temperature suffix")
-    temperature = float(rendered_temperature[:-1])
-    normalized_temperature: int | float = int(temperature) if temperature.is_integer() else temperature
-    return _ConfirmedTuple(
-        fields={
-            "operation.mode": _ConfirmedField(mode, confirmed_at),
-            "fan.mode": _ConfirmedField(fan, confirmed_at),
-            "temperature.target_c": _ConfirmedField(normalized_temperature, confirmed_at),
-        },
-        confirmed_at=confirmed_at,
-    )
+    mode, fan, rendered_argument = value.split("|", 2)
+    fields: dict[str, _ConfirmedField] = {
+        "operation.mode": _ConfirmedField(mode, confirmed_at),
+        "fan.mode": _ConfirmedField(fan, confirmed_at),
+    }
+    # POWER fan reports a temporary 18 C while preserving the real target.
+    # The bridge intentionally does not claim that the tuple set a target in
+    # this combination, so the HA-side confirmation overlay must not invent
+    # that claim either.
+    if fan != "power" and mode == "auto":
+        if not rendered_argument.startswith("comfort:"):
+            raise ValueError("confirmed AUTO climate tuple has no comfort preference")
+        preference = int(rendered_argument.removeprefix("comfort:"))
+        if preference < -2 or preference > 2:
+            raise ValueError("confirmed AUTO comfort preference is out of range")
+        fields[COMFORT_PREFERENCE_SEMANTIC] = _ConfirmedField(
+            preference, confirmed_at
+        )
+    elif fan != "power":
+        if not rendered_argument.endswith("C"):
+            raise ValueError("confirmed climate tuple has no temperature suffix")
+        temperature = float(rendered_argument[:-1])
+        normalized_temperature: int | float = (
+            int(temperature) if temperature.is_integer() else temperature
+        )
+        fields[TEMPERATURE_TARGET_SEMANTIC] = _ConfirmedField(
+            normalized_temperature, confirmed_at
+        )
+    return _ConfirmedTuple(fields=fields, confirmed_at=confirmed_at)
 
 
 class _Sender(Protocol):
@@ -127,10 +152,16 @@ class LocalControlRouter:
         sender: _Sender,
         providers: Mapping[str, _Shadow],
         bridge_device_id: Callable[[str], str | None],
+        write_authorized: Callable[[str, str, str], bool] | None = None,
+        authorized_values: Callable[[str, str], tuple[str, ...]] | None = None,
+        capability_authorized: Callable[[str, str], bool] | None = None,
     ) -> None:
         self._sender = sender
         self._providers = providers
         self._bridge_device_id = bridge_device_id
+        self._write_authorized = write_authorized
+        self._authorized_values = authorized_values
+        self._capability_authorized = capability_authorized
         # So that "the local path never serves anything" is discoverable without anyone having
         # first suspected it and raised the log level for this component.
         self._reported_refusal: set[tuple[str, str]] = set()
@@ -143,6 +174,11 @@ class LocalControlRouter:
         # report. Until every input needed by a composite frame has a newer observation than the
         # pre-dispatch baseline, composing locally would restate retained pre-cloud state.
         self._cloud_tuple_barriers: dict[str, _CloudTupleBarrier] = {}
+        # POWER fan temporarily reports 18 C even though the appliance retains the user's target.
+        # AUTO reuses the same wire carrier for a unitless comfort preference. Keep the two facts in
+        # separate stores so neither can ever fill the other's command variant.
+        self._last_temperature_targets_by_mode: dict[str, dict[str, float]] = {}
+        self._last_comfort_preferences: dict[str, int] = {}
         self._tuple_locks: dict[str, asyncio.Lock] = {}
 
     def _tuple_lock(self, pat_device_id: str) -> asyncio.Lock:
@@ -151,6 +187,85 @@ class LocalControlRouter:
             lock = asyncio.Lock()
             self._tuple_locks[pat_device_id] = lock
         return lock
+
+    def control_target_available(self, pat_device_id: str) -> bool:
+        """Return whether an authenticated exact target can accept a command.
+
+        This read-only predicate intentionally emits no refusal log and exposes
+        no bridge identity. Generic Local-only Home Assistant entities use it
+        for availability before they offer a write with no cloud fallback.
+        """
+        provider = self._providers.get(pat_device_id)
+        return (
+            provider is not None
+            and provider.control_alive
+            and self._bridge_device_id(pat_device_id) is not None
+        )
+
+    def authorized_values(
+        self, pat_device_id: str, capability_id: str
+    ) -> tuple[str, ...]:
+        """Return the exact reviewed values this private binding may send."""
+        if self._authorized_values is not None:
+            return self._authorized_values(pat_device_id, capability_id)
+        return ()
+
+    def value_authorized(
+        self, pat_device_id: str, capability_id: str, value: str
+    ) -> bool:
+        """Check one value without sending or requiring current liveness."""
+        if self._write_authorized is not None:
+            return self._write_authorized(pat_device_id, capability_id, value)
+        return value in self.authorized_values(pat_device_id, capability_id)
+
+    def capability_authorized(
+        self, pat_device_id: str, capability_id: str
+    ) -> bool:
+        """Check exact binding/model capability evidence without choosing a value."""
+        if self._capability_authorized is not None:
+            return self._capability_authorized(pat_device_id, capability_id)
+        return bool(self.authorized_values(pat_device_id, capability_id))
+
+    def _remember_mode_argument(
+        self, pat_device_id: str, shadow: Mapping[str, Any], now: datetime
+    ) -> None:
+        """Remember only a fresh, appliance-observed argument of the current variant."""
+        mode_field = shadow.get("operation.mode")
+        fan_field = shadow.get("fan.mode")
+        mode = getattr(mode_field, "value", None)
+        argument_semantic = (
+            COMFORT_PREFERENCE_SEMANTIC
+            if mode == "auto"
+            else TEMPERATURE_TARGET_SEMANTIC
+        )
+        argument_field = shadow.get(argument_semantic)
+        observed = (
+            _observed_at(mode_field),
+            _observed_at(fan_field),
+            _observed_at(argument_field),
+        )
+        if any(
+            item is None or now < item or now - item > MAX_SHADOW_AGE
+            for item in observed
+        ):
+            return
+        fan = getattr(fan_field, "value", None)
+        argument = getattr(argument_field, "value", None)
+        if fan == "power":
+            return
+        if mode == "auto":
+            if type(argument) is int and -2 <= argument <= 2:
+                self._last_comfort_preferences[pat_device_id] = argument
+            return
+        if (
+            not isinstance(mode, str)
+            or type(argument) not in (int, float)
+            or not math.isfinite(float(argument))
+        ):
+            return
+        self._last_temperature_targets_by_mode.setdefault(pat_device_id, {})[
+            mode
+        ] = float(argument)
 
     def _shadow_with_confirmation(
         self,
@@ -207,7 +322,7 @@ class LocalControlRouter:
         confirmed = self._confirmed_tuples.get(pat_device_id)
         previous = self._cloud_tuple_barriers.get(pat_device_id)
         baselines: dict[str, datetime | None] = {}
-        for field_name in _CLIMATE_TUPLE_FIELDS:
+        for field_name in _CLIMATE_ALL_FIELDS:
             candidates = [
                 _observed_at(shadow.get(field_name)),
                 (
@@ -234,7 +349,8 @@ class LocalControlRouter:
         barrier = self._cloud_tuple_barriers.get(pat_device_id)
         if barrier is None:
             return False
-        for field_name in _CLIMATE_TUPLE_FIELDS:
+        mode = getattr(shadow.get("operation.mode"), "value", None)
+        for field_name in climate_state_fields(mode):
             reported_at = _observed_at(shadow.get(field_name))
             baseline = barrier.baselines.get(field_name)
             if reported_at is None or (
@@ -290,7 +406,7 @@ class LocalControlRouter:
             return
         self._reported_refusal.add(seen)
         _LOGGER.info(
-            "Rethink Local control not served for %s, using the cloud: %s "
+            "Rethink Local control not served for %s: %s "
             "(repeats of this cause are logged at debug level)",
             pat_device_id,
             reason,
@@ -305,6 +421,20 @@ class LocalControlRouter:
         *,
         expected_state: Mapping[str, Any] | None = None,
     ) -> LocalCommandResult | None:
+        if self._write_authorized is not None and not self._write_authorized(
+            pat_device_id, capability, value
+        ):
+            seen = (pat_device_id, f"private-eligibility:{capability}")
+            if seen not in self._reported_refusal:
+                self._reported_refusal.add(seen)
+                # Capability ids are public semantic vocabulary. Do not emit a
+                # private binding/device id, role, or requested raw value.
+                _LOGGER.info(
+                    "Rethink Local control capability %s is not authorized for "
+                    "this private binding",
+                    capability,
+                )
+            return None
         try:
             return await self._sender.async_send(
                 device_id,
@@ -324,23 +454,48 @@ class LocalControlRouter:
         mode: str | None = None,
         fan: str | None = None,
         target_c: float | None = None,
+        comfort_preference: int | None = None,
+        retained_target_c: float | None = None,
+        retained_comfort_preference: int | None = None,
         now: datetime | None = None,
+        cloud_fallback: bool = False,
     ) -> LocalCommandResult | None:
         """Change one of mode, fan or setpoint, keeping the other two as reported."""
         # A request naming no field is not a request. Sent anyway it would compose the
         # appliance's current tuple and write it back - a real frame on the wire that changes
         # nothing, issued because a value could not be expressed rather than because anyone
         # asked for it.
-        if mode is None and fan is None and target_c is None:
+        if (
+            mode is None
+            and fan is None
+            and target_c is None
+            and comfort_preference is None
+        ):
             return None
-        return await self._tuple(pat_device_id, CLIMATE_TUPLE_CAPABILITY, mode, fan, target_c, now)
+        return await self._tuple(
+            pat_device_id,
+            CLIMATE_TUPLE_CAPABILITY,
+            mode,
+            fan,
+            target_c,
+            comfort_preference,
+            retained_target_c,
+            retained_comfort_preference,
+            now,
+            cloud_fallback,
+        )
 
     async def async_turn_on(
         self,
         pat_device_id: str,
         *,
         mode: str | None = None,
+        target_c: float | None = None,
+        comfort_preference: int | None = None,
+        retained_target_c: float | None = None,
+        retained_comfort_preference: int | None = None,
         now: datetime | None = None,
+        cloud_fallback: bool = False,
     ) -> LocalCommandResult | None:
         """Power on by restating the settings the appliance kept while it was off.
 
@@ -348,7 +503,18 @@ class LocalControlRouter:
         setpoint whatever happens, so stating the requested one here is one frame where powering on
         and then setting the mode would be two saying the same thing.
         """
-        return await self._tuple(pat_device_id, CLIMATE_POWER_ON_CAPABILITY, mode, None, None, now)
+        return await self._tuple(
+            pat_device_id,
+            CLIMATE_POWER_ON_CAPABILITY,
+            mode,
+            None,
+            target_c,
+            comfort_preference,
+            retained_target_c,
+            retained_comfort_preference,
+            now,
+            cloud_fallback,
+        )
 
     async def _tuple(
         self,
@@ -357,24 +523,34 @@ class LocalControlRouter:
         mode: str | None,
         fan: str | None,
         target_c: float | None,
+        comfort_preference: int | None,
+        retained_target_c: float | None,
+        retained_comfort_preference: int | None,
         now: datetime | None,
+        cloud_fallback: bool,
     ) -> LocalCommandResult | None:
         async with self._tuple_lock(pat_device_id):
             target = self._target(pat_device_id)
             if target is None:
-                # `None` is the router's promise that cloud fallback is safe. Arm the fence before
-                # releasing the per-device lock so a concurrent request cannot compose from the
-                # pre-cloud tuple in the gap before the caller dispatches it.
-                self._mark_cloud_tuple_dispatch_locked(pat_device_id)
+                if cloud_fallback:
+                    # A legacy cloud owner will dispatch after this return.
+                    # Fence before releasing the device lock so another tuple
+                    # cannot compose from pre-cloud state in that gap.
+                    self._mark_cloud_tuple_dispatch_locked(pat_device_id)
                 return None
             device_id, provider = target
-            if not provider.control_fields_ready(_CLIMATE_TUPLE_FIELDS):
+            reported_mode = getattr(
+                provider.shadow_fields.get("operation.mode"), "value", None
+            )
+            required_fields = climate_state_fields(reported_mode)
+            if not provider.control_fields_ready(required_fields):
                 self._not_served(
                     pat_device_id,
                     "control-state-fields",
-                    "not every climate tuple field was observed in the authenticated presence epoch",
+                    "not every field of the current climate variant was observed in the authenticated presence epoch",
                 )
-                self._mark_cloud_tuple_dispatch_locked(pat_device_id)
+                if cloud_fallback:
+                    self._mark_cloud_tuple_dispatch_locked(pat_device_id)
                 return None
             if self._cloud_tuple_barrier_blocks(
                 pat_device_id, provider.shadow_fields
@@ -389,17 +565,50 @@ class LocalControlRouter:
             shadow = self._shadow_with_confirmation(
                 pat_device_id, provider.shadow_fields, command_time
             )
+            self._remember_mode_argument(pat_device_id, shadow, command_time)
+            reported_mode = getattr(shadow.get("operation.mode"), "value", None)
+            destination_mode = mode if mode is not None else reported_mode
+            remembered_target = (
+                None
+                if not isinstance(destination_mode, str)
+                else self._last_temperature_targets_by_mode.get(
+                    pat_device_id, {}
+                ).get(
+                    destination_mode
+                )
+            )
+            remembered_preference = (
+                self._last_comfort_preferences.get(pat_device_id)
+                if destination_mode == "auto"
+                else None
+            )
             try:
                 expected_state = climate_expected_state(shadow, command_time)
                 value = climate_tuple(
-                    shadow, mode=mode, fan=fan, target_c=target_c, now=command_time
+                    shadow,
+                    mode=mode,
+                    fan=fan,
+                    target_c=target_c,
+                    comfort_preference=comfort_preference,
+                    retained_target_c=(
+                        retained_target_c
+                        if retained_target_c is not None
+                        else remembered_target
+                    ),
+                    retained_comfort_preference=(
+                        retained_comfort_preference
+                        if retained_comfort_preference is not None
+                        else remembered_preference
+                    ),
+                    now=command_time,
                 )
             except LocalCommandUnavailable as err:
                 # Keyed on the message: these causes are structurally different - a shadow that has
                 # not filled in, auto mode, the power-fan placeholder - and they do not carry the
                 # command's value, so each one gets said once rather than the first hiding the rest.
                 self._not_served(pat_device_id, str(err), str(err))
-                self._mark_cloud_tuple_dispatch_locked(pat_device_id)
+                if cloud_fallback:
+                    self._mark_cloud_tuple_dispatch_locked(pat_device_id)
                 return None
             outcome = await self._send(
                 pat_device_id,
@@ -409,12 +618,37 @@ class LocalControlRouter:
                 expected_state=expected_state,
             )
             if outcome is None:
-                self._mark_cloud_tuple_dispatch_locked(pat_device_id)
+                if cloud_fallback:
+                    self._mark_cloud_tuple_dispatch_locked(pat_device_id)
             elif outcome.confirmed:
                 confirmed_at = now or datetime.now(timezone.utc)
-                self._confirmed_tuples[pat_device_id] = _confirmed_tuple(
-                    value, confirmed_at
+                confirmed = _confirmed_tuple(value, confirmed_at)
+                self._confirmed_tuples[pat_device_id] = confirmed
+                confirmed_mode = confirmed.fields.get("operation.mode")
+                confirmed_fan = confirmed.fields.get("fan.mode")
+                confirmed_target = confirmed.fields.get(
+                    TEMPERATURE_TARGET_SEMANTIC
                 )
+                confirmed_preference = confirmed.fields.get(
+                    COMFORT_PREFERENCE_SEMANTIC
+                )
+                if (
+                    confirmed_mode is not None
+                    and confirmed_fan is not None
+                    and confirmed_fan.value != "power"
+                ):
+                    if (
+                        confirmed_mode.value == "auto"
+                        and confirmed_preference is not None
+                        and type(confirmed_preference.value) is int
+                    ):
+                        self._last_comfort_preferences[pat_device_id] = (
+                            confirmed_preference.value
+                        )
+                    elif confirmed_target is not None:
+                        self._last_temperature_targets_by_mode.setdefault(
+                            pat_device_id, {}
+                        )[str(confirmed_mode.value)] = float(confirmed_target.value)
             return outcome
 
     async def async_turn_off(self, pat_device_id: str) -> LocalCommandResult | None:
@@ -425,24 +659,32 @@ class LocalControlRouter:
         device_id, _provider = target
         return await self._send(pat_device_id, device_id, POWER_CAPABILITY, "false")
 
-    async def async_set_flag(self, pat_device_id: str, capability: str, enabled: bool) -> LocalCommandResult | None:
+    async def async_set_value(
+        self, pat_device_id: str, capability: str, value: str
+    ) -> LocalCommandResult | None:
+        """Set one exact scalar semantic without composing unrelated state."""
+        target = self._target(pat_device_id)
+        if target is None:
+            return None
+        device_id, _provider = target
+        return await self._send(
+            pat_device_id, device_id, capability, value
+        )
+
+    async def async_set_flag(
+        self, pat_device_id: str, capability: str, enabled: bool
+    ) -> LocalCommandResult | None:
         """One boolean setting, for the capabilities whose frame is a single field.
 
         The caller names the capability because it is the one that knows which appliance field it
         means; whether this model has a codec for it is the bridge's answer, not a table kept here.
         """
-        target = self._target(pat_device_id)
-        if target is None:
-            return None
-        device_id, _provider = target
-        return await self._send(pat_device_id, device_id, capability, "true" if enabled else "false")
+        return await self.async_set_value(
+            pat_device_id, capability, "true" if enabled else "false"
+        )
 
     async def async_execute(
         self, pat_device_id: str, capability: str, value: str = "true"
     ) -> LocalCommandResult | None:
         """Execute one named, parameterless capability such as an observed pause frame."""
-        target = self._target(pat_device_id)
-        if target is None:
-            return None
-        device_id, _provider = target
-        return await self._send(pat_device_id, device_id, capability, value)
+        return await self.async_set_value(pat_device_id, capability, value)

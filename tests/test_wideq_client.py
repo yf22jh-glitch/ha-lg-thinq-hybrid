@@ -248,6 +248,68 @@ class WideqEnergyHistoryParserTests(unittest.TestCase):
 
         self.assertEqual(result, {"today": 1.3, "month": 3.8})
 
+    def test_tower_purifier_uses_periodic_energy_data(self) -> None:
+        result = wideq_client.parse_air_purifier_energy_history(
+            [
+                {
+                    "usedDate": "2026-07-19",
+                    "energyData": "0",
+                    "periodicEnergyData": "1738",
+                },
+                {
+                    "usedDate": "2026-07-20",
+                    "energyData": "0",
+                    "periodicEnergyData": "326",
+                },
+                {
+                    "usedDate": "2026-07-21",
+                    "energyData": "0",
+                    "periodicEnergyData": "0",
+                },
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 0.326, "month": 2.064})
+
+    def test_verified_tower_purifier_preserves_zero_only_month(self) -> None:
+        result = wideq_client.parse_air_purifier_energy_history(
+            [
+                {
+                    "usedDate": "2026-07-19",
+                    "energyData": "0",
+                    "periodicEnergyData": "0",
+                },
+                {
+                    "usedDate": "2026-07-20",
+                    "energyData": "0",
+                    "periodicEnergyData": "0",
+                },
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 0.0, "month": 0.0})
+
+    def test_tower_purifier_preserves_today_zero_after_positive_month_sample(
+        self,
+    ) -> None:
+        result = wideq_client.parse_air_purifier_energy_history(
+            [
+                {
+                    "usedDate": "2026-07-19",
+                    "periodicEnergyData": "326",
+                },
+                {
+                    "usedDate": "2026-07-20",
+                    "periodicEnergyData": "0",
+                },
+            ],
+            date(2026, 7, 20),
+        )
+
+        self.assertEqual(result, {"today": 0.0, "month": 0.326})
+
     def test_fridge_hour_and_month_history_are_converted_to_kwh(self) -> None:
         result = wideq_client.parse_fridge_energy_history(
             {"item": [{"power": "38"}, {"power": "40"}, {"power": "NO_DATA"}]},
@@ -367,6 +429,32 @@ class WideqEnergyHistoryRequestTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, {"today": 1.3, "month": 1.3})
         self.assertEqual(limiter_calls(), 1)
         self.assertEqual(len(session.paths), 1)
+        self.assertIn("period=day", session.paths[0])
+
+    async def test_tower_purifier_uses_aircon_route_and_periodic_parser(self) -> None:
+        subject, session, acquire, limiter_calls = self._subject(
+            [
+                [
+                    {
+                        "usedDate": "2026-07-20",
+                        "energyData": "0",
+                        "periodicEnergyData": "326",
+                    }
+                ]
+            ]
+        )
+
+        result = await subject.async_get_energy_usage(
+            "wideq-id",
+            "air_purifier",
+            target_date=date(2026, 7, 20),
+            before_request=acquire,
+        )
+
+        self.assertEqual(result, {"today": 0.326, "month": 0.326})
+        self.assertEqual(limiter_calls(), 1)
+        self.assertEqual(len(session.paths), 1)
+        self.assertIn("service/aircon/wideq-id/energy-history", session.paths[0])
         self.assertIn("period=day", session.paths[0])
 
     async def test_fridge_history_uses_two_rate_limited_requests(self) -> None:

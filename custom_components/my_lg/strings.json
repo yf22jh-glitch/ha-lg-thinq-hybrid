@@ -30,6 +30,7 @@
           "idle_interval": "Idle baseline interval (min 600s)",
           "allow_hazardous_controls": "Enable hazardous cooking controls",
           "allow_experimental_controls": "Enable experimental model controls",
+          "local_read_duplicate_overlay": "Expose parallel Local read-only entities for existing PAT/WideQ sensors",
           "rethink_event_token": "Rethink lifecycle relay token (optional)",
           "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)"
         }
@@ -67,6 +68,9 @@
       },
       "styler_energy": {
         "name": "Cycle energy"
+      },
+      "dishwasher_tub_clean_count": {
+        "name": "Washes since machine clean"
       },
       "pm1": {
         "name": "PM1"
@@ -254,6 +258,16 @@
       },
       "wind_strength": {
         "name": "Wind strength"
+      },
+      "auto_comfort_preference": {
+        "name": "AUTO comfort",
+        "state": {
+          "warmer": "Warmer",
+          "slightly_warmer": "Slightly warmer",
+          "comfortable": "Comfortable",
+          "slightly_cooler": "Slightly cooler",
+          "cooler": "Cooler"
+        }
       }
     },
     "number": {

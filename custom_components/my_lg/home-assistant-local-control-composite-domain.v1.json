@@ -1,0 +1,312 @@
+{
+  "authority": "decoder-model-contract-observed-layout",
+  "models": [
+    {
+      "capabilities": [
+        {
+          "capabilityId": "climate.mode_fan_setpoint",
+          "inputDomain": {
+            "components": {
+              "comfortPreference": {
+                "appliesToModes": [
+                  "auto"
+                ],
+                "kind": "number",
+                "max": 2,
+                "min": -2,
+                "step": 1
+              },
+              "fan": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "high",
+                  "low",
+                  "medium",
+                  "power",
+                  "very low"
+                ]
+              },
+              "mode": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "cool"
+                ]
+              },
+              "targetC": {
+                "appliesToModes": [
+                  "cool"
+                ],
+                "kind": "number",
+                "rangesByMode": {
+                  "cool": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  }
+                },
+                "unit": "C"
+              }
+            },
+            "format": "mode-dependent-climate-argument/v1",
+            "interlocks": [
+              {
+                "require": {
+                  "component": "mode",
+                  "values": [
+                    "cool"
+                  ]
+                },
+                "when": {
+                  "component": "fan",
+                  "equals": "power"
+                }
+              }
+            ],
+            "kind": "composite"
+          },
+          "observedLayoutValueCount": 26
+        },
+        {
+          "capabilityId": "climate.power_on_with_setpoint",
+          "inputDomain": {
+            "components": {
+              "comfortPreference": {
+                "appliesToModes": [
+                  "auto"
+                ],
+                "kind": "number",
+                "max": 2,
+                "min": -2,
+                "step": 1
+              },
+              "fan": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "high",
+                  "low",
+                  "medium",
+                  "power",
+                  "very low"
+                ]
+              },
+              "mode": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "cool"
+                ]
+              },
+              "targetC": {
+                "appliesToModes": [
+                  "cool"
+                ],
+                "kind": "number",
+                "rangesByMode": {
+                  "cool": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  }
+                },
+                "unit": "C"
+              }
+            },
+            "format": "mode-dependent-climate-argument/v1",
+            "interlocks": [
+              {
+                "require": {
+                  "component": "mode",
+                  "values": [
+                    "cool"
+                  ]
+                },
+                "when": {
+                  "component": "fan",
+                  "equals": "power"
+                }
+              }
+            ],
+            "kind": "composite"
+          },
+          "observedLayoutValueCount": 1
+        }
+      ],
+      "modelId": "CST_170004_WW"
+    },
+    {
+      "capabilities": [
+        {
+          "capabilityId": "climate.mode_fan_setpoint",
+          "inputDomain": {
+            "components": {
+              "comfortPreference": {
+                "appliesToModes": [
+                  "auto"
+                ],
+                "kind": "number",
+                "max": 2,
+                "min": -2,
+                "step": 1
+              },
+              "fan": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "high",
+                  "low",
+                  "medium",
+                  "power",
+                  "very low"
+                ]
+              },
+              "mode": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "cool",
+                  "dry",
+                  "fan_only"
+                ]
+              },
+              "targetC": {
+                "appliesToModes": [
+                  "cool",
+                  "dry",
+                  "fan_only"
+                ],
+                "kind": "number",
+                "rangesByMode": {
+                  "cool": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  },
+                  "dry": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  },
+                  "fan_only": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  }
+                },
+                "unit": "C"
+              }
+            },
+            "format": "mode-dependent-climate-argument/v1",
+            "interlocks": [
+              {
+                "require": {
+                  "component": "mode",
+                  "values": [
+                    "cool"
+                  ]
+                },
+                "when": {
+                  "component": "fan",
+                  "equals": "power"
+                }
+              }
+            ],
+            "kind": "composite"
+          },
+          "observedLayoutValueCount": 14
+        },
+        {
+          "capabilityId": "climate.power_on_with_setpoint",
+          "inputDomain": {
+            "components": {
+              "comfortPreference": {
+                "appliesToModes": [
+                  "auto"
+                ],
+                "kind": "number",
+                "max": 2,
+                "min": -2,
+                "step": 1
+              },
+              "fan": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "high",
+                  "low",
+                  "medium",
+                  "power",
+                  "very low"
+                ]
+              },
+              "mode": {
+                "kind": "enum",
+                "values": [
+                  "auto",
+                  "cool",
+                  "dry",
+                  "fan_only"
+                ]
+              },
+              "targetC": {
+                "appliesToModes": [
+                  "cool",
+                  "dry",
+                  "fan_only"
+                ],
+                "kind": "number",
+                "rangesByMode": {
+                  "cool": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  },
+                  "dry": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  },
+                  "fan_only": {
+                    "max": 30,
+                    "min": 16,
+                    "step": 0.5
+                  }
+                },
+                "unit": "C"
+              }
+            },
+            "format": "mode-dependent-climate-argument/v1",
+            "interlocks": [
+              {
+                "require": {
+                  "component": "mode",
+                  "values": [
+                    "cool"
+                  ]
+                },
+                "when": {
+                  "component": "fan",
+                  "equals": "power"
+                }
+              }
+            ],
+            "kind": "composite"
+          },
+          "observedLayoutValueCount": 2
+        }
+      ],
+      "modelId": "CST_570004_WW"
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceTargetAuthorityRevision": "ha-local-control-target-authority-v3:46d0b93596df5a1b",
+  "sourceTargetAuthoritySha256": "46d0b93596df5a1b94525f127c9c7eb204b6b1e32b8261f95359be1efef50f4d",
+  "stats": {
+    "capabilityCount": 4,
+    "modelCount": 2
+  },
+  "revision": "ha-local-control-composite-domain-v1:f5c7d3ce49c8bdad",
+  "rootSha256": "f5c7d3ce49c8bdad27b596793a7743fa6db8a8af432ef5def920bcfb4d7e4ded"
+}

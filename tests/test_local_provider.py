@@ -126,6 +126,159 @@ class LocalShadowProviderTests(unittest.TestCase):
         self.assertNotIn("#", "".join(provider.topics))
         self.assertNotIn("+", "".join(provider.topics))
 
+    def test_change_listener_reports_only_committed_provider_updates(self) -> None:
+        provider = self.make_provider()
+        updates: list[tuple[int, bool]] = []
+        remove = provider.async_add_listener(
+            lambda: updates.append((provider.sequence, provider.shadow_healthy))
+        )
+
+        self.assertTrue(
+            provider.ingest(
+                provider.state_topic, state_payload(), qos=1, retained=True
+            )
+        )
+        self.assertEqual(updates, [(1, False)])
+        self.assertFalse(
+            provider.ingest(
+                provider.state_topic, state_payload(), qos=1, retained=True
+            )
+        )
+        self.assertEqual(updates, [(1, False)], "idempotent replay must not notify")
+
+        invalid = json.loads(state_payload(sequence=2))
+        invalid["fields"]["water_tank.full"]["value"] = "ON"
+        with self.assertRaises(local.LocalProviderContractError):
+            provider.ingest(
+                provider.state_topic,
+                json.dumps(invalid).encode(),
+                qos=1,
+                retained=True,
+            )
+        self.assertEqual(updates, [(1, False)], "rejected input must not notify")
+
+        provider.ingest(
+            provider.availability_topic,
+            availability_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        self.assertEqual(len(updates), 4)
+        self.assertTrue(updates[-1][1])
+
+        remove()
+        provider.set_transport_ready(False)
+        self.assertEqual(len(updates), 4, "removed listener must stay detached")
+
+    def test_listener_exception_isolated_from_provider_and_other_entities(self) -> None:
+        provider = self.make_provider()
+        updates: list[int] = []
+
+        def broken_listener() -> None:
+            raise RuntimeError("synthetic entity failure")
+
+        provider.async_add_listener(broken_listener)
+        provider.async_add_listener(lambda: updates.append(provider.sequence))
+
+        with self.assertLogs(local._LOGGER, level="ERROR") as captured:
+            self.assertTrue(
+                provider.ingest(
+                    provider.state_topic, state_payload(), qos=1, retained=True
+                )
+            )
+        self.assertEqual(updates, [1])
+        self.assertIn("update listener failed", captured.output[0])
+
+    def test_full_bootstrap_notifies_once_and_exact_replay_does_not(self) -> None:
+        provider = self.make_provider()
+        updates: list[tuple[int, bool]] = []
+        provider.async_add_listener(
+            lambda: updates.append((provider.sequence, provider.shadow_healthy))
+        )
+        publications = {
+            provider.state_topic: (state_payload(), 1, True),
+            provider.availability_topic: (
+                availability_payload("online"),
+                1,
+                True,
+            ),
+            provider.runtime_availability_topic: (
+                runtime_payload("online"),
+                1,
+                True,
+            ),
+        }
+
+        self.assertTrue(provider.ingest_bootstrap_final_current(publications))
+        self.assertEqual(updates, [(1, False)])
+        self.assertFalse(provider.ingest_bootstrap_final_current(publications))
+        self.assertEqual(updates, [(1, False)])
+
+    def test_field_availability_applies_profile_freshness_sla(self) -> None:
+        clock = [NOW]
+        profile = local.load_local_semantic_profile_catalogue()[1][
+            "kimchi-thinq1-core-state-v1"
+        ]
+        provider = local.LocalSemanticShadowProvider(
+            BINDING_ID, profile, now=lambda: clock[0]
+        )
+        contract = profile.fields["lock.enabled"]
+        snapshot = json.loads(state_payload())
+        snapshot.update(
+            {
+                "semantics_revision": profile.semantics_revision,
+                "model_id": profile.model_id,
+                "platform": profile.platform,
+                "fields": {
+                    "lock.enabled": {
+                        "value": True,
+                        "value_type": contract.value_type,
+                        "observed_at": "2026-08-13T00:59:58.000Z",
+                        "confidence": contract.confidence[0],
+                        "exposure": contract.exposure,
+                    }
+                },
+            }
+        )
+        provider.ingest(
+            provider.state_topic,
+            json.dumps(snapshot, separators=(",", ":")).encode(),
+            qos=1,
+            retained=True,
+        )
+        provider.ingest(
+            provider.availability_topic,
+            availability_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+
+        self.assertTrue(provider.semantic_field_fresh("lock.enabled"))
+        self.assertTrue(provider.semantic_field_available("lock.enabled"))
+        self.assertEqual(
+            provider.semantic_field_fresh_until("lock.enabled"),
+            datetime(2026, 8, 13, 1, 44, 58, tzinfo=timezone.utc),
+        )
+
+        clock[0] = datetime(2026, 8, 13, 1, 44, 58, 1_000, tzinfo=timezone.utc)
+        self.assertFalse(provider.semantic_field_fresh("lock.enabled"))
+        self.assertFalse(provider.semantic_field_available("lock.enabled"))
+        self.assertFalse(provider.semantic_field_available("unknown.field"))
+
     def test_accepts_only_the_exact_pinned_dehumidifier_contract(self) -> None:
         provider = self.make_provider()
         provider.ingest(provider.state_topic, state_payload(), qos=1, retained=True)
@@ -939,7 +1092,7 @@ class GenericLocalSemanticProviderTests(unittest.TestCase):
 
 
 class WaterTankResolverTests(unittest.TestCase):
-    def test_shadow_mode_never_changes_operational_wideq_result(self) -> None:
+    def test_local_provider_is_the_operational_owner_when_configured(self) -> None:
         provider = local.LocalWaterTankShadowProvider(BINDING_ID, now=lambda: NOW)
         provider.ingest(
             provider.state_topic, state_payload(value=True), qos=1, retained=True
@@ -956,12 +1109,20 @@ class WaterTankResolverTests(unittest.TestCase):
             qos=1,
             retained=True,
         )
+        provider.set_transport_ready(True)
         resolver = local.WaterTankProviderResolver(provider)
 
-        self.assertFalse(resolver.resolve({local.WIDEQ_WATER_TANK_KEY: 0}))
+        self.assertTrue(resolver.resolve({local.WIDEQ_WATER_TANK_KEY: 0}))
         self.assertTrue(resolver.available(True))
         self.assertTrue(provider.shadow_value)
         self.assertEqual(resolver.mode, local.LOCAL_PROVIDER_MODE_SHADOW)
+
+        provider.set_transport_ready(False)
+        self.assertFalse(resolver.available(True))
+        self.assertTrue(
+            resolver.resolve({local.WIDEQ_WATER_TANK_KEY: 0}),
+            "a configured Local owner must never fail open to WideQ",
+        )
 
     def test_wideq_parser_never_guesses_unknown_values(self) -> None:
         resolver = local.WaterTankProviderResolver()
@@ -974,6 +1135,10 @@ class WaterTankResolverTests(unittest.TestCase):
             (1.0, True),
             ("1", True),
             ("1.0", True),
+            (2, True),
+            (2.0, True),
+            ("2", True),
+            ("2.0", True),
         )
         for value, expected in accepted:
             with self.subTest(value=value):
@@ -982,7 +1147,7 @@ class WaterTankResolverTests(unittest.TestCase):
                     expected,
                 )
         with self.assertLogs(local._LOGGER.name, level="WARNING") as logs:
-            for value in ("ON", "OFF", 2, -1, True, False, object()):
+            for value in ("ON", "OFF", 3, -1, True, False, object()):
                 with self.subTest(value=value):
                     self.assertIsNone(
                         resolver.resolve({local.WIDEQ_WATER_TANK_KEY: value})
@@ -995,6 +1160,25 @@ class WaterTankResolverTests(unittest.TestCase):
             resolver.resolve({}), "missing data is absence, not an invalid value"
         )
         self.assertEqual(resolver.invalid_wideq_values, 8)
+
+    def test_old_wideq_tank_light_setting_is_not_a_tank_full_fallback(self) -> None:
+        resolver = local.WaterTankProviderResolver()
+
+        self.assertIsNone(
+            resolver.resolve({"airState.miscFuncState.watertankLight": 1})
+        )
+
+    def test_wideq_fallback_key_is_in_the_dehumidifier_snapshot_contract(self) -> None:
+        raw_paths = json.loads(
+            (MODULE_PATH.parent / "feature_catalog" / "raw_paths.json").read_text(
+                encoding="utf8"
+            )
+        )
+
+        self.assertIn(
+            [local.WIDEQ_WATER_TANK_KEY],
+            raw_paths["wideq"]["DHUM_056905_WW"],
+        )
 
 
 if __name__ == "__main__":
@@ -2363,6 +2547,7 @@ class ControlPresenceTests(unittest.TestCase):
             provider.control_alive,
             "a retained marker alone does not prove a publisher on this MQTT connection",
         )
+        self.assertIsNone(provider.read_publication_authority)
         self.assertTrue(
             provider.ingest(
                 provider.presence_topic,
@@ -2373,8 +2558,15 @@ class ControlPresenceTests(unittest.TestCase):
         )
         self.assertTrue(provider.control_alive)
         self.assertFalse(provider.shadow_healthy)
+        self.assertIsNone(provider.session_id)
+        self.assertIsNone(provider.cohort_generation)
+        self.assertEqual(
+            provider.read_publication_authority,
+            (1, SERVICE_ONE),
+        )
         provider.set_transport_ready(False)
         self.assertFalse(provider.control_alive)
+        self.assertIsNone(provider.read_publication_authority)
 
     def test_live_presence_receipt_expires_and_resets_on_every_connection(self) -> None:
         clock = [NOW]
@@ -2411,6 +2603,54 @@ class ControlPresenceTests(unittest.TestCase):
         provider.set_transport_ready(False)
         provider.set_transport_ready(True)
         self.assertFalse(provider.control_alive)
+
+    def test_read_authority_expiry_notifies_once_and_heartbeat_reschedules(
+        self,
+    ) -> None:
+        clock = [NOW]
+        provider = self.provider(clock=lambda: clock[0])
+        payload = self.presence()
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=True)
+        provider.ingest(
+            provider.runtime_availability_topic,
+            runtime_payload("online"),
+            qos=1,
+            retained=True,
+        )
+        provider.set_transport_ready(True)
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=False)
+        first_expiry = provider.read_publication_authority_expiry
+        self.assertIsNotNone(first_expiry)
+
+        clock[0] += timedelta(seconds=120)
+        provider.ingest(provider.presence_topic, payload, qos=1, retained=False)
+        second_expiry = provider.read_publication_authority_expiry
+        self.assertIsNotNone(second_expiry)
+        self.assertNotEqual(first_expiry, second_expiry)
+
+        updates = []
+        remove = provider.async_add_listener(lambda: updates.append(clock[0]))
+        try:
+            assert first_expiry is not None and second_expiry is not None
+            clock[0] = first_expiry[1] + timedelta(milliseconds=1)
+            self.assertFalse(
+                provider.expire_read_publication_authority(first_expiry)
+            )
+            self.assertTrue(provider.control_alive)
+            self.assertEqual(updates, [])
+
+            clock[0] = second_expiry[1] + timedelta(milliseconds=1)
+            self.assertTrue(
+                provider.expire_read_publication_authority(second_expiry)
+            )
+            self.assertFalse(provider.control_alive)
+            self.assertEqual(len(updates), 1)
+            self.assertFalse(
+                provider.expire_read_publication_authority(second_expiry)
+            )
+            self.assertEqual(len(updates), 1)
+        finally:
+            remove()
 
     def test_same_physical_presence_heartbeat_never_closes_current_tuple(self) -> None:
         clock = [NOW]
@@ -3058,6 +3298,10 @@ class ControlPresenceTests(unittest.TestCase):
         self,
     ) -> None:
         provider = self.provider()
+        updates: list[tuple[int, bool]] = []
+        provider.async_add_listener(
+            lambda: updates.append((provider.sequence, provider.shadow_healthy))
+        )
         presence = self.presence()
         self.assertTrue(
             provider.ingest_control_bootstrap_final_current(
@@ -3071,11 +3315,14 @@ class ControlPresenceTests(unittest.TestCase):
                 }
             )
         )
+        self.assertEqual(updates, [(0, False)])
         provider.set_transport_ready(True)
+        self.assertEqual(updates, [(0, False), (0, False)])
         self.assertFalse(provider.control_alive)
         provider.ingest(
             provider.presence_topic, presence, qos=1, retained=False
         )
+        self.assertEqual(len(updates), 3)
         self.assertTrue(provider.control_alive)
         self.assertFalse(provider.control_state_ready)
         self.assertFalse(provider.shadow_healthy)
@@ -3088,6 +3335,8 @@ class ControlPresenceTests(unittest.TestCase):
                 }
             )
         )
+        self.assertEqual(len(updates), 4)
+        self.assertEqual(updates[-1], (1, True))
         self.assertTrue(provider.control_state_ready)
         self.assertTrue(provider.shadow_healthy)
 
