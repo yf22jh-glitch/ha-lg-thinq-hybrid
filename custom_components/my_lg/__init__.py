@@ -696,9 +696,9 @@ async def _setup_local_shadows(
             "Rethink Local control entity contract is invalid; generic controls disabled"
         )
     else:
-        # Keep the valid public descriptor catalogue independent from the
-        # private deployment gate.  A malformed or absent gate must fail
-        # writes closed without disabling Local read shadows.
+        # Derive owners from the valid catalogue and configured model identities.
+        # An optional explicit scope can restrict them; its failure must not
+        # disable independent Local reads or silently expand that scope.
         data.local_control_entity_contract = control_entity_contract
         binding_models = {
             config.binding_id: config.model_id for config in configs

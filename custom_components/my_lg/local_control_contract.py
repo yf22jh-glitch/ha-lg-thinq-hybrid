@@ -1,8 +1,8 @@
 """Pinned Home Assistant entity contract for exact Rethink Local controls.
 
-The public artifact describes model/capability surfaces only.  It is never
-enough to authorize a physical appliance by itself: materialization also
-requires the separately installed, root-bound per-binding eligibility option.
+The public artifact describes model/capability surfaces only. Materialization
+joins it to configured appliance identities; an optional explicit per-binding
+scope can restrict that set. Actual writes still use the bound command router.
 This module has no Home Assistant dependency so its fail-closed contract can be
 tested in isolation.
 """
@@ -860,16 +860,31 @@ def resolve_local_control_binding_eligibility(
     contract: LocalControlEntityContract,
     binding_models: Mapping[str, str],
 ) -> Mapping[str, LocalControlBindingEligibility]:
-    """Validate the private root-bound gate or return no generic authority.
+    """Derive supported controls from registered models, or honor an explicit scope.
 
-    Missing or root-mismatched input is the expected pre-deployment state and
-    therefore returns an empty mapping.  Malformed, partial, foreign-model, or
-    unknown input raises so setup can log one semantic diagnostic and still
-    preserve every read/cloud owner.
+    Registration needs no second installer-maintained copy of the model's
+    capability list. Unknown models get no controls. Explicit legacy scopes
+    remain restrictive; stale/invalid scopes never fall back to automatic mode.
+    This creates owners, not commands: routing, value validation and command
+    acknowledgement remain unchanged, as do disabled-by-default policies.
     """
     value = options.get(LOCAL_CONTROL_ELIGIBILITY_OPTION)
-    if value is None:
-        return MappingProxyType({})
+    if LOCAL_CONTROL_ELIGIBILITY_OPTION not in options:
+        automatic: dict[str, LocalControlBindingEligibility] = {}
+        for binding_id, model_id in binding_models.items():
+            descriptors = contract.descriptors_by_model.get(model_id, ())
+            if not descriptors:
+                continue
+            if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
+                _eligibility_error()
+            automatic[binding_id] = LocalControlBindingEligibility(
+                binding_id=binding_id,
+                values_by_capability=MappingProxyType({
+                    descriptor.capability_id: descriptor.exact_local_request_values
+                    for descriptor in descriptors
+                }),
+            )
+        return MappingProxyType(automatic)
     if not isinstance(value, dict) or set(value) != {
         "schema_version",
         "contract_sha256",
@@ -897,37 +912,23 @@ def resolve_local_control_binding_eligibility(
         return MappingProxyType({})
 
     raw_bindings = value["bindings"]
-    if (
-        not isinstance(raw_bindings, list)
-        or len(raw_bindings) != 18
-        or not isinstance(binding_models, Mapping)
-        or len(binding_models) != 18
-    ):
-        _eligibility_error()
-    if any(
-        not isinstance(binding_id, str)
-        or _BINDING_ID.fullmatch(binding_id) is None
-        or model_id not in contract.model_fleet_counts
-        for binding_id, model_id in binding_models.items()
-    ):
-        _eligibility_error()
-    actual_model_counts = {
-        model_id: sum(candidate == model_id for candidate in binding_models.values())
-        for model_id in contract.model_fleet_counts
-    }
-    if actual_model_counts != dict(contract.model_fleet_counts):
+    if not isinstance(raw_bindings, list) or not isinstance(binding_models, Mapping):
         _eligibility_error()
 
     raw_binding_ids = [
         row.get("binding_id") if isinstance(row, dict) else None for row in raw_bindings
     ]
-    if raw_binding_ids != sorted(binding_models):
+    if any(
+        not isinstance(binding_id, str)
+        or _BINDING_ID.fullmatch(binding_id) is None
+        or binding_id not in binding_models
+        for binding_id in raw_binding_ids
+    ):
+        _eligibility_error()
+    if raw_binding_ids != sorted(set(raw_binding_ids)):
         _eligibility_error()
 
     parsed: dict[str, LocalControlBindingEligibility] = {}
-    physical_entity_count = 0
-    physical_value_count = 0
-    controlled_binding_count = 0
     for raw_binding in raw_bindings:
         if not isinstance(raw_binding, dict) or set(raw_binding) != {
             "binding_id",
@@ -945,10 +946,13 @@ def resolve_local_control_binding_eligibility(
         ):
             _eligibility_error()
         model_id = binding_models[binding_id]
+        if model_id not in contract.model_fleet_counts:
+            _eligibility_error()
         descriptors = contract.descriptors_by_model.get(model_id, ())
         if len(entries) != len(descriptors):
-            # The exact fleet has four explicit empty bindings. Every other
-            # binding must carry every descriptor from the pinned public root.
+            # Validate this selected appliance's capabilities, not the size of
+            # the house. Omitted bindings get no generic owners or permission;
+            # adding/skipping another appliance cannot disable this one.
             _eligibility_error()
         values_by_capability: dict[str, tuple[str, ...]] = {}
         for entry, descriptor in zip(entries, descriptors):
@@ -976,22 +980,11 @@ def resolve_local_control_binding_eligibility(
             ):
                 _eligibility_error()
             values_by_capability[capability_id] = tuple(exact_values)
-            physical_value_count += len(exact_values)
-        physical_entity_count += len(entries)
-        controlled_binding_count += bool(entries)
         parsed[binding_id] = LocalControlBindingEligibility(
             binding_id=binding_id,
             values_by_capability=MappingProxyType(values_by_capability),
         )
 
-    if (
-        set(parsed) != set(binding_models)
-        or physical_entity_count != 139
-        or physical_value_count != 395
-        or controlled_binding_count != 14
-        or len(parsed) - controlled_binding_count != 4
-    ):
-        _eligibility_error()
     return MappingProxyType(parsed)
 
 

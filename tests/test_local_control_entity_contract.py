@@ -1,4 +1,4 @@
-"""Pinned public contract and private 18-binding eligibility accounting."""
+"""Pinned model controls and scoped per-device registration eligibility."""
 
 from __future__ import annotations
 
@@ -78,6 +78,45 @@ def _fleet_payload():
 
 
 class LocalControlEntityContractTests(unittest.TestCase):
+    def test_selected_devices_do_not_require_a_fixed_whole_house_count(self) -> None:
+        contract, binding_models, options = _fleet_payload()
+        payload = options[LOCAL_CONTROL_ELIGIBILITY_OPTION]
+        selected = next(
+            row for row in payload["bindings"]
+            if binding_models[row["binding_id"]] == "HUM_056905_WW"
+        )
+        scoped = {LOCAL_CONTROL_ELIGIBILITY_OPTION: {**payload, "bindings": [selected]}}
+        result = resolve_local_control_binding_eligibility(scoped, contract, binding_models)
+        self.assertEqual(set(result), {selected["binding_id"]})
+        single_model = {selected["binding_id"]: "HUM_056905_WW"}
+        self.assertEqual(
+            set(resolve_local_control_binding_eligibility(scoped, contract, single_model)),
+            set(single_model),
+        )
+
+    def test_additional_device_of_a_supported_model_does_not_change_other_devices(self) -> None:
+        contract, binding_models, options = _fleet_payload()
+        payload = options[LOCAL_CONTROL_ELIGIBILITY_OPTION]
+        selected = next(
+            row for row in payload["bindings"]
+            if binding_models[row["binding_id"]] == "HUM_056905_WW"
+        )
+        extra_id = "test_control_new_humidifier"
+        rows = sorted(
+            [*payload["bindings"], {**selected, "binding_id": extra_id}],
+            key=lambda row: row["binding_id"],
+        )
+        result = resolve_local_control_binding_eligibility(
+            {LOCAL_CONTROL_ELIGIBILITY_OPTION: {**payload, "bindings": rows}},
+            contract,
+            {**binding_models, extra_id: "HUM_056905_WW"},
+        )
+        self.assertEqual(len(result), len(binding_models) + 1)
+        self.assertEqual(
+            result[extra_id].values_by_capability,
+            result[selected["binding_id"]].values_by_capability,
+        )
+
     def test_composite_capability_evidence_is_exact_binding_model_and_capability(self) -> None:
         contract, binding_models, options = _fleet_payload()
         eligibility = resolve_local_control_binding_eligibility(
@@ -236,12 +275,27 @@ class LocalControlEntityContractTests(unittest.TestCase):
         contract = load_local_control_entity_contract()
         binding_models = {_binding_id(1, 1): "AIR_2C0001_WW"}
 
+        automatic = resolve_local_control_binding_eligibility({}, contract, binding_models)
         self.assertEqual(
-            dict(
-                resolve_local_control_binding_eligibility({}, contract, binding_models)
-            ),
-            {},
+            set(automatic),
+            {binding_id for binding_id, model_id in binding_models.items()
+             if contract.descriptors_by_model.get(model_id)},
         )
+        for binding_id in automatic:
+            self.assertEqual(
+                automatic[binding_id].values_by_capability,
+                {descriptor.capability_id: descriptor.exact_local_request_values
+                 for descriptor in contract.descriptors_by_model[binding_models[binding_id]]},
+            )
+
+    def test_automatic_registration_skips_unknown_and_unsupported_models(self) -> None:
+        contract = load_local_control_entity_contract()
+        result = resolve_local_control_binding_eligibility({}, contract, {
+            "known_humidifier_binding": "HUM_056905_WW",
+            "unknown_device_binding": "UNKNOWN_MODEL",
+            "excluded_thinq1_binding": "2REK1D04AR170",
+        })
+        self.assertEqual(set(result), {"known_humidifier_binding"})
 
     def test_target_authority_pin_is_closed_and_globally_fail_closed(self) -> None:
         contract, binding_models, valid = _fleet_payload()
@@ -389,7 +443,6 @@ class LocalControlEntityContractTests(unittest.TestCase):
             callback(candidate[LOCAL_CONTROL_ELIGIBILITY_OPTION]["bindings"])
             mutations.append((name, candidate))
 
-        mutate("missing binding", lambda rows: rows.pop())
         mutate(
             "extra binding",
             lambda rows: rows.append(dict(rows[-1], binding_id=_binding_id(99, 1))),
@@ -540,7 +593,7 @@ class LocalControlEntityContractTests(unittest.TestCase):
             )
         )
 
-    def test_empty_four_models_are_explicit_and_foreign_or_missing_bindings_fail(
+    def test_empty_models_and_foreign_capabilities_fail_but_omitted_devices_are_skipped(
         self,
     ) -> None:
         contract, binding_models, options = _fleet_payload()
@@ -559,8 +612,9 @@ class LocalControlEntityContractTests(unittest.TestCase):
                 "bindings": rows[:-1],
             }
         }
-        with self.assertRaises(LocalControlEligibilityError):
-            resolve_local_control_binding_eligibility(missing, contract, binding_models)
+        selected = resolve_local_control_binding_eligibility(missing, contract, binding_models)
+        self.assertEqual(set(selected), {row["binding_id"] for row in rows[:-1]})
+        self.assertNotIn(rows[-1]["binding_id"], selected)
 
         unknown_models = dict(binding_models)
         unknown_models[next(iter(unknown_models))] = "UNKNOWN_MODEL"
