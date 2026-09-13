@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import aiohttp
 import hashlib
 import logging
 import math
@@ -218,29 +219,39 @@ class MyLgLocalContractSwitch(_LocalContractEntity, SwitchEntity):
 
 
 class MyLgVacuumAutoEmptyingSwitch(MyLgLocalContractSwitch):
-    """Local-only writes; existing reported snapshot for display, no new poll.
+    """Local-only setting and display; poll only the bridge's in-memory cache.
 
-    The primary profile does not yet publish this new field. Missing/unknown
-    WideQ reports stay unknown, never an invented OFF or optimistic ON.
+    Use HA's normal switch polling lifecycle, not a custom timer or LG poll.
+    No command value is reflected optimistically.
     """
 
-    def __init__(self, *args: Any, wideq=None, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._wideq = wideq
+        self._reported_enabled: bool | None = None
+
+    @property
+    def should_poll(self) -> bool:
+        return True
 
     def _state_value(self) -> object | None:
-        local = super()._state_value()
-        if local is not None:
-            return local
-        if self._wideq is None:
-            return None
-        value = self._wideq.snapshot_for(self.coordinator.device_id).get("qmState.dustEmptyingMode")
-        return {"AUTO": True, "MANUAL": False}.get(value) if isinstance(value, str) else None
+        return self._reported_enabled
+
+    async def async_update(self) -> None:
+        try:
+            value = await self._router.async_vacuum_auto_emptying_state(self.coordinator.device_id)
+            self._reported_enabled = value if type(value) is bool else None
+        except (TimeoutError, OSError, ValueError, aiohttp.ClientError):
+            self._reported_enabled = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        if self._wideq is not None:
-            self._remove_local_listeners.append(self._wideq.async_add_listener(self._handle_local_update))
+        await self.async_update()
+        self.async_write_ha_state()
+
+    async def _async_send(self, local_request_value: str) -> None:
+        await super()._async_send(local_request_value)
+        await self.async_update()
+        self.async_write_ha_state()
 
 
 class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
@@ -395,8 +406,7 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 continue
             seen_surfaces.add(surface)
             if descriptor.capability_id == "vacuum.auto_dust_emptying_enabled" and domain == "switch":
-                entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read,
-                    wideq=getattr(data, "wideq_coordinator", None)))
+                entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read))
                 continue
             entities.append(
                 entity_class(coordinator, descriptor, router, primary, read)
