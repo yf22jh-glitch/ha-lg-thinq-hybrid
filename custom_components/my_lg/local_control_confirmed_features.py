@@ -15,7 +15,7 @@ from .local_control_contract import (
     LocalControlValueMapping,
 )
 
-CATALOGUE_SHA256 = '397b002a469a0e01983af0b7781e77a51010a0ef5f82051ca0f042aa4c51a72b'
+CATALOGUE_SHA256 = 'cf64477a20a12118ee9dec0a9c33fd1c57c5f88debe0ea941fe9f64255a77e30'
 
 
 def load_confirmed_features():
@@ -24,6 +24,12 @@ def load_confirmed_features():
     if document['schema_version'] != 1 or document['catalogue_sha256'] != CATALOGUE_SHA256 or hashlib.sha256(encoded).hexdigest() != CATALOGUE_SHA256:
         raise ValueError('Confirmed feature catalogue does not match this release')
     return document['features']
+
+
+APPLIANCE_SETTING_MODELS = MappingProxyType({
+    feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
+    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3') and feature['domain'] == 'switch'
+})
 
 
 def augment_confirmed_features(contract, eligibility, binding_models):

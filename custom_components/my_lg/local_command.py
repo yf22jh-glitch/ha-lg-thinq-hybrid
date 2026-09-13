@@ -24,6 +24,7 @@ from urllib.parse import quote
 from typing import Any, Mapping
 
 import aiohttp
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
 
 CLIMATE_TUPLE_CAPABILITY = "climate.mode_fan_setpoint"
 CLIMATE_POWER_ON_CAPABILITY = "climate.power_on_with_setpoint"
@@ -417,6 +418,24 @@ class LocalCommandClient:
         self._session = session
         self._base_url = base_url.rstrip("/")
         self._timeout = aiohttp.ClientTimeout(total=timeout_s)
+
+    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | None:
+        """Read exact own-connection settings; never query the appliance or cloud."""
+        model = APPLIANCE_SETTING_MODELS.get(capability)
+        if model is None:
+            return None
+        async with self._session.get(
+            f"{self._base_url}/control/home-assistant/{quote(device_id, safe='')}/appliance-settings-state",
+            timeout=aiohttp.ClientTimeout(total=5), allow_redirects=False,
+        ) as response:
+            if response.status != 200:
+                return None
+            body = await response.json()
+        if (not isinstance(body, dict) or body.get('schema_version') != 1
+                or body.get('model_id') != model or not isinstance(body.get('values'), dict)):
+            return None
+        value = body['values'].get(capability)
+        return value if type(value) is bool else None
 
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None:
         """Own-connection cached value only; no device query or cloud fallback."""

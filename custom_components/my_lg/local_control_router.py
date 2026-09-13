@@ -30,6 +30,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
 
 from .local_command import (
     CLIMATE_POWER_ON_CAPABILITY,
@@ -120,6 +121,7 @@ def _confirmed_tuple(value: str, confirmed_at: datetime) -> _ConfirmedTuple:
 class _Sender(Protocol):
     async def async_vacuum_auto_emptying_state(self, device_id: str) -> bool | None: ...
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None: ...
+    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | None: ...
 
     async def async_send(
         self,
@@ -679,6 +681,12 @@ class LocalControlRouter:
             return None
         device_id, _provider = target
         return await self._send(pat_device_id, device_id, POWER_CAPABILITY, "false")
+
+    async def async_appliance_setting_state(self, pat_device_id: str, capability: str) -> bool | None:
+        target = self._target(pat_device_id)
+        if target is None or APPLIANCE_SETTING_MODELS.get(capability) != target[1].model_id:
+            return None
+        return await self._sender.async_appliance_setting_state(target[0], capability)
 
     async def async_air_extra_state(self, pat_device_id: str, capability: str) -> bool | None:
         target = self._target(pat_device_id)

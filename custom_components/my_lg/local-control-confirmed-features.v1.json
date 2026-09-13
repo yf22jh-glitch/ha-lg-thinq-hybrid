@@ -1,7 +1,217 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "397b002a469a0e01983af0b7781e77a51010a0ef5f82051ca0f042aa4c51a72b",
+  "catalogue_sha256": "cf64477a20a12118ee9dec0a9c33fd1c57c5f88debe0ea941fe9f64255a77e30",
   "features": [
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.operation.resume_with_night_dry",
+      "entity_key": "local_styler_recorded_resume",
+      "label_ko": "바지 코스 재개 (야간건조 켜짐)",
+      "domain": "button",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "true",
+          "label": "press",
+          "ordered_frame_sha256s": [
+            "244a149af8822034d532555ad71040a7b422f57478bc631015ba08fc7903e2fa",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "course.auto_arrange_enabled",
+      "entity_key": "local_styler_auto_course_arrange",
+      "label_ko": "코스 자동 정렬",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "5961d66dd918fe37a308b064bb1e883f5f59edb0e295d3d051287e45d06063bc"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "0e0bbabee6f9c828a5f094ebfe1f0d6953a41a24494bdee5038d918e064e3ae9"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "course.remember_last_enabled",
+      "entity_key": "local_styler_remember_last_course",
+      "label_ko": "마지막 코스 기억",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "50482817a42037f37cb09aadcd75c6ebc4c4680e63c51b5d0e717f3f584b495f"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "8e5f8e35ae17ab722862c8ef481764598b0d206c9852e785d02a8fe64a46cafc"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "smart_care.night_enabled",
+      "entity_key": "local_styler_smart_care_night",
+      "label_ko": "스마트케어 야간",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "e399378c249ef8fd799ee10eeff248de49a7908e15ab9d38640e3ac9cbe798be"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "af3dca4b53f6f0c0e8d094f786ad9eb6ac4b242f0faa2c02d8780d17bcef05d5"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "smart_care.humidity_enabled",
+      "entity_key": "local_styler_smart_care_humidity",
+      "label_ko": "스마트케어 습도",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "05c56abafe7aa08e6a3d5db54d76a788a4d122e8b8671cf0e80991eaf5fba772"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "1cc8b5ead280ecfe72d62fbeec2c7734502554179d9e87339978ab2f20a6fb57"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "smart_care.fine_dust_enabled",
+      "entity_key": "local_styler_smart_care_fine_dust",
+      "label_ko": "스마트케어 미세먼지",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "75794cb5249d5dc4dc9c0df97573cbbe4bc4f69b5fee6f7d92478841b2a80b1c"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "8a21b21c5ac02e101fa119b16ed6ed6090ba2d1d2aa2bf23898d17214c29a849"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "display.date_enabled",
+      "entity_key": "local_styler_date_display",
+      "label_ko": "날짜 표시",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "c3c79bc12d27e7bc905d2bab65549180d9874279b28549b78469c8d018185427"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "0a59eee432ad3c5d514aede5741db0256cd73fe82cea28121a49c8512dee75f6"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "display.twenty_four_hour_enabled",
+      "entity_key": "local_styler_24_hour_display",
+      "label_ko": "24시간 표시",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "41178ebf708cb39d625d09a77f5ba264794f2fe2a5dce269838f5fa0ba2c6740"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "e564442bf42bc503d88d201059d14dde640d24f5e3955f8ce4e033b7b20b0efa"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "ice.lock_enabled",
+      "entity_key": "local_water_ice_lock",
+      "label_ko": "얼음 잠금",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "246d647f83d8751545f7bb99ee98529c61fc537d0008fa8631e738e60fcf330a"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "991605e768f460ca1ac5543bf91db8b68660fdaa9eff417d239d5230ab0d4051"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "AIR_910604_WW",
       "capability_id": "clean_dry.enabled",

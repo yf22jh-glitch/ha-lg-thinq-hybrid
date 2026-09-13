@@ -26,6 +26,7 @@ from .local_control_contract import (
     eligible_factory_descriptors,
 )
 from .local_control_router import LocalControlRouter
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_provider import TlvReadShadowProvider
 
@@ -259,6 +260,11 @@ class MyLgVacuumAutoEmptyingSwitch(MyLgBridgeCachedSwitch):
         return await self._router.async_vacuum_auto_emptying_state(self.coordinator.device_id)
 
 
+class MyLgApplianceSettingSwitch(MyLgBridgeCachedSwitch):
+    async def _async_reported_value(self) -> bool | None:
+        return await self._router.async_appliance_setting_state(self.coordinator.device_id, self._descriptor.capability_id)
+
+
 class MyLgAirExtraSwitch(MyLgBridgeCachedSwitch):
     async def _async_reported_value(self) -> bool | None:
         return await self._router.async_air_extra_state(self.coordinator.device_id, self._descriptor.capability_id)
@@ -415,6 +421,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 # per surface instead of creating duplicate registry owners.
                 continue
             seen_surfaces.add(surface)
+            if APPLIANCE_SETTING_MODELS.get(descriptor.capability_id) == descriptor.model_id and domain == 'switch':
+                entities.append(MyLgApplianceSettingSwitch(coordinator, descriptor, router, primary, read))
+                continue
             if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id in ('clean_dry.enabled', 'rapid_operation.enabled') and domain == 'switch':
                 entities.append(MyLgAirExtraSwitch(coordinator, descriptor, router, primary, read))
                 continue
