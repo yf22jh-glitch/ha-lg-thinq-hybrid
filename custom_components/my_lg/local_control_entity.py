@@ -217,6 +217,32 @@ class MyLgLocalContractSwitch(_LocalContractEntity, SwitchEntity):
         await self._async_send(self._off_value.local_request_value)
 
 
+class MyLgVacuumAutoEmptyingSwitch(MyLgLocalContractSwitch):
+    """Local-only writes; existing reported snapshot for display, no new poll.
+
+    The primary profile does not yet publish this new field. Missing/unknown
+    WideQ reports stay unknown, never an invented OFF or optimistic ON.
+    """
+
+    def __init__(self, *args: Any, wideq=None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._wideq = wideq
+
+    def _state_value(self) -> object | None:
+        local = super()._state_value()
+        if local is not None:
+            return local
+        if self._wideq is None:
+            return None
+        value = self._wideq.snapshot_for(self.coordinator.device_id).get("qmState.dustEmptyingMode")
+        return {"AUTO": True, "MANUAL": False}.get(value) if isinstance(value, str) else None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self._wideq is not None:
+            self._remove_local_listeners.append(self._wideq.async_add_listener(self._handle_local_update))
+
+
 class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
     """Exact enum or sparse numeric control."""
 
@@ -368,6 +394,10 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 # per surface instead of creating duplicate registry owners.
                 continue
             seen_surfaces.add(surface)
+            if descriptor.capability_id == "vacuum.auto_dust_emptying_enabled" and domain == "switch":
+                entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read,
+                    wideq=getattr(data, "wideq_coordinator", None)))
+                continue
             entities.append(
                 entity_class(coordinator, descriptor, router, primary, read)
             )

@@ -15,7 +15,7 @@ from .local_control_contract import (
     LocalControlValueMapping,
 )
 
-CATALOGUE_SHA256 = 'ddddfdc1f86613abb5d2ddbfb59a7137a722cdcb3d2c12960122aabacadc4602'
+CATALOGUE_SHA256 = '9683a0b6763ba9fff0b026a75eff021ff8242b6896743b1a88df4dc1a0288f90'
 
 
 def load_confirmed_features():
@@ -45,18 +45,18 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         if any(d.capability_id == capability for d in by_model.get(model, ())):
             raise ValueError('Confirmed feature would replace an existing control')
         values = feature['values']
-        boolean_values = capability == 'washer.fresh_care_enabled'
+        boolean_values = capability in ('washer.fresh_care_enabled', 'vacuum.auto_dust_emptying_enabled')
         descriptor = LocalControlEntityDescriptor(
             key=model + '|' + capability, model_id=model, capability_id=capability,
             home_assistant_entity_key=feature['entity_key'], label_ko=feature['label_ko'],
-            entity_domain=feature['domain'], input_kind='enum',
+            entity_domain=feature['domain'], input_kind='boolean' if feature['domain'] == 'switch' else 'enum',
             supported_values=tuple(v['value'] == 'true' if boolean_values else v['value'] for v in values),
             value_mappings=tuple(LocalControlValueMapping(v['label'], v['value']) for v in values),
-            exact_state_semantic='washer.fresh_care_enabled' if boolean_values else None,
+            exact_state_semantic=capability if boolean_values else None,
             factory_eligible=not feature['existing_owner'], existing_owner=feature['existing_owner'],
             # These whole-bundle choices have producer-side state confirmation.
             # Do not guess a selected preset from an old/partial HA snapshot.
-            one_shot=True,
+            one_shot=feature['domain'] != 'switch',
         )
         by_model[model] = (*by_model.get(model, ()), descriptor)
         additions.append(descriptor)

@@ -1,7 +1,31 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "ddddfdc1f86613abb5d2ddbfb59a7137a722cdcb3d2c12960122aabacadc4602",
+  "catalogue_sha256": "9683a0b6763ba9fff0b026a75eff021ff8242b6896743b1a88df4dc1a0288f90",
   "features": [
+    {
+      "model_id": "HWWA9X3C_F2U",
+      "capability_id": "vacuum.auto_dust_emptying_enabled",
+      "entity_key": "local_vacuum_auto_dust_emptying",
+      "label_ko": "자동 먼지 비움",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "185053a8b9005570b42bcc2feee3dd094375fde1a48d5a5d16deff33cd988a7b"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "70c575c69af83a8d7ccb8aba50addbb43837743f7b5321680ecf9d98fed4aa93"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "HWWA9X3C_F2U",
       "capability_id": "vacuum.remote_dust_emptying",
