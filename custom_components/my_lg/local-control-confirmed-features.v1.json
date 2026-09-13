@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "catalogue_sha256": "ed6b0fd85617e8f5f9583b9bc2d54908348fbf6be116371585c33acf2ee43cc7",
+  "features": [
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.operation.start_or_resume",
+      "entity_key": "washer_start",
+      "label_ko": "세탁 시작·재개",
+      "domain": "button",
+      "existing_owner": true,
+      "values": [
+        {
+          "value": "true",
+          "label": "실행",
+          "ordered_frame_sha256s": [
+            "02aa47ab73e0cd208f2bb0ce80117490b14a92f84b4fba3120cba68d3f4768cd",
+            "63549995828369a24ac22e399ebc6d64a7b733c1babab56b7d919e64cac41d3f"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.operation.start_or_resume",
+      "entity_key": "dryer_start",
+      "label_ko": "건조 시작·재개",
+      "domain": "button",
+      "existing_owner": true,
+      "values": [
+        {
+          "value": "true",
+          "label": "실행",
+          "ordered_frame_sha256s": [
+            "f297e92ed7a75b9e0f9a221121c06628402e91988b4880ae12b839eb1c5938bb",
+            "99c05706f9768d3a9ab85b8094c6c982fa5b9b89d5bd4955e4acd4c457c3dced"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.course_program",
+      "entity_key": "local_washer_course_program",
+      "label_ko": "세탁 코스·옵션",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=더작게|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=더작게|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "ec6aa097ad6c4a28e8c2a12faabaa2850cc2c897025efc82678114b44e916701"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=더작게|turbo=ON|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=더작게|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "c8f3022c014b69083428d2d9ee10dc0962a15729c0d876e0b49c989c4eab47c3"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "a9b99b8fb0db8e1699db0a02533e5901ff60cbc5e47b0936080de5a5f4ac24c1"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "label": "AI Wash|soil=표준|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "fefb148e86697c5eb9c83e6d5e808a7c29d69ed5725e2bde971ddaa5835b0cbf"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=40도|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=40도|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "67b7838ad780fd031e282bae09fcd37cc45544fd883976b0b25387d97534fe94"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=냉수|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=냉수|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "07fc5f36f352f044ecbe93ca47878ba1502b63109fc73c757cab9a9fc6e11443"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "bc3e108f18da7e1e0fcf391931006feda2400bb28adefffec228210b47c7bfa8"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=180m",
+          "label": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=180m",
+          "ordered_frame_sha256s": [
+            "65db63bec4278d3bae7e42ac5ff91ea28a600f1464af54ea3edb96bf1e460cd5"
+          ]
+        },
+        {
+          "value": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "label": "AI Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "16a8d82202743d9e6b89a690e66205851f4886405944397ccc4e4ef081824a1e"
+          ]
+        },
+        {
+          "value": "Baby clothes|soil=애벌|temp=60도|rinse=4|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Baby clothes|soil=애벌|temp=60도|rinse=4|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "46ec9726f55adfae6dc75665ba78dcd2583feede6635ab3b264907054743e5d1"
+          ]
+        },
+        {
+          "value": "Bedding|soil=적은때|temp=냉수|rinse=2|spin=중|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "label": "Bedding|soil=적은때|temp=냉수|rinse=2|spin=중|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "ca619b7b5328fead355541ed372063f8743d78413f61c955f4abc057f42f3b6e"
+          ]
+        },
+        {
+          "value": "Cold Wash|soil=강력|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Cold Wash|soil=강력|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "28d6926bd0281dfdc84e91e08ab2bbb8ef66ca243291d5b22f083d10f5295a34"
+          ]
+        },
+        {
+          "value": "Cold Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Cold Wash|soil=표준|temp=냉수|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "ee6567126b0e863ad1025b25c503211b02511d496888b96aeb371738f768feb1"
+          ]
+        },
+        {
+          "value": "Color Care|soil=표준|temp=30도|rinse=2|spin=약|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Color Care|soil=표준|temp=30도|rinse=2|spin=약|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "9a848852d86fca41ac02fbfabf4af051bdf6b9f1bfed6a3c204b41fec8c922e4"
+          ]
+        },
+        {
+          "value": "Color Care|soil=표준|temp=30도|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Color Care|soil=표준|temp=30도|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "b8290ae0d4a989dcb6d72dc1ddcbafe2faab3617a44f336ce4a2f9d6b0c9e972"
+          ]
+        },
+        {
+          "value": "course=유지|soil=표준|temp=냉수|rinse=5|spin=강|detergent=raw0|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "course=유지|soil=표준|temp=냉수|rinse=5|spin=강|detergent=raw0|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "d3214c347f36c06e692bcfabaa8217e3d5f7718c4d0563f8d8cc882a45fab983"
+          ]
+        },
+        {
+          "value": "Eco Boil|soil=안함|temp=미적용|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Eco Boil|soil=안함|temp=미적용|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "b13712b49c04159c50fe716119305e437074ec14342161b7a88675e7628dd502"
+          ]
+        },
+        {
+          "value": "Microplastic Care|soil=표준|temp=30도|rinse=4|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Microplastic Care|soil=표준|temp=30도|rinse=4|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "bad6a6304d6e0841ab007b69b75cee7c35199291245ed0014ce33c707c3d8eaa"
+          ]
+        },
+        {
+          "value": "Pet Care|soil=애벌|temp=60도|rinse=4|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Pet Care|soil=애벌|temp=60도|rinse=4|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "25643688039de603bbe3bbe7df21c5528db6cf4b14883bd32d3412ab1d97eea8"
+          ]
+        },
+        {
+          "value": "Rainy Day|soil=표준|temp=40도|rinse=2|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Rainy Day|soil=표준|temp=40도|rinse=2|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "850009f9eb0a0ac72d7e62768d7d1f47cde8c8a4f5b8beb1b2ddf6971df0afa0"
+          ]
+        },
+        {
+          "value": "Rinse Only|soil=안함|temp=미적용|rinse=2|spin=안함|detergent=raw0|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Rinse Only|soil=안함|temp=미적용|rinse=2|spin=안함|detergent=raw0|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "69678dadcc96a1901174065615ad41b82e89c8a2634be71e18acd9159aec45cd"
+          ]
+        },
+        {
+          "value": "Rinse/Spin|soil=안함|temp=미적용|rinse=1|spin=중|detergent=raw0|softener=보통|turbo=OFF|crease=ON|delay=0m",
+          "label": "Rinse/Spin|soil=안함|temp=미적용|rinse=1|spin=중|detergent=raw0|softener=보통|turbo=OFF|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "8ca86011a766f3f0ea7b861c0fae33f01bd3fdf1fb94a0132018a3437f938a7b"
+          ]
+        },
+        {
+          "value": "Shirt|soil=강력|temp=60도|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Shirt|soil=강력|temp=60도|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "7bdb51863ef2c3a24aa0bdc11720180ed86177916bcc0696f11d0c52fea4523c"
+          ]
+        },
+        {
+          "value": "Silent|soil=표준|temp=40도|rinse=4|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Silent|soil=표준|temp=40도|rinse=4|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "563711642087d74322dfc0159addc6767a32d54496dbe7810bf8545f168f60ad"
+          ]
+        },
+        {
+          "value": "Single Garment|soil=표준|temp=40도|rinse=1|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Single Garment|soil=표준|temp=40도|rinse=1|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "382b27950ac472a64ca2b4e664f4673217e1827196d01c26646e777feb39fabd"
+          ]
+        },
+        {
+          "value": "Single shirt|soil=표준|temp=40도|rinse=1|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Single shirt|soil=표준|temp=40도|rinse=1|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "574e1f01fdcb5bb49d5ee3eb16a32dbffef980a6118bdab03609a8def6d8c55c"
+          ]
+        },
+        {
+          "value": "Small Quick|soil=표준|temp=30도|rinse=1|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Small Quick|soil=표준|temp=30도|rinse=1|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "4bc2b4e31ef5ce80d301670fe3dc89b40ee16e1e0694045b63e7a4c9522313cb"
+          ]
+        },
+        {
+          "value": "Soak|soil=강력|temp=60도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Soak|soil=강력|temp=60도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "0e5502f062a9a508db975c85c4c98e3238acd5a1ebfeab517efa76ee7a87fee2"
+          ]
+        },
+        {
+          "value": "Soak|soil=불림|temp=60도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Soak|soil=불림|temp=60도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "4d7b4cf47820bdb0a3e85131c09a66fab90a01a7b855fe48990879f1ce5deec0"
+          ]
+        },
+        {
+          "value": "Spin only|soil=안함|temp=미적용|rinse=0|spin=중|detergent=raw0|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Spin only|soil=안함|temp=미적용|rinse=0|spin=중|detergent=raw0|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "a8c11db1304ba4354ce85fd4493348f878d0aeb63a8cdcb40d052d529f3a56b7"
+          ]
+        },
+        {
+          "value": "Sports Wear|soil=표준|temp=30도|rinse=3|spin=섬세|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Sports Wear|soil=표준|temp=30도|rinse=3|spin=섬세|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "0a4a313b48f3ac6131a441710db6daec9b5cea19fc71769698fcb80d630fde57"
+          ]
+        },
+        {
+          "value": "Standard|soil=강력|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=강력|temp=40도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "ee094df8da66b54ed70885b0c770c3c084068b305abb4ccc21c540b988c8dda2"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=30도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=표준|temp=30도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "a12f403779ea836c929226fcbe1da950b7be417705fd825628d4b5027d44c2c6"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=40도|rinse=2|spin=섬세|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=표준|temp=40도|rinse=2|spin=섬세|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "08736b7e66dbbe295da6b2e650c81df5f4e705ed2df3e4e9914f352df16ef3b3"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=40도|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=ON|delay=0m",
+          "label": "Standard|soil=표준|temp=40도|rinse=3|spin=강|detergent=보통|softener=보통|turbo=OFF|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "f7d4e9e2992d7c7d059915141277f9fa2252021741b699be5da8f566f826fc67"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=40도|rinse=5|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=표준|temp=40도|rinse=5|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "d19c8ef3e8d182e72346d8beea0964b9d83aaff42645f4ac332cc6255ba8dfd9"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=60도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=표준|temp=60도|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "2458480f55a232f988360408b06b491046ad91a016fbd3e32558c9b18b4ec94b"
+          ]
+        },
+        {
+          "value": "Standard|soil=표준|temp=냉수|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "Standard|soil=표준|temp=냉수|rinse=2|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "55a6b05bc6b48a88633ebb04f52931533853d238b0fd88b765690eb9ef5fc952"
+          ]
+        },
+        {
+          "value": "Sweat Stain|soil=강력|temp=40도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Sweat Stain|soil=강력|temp=40도|rinse=3|spin=중|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "f791855134d8233dbefc692c2d571dc1029e0c147d9c40c03537abc23955fbf2"
+          ]
+        },
+        {
+          "value": "Towels|soil=강력|temp=40도|rinse=3|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "label": "Towels|soil=강력|temp=40도|rinse=3|spin=건조맞춤|detergent=보통|softener=보통|turbo=ON|crease=ON|delay=0m",
+          "ordered_frame_sha256s": [
+            "d881c919bd46dc965d9f8ecca29f23e9d744277a17bb7c911d868292a00d0d60"
+          ]
+        },
+        {
+          "value": "Tub Sterilize|soil=표준|temp=60도|rinse=2|spin=중|detergent=raw0|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Tub Sterilize|soil=표준|temp=60도|rinse=2|spin=중|detergent=raw0|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "17a83cc7dd7897987c1d24950121ca82c9c3d0e5ac5efc9542be50cbda5530e2"
+          ]
+        },
+        {
+          "value": "Wash Only|soil=표준|temp=40도|rinse=0|spin=안함|detergent=보통|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Wash Only|soil=표준|temp=40도|rinse=0|spin=안함|detergent=보통|softener=raw0|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "fa66d4eeb8be9b065b7377178c3ad5f855b927cc29dfadbe7f6693ce4437a579"
+          ]
+        },
+        {
+          "value": "Wool|soil=표준|temp=냉수|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "label": "Wool|soil=표준|temp=냉수|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
+          "ordered_frame_sha256s": [
+            "754520422a38460b926b1c8df756bdeffe7355250f95dc7177596de700bb4c57"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.fresh_care_enabled",
+      "entity_key": "local_washer_fresh_care_enabled",
+      "label_ko": "세탁 종료 후 케어",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "2fd77b3443d7262645fff81cbfab8ddf36d7fd25321c401dd5206fe5f78a124c"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "켜기",
+          "ordered_frame_sha256s": [
+            "fe51bc35cfb7c35a20d1d3d48889c2f493ebdb039c46f46eba3b0688cc5d14e2"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.operation.pause",
+      "entity_key": "styler_stop",
+      "label_ko": "스타일러 일시정지",
+      "domain": "button",
+      "existing_owner": true,
+      "values": [
+        {
+          "value": "true",
+          "label": "일시정지",
+          "ordered_frame_sha256s": [
+            "7fe6c81325c99956d3968d30e55d36e9c3ced69240b2a186473d2661454f693a"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.custom_recipe_1.transaction",
+      "entity_key": "local_water_custom_recipe_1_transaction",
+      "label_ko": "맞춤 레시피 1",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "recorded-preset",
+          "label": "기록된 레시피 적용",
+          "ordered_frame_sha256s": [
+            "39bef0250c0db1ef9558e15779a98b143618a81128bc91eac38997c746256cb6"
+          ]
+        },
+        {
+          "value": "disabled",
+          "label": "해제",
+          "ordered_frame_sha256s": [
+            "43f34a4d48119fa5aa00009a21511729a7d56eccbc1987a02d05e26e0b36fa21"
+          ]
+        }
+      ]
+    }
+  ]
+}

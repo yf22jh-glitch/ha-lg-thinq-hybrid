@@ -715,6 +715,16 @@ async def _setup_local_shadows(
             )
         else:
             data.local_control_binding_eligibility = eligibility
+            from .local_control_confirmed_features import augment_confirmed_features
+            try:
+                extended_contract, extended_eligibility = await hass.async_add_executor_job(
+                    augment_confirmed_features, control_entity_contract, eligibility, binding_models
+                )
+            except (OSError, ValueError, KeyError, TypeError):
+                _LOGGER.error('Confirmed Local feature catalogue unavailable; existing controls unchanged')
+            else:
+                data.local_control_entity_contract = extended_contract
+                data.local_control_binding_eligibility = extended_eligibility
 
     try:
         data.local_control_composite_domain_contract = (

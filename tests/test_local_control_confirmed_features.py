@@ -1,0 +1,39 @@
+"""Additive known commands reuse owners and preserve old authority/scopes."""
+import unittest
+from custom_components.my_lg.local_control_contract import (
+    load_local_control_entity_contract, resolve_local_control_binding_eligibility,
+    local_control_value_authorized, eligible_factory_descriptors,
+)
+from custom_components.my_lg.local_control_confirmed_features import augment_confirmed_features, load_confirmed_features
+
+
+class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_exact_catalogue_and_parent_preservation(self):
+        base = load_local_control_entity_contract()
+        models = {'test_washtower_binding': 'WTL_KPK_BDH_KR_01', 'test_styler_binding': 'ST_R_ETH01Y_',
+                  'test_water_binding': '1WPD4CMIDR__3', 'test_ac_binding_01': 'CST_170004_WW'}
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        extended, scope = augment_confirmed_features(base, prior, models)
+        self.assertEqual(extended.root_sha256, base.root_sha256)
+        self.assertEqual(extended.descriptors_by_model['CST_170004_WW'], base.descriptors_by_model['CST_170004_WW'])
+        self.assertEqual(scope['test_ac_binding_01'], prior['test_ac_binding_01'])
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 50)
+        for feature in load_confirmed_features():
+            binding = next(b for b, m in models.items() if m == feature['model_id'])
+            for value in feature['values']:
+                self.assertTrue(local_control_value_authorized(extended, scope, binding_id=binding,
+                    model_id=feature['model_id'], capability_id=feature['capability_id'], local_request_value=value['value']))
+            self.assertFalse(local_control_value_authorized(extended, scope, binding_id=binding,
+                model_id=feature['model_id'], capability_id=feature['capability_id'], local_request_value='not-an-observed-option'))
+        factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
+                     if d not in base.descriptors]
+        self.assertEqual({d.home_assistant_entity_key for d in factories},
+                         {'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction'})
+        self.assertEqual(len(factories), 3)
+        self.assertNotIn('washer.operation.start_or_resume', prior['test_washtower_binding'].values_by_capability)
+
+    def test_missing_scope_cannot_create_or_authorize_any_new_owner(self):
+        base = load_local_control_entity_contract()
+        extended, scope = augment_confirmed_features(base, {}, {'test_washtower_binding': 'WTL_KPK_BDH_KR_01'})
+        self.assertEqual(scope, {})
+        self.assertEqual(extended.descriptors, base.descriptors)
