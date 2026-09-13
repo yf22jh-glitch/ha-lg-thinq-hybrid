@@ -41,6 +41,7 @@ from .local_command import (
 from .local_control_composite_domain import LocalControlCompositeInputDomain
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
+from .local_control_native import async_native_local_control
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_owner import (
     local_auto_comfort_owner_configured,
@@ -85,6 +86,8 @@ class MyLgSelectDescription(SelectEntityDescription):
     local_semantic: str | None = None
     # Existing HA option -> reviewed local semantic value.
     local_value_map: dict[str, str] = dc_field(default_factory=dict)
+    local_scalar_semantic: str | None = None
+    local_scalar_values: dict[str, str] = dc_field(default_factory=dict)
 
 
 SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
@@ -111,11 +114,15 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="job_mode", translation_key="job_mode",
             group="airPurifierJobMode", field="currentJobMode",
             choices=["CLEAN", "SILENT", "HUMIDITY"],
+            local_scalar_semantic="operation.mode",
+            local_scalar_values={"CLEAN": "clean", "SILENT": "silent", "HUMIDITY": "humidify"},
         ),
         MyLgSelectDescription(
             key="wind_strength_detail", translation_key="wind_strength_detail",
             group="airFlow", field="windStrengthDetail",
             choices=["OFF", "LOW", "MID", "HIGH", "AUTO"],
+            local_scalar_semantic="fan.mode",
+            local_scalar_values={"LOW": "low", "MID": "mid", "HIGH": "high", "AUTO": "auto"},
             entity_registry_enabled_default=False,
         ),
     ),
@@ -124,6 +131,8 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="water_type", translation_key="water_type",
             group="waterSetting", field="waterType",
             choices=["RECENT", "NORMAL", "COLD"],
+            local_scalar_semantic="water.default_selection",
+            local_scalar_values={"RECENT": "RECENT_WATER", "NORMAL": "NORMAL_WATER", "COLD": "COLD_WATER"},
         ),
         MyLgSelectDescription(
             key="default_water", translation_key="default_water",
@@ -136,6 +145,8 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="wind_strength", translation_key="wind_strength",
             group="airFlow", field="windStrength",
             choices=["LOW", "MID", "HIGH", "POWER"],
+            local_scalar_semantic="fan.mode",
+            local_scalar_values={"LOW": "low", "HIGH": "high", "POWER": "turbo"},
             entity_registry_enabled_default=False,
         ),
         MyLgSelectDescription(
@@ -148,6 +159,8 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="hygiene_dry", translation_key="hygiene_dry",
             group="operation", field="hygieneDryMode",
             choices=["OFF", "SILENT", "NORMAL", "FAST"],
+            local_scalar_semantic="hygienic_dry.mode",
+            local_scalar_values={"OFF": "off", "SILENT": "quiet", "NORMAL": "gentle", "FAST": "quick"},
         ),
     ),
     DEVICE_TYPE_DEHUMIDIFIER: (
@@ -156,6 +169,8 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             key="wind_strength", translation_key="wind_strength",
             group="airFlow", field="windStrengthLevel",
             choices=["LOW", "HIGH"],
+            local_scalar_semantic="fan.mode",
+            local_scalar_values={"LOW": "low", "HIGH": "high"},
         ),
     ),
 }
@@ -590,6 +605,9 @@ class MyLgSelect(_LocalReadSelectMixin, MyLgEntity, SelectEntity):
                 )
             # Confirmed and post-wire-unverifiable results both reconcile from
             # the Local readback. Never write a PAT optimistic shadow.
+            return
+        if await async_native_local_control(self._local_control, self.coordinator.device_id,
+                                            d.local_scalar_semantic, d.local_scalar_values.get(option)):
             return
         await self.coordinator.async_control(payload)
         self.coordinator.handle_mqtt_status(payload)

@@ -12,6 +12,8 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_AIR_PURIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
+from .local_control_native import async_native_local_control
+from .local_control_router import LocalControlRouter
 
 POWER_ON = "POWER_ON"
 POWER_OFF = "POWER_OFF"
@@ -24,7 +26,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     entities = [
-        MyLgAirPurifierFan(coordinator)
+        MyLgAirPurifierFan(coordinator, entry.runtime_data.local_control)
         for coordinator in entry.runtime_data.coordinators.values()
         if coordinator.device_type == DEVICE_TYPE_AIR_PURIFIER
     ]
@@ -42,8 +44,9 @@ class MyLgAirPurifierFan(MyLgEntity, FanEntity):
         | FanEntityFeature.TURN_OFF
     )
 
-    def __init__(self, coordinator: PatDeviceCoordinator) -> None:
+    def __init__(self, coordinator: PatDeviceCoordinator, local_control: LocalControlRouter | None = None) -> None:
         super().__init__(coordinator, "fan")
+        self._local_control = local_control
 
     @property
     def is_on(self) -> bool:
@@ -53,7 +56,9 @@ class MyLgAirPurifierFan(MyLgEntity, FanEntity):
     def preset_mode(self) -> str | None:
         return self._get("airFlow", "windStrength")
 
-    async def _control(self, payload: dict[str, Any]) -> None:
+    async def _control(self, payload: dict[str, Any], capability: str, value: str) -> None:
+        if await async_native_local_control(self._local_control, self.coordinator.device_id, capability, value):
+            return
         await self.coordinator.async_control(payload)
         self.coordinator.handle_mqtt_status(payload)  # optimistic
 
@@ -63,12 +68,14 @@ class MyLgAirPurifierFan(MyLgEntity, FanEntity):
         preset_mode: str | None = None,
         **kwargs: Any,
     ) -> None:
-        await self._control({"operation": {"airPurifierOperationMode": POWER_ON}})
+        await self._control({"operation": {"airPurifierOperationMode": POWER_ON}}, "operation.power_requested", "true")
         if preset_mode:
             await self.async_set_preset_mode(preset_mode)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._control({"operation": {"airPurifierOperationMode": POWER_OFF}})
+        await self._control({"operation": {"airPurifierOperationMode": POWER_OFF}}, "operation.power_requested", "false")
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        await self._control({"airFlow": {"windStrength": preset_mode}})
+        if preset_mode not in WIND_STRENGTHS:
+            raise ValueError('Unsupported purifier fan mode')
+        await self._control({"airFlow": {"windStrength": preset_mode}}, "fan.mode", preset_mode.lower())

@@ -27,6 +27,7 @@ from .entity import MyLgEntity, MyLgWideqEntity
 from .local_command import LocalCommandFailed, LocalCommandPending
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
+from .local_control_native import async_native_local_control
 from .local_read_owner import (
     resolve_tlv_read_owned_field,
     tlv_read_owner_configured,
@@ -157,11 +158,13 @@ SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
             key="auto_mode", translation_key="auto_mode",
             group="operation", field="autoMode",
             on_value="AUTO_ON", off_value="AUTO_OFF",
+            local_control_semantic="auto_operation.enabled",
         ),
         MyLgSwitchDescription(
             key="sleep_mode", translation_key="sleep_mode",
             group="operation", field="sleepMode",
             on_value="SLEEP_ON", off_value="SLEEP_OFF",
+            local_control_semantic="sleep_mode.enabled",
         ),
         MyLgSwitchDescription(
             key="warm_mode", translation_key="warm_mode",
@@ -173,6 +176,7 @@ SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
             key="mood_lamp", translation_key="mood_lamp",
             group="moodLamp", field="moodLampState",
             on_value="ON", off_value="OFF",
+            local_control_semantic="mood_light.enabled",
         ),
     ),
 }
@@ -480,6 +484,11 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
                 raise HomeAssistantError(
                     f"{self.coordinator.alias}: 이 값은 검증된 Local 명령 범위에 없어서 전송하지 않았어요."
                 )
+            return
+        if local_write_allowed and await async_native_local_control(
+            self._local_control, self.coordinator.device_id, d.local_control_semantic,
+            "true" if value == d.on_value else "false",
+        ):
             return
         await self.coordinator.async_control(payload)
         if d.optimistic:
