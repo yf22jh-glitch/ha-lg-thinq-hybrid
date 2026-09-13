@@ -1,7 +1,24 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "e907d55158a154c4b92c77ac63e3dc6b5b7cf9073e9694a8fe2d3b5bb0a4abe5",
+  "catalogue_sha256": "ddddfdc1f86613abb5d2ddbfb59a7137a722cdcb3d2c12960122aabacadc4602",
   "features": [
+    {
+      "model_id": "HWWA9X3C_F2U",
+      "capability_id": "vacuum.remote_dust_emptying",
+      "entity_key": "local_vacuum_dust_emptying",
+      "label_ko": "먼지통 비우기",
+      "domain": "button",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "true",
+          "label": "press",
+          "ordered_frame_sha256s": [
+            "e93329f94b8a1a9f5c38b763f972ffaf6a4ab827845da47c067a4e98a2c460e8"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "dryer.course_program",

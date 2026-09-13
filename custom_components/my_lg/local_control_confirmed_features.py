@@ -15,7 +15,7 @@ from .local_control_contract import (
     LocalControlValueMapping,
 )
 
-CATALOGUE_SHA256 = 'e907d55158a154c4b92c77ac63e3dc6b5b7cf9073e9694a8fe2d3b5bb0a4abe5'
+CATALOGUE_SHA256 = 'ddddfdc1f86613abb5d2ddbfb59a7137a722cdcb3d2c12960122aabacadc4602'
 
 
 def load_confirmed_features():
