@@ -218,7 +218,7 @@ class MyLgLocalContractSwitch(_LocalContractEntity, SwitchEntity):
         await self._async_send(self._off_value.local_request_value)
 
 
-class MyLgVacuumAutoEmptyingSwitch(MyLgLocalContractSwitch):
+class MyLgBridgeCachedSwitch(MyLgLocalContractSwitch):
     """Local-only setting and display; poll only the bridge's in-memory cache.
 
     Use HA's normal switch polling lifecycle, not a custom timer or LG poll.
@@ -238,7 +238,7 @@ class MyLgVacuumAutoEmptyingSwitch(MyLgLocalContractSwitch):
 
     async def async_update(self) -> None:
         try:
-            value = await self._router.async_vacuum_auto_emptying_state(self.coordinator.device_id)
+            value = await self._async_reported_value()
             self._reported_enabled = value if type(value) is bool else None
         except (TimeoutError, OSError, ValueError, aiohttp.ClientError):
             self._reported_enabled = None
@@ -252,6 +252,16 @@ class MyLgVacuumAutoEmptyingSwitch(MyLgLocalContractSwitch):
         await super()._async_send(local_request_value)
         await self.async_update()
         self.async_write_ha_state()
+
+
+class MyLgVacuumAutoEmptyingSwitch(MyLgBridgeCachedSwitch):
+    async def _async_reported_value(self) -> bool | None:
+        return await self._router.async_vacuum_auto_emptying_state(self.coordinator.device_id)
+
+
+class MyLgAirExtraSwitch(MyLgBridgeCachedSwitch):
+    async def _async_reported_value(self) -> bool | None:
+        return await self._router.async_air_extra_state(self.coordinator.device_id, self._descriptor.capability_id)
 
 
 class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
@@ -405,6 +415,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 # per surface instead of creating duplicate registry owners.
                 continue
             seen_surfaces.add(surface)
+            if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id in ('clean_dry.enabled', 'rapid_operation.enabled') and domain == 'switch':
+                entities.append(MyLgAirExtraSwitch(coordinator, descriptor, router, primary, read))
+                continue
             if descriptor.capability_id == "vacuum.auto_dust_emptying_enabled" and domain == "switch":
                 entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read))
                 continue

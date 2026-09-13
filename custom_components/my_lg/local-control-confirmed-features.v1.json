@@ -1,7 +1,55 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "9683a0b6763ba9fff0b026a75eff021ff8242b6896743b1a88df4dc1a0288f90",
+  "catalogue_sha256": "397b002a469a0e01983af0b7781e77a51010a0ef5f82051ca0f042aa4c51a72b",
   "features": [
+    {
+      "model_id": "AIR_910604_WW",
+      "capability_id": "clean_dry.enabled",
+      "entity_key": "local_air_clean_dry",
+      "label_ko": "위생 건조",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "8a102d9b65d11bbaf5ba6b544ef80470ffc161c5e112048694a7aac068a21ce0"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "90290e34c80e65790a47a277497912c0102d96c7c461d5ab6c243c1c8b45b8c3"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_910604_WW",
+      "capability_id": "rapid_operation.enabled",
+      "entity_key": "local_air_rapid_operation",
+      "label_ko": "쾌속 운전",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "152520748afc90ebc4e1866a82d5559d7e361b93eb635e4c3c1a2d59611bfcac"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "8ce6b9b15303e55537577519b59b551571ddfc0cc6e372ec488d09203198bddd"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "HWWA9X3C_F2U",
       "capability_id": "vacuum.auto_dust_emptying_enabled",

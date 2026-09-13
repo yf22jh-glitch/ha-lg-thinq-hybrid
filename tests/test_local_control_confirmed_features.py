@@ -12,12 +12,13 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         base = load_local_control_entity_contract()
         models = {'test_washtower_binding': 'WTL_KPK_BDH_KR_01', 'test_styler_binding': 'ST_R_ETH01Y_',
                   'test_water_binding': '1WPD4CMIDR__3', 'test_ac_binding_01': 'CST_170004_WW', 'test_vacuum_binding': 'HWWA9X3C_F2U'}
+        models['test_air_binding'] = 'AIR_910604_WW'
         prior = resolve_local_control_binding_eligibility({}, base, models)
         extended, scope = augment_confirmed_features(base, prior, models)
         self.assertEqual(extended.root_sha256, base.root_sha256)
         self.assertEqual(extended.descriptors_by_model['CST_170004_WW'], base.descriptors_by_model['CST_170004_WW'])
         self.assertEqual(scope['test_ac_binding_01'], prior['test_ac_binding_01'])
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 119)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 123)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -28,8 +29,8 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
                      if d not in base.descriptors]
         self.assertEqual({d.home_assistant_entity_key for d in factories},
-                         {'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying'})
-        self.assertEqual(len(factories), 7)
+                         {'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation'})
+        self.assertEqual(len(factories), 9)
         vacuum = next(d for d in factories if d.home_assistant_entity_key == 'local_vacuum_dust_emptying')
         self.assertEqual(vacuum.entity_domain, 'button')
         self.assertTrue(vacuum.one_shot)

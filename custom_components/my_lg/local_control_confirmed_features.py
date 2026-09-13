@@ -15,7 +15,7 @@ from .local_control_contract import (
     LocalControlValueMapping,
 )
 
-CATALOGUE_SHA256 = '9683a0b6763ba9fff0b026a75eff021ff8242b6896743b1a88df4dc1a0288f90'
+CATALOGUE_SHA256 = '397b002a469a0e01983af0b7781e77a51010a0ef5f82051ca0f042aa4c51a72b'
 
 
 def load_confirmed_features():
@@ -45,7 +45,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         if any(d.capability_id == capability for d in by_model.get(model, ())):
             raise ValueError('Confirmed feature would replace an existing control')
         values = feature['values']
-        boolean_values = capability in ('washer.fresh_care_enabled', 'vacuum.auto_dust_emptying_enabled')
+        boolean_values = feature['domain'] == 'switch' or capability == 'washer.fresh_care_enabled'
         descriptor = LocalControlEntityDescriptor(
             key=model + '|' + capability, model_id=model, capability_id=capability,
             home_assistant_entity_key=feature['entity_key'], label_ko=feature['label_ko'],
