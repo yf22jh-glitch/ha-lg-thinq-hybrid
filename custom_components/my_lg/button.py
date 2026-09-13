@@ -44,16 +44,21 @@ class MyLgButtonDescription(ButtonEntityDescription):
 
     payload: dict[str, Any]
     local_capability: str | None = None
+    local_value: str = "true"
 
 
 def _op(
-    key: str, payload: dict[str, Any], local_capability: str | None = None
+    key: str,
+    payload: dict[str, Any],
+    local_capability: str | None = None,
+    local_value: str = "true",
 ) -> MyLgButtonDescription:
     return MyLgButtonDescription(
         key=key,
         translation_key=key,
         payload=payload,
         local_capability=local_capability,
+        local_value=local_value,
     )
 
 
@@ -66,12 +71,14 @@ def _dryer(mode: str) -> dict[str, Any]:
 
 
 WASHTOWER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
-    _op("washer_start", _washer("START")),
+    # These reuse the existing owners. Routing does not promote a capability:
+    # the router still requires the exact per-binding producer authority.
+    _op("washer_start", _washer("START"), "washer.operation.start_or_resume"),
     _op("washer_stop", _washer("STOP"), "washer.operation.pause"),
-    _op("washer_power_off", _washer("POWER_OFF")),
-    _op("dryer_start", _dryer("START")),
+    _op("washer_power_off", _washer("POWER_OFF"), "washer.power_requested", "false"),
+    _op("dryer_start", _dryer("START"), "dryer.operation.start_or_resume"),
     _op("dryer_stop", _dryer("STOP"), "dryer.operation.pause"),
-    _op("dryer_power_off", _dryer("POWER_OFF")),
+    _op("dryer_power_off", _dryer("POWER_OFF"), "dryer.power_requested", "false"),
 )
 
 STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
@@ -81,11 +88,17 @@ STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
         {"operation": {"stylerOperationMode": "STOP"}},
         "styler.operation.pause",
     ),
-    _op("styler_power_off", {"operation": {"stylerOperationMode": "POWER_OFF"}}),
+    _op(
+        "styler_power_off",
+        {"operation": {"stylerOperationMode": "POWER_OFF"}},
+        "operation.power_requested",
+        "false",
+    ),
     MyLgButtonDescription(
         key="styler_power_on",
         translation_key="styler_power_on",
         payload={"operation": {"stylerOperationMode": "POWER_ON"}},
+        local_capability="operation.power_requested",
         entity_category=EntityCategory.CONFIG,
         entity_registry_enabled_default=False,
     ),
@@ -205,7 +218,9 @@ class MyLgButton(MyLgEntity, ButtonEntity):
         if capability is not None and self._local_control is not None:
             try:
                 outcome = await self._local_control.async_execute(
-                    self.coordinator.device_id, capability
+                    self.coordinator.device_id,
+                    capability,
+                    self.entity_description.local_value,
                 )
             except LocalCommandFailed as err:
                 # The frame may already be on the wire. Retrying the same press through LG would
