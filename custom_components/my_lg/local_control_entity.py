@@ -230,6 +230,9 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._descriptor.capability_id == "styler.operation.start_or_resume":
+            desired = self._router.selected_styler_course(self.coordinator.device_id)
+            return next((option for option, mapping in self._mapping_by_option.items() if mapping.local_request_value == desired), None)
         value = self._state_value()
         if value is None:
             return None
@@ -247,6 +250,12 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
             raise HomeAssistantError(
                 "검증된 Rethink Local 선택지에 없는 값은 보낼 수 없어요."
             )
+        if self._descriptor.capability_id == "styler.operation.start_or_resume":
+            # A course bundle can start the appliance. Selection is UI-only;
+            # the existing Start button dispatches the complete producer transaction.
+            self._router.select_styler_course(self.coordinator.device_id, mapping.local_request_value)
+            self.async_write_ha_state()
+            return
         await self._async_send(mapping.local_request_value)
 
 

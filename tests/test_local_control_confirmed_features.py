@@ -17,7 +17,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         self.assertEqual(extended.root_sha256, base.root_sha256)
         self.assertEqual(extended.descriptors_by_model['CST_170004_WW'], base.descriptors_by_model['CST_170004_WW'])
         self.assertEqual(scope['test_ac_binding_01'], prior['test_ac_binding_01'])
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 50)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 116)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -28,8 +28,8 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
                      if d not in base.descriptors]
         self.assertEqual({d.home_assistant_entity_key for d in factories},
-                         {'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction'})
-        self.assertEqual(len(factories), 3)
+                         {'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start'})
+        self.assertEqual(len(factories), 5)
         self.assertNotIn('washer.operation.start_or_resume', prior['test_washtower_binding'].values_by_capability)
 
     def test_missing_scope_cannot_create_or_authorize_any_new_owner(self):

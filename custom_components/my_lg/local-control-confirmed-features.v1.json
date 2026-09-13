@@ -1,7 +1,531 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "ed6b0fd85617e8f5f9583b9bc2d54908348fbf6be116371585c33acf2ee43cc7",
+  "catalogue_sha256": "e907d55158a154c4b92c77ac63e3dc6b5b7cf9073e9694a8fe2d3b5bb0a4abe5",
   "features": [
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.course_program",
+      "entity_key": "local_dryer_course_program",
+      "label_ko": "건조 코스·옵션",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "AI Dry|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "AI Dry|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "3aa9e02e7b162aa22a36417794f64d063964f515974cada290f3283bdf4205e5"
+          ]
+        },
+        {
+          "value": "Baby Wear|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Baby Wear|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "cdc1aeafdc261acb41f4bb274a5e18b1aac73d8c927063dc71365a160786aea4"
+          ]
+        },
+        {
+          "value": "Bedding shake|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Bedding shake|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "86ae36eaafa09f11858f1f23644e7f3436f77310dd89774d3626b118264bdb9f"
+          ]
+        },
+        {
+          "value": "Bedding|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Bedding|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "3df4f0c82c2c570af874736735f0edb3fba419c4d890ad7ebca65e4135be67b0"
+          ]
+        },
+        {
+          "value": "Cool Air|1e=0|1f=0|34=0|3f=0|0f=0|70=30|delay=0m",
+          "label": "Cool Air|1e=0|1f=0|34=0|3f=0|0f=0|70=30|delay=0m",
+          "ordered_frame_sha256s": [
+            "a05301b8a4559fd5a93a75b88f5d747212a79ff06f350d80e75229f104e709c3"
+          ]
+        },
+        {
+          "value": "course=유지|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "course=유지|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "c0fd092c225a473ce32d2d3342876be188603e24d24c909c40f4ed1c4775b321"
+          ]
+        },
+        {
+          "value": "Easy Iron|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Easy Iron|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "7299019a87454eafabcf23a530b0ea07b3a4d95787b1366154650482fde75aa3"
+          ]
+        },
+        {
+          "value": "Outdoor Refresh|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Outdoor Refresh|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "9f557a8ef718ffc337d30cb2d4ccb7d5d54579e557183b0c3e7050407b2015cb"
+          ]
+        },
+        {
+          "value": "Padding Refresh|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Padding Refresh|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "09e2dad466230cda7d2dea7b92a9f033892e87df05f0d832cc6bb13da09917ba"
+          ]
+        },
+        {
+          "value": "Pet Care|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "label": "Pet Care|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "dcc5c2b4b0b17a63ba93dbf76828331f5e077edb5febc2abb8c2c4c6d2d7eb47"
+          ]
+        },
+        {
+          "value": "Power|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Power|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "51bf21a4ecaee5ea715b65a333d0deb930053626b92a8a506d27683553aae35c"
+          ]
+        },
+        {
+          "value": "Rainy Day|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Rainy Day|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "78a83ec47b7bbaefab9f106366d4071a95aeb407cdb45e15be8a4d6c5ade8667"
+          ]
+        },
+        {
+          "value": "Shirt|1e=3|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Shirt|1e=3|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "48e3536cecaf5a614f445ec82a2bb680928a2d53496653efdc680ef1929a13ef"
+          ]
+        },
+        {
+          "value": "Shrink Care|1e=2|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Shrink Care|1e=2|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "4fa8e4fe96c991668165d1e8e59201a910ef14329546fc70d5f484d6d7672a98"
+          ]
+        },
+        {
+          "value": "Silent|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Silent|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "eb6fa83b90536e37e8e5f23eb701823319d8a3394dd09f3705296fa18a5c4168"
+          ]
+        },
+        {
+          "value": "Small Quick|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Small Quick|1e=0|1f=3|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "6f7d4c80a713f5ae0773a296a407b30c0060d1ef781121eb0fbdde6c1a6237ee"
+          ]
+        },
+        {
+          "value": "Sports Wear|1e=0|1f=1|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Sports Wear|1e=0|1f=1|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "7c7a9687d5359fc8a59df06d4f95c38b65f19f9b032666be6c7d2d0095cfbbab"
+          ]
+        },
+        {
+          "value": "Standard|1e=3|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Standard|1e=3|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "cf8f439bfd6e95ef4e6685627f1a5216140f57773a26c785b0cc2b5673b4df9d"
+          ]
+        },
+        {
+          "value": "Steam Refresh|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "label": "Steam Refresh|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "e456c58b6849c8ee79ee3c6082055e84d2a3545c5ab72f8e39e3c209c62c3767"
+          ]
+        },
+        {
+          "value": "Steam Sterilize|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "label": "Steam Sterilize|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "910640d8dcb33bb6e59b965d57f661d7c9a3582422177914f1ab78ff917cbc48"
+          ]
+        },
+        {
+          "value": "Timed Dry|1e=0|1f=2|34=0|3f=0|0f=0|70=30|delay=0m",
+          "label": "Timed Dry|1e=0|1f=2|34=0|3f=0|0f=0|70=30|delay=0m",
+          "ordered_frame_sha256s": [
+            "d5580c48591a1b9b05936af0d1e6c4097a08575559875fe2aea86ea0dd7182cc"
+          ]
+        },
+        {
+          "value": "Towels|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Towels|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "55b0738e55a40b7e55246fc30d27c4b76879c526ece34f34bae2166ee1a684b6"
+          ]
+        },
+        {
+          "value": "Tub Sterilize|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "label": "Tub Sterilize|1e=0|1f=3|34=0|3f=1|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "816d3075eb4df16fba691986221a7486c6a49c2961f7b48e3d4a006119dbaa23"
+          ]
+        },
+        {
+          "value": "Wool/Delicate|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "label": "Wool/Delicate|1e=0|1f=2|34=0|3f=0|0f=0|70=0|delay=0m",
+          "ordered_frame_sha256s": [
+            "09f7d36effa6a09382654e2d7dbf5e2e272dc0c130644efbda27a8bea17a5dec"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.operation.start_or_resume",
+      "entity_key": "local_styler_course_start",
+      "label_ko": "실행할 코스 (선택 후 시작 버튼)",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "DRY_AI_14|delay=0m",
+          "label": "DRY_AI_14|delay=0m",
+          "ordered_frame_sha256s": [
+            "60d805ced878c0e9f0383297ef5adece16c24876610aa2288c8193c58ba838ce",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_DELICATE_22|delay=0m",
+          "label": "DRY_DELICATE_22|delay=0m",
+          "ordered_frame_sha256s": [
+            "ca68918827f49cc03f31643d0f78465fa0d4a1cbba6426531fb354038dc67635",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_PADDING_19|delay=0m",
+          "label": "DRY_PADDING_19|delay=0m",
+          "ordered_frame_sha256s": [
+            "50a7ea630383041e8e7d4b46af651319645dbf8c43b96784951bb7535d70cc7d",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_RAINY_SEASON_38|delay=0m",
+          "label": "DRY_RAINY_SEASON_38|delay=0m",
+          "ordered_frame_sha256s": [
+            "81c89c07e0485d56afb6b56a93bd1cb367ccb0c8fcb952fa8c23c21e7b748fff",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_SNOW_RAIN_27|delay=0m",
+          "label": "DRY_SNOW_RAIN_27|delay=0m",
+          "ordered_frame_sha256s": [
+            "21f45edda556a89aafd216a0ab123c9bacf82f85fc4f5eb788d66af41c926bb4",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_STEAM_13|delay=0m",
+          "label": "DRY_STEAM_13|delay=0m",
+          "ordered_frame_sha256s": [
+            "cea023e88f75f6298ec7946303f43aac228546ab301f6b1f2eb9c4a4d28714c6",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_SWIMSUIT_30|delay=0m",
+          "label": "DRY_SWIMSUIT_30|delay=0m",
+          "ordered_frame_sha256s": [
+            "e5767b53c7b6dbb01d8c8588c0109dd8c42ffa07f09aad99ad0cd0757b69ce9b",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_WARM_BLANKET_28|delay=0m",
+          "label": "DRY_WARM_BLANKET_28|delay=0m",
+          "ordered_frame_sha256s": [
+            "e7c8dd99344f80280c10b68d745fc6fe82825a7ac2301cc8dfd6b2706e6710b6",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_WARM_COAT_34|delay=0m",
+          "label": "DRY_WARM_COAT_34|delay=0m",
+          "ordered_frame_sha256s": [
+            "3dcf7bab35da20a4292ce1e5236c6ff143f05b2fd52d18e8d061ce20f98da610",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_WOOL_36|delay=0m",
+          "label": "DRY_WOOL_36|delay=0m",
+          "ordered_frame_sha256s": [
+            "be1c07de0bc9569b3c61b278a7322d6a1f57326e79133ddc560e658d587ebed3",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_YOGA_21|delay=0m",
+          "label": "DRY_YOGA_21|delay=0m",
+          "ordered_frame_sha256s": [
+            "1b9cb33d73fc8688825865422b94b0c22016f0f3c1787492c02bc220742705c5",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_BABY_WEAR_31|delay=0m",
+          "label": "SANITARY_BABY_WEAR_31|delay=0m",
+          "ordered_frame_sha256s": [
+            "7cdd56094e51143f94d9ce32656a06e41409a1c5bde217c12099808cd0101315",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_BEDDING_17|delay=0m",
+          "label": "SANITARY_BEDDING_17|delay=0m",
+          "ordered_frame_sha256s": [
+            "45702798319db1ae8c97514849552b84ec87bc9195ef7375c54e793234b6dea1",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_DOLL_37|delay=0m",
+          "label": "SANITARY_DOLL_37|delay=0m",
+          "ordered_frame_sha256s": [
+            "b13a5b0f40897b9e8835792ea4c018060e5cc0c499c8d1df7a4981ad1f6692a8",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_FINEDUST_9|delay=0m",
+          "label": "SANITARY_FINEDUST_9|delay=0m",
+          "ordered_frame_sha256s": [
+            "cac1482f1554e53b41664374be3d208de4c461ce22406fb63b770e1d6d679fec",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_STANDARD_10|delay=0m",
+          "label": "SANITARY_STANDARD_10|delay=0m",
+          "ordered_frame_sha256s": [
+            "0159a0d33aaf79e16d0015f8bb391102657b9bf209bdd398758c081acb162249",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_SUIT_SCHOOL_39|delay=0m",
+          "label": "SANITARY_SUIT_SCHOOL_39|delay=0m",
+          "ordered_frame_sha256s": [
+            "72840ba48a301b596e1fdf9a2bfdf384802ea324f725669d3d36b54ba4c5f4de",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "SANITARY_VIRUS_11|delay=0m",
+          "label": "SANITARY_VIRUS_11|delay=0m",
+          "ordered_frame_sha256s": [
+            "232ec33332974044f9de8f415b6afc50b0e91ae12aeb670476a9b481470c8b61",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_AI_2|delay=0m",
+          "label": "STYLING_AI_2|delay=0m",
+          "ordered_frame_sha256s": [
+            "17141dfbc7b2410dc822544abfd6355a9ee89b45ac6327c04e0bc3d38e678cb7",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_CASHMERE_8|delay=0m",
+          "label": "STYLING_CASHMERE_8|delay=0m",
+          "ordered_frame_sha256s": [
+            "153125da5508379e807e884ee6411ec735ceb0e0ee84e2d68c15afc29b54dfda",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_FUNTIONAL_26|delay=0m",
+          "label": "STYLING_FUNTIONAL_26|delay=0m",
+          "ordered_frame_sha256s": [
+            "94d6f1f5b6a26726aa044824d1c7d114b12714602544412b6866dfb8798d872c",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_FUR_18|delay=0m",
+          "label": "STYLING_FUR_18|delay=0m",
+          "ordered_frame_sha256s": [
+            "5f36611a6078ef36f5efe190b56439a70bbfcf5fdcad198f387f7f35bcf3b36d",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_JEANS_42|delay=0m",
+          "label": "STYLING_JEANS_42|delay=0m",
+          "ordered_frame_sha256s": [
+            "8df96a746ec04e0716233a2344f627c412c5092abd2ec68b78344a571df31b00",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_KNIT_CARDIGAN_43|delay=0m",
+          "label": "STYLING_KNIT_CARDIGAN_43|delay=0m",
+          "ordered_frame_sha256s": [
+            "ad647c0277b474ca4be384e8ee5b4f6d4095970942a448db177fc7405f7184c5",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_KNIT_CARDIGAN_43|delay=180m",
+          "label": "STYLING_KNIT_CARDIGAN_43|delay=180m",
+          "ordered_frame_sha256s": [
+            "fd50c7a8e1f12c1b5b8ab6abaf192dc32d57a015c0f502db76647a57b1f430a9",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_NIGHTDRY_24|delay=0m",
+          "label": "STYLING_NIGHTDRY_24|delay=0m",
+          "ordered_frame_sha256s": [
+            "ab564dda81276fb84d4401a1684e5f2e1defbb5974b8e101969ac63a8838fb5a",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_PADDING_20|delay=0m",
+          "label": "STYLING_PADDING_20|delay=0m",
+          "ordered_frame_sha256s": [
+            "426a6775e9b500cc6d4f4bdcb5e166a943abb671f41ed389df31631213d01725",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_PANTS_44|delay=0m",
+          "label": "STYLING_PANTS_44|delay=0m",
+          "ordered_frame_sha256s": [
+            "6c464952b00e8f274b2a4d4e305c143347ed3b59ba1948e22053e878b01e4413",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_POWER_4|delay=0m",
+          "label": "STYLING_POWER_4|delay=0m",
+          "ordered_frame_sha256s": [
+            "e24bfdaad4cea6215785dbd7d8044a4b7b7229946861d3e66cafaccbbd74b756",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_REMOVE_STATIC_40|delay=0m",
+          "label": "STYLING_REMOVE_STATIC_40|delay=0m",
+          "ordered_frame_sha256s": [
+            "0245e42cb2fd9abe4b8cc11bfbc8be6c80a52d543f546232525bbbd536c13c2b",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SCARVES_29|delay=0m",
+          "label": "STYLING_SCARVES_29|delay=0m",
+          "ordered_frame_sha256s": [
+            "0ebbac0b8550b7e5d15d557b6b7ce01e961b79f8510de78c2436e4ddeb4af20b",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SCHOOL_25|delay=0m",
+          "label": "STYLING_SCHOOL_25|delay=0m",
+          "ordered_frame_sha256s": [
+            "5b25f4339bff41e8608b01075cf3b1704a8a6577db8576e5e32429bf7b23669c",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SILENT_41|delay=0m",
+          "label": "STYLING_SILENT_41|delay=0m",
+          "ordered_frame_sha256s": [
+            "7f5f0ce3b0c64754909ac4049b48165cfd5054e96216a76399405a3df599884e",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SILK_CARE_7|delay=0m",
+          "label": "STYLING_SILK_CARE_7|delay=0m",
+          "ordered_frame_sha256s": [
+            "c473274cae9338b7df13114a32d0dc046aa590d66614c19f589b5320ee1d3952",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SPEED_3|delay=0m",
+          "label": "STYLING_SPEED_3|delay=0m",
+          "ordered_frame_sha256s": [
+            "9753b872c9f2566e0f545c1ffef5b3b9bac675ea9e09d128ff2eaf02e5bd6e7f",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_STANDARD_1|delay=0m",
+          "label": "STYLING_STANDARD_1|delay=0m",
+          "ordered_frame_sha256s": [
+            "73e0e981d825e5f0fa0e07ea287c4364480ae00ab063105c7a7acccbcd231e39",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_STORED_ITEMS_33|delay=0m",
+          "label": "STYLING_STORED_ITEMS_33|delay=0m",
+          "ordered_frame_sha256s": [
+            "2aeaaeff9014b32d68e177555e1a57f0f8e5d3b41ebc0c5b7e943a896497568a",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_SUITS_COATS_5|delay=180m",
+          "label": "STYLING_SUITS_COATS_5|delay=180m",
+          "ordered_frame_sha256s": [
+            "ddeea9f93856ce61b0a2ee1c9ae74f733df71d5c58d59d734e2b91cbda7e511b",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_WOOL_6|delay=0m",
+          "label": "STYLING_WOOL_6|delay=0m",
+          "ordered_frame_sha256s": [
+            "8168584fa2c9f3f08749d5f6f984eca29f44de4dbf7206578b081981ab5805c8",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "STYLING_YOGA_35|delay=0m",
+          "label": "STYLING_YOGA_35|delay=0m",
+          "ordered_frame_sha256s": [
+            "e86457cff562a6d5c2f5cfcd1199d0e3562b3664fdd8891abe5ea7ddedffe931",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_TIME_23|delay=0m|time=30m",
+          "label": "DRY_TIME_23|delay=0m|time=30m",
+          "ordered_frame_sha256s": [
+            "cded317831ada39c0cfcd4e6e38ff621b8035a5c50817a33f35cdb83c013a07a",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "DRY_DEHUMIDITY_15|delay=0m|parameter=8",
+          "label": "DRY_DEHUMIDITY_15|delay=0m|parameter=8",
+          "ordered_frame_sha256s": [
+            "633bc7c21f154a4e8d7c8853723fba6d616762c3da13daa12056485b2d34213d",
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "washer.operation.start_or_resume",

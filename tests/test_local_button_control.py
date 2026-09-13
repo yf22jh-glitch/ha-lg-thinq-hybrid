@@ -45,6 +45,11 @@ class Router:
     def __init__(self, outcome: Any) -> None:
         self.outcome = outcome
         self.calls: list[tuple[str, str, str]] = []
+        self.choice = None
+
+    def take_styler_course(self, device_id):
+        value, self.choice = self.choice, None
+        return value
 
     async def async_execute(
         self, device_id: str, capability: str, value: str = "true"
@@ -56,6 +61,23 @@ class Router:
 
 
 class LocalPauseButtonTests(unittest.IsolatedAsyncioTestCase):
+    async def test_styler_start_consumes_selected_course_once_and_never_cloud_fallback(self):
+        for outcome in (LocalCommandResult('confirmed', {}), LocalCommandResult('unverifiable', {}), None, LocalCommandFailed('ambiguous')):
+            coordinator = Coordinator()
+            router = Router(outcome)
+            router.choice = 'STYLING_SPEED_3|delay=0m'
+            button = MyLgButton(coordinator, _description('styler_start'), router)
+            if outcome is None or isinstance(outcome, Exception):
+                with self.assertRaises(HomeAssistantError):
+                    await button.async_press()
+            else:
+                await button.async_press()
+            self.assertEqual(router.calls, [(coordinator.device_id, 'styler.operation.start_or_resume', 'STYLING_SPEED_3|delay=0m')])
+            with self.assertRaises(HomeAssistantError):
+                await button.async_press()
+            self.assertEqual(len(router.calls), 1)
+            self.assertEqual(coordinator.controls, [])
+
     def test_power_routes_exist_in_the_unchanged_real_contract_but_start_is_not_promoted(self) -> None:
         contract = load_local_control_entity_contract()
         for model, keys in (

@@ -180,6 +180,21 @@ class LocalControlRouter:
         self._last_temperature_targets_by_mode: dict[str, dict[str, float]] = {}
         self._last_comfort_preferences: dict[str, int] = {}
         self._tuple_locks: dict[str, asyncio.Lock] = {}
+        # Desired UI choice only, not an appliance report. No wire traffic until Start.
+        # Deliberately not restored across HA reload or an operator's Start press.
+        self._styler_course_choices: dict[str, str] = {}
+
+    def select_styler_course(self, pat_device_id: str, value: str) -> None:
+        if not self.value_authorized(pat_device_id, "styler.operation.start_or_resume", value):
+            raise ValueError("Styler course is not authorized for this binding")
+        self._styler_course_choices[pat_device_id] = value
+
+    def selected_styler_course(self, pat_device_id: str) -> str | None:
+        return self._styler_course_choices.get(pat_device_id)
+
+    def take_styler_course(self, pat_device_id: str) -> str | None:
+        # Consume before dispatch: an ambiguous delivery must not be retried by another press.
+        return self._styler_course_choices.pop(pat_device_id, None)
 
     def _tuple_lock(self, pat_device_id: str) -> asyncio.Lock:
         lock = self._tuple_locks.get(pat_device_id)
