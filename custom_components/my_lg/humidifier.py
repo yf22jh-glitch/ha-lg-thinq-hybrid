@@ -16,7 +16,7 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_DEHUMIDIFIER, DEVICE_TYPE_HUMIDIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
-from .local_control_native import async_native_local_control
+from .local_control_native import async_native_local_control, native_local_available
 from .local_control_router import LocalControlRouter
 
 POWER_ON = "POWER_ON"
@@ -76,6 +76,11 @@ class MyLgHumidifier(MyLgEntity, HumidifierEntity):
         self._local_control = local_control
         self._attr_device_class = config["device_class"]
         self._attr_available_modes = config["modes"]
+
+    @property
+    def available(self) -> bool:
+        return native_local_available(self._local_control, self.coordinator.device_id,
+                                      'operation.power_requested', 'operation.mode', 'humidity.target_pct') or super().available
 
     @property
     def is_on(self) -> bool:

@@ -27,7 +27,7 @@ from .entity import MyLgEntity, MyLgWideqEntity
 from .local_command import LocalCommandFailed, LocalCommandPending
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
-from .local_control_native import async_native_local_control
+from .local_control_native import async_native_local_control, native_local_available
 from .local_read_owner import (
     resolve_tlv_read_owned_field,
     tlv_read_owner_configured,
@@ -451,7 +451,8 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
     def available(self) -> bool:
         if self._local_read_owns_state():
             return self._local_field_available()
-        return super().available
+        return native_local_available(self._local_control, self.coordinator.device_id,
+                                      self.entity_description.local_control_semantic) or super().available
 
     async def _set(self, value: Any) -> None:
         d = self.entity_description

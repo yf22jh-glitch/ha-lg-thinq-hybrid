@@ -41,7 +41,7 @@ from .local_command import (
 from .local_control_composite_domain import LocalControlCompositeInputDomain
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
-from .local_control_native import async_native_local_control
+from .local_control_native import async_native_local_control, native_local_available
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_owner import (
     local_auto_comfort_owner_configured,
@@ -573,7 +573,8 @@ class MyLgSelect(_LocalReadSelectMixin, MyLgEntity, SelectEntity):
     def available(self) -> bool:
         if self._local_read_owns_state():
             return self._local_field_available()
-        return super().available
+        return native_local_available(self._local_control, self.coordinator.device_id,
+                                      self.entity_description.local_scalar_semantic) or super().available
 
     async def async_select_option(self, option: str) -> None:
         d = self.entity_description

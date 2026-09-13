@@ -35,6 +35,7 @@ from .feature_catalog import get_wideq_control
 from .local_command import LocalCommandFailed
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
+from .local_control_native import native_local_available
 from .value_access import stable_feature_key
 
 
@@ -212,6 +213,13 @@ class MyLgButton(MyLgEntity, ButtonEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
         self._local_control = local_control
+
+    @property
+    def available(self) -> bool:
+        capability = ('styler.operation.start_or_resume'
+                      if self.entity_description.key == 'styler_start'
+                      else self.entity_description.local_capability)
+        return native_local_available(self._local_control, self.coordinator.device_id, capability) or super().available
 
     async def async_press(self) -> None:
         if self.entity_description.key == "styler_start" and self._local_control is not None:

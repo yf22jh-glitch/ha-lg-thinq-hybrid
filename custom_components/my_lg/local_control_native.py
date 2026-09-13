@@ -5,6 +5,14 @@ from homeassistant.exceptions import HomeAssistantError
 from .local_control_router import LocalControlRouter
 
 
+def native_local_available(router: LocalControlRouter | None, device_id: str, *capabilities: str | None) -> bool:
+    """A missing PAT snapshot must not hide a live, authorized local owner."""
+    return router is not None and any(
+        capability is not None and router.capability_authorized(device_id, capability)
+        for capability in capabilities
+    ) and router.control_target_available(device_id)
+
+
 async def async_native_local_control(
     router: LocalControlRouter | None,
     device_id: str,

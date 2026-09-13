@@ -1,6 +1,6 @@
 """Native cards must prefer exact local commands, without post-send cloud retry."""
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 from custom_components.my_lg.const import DEVICE_TYPE_DEHUMIDIFIER, DEVICE_TYPE_HUMIDIFIER, DEVICE_TYPE_AIR_PURIFIER, DEVICE_TYPE_WATER_PURIFIER
 from custom_components.my_lg.fan import MyLgAirPurifierFan
@@ -9,6 +9,7 @@ from custom_components.my_lg.local_command import LocalCommandFailed, LocalComma
 from tests.test_local_control_generic_entities import Coordinator
 from custom_components.my_lg.select import MyLgSelect, SELECTS_BY_TYPE
 from custom_components.my_lg.switch import MyLgSwitch, SWITCHES_BY_TYPE
+from custom_components.my_lg.button import MyLgButton, MyLgButtonDescription
 
 
 class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
@@ -18,6 +19,8 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
         coordinator.handle_mqtt_status = lambda payload: self.updates.append(payload)
         self.updates = []
         router = AsyncMock()
+        router.capability_authorized = Mock(return_value=True)
+        router.control_target_available = Mock(return_value=True)
         router.async_set_value.return_value = LocalCommandResult('confirmed', {})
         if kind == 'fan':
             entity = MyLgAirPurifierFan(coordinator, router)
@@ -115,3 +118,21 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             await entity.async_turn_off()
         coordinator.async_control.assert_not_called()
+
+    async def test_native_availability_does_not_depend_on_cloud_but_still_requires_local_authority(self):
+        for kind in ('fan', DEVICE_TYPE_HUMIDIFIER, DEVICE_TYPE_DEHUMIDIFIER):
+            entity, coord, router = self.setup_entity(kind)
+            self.assertFalse(coord.data)
+            self.assertTrue(entity.available)
+            router.control_target_available.return_value = False
+            self.assertFalse(entity.available)
+            router.control_target_available.return_value = True
+            router.capability_authorized.return_value = False
+            self.assertFalse(entity.available)
+        for capability in ('washer.operation.start_or_resume', 'dryer.operation.pause', 'styler.operation.start_or_resume'):
+            _, coord, router = self.setup_entity('fan')
+            desc = MyLgButtonDescription(key='test_native_button', payload={}, local_capability=capability)
+            button = MyLgButton(coord, desc, router)
+            self.assertTrue(button.available)
+            router.control_target_available.return_value = False
+            self.assertFalse(button.available)

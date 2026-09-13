@@ -12,7 +12,7 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_AIR_PURIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
-from .local_control_native import async_native_local_control
+from .local_control_native import async_native_local_control, native_local_available
 from .local_control_router import LocalControlRouter
 
 POWER_ON = "POWER_ON"
@@ -47,6 +47,11 @@ class MyLgAirPurifierFan(MyLgEntity, FanEntity):
     def __init__(self, coordinator: PatDeviceCoordinator, local_control: LocalControlRouter | None = None) -> None:
         super().__init__(coordinator, "fan")
         self._local_control = local_control
+
+    @property
+    def available(self) -> bool:
+        return native_local_available(self._local_control, self.coordinator.device_id,
+                                      'operation.power_requested', 'fan.mode') or super().available
 
     @property
     def is_on(self) -> bool:
