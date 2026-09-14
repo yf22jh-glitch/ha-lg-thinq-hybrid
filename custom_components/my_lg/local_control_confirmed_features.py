@@ -16,7 +16,7 @@ from .local_control_contract import (
 )
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 
-CATALOGUE_SHA256 = '18e1efa554aeef531bd9f0edee172218bfa85458665b53355b6df7d9196759df'
+CATALOGUE_SHA256 = '650ac4c4be9b670ca810890629cf7fcc4fcea9fb9e5ecef3b490855b18f492ed'
 
 
 def load_confirmed_features():
