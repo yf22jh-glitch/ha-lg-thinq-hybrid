@@ -27,7 +27,8 @@ from .local_control_contract import (
     eligible_factory_descriptors,
 )
 from .local_control_router import LocalControlRouter
-from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
+from .local_water_dnd import WINDOW as WATER_DND_WINDOW, canonical_window
 from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_provider import TlvReadShadowProvider
@@ -360,6 +361,79 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
         await self._async_send(mapping.local_request_value)
 
 
+class MyLgApplianceSettingSelect(MyLgLocalContractSelect):
+    """A real own-connection value, not a one-shot or optimistic UI selection."""
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._reported_value: str | None = None
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def current_option(self) -> str | None:
+        return next((option for option,mapping in self._mapping_by_option.items()
+                     if mapping.local_request_value == self._reported_value),None)
+
+    async def async_update(self) -> None:
+        try:
+            value=await self._router.async_appliance_setting_state(self.coordinator.device_id,self._descriptor.capability_id)
+            self._reported_value=value if isinstance(value,str) else None
+        except (TimeoutError,OSError,ValueError,aiohttp.ClientError):
+            self._reported_value=None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        await self.async_update()
+        self.async_write_ha_state()
+
+    async def _async_send(self, local_request_value: str) -> None:
+        await super()._async_send(local_request_value)
+        await self.async_update()
+        self.async_write_ha_state()
+
+
+class MyLgWaterDndText(_LocalContractEntity, TextEntity):
+    """Korean wall-clock input; saving times never enables DND or dispenses water."""
+    _attr_native_min = 11
+    _attr_native_max = 11
+    _attr_icon = 'mdi:clock-outline'
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._reported_value: str | None = None
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str | None:
+        return self._reported_value
+
+    async def async_update(self) -> None:
+        try:
+            value=await self._router.async_appliance_setting_state(self.coordinator.device_id,WATER_DND_WINDOW)
+            self._reported_value=canonical_window(value) if isinstance(value,str) else None
+        except (TimeoutError,OSError,ValueError,aiohttp.ClientError):
+            self._reported_value=None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        await self.async_update()
+        self.async_write_ha_state()
+
+    async def async_set_value(self, value: str) -> None:
+        try:
+            request=canonical_window(value)
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+        await self._async_send(request)
+        await self.async_update()
+        self.async_write_ha_state()
+
+
 class MyLgLocalContractNumber(_LocalContractEntity, NumberEntity):
     """A complete exact numeric grid; every off-grid write is rejected."""
 
@@ -473,6 +547,13 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
             if APPLIANCE_SETTING_MODELS.get(descriptor.capability_id) == descriptor.model_id and domain == 'switch':
                 entities.append(MyLgApplianceSettingSwitch(coordinator, descriptor, router, primary, read))
                 continue
+            if APPLIANCE_VALUE_MODELS.get(descriptor.capability_id) == descriptor.model_id:
+                if domain == 'select':
+                    entities.append(MyLgApplianceSettingSelect(coordinator, descriptor, router, primary, read))
+                    continue
+                if domain == 'text' and descriptor.capability_id == WATER_DND_WINDOW:
+                    entities.append(MyLgWaterDndText(coordinator, descriptor, router, primary, read))
+                    continue
             if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id in ('clean_dry.enabled', 'rapid_operation.enabled') and domain == 'switch':
                 entities.append(MyLgAirExtraSwitch(coordinator, descriptor, router, primary, read))
                 continue

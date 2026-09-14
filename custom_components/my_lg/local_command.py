@@ -24,7 +24,8 @@ from urllib.parse import quote
 from typing import Any, Mapping
 
 import aiohttp
-from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS, APPLIANCE_VALUE_OPTIONS
+from .local_water_dnd import WINDOW as WATER_DND_WINDOW, is_canonical_window
 
 CLIMATE_TUPLE_CAPABILITY = "climate.mode_fan_setpoint"
 CLIMATE_POWER_ON_CAPABILITY = "climate.power_on_with_setpoint"
@@ -419,9 +420,9 @@ class LocalCommandClient:
         self._base_url = base_url.rstrip("/")
         self._timeout = aiohttp.ClientTimeout(total=timeout_s)
 
-    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | None:
+    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | str | None:
         """Read exact own-connection settings; never query the appliance or cloud."""
-        model = APPLIANCE_SETTING_MODELS.get(capability)
+        model = APPLIANCE_SETTING_MODELS.get(capability) or APPLIANCE_VALUE_MODELS.get(capability)
         if model is None:
             return None
         async with self._session.get(
@@ -435,6 +436,10 @@ class LocalCommandClient:
                 or body.get('model_id') != model or not isinstance(body.get('values'), dict)):
             return None
         value = body['values'].get(capability)
+        if capability == WATER_DND_WINDOW:
+            return value if is_canonical_window(value) else None
+        if capability in APPLIANCE_VALUE_MODELS:
+            return value if isinstance(value,str) and value in APPLIANCE_VALUE_OPTIONS[capability] else None
         return value if type(value) is bool else None
 
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None:

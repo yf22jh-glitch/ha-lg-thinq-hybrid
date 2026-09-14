@@ -1,7 +1,17 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "650ac4c4be9b670ca810890629cf7fcc4fcea9fb9e5ecef3b490855b18f492ed",
+  "catalogue_sha256": "2f9c812c0e129a3e12a34924bdd027c4649dcf45763f5b82473b7b70f0c14cc0",
   "features": [
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.do_not_disturb.window_kst",
+      "entity_key": "local_water_do_not_disturb_window",
+      "label_ko": "방해 금지 시간 (한국 시각)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-dnd-window-kst-v1",
+      "values": []
+    },
     {
       "model_id": "HWWA9X3C_F2U",
       "capability_id": "vacuum.dust_emptying_reservation.enabled",
@@ -50,6 +60,144 @@
           "ordered_frame_sha256s": [
             "244a149af8822034d532555ad71040a7b422f57478bc631015ba08fc7903e2fa",
             "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.display.brightness_percent",
+      "entity_key": "local_water_lcd_brightness",
+      "label_ko": "LCD 밝기",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "20",
+          "label": "20%",
+          "ordered_frame_sha256s": [
+            "e3fc4110b3305733a0703c6b98c70c3d7a10db9e0e5529a8967ed1bf75f0a227"
+          ]
+        },
+        {
+          "value": "40",
+          "label": "40%",
+          "ordered_frame_sha256s": [
+            "ff6bdd663fb7cdcce6c041479ffd1a2ee2a7f0933eb8eefc6d5ac1e076040f23"
+          ]
+        },
+        {
+          "value": "60",
+          "label": "60%",
+          "ordered_frame_sha256s": [
+            "9bd07665da3cb21cface5f3b9051a8d72eff26d73c9529becb5efc6c62864f17"
+          ]
+        },
+        {
+          "value": "80",
+          "label": "80%",
+          "ordered_frame_sha256s": [
+            "fe38862ac532c0fdc65a0385f2608821c09ecb50a32b2c09f4f892a5cbc3bded"
+          ]
+        },
+        {
+          "value": "100",
+          "label": "100%",
+          "ordered_frame_sha256s": [
+            "a098ff64e9e04e11423eeaa28aace38d47d8879617ae0e04221162869ba0f95f"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.sound.volume_percent",
+      "entity_key": "local_water_sound_volume",
+      "label_ko": "알림음 음량",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "20",
+          "label": "20%",
+          "ordered_frame_sha256s": [
+            "e34b479f4c4d998566cb213b5a83918eeb107d41dafcb7485a287272863c9d7c"
+          ]
+        },
+        {
+          "value": "40",
+          "label": "40%",
+          "ordered_frame_sha256s": [
+            "a6c0526e1120754ed12be6f21f4c25cf8c1e05dce76df70610817ac53040de32"
+          ]
+        },
+        {
+          "value": "60",
+          "label": "60%",
+          "ordered_frame_sha256s": [
+            "1f3e2c259eb866f9e4643ddfa6f57c81db7e0a5ca2c863c7bc032fb3f2092906"
+          ]
+        },
+        {
+          "value": "80",
+          "label": "80%",
+          "ordered_frame_sha256s": [
+            "a2aa4b28b3f6416b7e3b20eabbfdc910bab63e45bc6f6292b8eb8dc272c5fbe0"
+          ]
+        },
+        {
+          "value": "100",
+          "label": "100%",
+          "ordered_frame_sha256s": [
+            "5d01de5987a95ae9d38f850bd6e6d6af0241aea70fa62c3f9ab2189453048177"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "sound.button_enabled",
+      "entity_key": "local_water_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "e287318ded981ec7a799e83f480d43b5ae9a982b2f52c8c2c235b0d96ceb0d9b"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "17f515f7e03434ce1c45f99a5bca888793ef6debfefd4e0ee8d0c47b381b3fab"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "sound.product_enabled",
+      "entity_key": "local_water_product_sound",
+      "label_ko": "제품 소리",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "6ef12a5e995ad056e1b6837315be7d357e214c5e52d7f84c8ab488fb4176a492"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "c0ec3cde032b911d5f554509619fe00fad7545435e65315c6393c5475a871395"
           ]
         }
       ]

@@ -30,7 +30,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
-from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
+from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
 
 from .local_command import (
     CLIMATE_POWER_ON_CAPABILITY,
@@ -122,7 +122,7 @@ class _Sender(Protocol):
     async def async_vacuum_auto_emptying_state(self, device_id: str) -> bool | None: ...
     async def async_vacuum_reservation_state(self, device_id: str) -> dict | None: ...
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None: ...
-    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | None: ...
+    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | str | None: ...
 
     async def async_send(
         self,
@@ -683,9 +683,10 @@ class LocalControlRouter:
         device_id, _provider = target
         return await self._send(pat_device_id, device_id, POWER_CAPABILITY, "false")
 
-    async def async_appliance_setting_state(self, pat_device_id: str, capability: str) -> bool | None:
+    async def async_appliance_setting_state(self, pat_device_id: str, capability: str) -> bool | str | None:
         target = self._target(pat_device_id)
-        if target is None or APPLIANCE_SETTING_MODELS.get(capability) != target[1].model_id:
+        model = APPLIANCE_SETTING_MODELS.get(capability) or APPLIANCE_VALUE_MODELS.get(capability)
+        if target is None or model != target[1].model_id:
             return None
         return await self._sender.async_appliance_setting_state(target[0], capability)
 

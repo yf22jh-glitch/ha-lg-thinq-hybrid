@@ -27,14 +27,14 @@ class ApplianceSettingsTests(unittest.IsolatedAsyncioTestCase):
         await entity.async_press()
         router.async_execute.assert_awaited_once_with(DEVICE_ID, descriptor.capability_id, 'true')
 
-    async def test_all_fourteen_switches_keep_actual_state_after_opposite_command(self):
-        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 14)
+    async def test_all_sixteen_switches_keep_actual_state_after_opposite_command(self):
+        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 16)
         base = load_local_control_entity_contract()
         for cap, model in APPLIANCE_SETTING_MODELS.items():
             models = {'test_candidate_binding': model}
             prior = resolve_local_control_binding_eligibility({}, base, models)
             contract, _ = augment_confirmed_features(base, prior, models)
-            descriptor = next(d for d in contract.descriptors if d.capability_id == cap)
+            descriptor = next(d for d in contract.descriptors if d.capability_id == cap and d.model_id == model)
             router = Router(); router.async_appliance_setting_state = AsyncMock(return_value=None)
             entity = MyLgApplianceSettingSwitch(Coordinator(model), descriptor, router, PrimaryProvider(model=model), None)
             entity.async_write_ha_state = lambda: None

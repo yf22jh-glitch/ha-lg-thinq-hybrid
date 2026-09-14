@@ -1033,6 +1033,10 @@ def local_control_value_authorized(
     allowed = binding.values_by_capability.get(capability_id)
     if descriptor is not None and descriptor.parameter_schema is not None:
         from .local_vacuum_reservation import MODEL, SCHEDULE, SCHEMA, is_canonical_schedule
+        from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_SCHEMA, is_canonical_window
+        if model_id == WATER_MODEL and capability_id == WINDOW and descriptor.parameter_schema == WATER_SCHEMA:
+            return (allowed == descriptor.exact_local_request_values and allowed is not None
+                    and is_canonical_window(local_request_value))
         return (model_id == MODEL and capability_id == SCHEDULE and descriptor.parameter_schema == SCHEMA
                 and allowed == descriptor.exact_local_request_values and allowed is not None
                 and is_canonical_schedule(local_request_value))
