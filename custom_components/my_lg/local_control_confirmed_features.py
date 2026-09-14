@@ -17,7 +17,7 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 
-CATALOGUE_SHA256 = '2ca4249be94a55ab6936cb2e29550712adcd8087de22780731bd065bf63bd301'
+CATALOGUE_SHA256 = 'b6dc7f8d245dc379a41ec54e47abd274666144cf13f9c268bae492dc4339fdb7'
 
 
 def load_confirmed_features():
@@ -30,7 +30,7 @@ def load_confirmed_features():
 
 APPLIANCE_SETTING_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2', 'CST_170004_WW', 'CST_570004_WW', 'DHUM_056905_WW') and feature['domain'] == 'switch'
+    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2', 'CST_170004_WW', 'CST_570004_WW', 'DHUM_056905_WW', 'HUM_056905_WW') and feature['domain'] == 'switch'
 })
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
@@ -38,7 +38,8 @@ APPLIANCE_VALUE_MODELS = MappingProxyType({
         ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW))
        or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
        or (feature['model_id'] == 'ST_R_ETH01Y_' and feature['capability_id'] in
-           ('styler.sound.volume_level', 'styler.sound.melody', 'styler.display.startup_image'))
+           ('styler.sound.volume_level', 'styler.sound.melody', 'styler.display.startup_image', 'styler.smart_care.night_start_time', 'styler.smart_care.night_end_time'))
+       or (feature['model_id'] == 'HUM_056905_WW' and feature['capability_id'] == 'hum.sound.melody')
 })
 APPLIANCE_VALUE_OPTIONS = MappingProxyType({
     feature['capability_id']: tuple(v['value'] for v in feature['values']) for feature in load_confirmed_features()

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "2ca4249be94a55ab6936cb2e29550712adcd8087de22780731bd065bf63bd301",
+  "catalogue_sha256": "b6dc7f8d245dc379a41ec54e47abd274666144cf13f9c268bae492dc4339fdb7",
   "features": [
     {
       "model_id": "1WPD4CMIDR__3",
@@ -60,6 +60,698 @@
           "ordered_frame_sha256s": [
             "244a149af8822034d532555ad71040a7b422f57478bc631015ba08fc7903e2fa",
             "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.smart_care.night_start_time",
+      "entity_key": "local_styler_night_start_time",
+      "label_ko": "야간케어 시작 시간",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "00:00",
+          "label": "00:00",
+          "ordered_frame_sha256s": [
+            "66d708faf1f602000f88acf5bd39cd23d24eaffcae4fd9ac568d6670769b15f9"
+          ]
+        },
+        {
+          "value": "00:30",
+          "label": "00:30",
+          "ordered_frame_sha256s": [
+            "3c254f347b360ac461e99a7e04e3278cd2e3e2ebc1191801dd876a41ebf8bdbd"
+          ]
+        },
+        {
+          "value": "01:00",
+          "label": "01:00",
+          "ordered_frame_sha256s": [
+            "6098f8379fcb54c023fecaa4c95293fe4be970dc96e297d84734cac967a7d857"
+          ]
+        },
+        {
+          "value": "01:30",
+          "label": "01:30",
+          "ordered_frame_sha256s": [
+            "0d2e78993cb957298cae4df18c03e2b364ffa2e266823d59602a843ce6cc6c0a"
+          ]
+        },
+        {
+          "value": "02:00",
+          "label": "02:00",
+          "ordered_frame_sha256s": [
+            "8686262fb51f8547399c01e936c47a6b9bff44fd679a0f4b7f69b24bc41c1803"
+          ]
+        },
+        {
+          "value": "02:30",
+          "label": "02:30",
+          "ordered_frame_sha256s": [
+            "473373ae4b922e34bc85451e50218f6929c74a7529ecd247682d481bbedc0cf6"
+          ]
+        },
+        {
+          "value": "03:00",
+          "label": "03:00",
+          "ordered_frame_sha256s": [
+            "2d4fd333e46ce2517cefa5ab446ddaab66061213708ee1874424ec058fd1e499"
+          ]
+        },
+        {
+          "value": "03:30",
+          "label": "03:30",
+          "ordered_frame_sha256s": [
+            "58b725b477c1443325cfc392945f377afd92dbc72b29a2264e13204a07346185"
+          ]
+        },
+        {
+          "value": "04:00",
+          "label": "04:00",
+          "ordered_frame_sha256s": [
+            "382b887e857a33bc749906846262dc97983b996a1dfa17cedef6ef2d846cac44"
+          ]
+        },
+        {
+          "value": "04:30",
+          "label": "04:30",
+          "ordered_frame_sha256s": [
+            "87583754ca8b08a5c2b667b4740f354c29c4ea5044fe813ed6cf2b515c3d94af"
+          ]
+        },
+        {
+          "value": "05:00",
+          "label": "05:00",
+          "ordered_frame_sha256s": [
+            "2a2f92bef93a81b8010bd9ed3119b597fae5d334d4eb5eaae8a252f0d64f7ad5"
+          ]
+        },
+        {
+          "value": "05:30",
+          "label": "05:30",
+          "ordered_frame_sha256s": [
+            "50ca276c2af30651cf9dd6441c3e44942221a9aa9a79a9c7c7179e0b4e932c1f"
+          ]
+        },
+        {
+          "value": "06:00",
+          "label": "06:00",
+          "ordered_frame_sha256s": [
+            "d61a3a1b872707ccf6ae9650209d67df5ae752e349c40faba0f9a41b59b64175"
+          ]
+        },
+        {
+          "value": "06:30",
+          "label": "06:30",
+          "ordered_frame_sha256s": [
+            "c697275ee7f70baca463e997f7b19665043221df3393d514153ecb26cb3d6e3a"
+          ]
+        },
+        {
+          "value": "07:00",
+          "label": "07:00",
+          "ordered_frame_sha256s": [
+            "2a50481b352fec23c55743a11e634532cad1c35d5f595c2a3197ee76b967cf31"
+          ]
+        },
+        {
+          "value": "07:30",
+          "label": "07:30",
+          "ordered_frame_sha256s": [
+            "3e7ef61c6ad9ad072c0f0189faa057a265d3e9acc3246a1327a737fcc156168e"
+          ]
+        },
+        {
+          "value": "08:00",
+          "label": "08:00",
+          "ordered_frame_sha256s": [
+            "19506766b25313d8292d91c217ce9e7fd7a2fbf446146bb9e47555eab27e5138"
+          ]
+        },
+        {
+          "value": "08:30",
+          "label": "08:30",
+          "ordered_frame_sha256s": [
+            "3a7198c3ee2f1f6a9344df7d1ada56abe94e25bc27840e3ad08dd34eb8dc2533"
+          ]
+        },
+        {
+          "value": "09:00",
+          "label": "09:00",
+          "ordered_frame_sha256s": [
+            "4072c7b2f7792456a5db29c61fb907749f4c71283c361f28d910d37ba0a6db85"
+          ]
+        },
+        {
+          "value": "09:30",
+          "label": "09:30",
+          "ordered_frame_sha256s": [
+            "80dc7fdb0d1c862ee070b32625718bdaf1663b1ecf4afbed57f498b927531d6b"
+          ]
+        },
+        {
+          "value": "10:00",
+          "label": "10:00",
+          "ordered_frame_sha256s": [
+            "43381a5a36e11d202219e7c27730962822d112678c67239bbc72e00dd8a9fd68"
+          ]
+        },
+        {
+          "value": "10:30",
+          "label": "10:30",
+          "ordered_frame_sha256s": [
+            "e7aa16178aa4d61c190142964a536d5c12186974dc0c240146f1ab0117139dc9"
+          ]
+        },
+        {
+          "value": "11:00",
+          "label": "11:00",
+          "ordered_frame_sha256s": [
+            "ff793cde7b4153b11a16fe81391f34d1188aee4ce2c53e5c7d402451c18ee241"
+          ]
+        },
+        {
+          "value": "11:30",
+          "label": "11:30",
+          "ordered_frame_sha256s": [
+            "889d598ba7d6bb82986eeb5a42cd8cc3840e371b73b1c48beb556d5c536ea772"
+          ]
+        },
+        {
+          "value": "12:00",
+          "label": "12:00",
+          "ordered_frame_sha256s": [
+            "4143698fc04c000e763208247dee82c9d69979734436b7258203e4eefaf932b6"
+          ]
+        },
+        {
+          "value": "12:30",
+          "label": "12:30",
+          "ordered_frame_sha256s": [
+            "d054488ad875db3304e2e3ca8ab865d9b2aebfcb3eaf517a1f55aa9374bca84e"
+          ]
+        },
+        {
+          "value": "13:00",
+          "label": "13:00",
+          "ordered_frame_sha256s": [
+            "0b86bd65fcb2ec8cfda6b9633b3d251156e2df929e50ad566605f75755535dd5"
+          ]
+        },
+        {
+          "value": "13:30",
+          "label": "13:30",
+          "ordered_frame_sha256s": [
+            "72e855a712499b20cd175cdae2bb8f3d41b917f7b28c55f1d24e18a8708bda5b"
+          ]
+        },
+        {
+          "value": "14:00",
+          "label": "14:00",
+          "ordered_frame_sha256s": [
+            "299977309067064a89afaf7f822789a2a068ef6bed3262903826baf9b1c73dd1"
+          ]
+        },
+        {
+          "value": "14:30",
+          "label": "14:30",
+          "ordered_frame_sha256s": [
+            "e13d21dd1f4d160464035747898f684e21445227e906019c9b97762b8f1e98fd"
+          ]
+        },
+        {
+          "value": "15:00",
+          "label": "15:00",
+          "ordered_frame_sha256s": [
+            "2557e461b3aa8361d288c05ea7b3beae0b22d2d26465819c03faecd42fd5fa58"
+          ]
+        },
+        {
+          "value": "15:30",
+          "label": "15:30",
+          "ordered_frame_sha256s": [
+            "f65fd8dbda3346f76a245ec97d1ca7c4d81a3425fdca136e68464cd213c25888"
+          ]
+        },
+        {
+          "value": "16:00",
+          "label": "16:00",
+          "ordered_frame_sha256s": [
+            "302fe0e9969f996387a92e35293a46187c0794f84d97a6dc1d8d586433399ab4"
+          ]
+        },
+        {
+          "value": "16:30",
+          "label": "16:30",
+          "ordered_frame_sha256s": [
+            "4f3f8b0e75618fde14e8f7e645941c2926adbde68b4de80a26f1f6ad9be37468"
+          ]
+        },
+        {
+          "value": "17:00",
+          "label": "17:00",
+          "ordered_frame_sha256s": [
+            "69a6a531650d5ee4f8e1af1cd9cc5256f2cd4b0cb7c2b933587e1ebb7c7889c3"
+          ]
+        },
+        {
+          "value": "17:30",
+          "label": "17:30",
+          "ordered_frame_sha256s": [
+            "c81f351a0539b6e39719f747dc7187506a585876cc23632094a7e6d0747c3025"
+          ]
+        },
+        {
+          "value": "18:00",
+          "label": "18:00",
+          "ordered_frame_sha256s": [
+            "0c9977358c84dfaffc8339908f15287f2820cb924c2e6c266dc516ef3beda862"
+          ]
+        },
+        {
+          "value": "18:30",
+          "label": "18:30",
+          "ordered_frame_sha256s": [
+            "8f1cf2de91d266292fb03d9fdeb12688376f409517828eae46d2411961825c90"
+          ]
+        },
+        {
+          "value": "19:00",
+          "label": "19:00",
+          "ordered_frame_sha256s": [
+            "262309b2d589f23b773dde81699a36500c0e14bc185895b3c007b3d634bd29b8"
+          ]
+        },
+        {
+          "value": "19:30",
+          "label": "19:30",
+          "ordered_frame_sha256s": [
+            "858bc2e5c41448e014081bad6f75e4c7dedb817510dd9a7c3b930cf317f1bdf8"
+          ]
+        },
+        {
+          "value": "20:00",
+          "label": "20:00",
+          "ordered_frame_sha256s": [
+            "6da09700a1998a84f632891a4efd862e8405f778bc807a6d04a82afd0c7d047c"
+          ]
+        },
+        {
+          "value": "20:30",
+          "label": "20:30",
+          "ordered_frame_sha256s": [
+            "cf0b169df595caba6a5c13101dc76f64abeed5e1384090b66818eafb76a66224"
+          ]
+        },
+        {
+          "value": "21:00",
+          "label": "21:00",
+          "ordered_frame_sha256s": [
+            "835921c8bccc1e84d5a25fb0483abfc0b4b4c0427d23872ec966628462209159"
+          ]
+        },
+        {
+          "value": "21:30",
+          "label": "21:30",
+          "ordered_frame_sha256s": [
+            "66e208fc2f8c7876e6075d4afcbd50c402670303c77adb772b12d3c5b9dd4003"
+          ]
+        },
+        {
+          "value": "22:00",
+          "label": "22:00",
+          "ordered_frame_sha256s": [
+            "8b9f47efee4aebbec52285938215e6499de78624f4bff831ae84fa5e3fa9ee75"
+          ]
+        },
+        {
+          "value": "22:30",
+          "label": "22:30",
+          "ordered_frame_sha256s": [
+            "364f3aa5918d1079101fa594290725b83a6a5b9bdf04bb7e7d7069a4617723de"
+          ]
+        },
+        {
+          "value": "23:00",
+          "label": "23:00",
+          "ordered_frame_sha256s": [
+            "d2fd5f901f2bdb6e20e331574c7b3fb5b0c16d11cec2e5c36516cb00363e4df9"
+          ]
+        },
+        {
+          "value": "23:30",
+          "label": "23:30",
+          "ordered_frame_sha256s": [
+            "2d7a1cbd0ed90a2a61755d0e8098c67969a98b3ccc4d3ba2acb22b90bce79f70"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.smart_care.night_end_time",
+      "entity_key": "local_styler_night_end_time",
+      "label_ko": "야간케어 종료 시간",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "00:00",
+          "label": "00:00",
+          "ordered_frame_sha256s": [
+            "05bf29a540d59d7e8ca70b3baa9c691b550f69f87eb11b076a9ba49dcc627789"
+          ]
+        },
+        {
+          "value": "00:30",
+          "label": "00:30",
+          "ordered_frame_sha256s": [
+            "7ca1f560966804147805db1188126723ebce313ba396f1e993aab6372b88fdd7"
+          ]
+        },
+        {
+          "value": "01:00",
+          "label": "01:00",
+          "ordered_frame_sha256s": [
+            "32b53a795d350fcbc886863675f10924579663d7f6ad2a9085bf6c1b012bf5bf"
+          ]
+        },
+        {
+          "value": "01:30",
+          "label": "01:30",
+          "ordered_frame_sha256s": [
+            "04692948f7c802c4575952e19a8ed7f2e97b946b664d386fa55934d7b72e906a"
+          ]
+        },
+        {
+          "value": "02:00",
+          "label": "02:00",
+          "ordered_frame_sha256s": [
+            "fa598a716840226c4fea2aab32052d4e69b03269d53aab035e6595c36e7d0a43"
+          ]
+        },
+        {
+          "value": "02:30",
+          "label": "02:30",
+          "ordered_frame_sha256s": [
+            "3df27dca55dc79de5e54c6a7f3d71e8cb2d59e464741e42d99de7dc02057dade"
+          ]
+        },
+        {
+          "value": "03:00",
+          "label": "03:00",
+          "ordered_frame_sha256s": [
+            "14a12e009bb708fda104fec66a9d898ea8ee87117c275aefd727c69b976c3c3e"
+          ]
+        },
+        {
+          "value": "03:30",
+          "label": "03:30",
+          "ordered_frame_sha256s": [
+            "77503594552a84589c72ca62ceacca16fdafe5d8a05e770d9f56f797c5d98aab"
+          ]
+        },
+        {
+          "value": "04:00",
+          "label": "04:00",
+          "ordered_frame_sha256s": [
+            "3f1770c3bf32a06e7469211033283de1e9e8b4e9495e1da40a0a553734bf1dd3"
+          ]
+        },
+        {
+          "value": "04:30",
+          "label": "04:30",
+          "ordered_frame_sha256s": [
+            "273ce80111184f6f625fa9c995cbe54b25f6d89068a250eabebd4573eefb9b8d"
+          ]
+        },
+        {
+          "value": "05:00",
+          "label": "05:00",
+          "ordered_frame_sha256s": [
+            "6db607270ed5d71c0ac8c855033c4526f060630d1d13b401ef3774fd105496ab"
+          ]
+        },
+        {
+          "value": "05:30",
+          "label": "05:30",
+          "ordered_frame_sha256s": [
+            "58ee39176ac8b1d2959012845b1dbdd753b11e078b837dbe3bf6db2e22603c33"
+          ]
+        },
+        {
+          "value": "06:00",
+          "label": "06:00",
+          "ordered_frame_sha256s": [
+            "80da5d78061147e0e7b9db635b2e26e1191764f21d1ee55532a36b195885f89b"
+          ]
+        },
+        {
+          "value": "06:30",
+          "label": "06:30",
+          "ordered_frame_sha256s": [
+            "76eca1dc41c609ae609cf0ce0f47750c991ddb8c9320fd3a2c61a3ec95075089"
+          ]
+        },
+        {
+          "value": "07:00",
+          "label": "07:00",
+          "ordered_frame_sha256s": [
+            "417ccc54d5351d909ad85731211a94af37ebfe18e72488f9f2766c8acf20fc51"
+          ]
+        },
+        {
+          "value": "07:30",
+          "label": "07:30",
+          "ordered_frame_sha256s": [
+            "5828309811cbf794f09308b66306fd42bfd14eff7ae943e259bca2b7cdaac435"
+          ]
+        },
+        {
+          "value": "08:00",
+          "label": "08:00",
+          "ordered_frame_sha256s": [
+            "829fc01877fd7bae937633568b6c90870868593d1183c0113296768d9c6f2f56"
+          ]
+        },
+        {
+          "value": "08:30",
+          "label": "08:30",
+          "ordered_frame_sha256s": [
+            "6f1a4b7dbb4b1d155343ee74d52bedbfedd7899a8e0fa1887b1bb49ea4b95c5c"
+          ]
+        },
+        {
+          "value": "09:00",
+          "label": "09:00",
+          "ordered_frame_sha256s": [
+            "c08af465803c39f801eab28c9260134ff9a6acd7dc96410ad4078b527bd42603"
+          ]
+        },
+        {
+          "value": "09:30",
+          "label": "09:30",
+          "ordered_frame_sha256s": [
+            "eb4a0f173cd5617d45c9ed8f25dd7f3fc241cd4588629d37d2cfccc2a238c7d1"
+          ]
+        },
+        {
+          "value": "10:00",
+          "label": "10:00",
+          "ordered_frame_sha256s": [
+            "74d73c4e063c954a7d268ffdd671a23201171f0ddb1001dd5571fe7d37dbff32"
+          ]
+        },
+        {
+          "value": "10:30",
+          "label": "10:30",
+          "ordered_frame_sha256s": [
+            "065962433aeb6828309707c0e61f4bba423036dbffb8f5d983acb099edc7d65f"
+          ]
+        },
+        {
+          "value": "11:00",
+          "label": "11:00",
+          "ordered_frame_sha256s": [
+            "8a78ba0606c39f5f8af53c523915824e612d7a0343c7bf2f36551892bba14997"
+          ]
+        },
+        {
+          "value": "11:30",
+          "label": "11:30",
+          "ordered_frame_sha256s": [
+            "318a1b926e3c39d77b10b9d5305c8eaf9e6b062e187cd5468f1c88da061a4824"
+          ]
+        },
+        {
+          "value": "12:00",
+          "label": "12:00",
+          "ordered_frame_sha256s": [
+            "a6618b64c02eed48c1c6f4cb19175bb3b2741a85c8f0e7c883ab92816e438db7"
+          ]
+        },
+        {
+          "value": "12:30",
+          "label": "12:30",
+          "ordered_frame_sha256s": [
+            "81b6c18b3a4af609dc48ec59915e6dca8960f6610899901c076ff669d3a72002"
+          ]
+        },
+        {
+          "value": "13:00",
+          "label": "13:00",
+          "ordered_frame_sha256s": [
+            "cbc2acec3197bea72a1f7fe95e7c7332fcb537e713c29886df885b9a5e000818"
+          ]
+        },
+        {
+          "value": "13:30",
+          "label": "13:30",
+          "ordered_frame_sha256s": [
+            "45fba3248617485505d6967f8e8be0ef2ce4abc1b44caf8889b8c593d88e0876"
+          ]
+        },
+        {
+          "value": "14:00",
+          "label": "14:00",
+          "ordered_frame_sha256s": [
+            "6233d1a97a04a66b938cfc02bb6380b6c127bdc2c114d5c9c67e5c193ec0f014"
+          ]
+        },
+        {
+          "value": "14:30",
+          "label": "14:30",
+          "ordered_frame_sha256s": [
+            "e0916906c100de9f88e016322274d94437aeedd9012e66f5156613a880ff87e8"
+          ]
+        },
+        {
+          "value": "15:00",
+          "label": "15:00",
+          "ordered_frame_sha256s": [
+            "47c201c7187f7ff4679bd33b38c3270fbba61520162b7f35448dfa937745df99"
+          ]
+        },
+        {
+          "value": "15:30",
+          "label": "15:30",
+          "ordered_frame_sha256s": [
+            "c26bd673320a84c130f3aa548e3bc93518131130b3c26b8a920e0dda5c0d50ca"
+          ]
+        },
+        {
+          "value": "16:00",
+          "label": "16:00",
+          "ordered_frame_sha256s": [
+            "52b6e2b0a1e427af0061f4d82d50290dfe944a571795e0fdac2f48af7aa9d49a"
+          ]
+        },
+        {
+          "value": "16:30",
+          "label": "16:30",
+          "ordered_frame_sha256s": [
+            "68be7fc18e80af9fcf5dcec807b7971c9c56846ef589803034abc79ebd9ebfb6"
+          ]
+        },
+        {
+          "value": "17:00",
+          "label": "17:00",
+          "ordered_frame_sha256s": [
+            "ca19d0364650e403909efcd85ca89c9118b21df92d224c70affda97d5c909796"
+          ]
+        },
+        {
+          "value": "17:30",
+          "label": "17:30",
+          "ordered_frame_sha256s": [
+            "27d201716df0c5eecf551753a7d39a11a90c2f374689e8591544441c76396706"
+          ]
+        },
+        {
+          "value": "18:00",
+          "label": "18:00",
+          "ordered_frame_sha256s": [
+            "921c7b0c03c45a9fbac430d84f89476801c4ac45e532bd56c46ba37a3f8714ce"
+          ]
+        },
+        {
+          "value": "18:30",
+          "label": "18:30",
+          "ordered_frame_sha256s": [
+            "90808f6cea2baa6fba4f13e2220c1fa8e693cef3452f845cceae84642005766b"
+          ]
+        },
+        {
+          "value": "19:00",
+          "label": "19:00",
+          "ordered_frame_sha256s": [
+            "fc20cd4669ae952fd122deea89de53cd79f01b03e0b0f9b98c3389a2fa5d28c6"
+          ]
+        },
+        {
+          "value": "19:30",
+          "label": "19:30",
+          "ordered_frame_sha256s": [
+            "a2b91f17d35803515bc684121fd85eb300fd77f99601d2471d7e62f14430ef96"
+          ]
+        },
+        {
+          "value": "20:00",
+          "label": "20:00",
+          "ordered_frame_sha256s": [
+            "065343c1585750443909c51527f80ec1c2db4aebbcd61cc63bb774ff6dd6670b"
+          ]
+        },
+        {
+          "value": "20:30",
+          "label": "20:30",
+          "ordered_frame_sha256s": [
+            "2bb1f4a196aa31b24cb4d633bda74d31fcbc92c2894951d87986eb01c3a64885"
+          ]
+        },
+        {
+          "value": "21:00",
+          "label": "21:00",
+          "ordered_frame_sha256s": [
+            "2ce3ee9b6111870d7e4a84926bb60b9f043b4ce7d860e0bb131c1cd39e56ce31"
+          ]
+        },
+        {
+          "value": "21:30",
+          "label": "21:30",
+          "ordered_frame_sha256s": [
+            "0ca7364ace4b2c772e38ef84d4f5da7ebdd437f906d6a775d4e5c73c4b4ab64c"
+          ]
+        },
+        {
+          "value": "22:00",
+          "label": "22:00",
+          "ordered_frame_sha256s": [
+            "65b042427235a35385c62f2431ba36589e927bf14199780dd28b5e278b39b229"
+          ]
+        },
+        {
+          "value": "22:30",
+          "label": "22:30",
+          "ordered_frame_sha256s": [
+            "8c3713b5ac7d19d734c17ec983626d22504906ddfc75e3460e9a6aa9742d1ed5"
+          ]
+        },
+        {
+          "value": "23:00",
+          "label": "23:00",
+          "ordered_frame_sha256s": [
+            "8091d6c3b9500eb7b9814e7c21811ddeb374625c918eb63c26c663c0dbdba575"
+          ]
+        },
+        {
+          "value": "23:30",
+          "label": "23:30",
+          "ordered_frame_sha256s": [
+            "0ebd4a3b5ff3389d6a0d358f1a17075cb2a63b16c22c27f141fe6b4bc8b2b0c4"
           ]
         }
       ]
@@ -924,6 +1616,100 @@
       ]
     },
     {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.sound.melody",
+      "entity_key": "local_hum_sound_melody",
+      "label_ko": "시작·종료 알림음",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "221337f0189a97c2497c02f949f081ebef7a99fbf0fbf77a2cb1ed5de7c4732a"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "비발디 겨울",
+          "ordered_frame_sha256s": [
+            "30d799aebc71ffe978d402447a322949f45b940e4bea50ffae955ff16270e930"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "징글벨 후렴",
+          "ordered_frame_sha256s": [
+            "c77d23d4e66334aeddccebb9f8b666c0bb38f3400186dc1999cce58e416ff4a0"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "위 위시 유 어 메리 크리스마스",
+          "ordered_frame_sha256s": [
+            "b8d2146b16322aac0a8a558032903a62f8f651cc2e9a423e95d56016de2e67d3"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "베토벤 전원",
+          "ordered_frame_sha256s": [
+            "f1d2c2d996ff8b78a398ba055acb086b5ae04726f734f8fa2a607c7039ca6446"
+          ]
+        },
+        {
+          "value": "5",
+          "label": "비발디 봄",
+          "ordered_frame_sha256s": [
+            "10cdec7961bc66c2877002dfc2cbd1f0352a2cad6983f1086a672b7f71de244e"
+          ]
+        },
+        {
+          "value": "6",
+          "label": "드보르자크 유모레스크",
+          "ordered_frame_sha256s": [
+            "0f98fdcc20c2db1204b28fe5df5cb0d2676f5e0a60b10eda9868a5e0d014195c"
+          ]
+        },
+        {
+          "value": "7",
+          "label": "엘가 사랑의 인사",
+          "ordered_frame_sha256s": [
+            "2328bb0db87ea1389a341bcdfb8cb8044202448d9fc04fbf69728acaacc34dae"
+          ]
+        },
+        {
+          "value": "8",
+          "label": "비발디 가을",
+          "ordered_frame_sha256s": [
+            "93bb757a3b5eb4a50300d50a2896468431d50cdf21e31123ed6bd5ae75b94348"
+          ]
+        },
+        {
+          "value": "9",
+          "label": "사탕 요정의 춤",
+          "ordered_frame_sha256s": [
+            "e81cc44d0151a7a7945f044cd800c86d8e8475277881a2dc811d81e5bd6dfb31"
+          ]
+        },
+        {
+          "value": "10",
+          "label": "라데츠키 행진곡",
+          "ordered_frame_sha256s": [
+            "f8cb72f9a86c36f388982723054637148eb0ef5c4489b0331cb791010394de7a"
+          ]
+        },
+        {
+          "value": "11",
+          "label": "징글벨 도입",
+          "ordered_frame_sha256s": [
+            "510700ff20442018b175e72e288711749ee6770d4be250e7dcdd8f31ecdc2226"
+          ]
+        }
+      ]
+    },
+    {
       "model_id": "CST_170004_WW",
       "capability_id": "cst170.sound.button_enabled",
       "entity_key": "local_cst170_button_sound",
@@ -967,6 +1753,30 @@
           "label": "on",
           "ordered_frame_sha256s": [
             "de2e6bd5b52067d2f336b15a541110509c60a60a4c3cbcc755614c62599b426e"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.sound.button_enabled",
+      "entity_key": "local_hum_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "e0a24f24596373c885f38c99f0ec93b96ef32e1e19e1edca10e9c0b30e79a2a1"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "153cea7558ec4421d4d35c20bf545731fe1d449b8f58b22f7da1f6d21a7f56f7"
           ]
         }
       ]
