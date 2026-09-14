@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "c8b12b7978ac3afdc4b0d96de358349c73969a52aa96818c08fc962df73aef65",
+  "catalogue_sha256": "2ca4249be94a55ab6936cb2e29550712adcd8087de22780731bd065bf63bd301",
   "features": [
     {
       "model_id": "1WPD4CMIDR__3",
@@ -919,6 +919,78 @@
           "label": "on",
           "ordered_frame_sha256s": [
             "f0b4d1730d2d7186ad296f5b5b039a4a7321d5300a03bba824d930452e5a6d0e"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "cst170.sound.button_enabled",
+      "entity_key": "local_cst170_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "d3a49a7474bcf53b75c9c01289bcec1d14c8f420b578ba8336ba71fcba609ecd"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "de2e6bd5b52067d2f336b15a541110509c60a60a4c3cbcc755614c62599b426e"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "cst570.sound.button_enabled",
+      "entity_key": "local_cst570_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "d3a49a7474bcf53b75c9c01289bcec1d14c8f420b578ba8336ba71fcba609ecd"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "de2e6bd5b52067d2f336b15a541110509c60a60a4c3cbcc755614c62599b426e"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "DHUM_056905_WW",
+      "capability_id": "dhum.sound.button_enabled",
+      "entity_key": "local_dhum_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "e0a24f24596373c885f38c99f0ec93b96ef32e1e19e1edca10e9c0b30e79a2a1"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "153cea7558ec4421d4d35c20bf545731fe1d449b8f58b22f7da1f6d21a7f56f7"
           ]
         }
       ]

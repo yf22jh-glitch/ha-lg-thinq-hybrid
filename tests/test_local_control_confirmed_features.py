@@ -14,12 +14,16 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                   'test_water_binding': '1WPD4CMIDR__3', 'test_ac_binding_01': 'CST_170004_WW', 'test_vacuum_binding': 'HWWA9X3C_F2U'}
         models['test_air_binding'] = 'AIR_910604_WW'
         models['test_kimchi_binding'] = '3REK2G03VI230D_2'
+        models['test_cst570_binding'] = 'CST_570004_WW'
+        models['test_dhum_binding'] = 'DHUM_056905_WW'
         prior = resolve_local_control_binding_eligibility({}, base, models)
         extended, scope = augment_confirmed_features(base, prior, models)
         self.assertEqual(extended.root_sha256, base.root_sha256)
-        self.assertEqual(extended.descriptors_by_model['CST_170004_WW'], base.descriptors_by_model['CST_170004_WW'])
-        self.assertEqual(scope['test_ac_binding_01'], prior['test_ac_binding_01'])
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 215)
+        for model, rows in base.descriptors_by_model.items():
+            self.assertTrue(all(row in extended.descriptors_by_model[model] for row in rows))
+        for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
+            self.assertEqual(scope['test_ac_binding_01'].values_by_capability[cap], values)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 221)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -29,12 +33,12 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                 model_id=feature['model_id'], capability_id=feature['capability_id'], local_request_value='not-an-observed-option'))
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
                      if d not in base.descriptors]
-        self.assertEqual({d.home_assistant_entity_key for d in factories},
+        self.assertEqual({d.home_assistant_entity_key for d in factories} - {'local_cst170_button_sound', 'local_cst570_button_sound', 'local_dhum_button_sound'},
                          {'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_styler_time_display', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
                           'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation',
                           'local_styler_auto_course_arrange', 'local_styler_remember_last_course', 'local_styler_smart_care_night', 'local_styler_smart_care_humidity', 'local_styler_smart_care_fine_dust', 'local_styler_date_display', 'local_styler_24_hour_display', 'local_water_ice_lock', 'local_styler_recorded_resume',
                           'local_water_do_not_disturb', 'local_water_24_hour_display', 'local_water_long_unused_notice', 'local_water_voice_guidance', 'local_water_ice_priority', 'local_water_hot_water_lock', 'local_vacuum_dust_emptying_reservation', 'local_vacuum_dust_emptying_schedule'})
-        self.assertEqual(len(factories), 38)
+        self.assertEqual(len(factories), 41)
         vacuum = next(d for d in factories if d.home_assistant_entity_key == 'local_vacuum_dust_emptying')
         self.assertEqual(vacuum.entity_domain, 'button')
         self.assertTrue(vacuum.one_shot)

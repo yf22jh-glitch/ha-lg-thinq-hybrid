@@ -17,7 +17,7 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 
-CATALOGUE_SHA256 = 'c8b12b7978ac3afdc4b0d96de358349c73969a52aa96818c08fc962df73aef65'
+CATALOGUE_SHA256 = '2ca4249be94a55ab6936cb2e29550712adcd8087de22780731bd065bf63bd301'
 
 
 def load_confirmed_features():
@@ -30,7 +30,7 @@ def load_confirmed_features():
 
 APPLIANCE_SETTING_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2') and feature['domain'] == 'switch'
+    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2', 'CST_170004_WW', 'CST_570004_WW', 'DHUM_056905_WW') and feature['domain'] == 'switch'
 })
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
