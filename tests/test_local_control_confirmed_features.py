@@ -18,7 +18,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         self.assertEqual(extended.root_sha256, base.root_sha256)
         self.assertEqual(extended.descriptors_by_model['CST_170004_WW'], base.descriptors_by_model['CST_170004_WW'])
         self.assertEqual(scope['test_ac_binding_01'], prior['test_ac_binding_01'])
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 152)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 154)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -38,6 +38,17 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         self.assertTrue(vacuum.one_shot)
         self.assertEqual([(v.home_assistant_value, v.local_request_value) for v in vacuum.value_mappings], [('press', 'true')])
         self.assertNotIn('washer.operation.start_or_resume', prior['test_washtower_binding'].values_by_capability)
+
+    def test_smart_courses_extend_the_existing_washer_owner_without_dashboard_changes(self):
+        feature = next(f for f in load_confirmed_features() if f['capability_id'] == 'washer.course_program')
+        self.assertEqual(feature['entity_key'], 'local_washer_course_program')
+        self.assertEqual(len(feature['values']), 45)
+        school = next(v for v in feature['values'] if v['value'].startswith('School Uniform|'))
+        rinse = next(v for v in feature['values'] if v['value'].startswith('Deep Rinse|'))
+        self.assertTrue(school['label'].startswith('교복'))
+        self.assertTrue(rinse['label'].startswith('꼼꼼헹굼'))
+        self.assertEqual(school['ordered_frame_sha256s'], ['f01c816c54a4ada661de061d8187d9421a9abe193ca6f76a6ad6af76aadc4729'])
+        self.assertEqual(rinse['ordered_frame_sha256s'], ['ff4524b2c2d518cf074057b94558bd24b10ed87359dd80fb8d934dab861d43a5'])
 
     def test_missing_scope_cannot_create_or_authorize_any_new_owner(self):
         base = load_local_control_entity_contract()

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "c83ae4ff1939908a292043e5b0f51970a2c717a66c24617b57a9125573a17578",
+  "catalogue_sha256": "77db7e91b51182ac943aa24e200a46bdea9767d11a4245678b9c69db72676876",
   "features": [
     {
       "model_id": "ST_R_ETH01Y_",
@@ -1312,6 +1312,20 @@
           "label": "Wool|soil=표준|temp=냉수|rinse=3|spin=약|detergent=보통|softener=보통|turbo=OFF|crease=OFF|delay=0m",
           "ordered_frame_sha256s": [
             "754520422a38460b926b1c8df756bdeffe7355250f95dc7177596de700bb4c57"
+          ]
+        },
+        {
+          "value": "School Uniform|soil=표준|temp=40도|rinse=2|spin=중|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "교복 · 40도 · 헹굼 2회 · 탈수 중",
+          "ordered_frame_sha256s": [
+            "f01c816c54a4ada661de061d8187d9421a9abe193ca6f76a6ad6af76aadc4729"
+          ]
+        },
+        {
+          "value": "Deep Rinse|soil=표준|temp=40도|rinse=4|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "꼼꼼헹굼 · 40도 · 헹굼 4회 · 탈수 강",
+          "ordered_frame_sha256s": [
+            "ff4524b2c2d518cf074057b94558bd24b10ed87359dd80fb8d934dab861d43a5"
           ]
         }
       ]
