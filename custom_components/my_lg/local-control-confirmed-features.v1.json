@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "3c5465c485808e1896af60f82431444ecdf6084bce035cbca0f60d0c5da5cd7f",
+  "catalogue_sha256": "c8b12b7978ac3afdc4b0d96de358349c73969a52aa96818c08fc962df73aef65",
   "features": [
     {
       "model_id": "1WPD4CMIDR__3",
@@ -60,6 +60,274 @@
           "ordered_frame_sha256s": [
             "244a149af8822034d532555ad71040a7b422f57478bc631015ba08fc7903e2fa",
             "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.sound.volume_level",
+      "entity_key": "local_styler_sound_volume",
+      "label_ko": "알림음 음량",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "0",
+          "label": "무음",
+          "ordered_frame_sha256s": [
+            "917ed17ee23b9f4983b351f382fd840250170973829be864b0a6ae9c5a042356"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "작게",
+          "ordered_frame_sha256s": [
+            "067e7ab3fd14b16e442a1475aaf5c348ea453d9c00d19db330a4909516d7aff4"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "f495898466d132de2b478ce792ade19ab2feab982fcf3e9c5d77f8a4595be9b7"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "크게",
+          "ordered_frame_sha256s": [
+            "5cd95ffa1fc818b6937f4df4651a7fbc3b19837120bea2d61c64fd1d0cfefd8e"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "아주 크게",
+          "ordered_frame_sha256s": [
+            "9105b27235a137813904c3d254fb3f4cf8eaf7808def3f251bf52b868cb30dbb"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.sound.melody",
+      "entity_key": "local_styler_sound_melody",
+      "label_ko": "완료 알림음",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "06921e2fee7f819796789872af095c36bc74b5f391770d2be6998295cb8ce6ff"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "비발디 겨울",
+          "ordered_frame_sha256s": [
+            "e99aa5b0df86aee5e5c22578dbe16f360831e3466e2825752c096252c411236a"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "바흐 미뉴에트",
+          "ordered_frame_sha256s": [
+            "da5d8b90240d29b55bff9a58461bd3270868489830e080ae51569c3ea481fe7c"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "즐거운 나의 집",
+          "ordered_frame_sha256s": [
+            "de19ffd808a537522ecf4cd85d4eb89aaf96f74c7b3997a00d17aeee0afbdf59"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "산들바람",
+          "ordered_frame_sha256s": [
+            "7a292910839f888f0d4edae55aeba3591cfd034d2f576fab41608367a39e54cb"
+          ]
+        },
+        {
+          "value": "5",
+          "label": "올드 맥도널드",
+          "ordered_frame_sha256s": [
+            "26c4363555e8b6ef748579e26231fd3986880a3a79830a848148a10fc5f8dcca"
+          ]
+        },
+        {
+          "value": "6",
+          "label": "베르디 라 트라비아타",
+          "ordered_frame_sha256s": [
+            "20e4b73a4650bf33c041935a81a39f3e0e47bf08f5e2871ff2eb84bab08481fc"
+          ]
+        },
+        {
+          "value": "7",
+          "label": "버블",
+          "ordered_frame_sha256s": [
+            "f77b9dcc6d4f6a8ad7b1010b97b16beb27a0ff5e54350a5194f428afa2c62702"
+          ]
+        },
+        {
+          "value": "8",
+          "label": "베토벤 교향곡 5번",
+          "ordered_frame_sha256s": [
+            "43686caefa24c934a8b8ae27cc2bbb8928eb9578d2bacc2436a9809eb4237953"
+          ]
+        },
+        {
+          "value": "9",
+          "label": "아리랑",
+          "ordered_frame_sha256s": [
+            "cca13be6c7aa8e86c17433ae82d02f4c039ad8d1f25fea91235a2ad54cfb832c"
+          ]
+        },
+        {
+          "value": "10",
+          "label": "파헬벨 캐논",
+          "ordered_frame_sha256s": [
+            "8eb83a3c9889269b11a9367f38bb1495e9545765481ec94adbd9398c8ee40f17"
+          ]
+        },
+        {
+          "value": "11",
+          "label": "베토벤 교향곡 9번",
+          "ordered_frame_sha256s": [
+            "545cbd01c1f6547a5daa830e01b522f63d09ff2fd1871800ff91993b19c5c8d1"
+          ]
+        },
+        {
+          "value": "12",
+          "label": "징글벨 도입",
+          "ordered_frame_sha256s": [
+            "32486e010ac20649ae8331be24653f38156f74e75e9d20e784431b009e496022"
+          ]
+        },
+        {
+          "value": "13",
+          "label": "징글벨 후렴",
+          "ordered_frame_sha256s": [
+            "c6133f997683759ed6e4b061452ffa459cd682061a6945eee3c19789a8e5658d"
+          ]
+        },
+        {
+          "value": "14",
+          "label": "위 위시 유 어 메리 크리스마스",
+          "ordered_frame_sha256s": [
+            "804c0e97a0b679832883f951c94cfb00823f84db7f64647719db619218cca23b"
+          ]
+        },
+        {
+          "value": "15",
+          "label": "고요한 밤",
+          "ordered_frame_sha256s": [
+            "b5de302fd2b15970b0fc111e7f621e7441312b795181244eedc699fabe551e89"
+          ]
+        },
+        {
+          "value": "16",
+          "label": "오 크리스마스 트리",
+          "ordered_frame_sha256s": [
+            "5780ff066b45bb63f821ad13dd008d357d364bd4b1b107bf946df0bff245730b"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.display.startup_image",
+      "entity_key": "local_styler_startup_image",
+      "label_ko": "제품 시작 화면",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "8621fc99b47887f90c5ccad6eb1ef5d6e762d952cf6448941a0a7e90787ef1ac"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "겨울 눈사람 1",
+          "ordered_frame_sha256s": [
+            "4431dcdf695f26c220e101ec7a843cea4241c3eccf0ff749b4739b844ad4657a"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "겨울 눈사람 2",
+          "ordered_frame_sha256s": [
+            "df7257fe18ed84fb967a367104146671a92ad075a0782b0700c3980fe16d4021"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "겨울 인사",
+          "ordered_frame_sha256s": [
+            "d7ffce0f0068ed2e74c7cdb47a6fb4f19f4ae3efa0f951712259aa92500e4bf0"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "봄 인사",
+          "ordered_frame_sha256s": [
+            "dac4f29458fd714b80089c6d9b56402b3acdc6fb8e49b74a97d12149388c1fd1"
+          ]
+        },
+        {
+          "value": "5",
+          "label": "봄 지구",
+          "ordered_frame_sha256s": [
+            "4c34443ef8cb954743b35f31976147d5cd7c703731f446a9277e81bb6a98cd23"
+          ]
+        },
+        {
+          "value": "6",
+          "label": "여름 태양",
+          "ordered_frame_sha256s": [
+            "71061382520cc05843188ad69c7db36db3bf6671e6c18b2f2e3b5aefe5973f37"
+          ]
+        },
+        {
+          "value": "7",
+          "label": "여름 파라솔",
+          "ordered_frame_sha256s": [
+            "57f3cab0198821e30b50375ca2c62aaa30f357d9fcafd4758ab6b00b0f8d721e"
+          ]
+        },
+        {
+          "value": "8",
+          "label": "가을 단풍",
+          "ordered_frame_sha256s": [
+            "ceec553f4b6438a4fbd70c61d0417c62b3822a727754295eca500e586e2868bb"
+          ]
+        },
+        {
+          "value": "9",
+          "label": "가을 할로윈",
+          "ordered_frame_sha256s": [
+            "d37e3cbe9b95711b5b7e0123820ff1f721babb83ee432141ad87bdfc1a736385"
+          ]
+        },
+        {
+          "value": "10",
+          "label": "새해",
+          "ordered_frame_sha256s": [
+            "edc0f24ba29d1aba2d78beddecf473a275e9865c8e44b5f133fdcbf2c0197457"
+          ]
+        },
+        {
+          "value": "11",
+          "label": "크리스마스",
+          "ordered_frame_sha256s": [
+            "bdc2cdd51b1df62fcb73fa6940695aa9f1d702c3ffaf338412a2714d89a0b0fc"
           ]
         }
       ]
@@ -195,6 +463,54 @@
           "label": "100%",
           "ordered_frame_sha256s": [
             "5d01de5987a95ae9d38f850bd6e6d6af0241aea70fa62c3f9ab2189453048177"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.remote_maintain.enabled",
+      "entity_key": "local_styler_remote_maintain",
+      "label_ko": "원격제어 유지",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "af911bf4bf0c3535c81a38c7f722b9a33430160a9f773e0b6ca42a7cf3fead79"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.display.time_enabled",
+      "entity_key": "local_styler_time_display",
+      "label_ko": "시간 표시",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "27d56a49307e13895d2a7f5e94b8177a70495504e70f92695d6bb2d7fb7b8173"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "a85538b8238450975bfd78aaaeba325abcd72383450f984f61466064e7e5e75f"
           ]
         }
       ]
