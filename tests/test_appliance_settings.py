@@ -27,8 +27,8 @@ class ApplianceSettingsTests(unittest.IsolatedAsyncioTestCase):
         await entity.async_press()
         router.async_execute.assert_awaited_once_with(DEVICE_ID, descriptor.capability_id, 'true')
 
-    async def test_all_sixteen_switches_keep_actual_state_after_opposite_command(self):
-        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 16)
+    async def test_all_seventeen_switches_keep_actual_state_after_opposite_command(self):
+        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 17)
         base = load_local_control_entity_contract()
         for cap, model in APPLIANCE_SETTING_MODELS.items():
             models = {'test_candidate_binding': model}

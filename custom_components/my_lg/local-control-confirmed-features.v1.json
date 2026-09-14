@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "2f9c812c0e129a3e12a34924bdd027c4649dcf45763f5b82473b7b70f0c14cc0",
+  "catalogue_sha256": "3c5465c485808e1896af60f82431444ecdf6084bce035cbca0f60d0c5da5cd7f",
   "features": [
     {
       "model_id": "1WPD4CMIDR__3",
@@ -60,6 +60,51 @@
           "ordered_frame_sha256s": [
             "244a149af8822034d532555ad71040a7b422f57478bc631015ba08fc7903e2fa",
             "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "3REK2G03VI230D_2",
+      "capability_id": "kimchi.sound.door_melody",
+      "entity_key": "local_kimchi_door_melody",
+      "label_ko": "문 열림 알림음",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "0ff4b6c5bd86000bd456c888f85c02ac010c5fadc6552b38cc5fa3656ce6ac5b"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "알림음 1",
+          "ordered_frame_sha256s": [
+            "87857d1f2a59c7564402034243f49954b955b6e11f38348d393a1521d6b480ad"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "알림음 2",
+          "ordered_frame_sha256s": [
+            "bca60df884277611906636f46f6853cebf5b8c234773196fc49e42d1cf103fc1"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "알림음 3",
+          "ordered_frame_sha256s": [
+            "03d6283e232c8acca5b9e0a3b27c0d1acc9b4557fd6e411c554f2ef410868fa2"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "알림음 4",
+          "ordered_frame_sha256s": [
+            "7745c07b83559b065c2b959f42aea09d143e090da64ba00b38139128a03a4b26"
           ]
         }
       ]
@@ -150,6 +195,30 @@
           "label": "100%",
           "ordered_frame_sha256s": [
             "5d01de5987a95ae9d38f850bd6e6d6af0241aea70fa62c3f9ab2189453048177"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "3REK2G03VI230D_2",
+      "capability_id": "kimchi.sound.button_enabled",
+      "entity_key": "local_kimchi_button_sound",
+      "label_ko": "버튼음",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "556c00082869547c2b383d1a4b80a261448ffb041e165dfb2e4fbcfe20278454"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "a7a39f5408f21b761e739583a6e8b235e6a02d99673b6a80dd220037ef8a876f"
           ]
         }
       ]

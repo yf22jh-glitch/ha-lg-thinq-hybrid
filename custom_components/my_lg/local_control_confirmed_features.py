@@ -17,7 +17,7 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 
-CATALOGUE_SHA256 = '2f9c812c0e129a3e12a34924bdd027c4649dcf45763f5b82473b7b70f0c14cc0'
+CATALOGUE_SHA256 = '3c5465c485808e1896af60f82431444ecdf6084bce035cbca0f60d0c5da5cd7f'
 
 
 def load_confirmed_features():
@@ -30,12 +30,13 @@ def load_confirmed_features():
 
 APPLIANCE_SETTING_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3') and feature['domain'] == 'switch'
+    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2') and feature['domain'] == 'switch'
 })
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if feature['model_id'] == WATER_MODEL and feature['capability_id'] in
-       ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW)
+    if (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
+        ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW))
+       or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
 })
 APPLIANCE_VALUE_OPTIONS = MappingProxyType({
     feature['capability_id']: tuple(v['value'] for v in feature['values']) for feature in load_confirmed_features()
