@@ -15,6 +15,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.components.number import NumberEntity
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.text import TextEntity
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
@@ -27,12 +28,13 @@ from .local_control_contract import (
 )
 from .local_control_router import LocalControlRouter
 from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS
+from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_provider import TlvReadShadowProvider
 
 _LOGGER = logging.getLogger(__name__)
 
-LocalControlDomain = Literal["switch", "select", "number", "button"]
+LocalControlDomain = Literal["switch", "select", "number", "button", "text"]
 
 
 def _same_primitive(left: object, right: object) -> bool:
@@ -260,6 +262,52 @@ class MyLgVacuumAutoEmptyingSwitch(MyLgBridgeCachedSwitch):
         return await self._router.async_vacuum_auto_emptying_state(self.coordinator.device_id)
 
 
+class MyLgVacuumReservationSwitch(MyLgBridgeCachedSwitch):
+    async def _async_reported_value(self) -> bool | None:
+        state = await self._router.async_vacuum_reservation_state(self.coordinator.device_id)
+        return state.get(RESERVATION_ENABLED) if state else None
+
+
+class MyLgVacuumReservationText(_LocalContractEntity, TextEntity):
+    """Atomic HH:MM|weekdays edit. No local timer, no optimistic state, no cloud retry."""
+    _attr_native_min = 0
+    _attr_native_max = 64
+    _attr_icon = 'mdi:calendar-clock'
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._reported_schedule: str | None = None
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str | None:
+        return display_schedule(self._reported_schedule) if self._reported_schedule is not None else None
+
+    async def async_update(self) -> None:
+        try:
+            state = await self._router.async_vacuum_reservation_state(self.coordinator.device_id)
+            self._reported_schedule = state.get(RESERVATION_SCHEDULE) if state else None
+        except (TimeoutError, OSError, ValueError, aiohttp.ClientError):
+            self._reported_schedule = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        await self.async_update()
+        self.async_write_ha_state()
+
+    async def async_set_value(self, value: str) -> None:
+        try:
+            request = canonical_schedule(value)
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+        await self._async_send(request)
+        await self.async_update()
+        self.async_write_ha_state()
+
+
 class MyLgApplianceSettingSwitch(MyLgBridgeCachedSwitch):
     async def _async_reported_value(self) -> bool | None:
         return await self._router.async_appliance_setting_state(self.coordinator.device_id, self._descriptor.capability_id)
@@ -383,6 +431,7 @@ _ENTITY_CLASS_BY_DOMAIN = {
     "select": MyLgLocalContractSelect,
     "number": MyLgLocalContractNumber,
     "button": MyLgLocalContractButton,
+    "text": MyLgVacuumReservationText,
 }
 
 
@@ -429,6 +478,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 continue
             if descriptor.capability_id == "vacuum.auto_dust_emptying_enabled" and domain == "switch":
                 entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read))
+                continue
+            if descriptor.capability_id == RESERVATION_ENABLED and domain == 'switch':
+                entities.append(MyLgVacuumReservationSwitch(coordinator, descriptor, router, primary, read))
                 continue
             entities.append(
                 entity_class(coordinator, descriptor, router, primary, read)

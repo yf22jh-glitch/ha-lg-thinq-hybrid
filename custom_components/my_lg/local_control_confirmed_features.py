@@ -14,8 +14,9 @@ from .local_control_contract import (
     LocalControlEntityDescriptor,
     LocalControlValueMapping,
 )
+from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 
-CATALOGUE_SHA256 = '77db7e91b51182ac943aa24e200a46bdea9767d11a4245678b9c69db72676876'
+CATALOGUE_SHA256 = '18e1efa554aeef531bd9f0edee172218bfa85458665b53355b6df7d9196759df'
 
 
 def load_confirmed_features():
@@ -51,6 +52,9 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         if any(d.capability_id == capability for d in by_model.get(model, ())):
             raise ValueError('Confirmed feature would replace an existing control')
         values = feature['values']
+        parameter_schema = feature.get('parameter_schema')
+        if parameter_schema is not None and (model != VACUUM_MODEL or capability != SCHEDULE or parameter_schema != SCHEMA or feature['domain'] != 'text' or values):
+            raise ValueError('Unsupported confirmed parameter schema')
         boolean_values = feature['domain'] == 'switch' or capability == 'washer.fresh_care_enabled'
         descriptor = LocalControlEntityDescriptor(
             key=model + '|' + capability, model_id=model, capability_id=capability,
@@ -63,6 +67,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
             # These whole-bundle choices have producer-side state confirmation.
             # Do not guess a selected preset from an old/partial HA snapshot.
             one_shot=feature['domain'] != 'switch',
+            parameter_schema=parameter_schema,
         )
         by_model[model] = (*by_model.get(model, ()), descriptor)
         additions.append(descriptor)

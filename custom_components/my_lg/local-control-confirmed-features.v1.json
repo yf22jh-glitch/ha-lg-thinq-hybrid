@@ -1,7 +1,41 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "77db7e91b51182ac943aa24e200a46bdea9767d11a4245678b9c69db72676876",
+  "catalogue_sha256": "18e1efa554aeef531bd9f0edee172218bfa85458665b53355b6df7d9196759df",
   "features": [
+    {
+      "model_id": "HWWA9X3C_F2U",
+      "capability_id": "vacuum.dust_emptying_reservation.enabled",
+      "entity_key": "local_vacuum_dust_emptying_reservation",
+      "label_ko": "먼지 비움 예약",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "9444bef0e49595aeaeeabdcc8ec776b2394f37d15d3a67d1980b0ff6e9cf9deb"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HWWA9X3C_F2U",
+      "capability_id": "vacuum.dust_emptying_reservation.schedule",
+      "entity_key": "local_vacuum_dust_emptying_schedule",
+      "label_ko": "먼지 비움 예약 시간·요일 (저장 시 OFF)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "vacuum-reservation-schedule-v1",
+      "values": []
+    },
     {
       "model_id": "ST_R_ETH01Y_",
       "capability_id": "styler.operation.resume_with_night_dry",

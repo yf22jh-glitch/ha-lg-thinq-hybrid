@@ -120,6 +120,7 @@ def _confirmed_tuple(value: str, confirmed_at: datetime) -> _ConfirmedTuple:
 
 class _Sender(Protocol):
     async def async_vacuum_auto_emptying_state(self, device_id: str) -> bool | None: ...
+    async def async_vacuum_reservation_state(self, device_id: str) -> dict | None: ...
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None: ...
     async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | None: ...
 
@@ -699,6 +700,12 @@ class LocalControlRouter:
         if target is None or target[1].model_id != 'HWWA9X3C_F2U':
             return None
         return await self._sender.async_vacuum_auto_emptying_state(target[0])
+
+    async def async_vacuum_reservation_state(self, pat_device_id: str) -> dict | None:
+        target = self._target(pat_device_id)
+        if target is None or target[1].model_id != 'HWWA9X3C_F2U':
+            return None
+        return await self._sender.async_vacuum_reservation_state(target[0])
 
     async def async_set_value(
         self, pat_device_id: str, capability: str, value: str

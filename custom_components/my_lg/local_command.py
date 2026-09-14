@@ -468,6 +468,22 @@ class LocalCommandClient:
             return None
         return body.get('enabled') if type(body.get('enabled')) is bool else None
 
+    async def async_vacuum_reservation_state(self, device_id: str) -> dict | None:
+        from .local_vacuum_reservation import MODEL, ENABLED, SCHEDULE, is_canonical_schedule
+        async with self._session.get(
+            f"{self._base_url}/control/home-assistant/{quote(device_id, safe='')}/vacuum-reservation-state",
+            timeout=aiohttp.ClientTimeout(total=5), allow_redirects=False,
+        ) as response:
+            if response.status != 200:
+                return None
+            body = await response.json()
+        if not isinstance(body, dict) or body.get('schema_version') != 1 or body.get('model_id') != MODEL or not isinstance(body.get('values'), dict):
+            return None
+        values = body['values']
+        enabled, schedule = values.get(ENABLED), values.get(SCHEDULE)
+        return {ENABLED: enabled if type(enabled) is bool else None,
+                SCHEDULE: schedule if schedule == 'unset' or is_canonical_schedule(schedule) else None}
+
     async def async_send(
         self,
         device_id: str,

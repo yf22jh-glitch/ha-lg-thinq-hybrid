@@ -285,7 +285,7 @@ class LocalControlEntityDescriptor:
     capability_id: str
     home_assistant_entity_key: str
     label_ko: str
-    entity_domain: Literal["switch", "select", "number", "button"]
+    entity_domain: Literal["switch", "select", "number", "button", "text"]
     input_kind: Literal["boolean", "enum", "number"]
     supported_values: tuple[Primitive, ...]
     value_mappings: tuple[LocalControlValueMapping, ...]
@@ -297,6 +297,7 @@ class LocalControlEntityDescriptor:
     number_max: int | float | None = None
     number_step: int | float | None = None
     unit: str | None = None
+    parameter_schema: str | None = None
 
     @property
     def exact_local_request_values(self) -> tuple[str, ...]:
@@ -994,7 +995,7 @@ def eligible_factory_descriptors(
     *,
     binding_id: str,
     model_id: str,
-    domain: Literal["switch", "select", "number", "button"] | None = None,
+    domain: Literal["switch", "select", "number", "button", "text"] | None = None,
 ) -> tuple[LocalControlEntityDescriptor, ...]:
     """Return only exact private/public intersections for one physical binding."""
     binding = eligibility.get(binding_id)
@@ -1030,6 +1031,11 @@ def local_control_value_authorized(
         None,
     )
     allowed = binding.values_by_capability.get(capability_id)
+    if descriptor is not None and descriptor.parameter_schema is not None:
+        from .local_vacuum_reservation import MODEL, SCHEDULE, SCHEMA, is_canonical_schedule
+        return (model_id == MODEL and capability_id == SCHEDULE and descriptor.parameter_schema == SCHEMA
+                and allowed == descriptor.exact_local_request_values and allowed is not None
+                and is_canonical_schedule(local_request_value))
     return (
         descriptor is not None
         and allowed is not None
