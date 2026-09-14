@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "cf64477a20a12118ee9dec0a9c33fd1c57c5f88debe0ea941fe9f64255a77e30",
+  "catalogue_sha256": "c83ae4ff1939908a292043e5b0f51970a2c717a66c24617b57a9125573a17578",
   "features": [
     {
       "model_id": "ST_R_ETH01Y_",
@@ -208,6 +208,150 @@
           "label": "on",
           "ordered_frame_sha256s": [
             "991605e768f460ca1ac5543bf91db8b68660fdaa9eff417d239d5230ab0d4051"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "do_not_disturb.enabled",
+      "entity_key": "local_water_do_not_disturb",
+      "label_ko": "방해 금지",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "6564aa8a2713a1e96a110062d12b2e6f28b0824600ae339f9d0e4f212f4d0e76"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "55806a2a3754af49ef90602aba12d9a93f81501be3df5de7044359641d2069c5"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.display.twenty_four_hour_enabled",
+      "entity_key": "local_water_24_hour_display",
+      "label_ko": "24시간 표시",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "36618f57023544bdcd9b8ee26c2c1c02daf14a7e3ee04e53cf7d4de2d944b3f8"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "1b89527803f15150ac42862f5bfded6d118151af253523e74914ed33de1a3142"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "notification.long_unused_enabled",
+      "entity_key": "local_water_long_unused_notice",
+      "label_ko": "장기 미사용 알림",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "22b1cfa2de2a4eeabbb53817fef435cbf8c9b410f9f20f4e56c977b01aea50e0"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "46f21218d57b70b3b4cf7f134ef11b3db14217901f587aa359dabb667a07ef99"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "voice.guidance_enabled",
+      "entity_key": "local_water_voice_guidance",
+      "label_ko": "음성 안내",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "612963d1ca5898a01f4707012fb3896be0af49181424ee9f5393ff69d75d75f9"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "76b93d88eb84f1e463270964a38cafc3a0fbbb1be8fa29248e769b48c2b42ee0"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "ice.priority_enabled",
+      "entity_key": "local_water_ice_priority",
+      "label_ko": "얼음 먼저",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "43bc7943528dd3ced386c6d76866499f7054fa30fac562970779c6776c7ea4ff"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "e335271714e26af80f6666ab01a3e2dd2d2ce11151381096ecfe107fc9220022"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "hot_water.lock_enabled",
+      "entity_key": "local_water_hot_water_lock",
+      "label_ko": "온수 잠금",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "7faa7fe6253518e7c027aa420a897aca5a5b393e3c556b3b882ae66bb7819ddf"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "f0b4d1730d2d7186ad296f5b5b039a4a7321d5300a03bba824d930452e5a6d0e"
           ]
         }
       ]
