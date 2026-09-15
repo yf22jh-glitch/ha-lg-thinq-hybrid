@@ -224,6 +224,17 @@ class LocalCommandClientTest(unittest.TestCase):
     def test_an_error_that_says_nothing_about_the_wire_is_pending_not_retried(self) -> None:
         send_expecting(Response(500, {"error": "boom"}), local_command.LocalCommandPending)
 
+    def test_numeric_partial_application_never_becomes_a_cloud_retry(self) -> None:
+        for code in ('web-numeric-partially-applied', 'web-numeric-delivery-ambiguous'):
+            with self.subTest(code=code):
+                session, error = send_expecting(Response(502, {
+                    'error': 'confirmed prefix applied; reconcile from fresh state',
+                    'code': code, 'confirmed_frame_count': 1,
+                    'applied_sets': {'auto_operation.enabled': True},
+                }), local_command.LocalCommandPending)
+                self.assertNotIsInstance(error, local_command.LocalCommandUnavailable)
+                self.assertEqual(len(session.posts), 1)
+
     def test_only_the_gateway_answer_that_forwarded_nothing_may_be_retried(self) -> None:
         # 503: nothing in front of the bridge had anywhere to send it, so the endpoint never ran.
         send_expecting(Response(503, {"error": "no upstream"}), local_command.LocalCommandUnavailable)
