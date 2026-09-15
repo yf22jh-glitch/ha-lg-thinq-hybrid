@@ -8,11 +8,38 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_numeric_overlay_keeps_base_pins_and_exact_choices_without_restoring_old_denials(self):
+        base = load_local_control_entity_contract()
+        models = {'test_numeric_hum': 'HUM_056905_WW', 'test_numeric_air': 'AIR_910604_WW'}
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        extended, scope = augment_confirmed_features(base, prior, models)
+        self.assertEqual(extended.root_sha256, base.root_sha256)
+        hum = next(d for d in extended.descriptors_by_model['HUM_056905_WW'] if d.capability_id == 'humidity.target_pct')
+        self.assertEqual(hum.supported_values, tuple(range(30, 71, 5)))
+        self.assertEqual((hum.number_min, hum.number_max, hum.number_step), (30,70,5))
+        for model, cap, illegal in [('HUM_056905_WW','timer.off_remaining_min','90'),
+                                    ('AIR_910604_WW','timer.sleep_remaining_min','360')]:
+            d = next(d for d in extended.descriptors_by_model[model] if d.capability_id == cap)
+            self.assertEqual(d.entity_domain, 'select')
+            self.assertNotIn(illegal, d.exact_local_request_values)
+            old = next(d for d in base.descriptors_by_model[model] if d.capability_id == cap)
+            self.assertEqual(d.home_assistant_entity_key, old.home_assistant_entity_key)
+        from dataclasses import replace
+        restricted = dict(prior)
+        row = restricted['test_numeric_hum']
+        restricted['test_numeric_hum'] = replace(row, values_by_capability={**row.values_by_capability, 'humidity.target_pct': ('60',)})
+        _, restricted_scope = augment_confirmed_features(base, restricted, models)
+        values = restricted_scope['test_numeric_hum'].values_by_capability['humidity.target_pct']
+        self.assertIn('65', values)
+        self.assertIn('60', values)
+        self.assertNotIn('55', values)
+
     def test_exact_catalogue_and_parent_preservation(self):
         base = load_local_control_entity_contract()
         models = {'test_washtower_binding': 'WTL_KPK_BDH_KR_01', 'test_styler_binding': 'ST_R_ETH01Y_',
                   'test_water_binding': '1WPD4CMIDR__3', 'test_ac_binding_01': 'CST_170004_WW', 'test_vacuum_binding': 'HWWA9X3C_F2U'}
         models['test_air_binding'] = 'AIR_910604_WW'
+        models['test_air_tower_binding'] = 'AIR_2C0001_WW'
         models['test_kimchi_binding'] = '3REK2G03VI230D_2'
         models['test_cst570_binding'] = 'CST_570004_WW'
         models['test_dhum_binding'] = 'DHUM_056905_WW'
@@ -21,10 +48,24 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         extended, scope = augment_confirmed_features(base, prior, models)
         self.assertEqual(extended.root_sha256, base.root_sha256)
         for model, rows in base.descriptors_by_model.items():
-            self.assertTrue(all(row in extended.descriptors_by_model[model] for row in rows))
+            for row in rows:
+                current = next(d for d in extended.descriptors_by_model[model] if d.key == row.key)
+                numeric = any(f.get('value_source') == 'exact-model-web-domain' and f['model_id'] == model
+                              and f['capability_id'] == row.capability_id for f in load_confirmed_features())
+                if numeric:
+                    self.assertEqual(current.home_assistant_entity_key, row.home_assistant_entity_key)
+                    self.assertTrue(set(row.exact_local_request_values) <= set(current.exact_local_request_values))
+                    binding = next(b for b, m in models.items() if m == model)
+                    self.assertIn(current, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model))
+                    if row.entity_domain == 'select':
+                        labels = {v.local_request_value: v.home_assistant_value for v in current.value_mappings}
+                        for value in row.value_mappings:
+                            self.assertEqual(labels[value.local_request_value], value.home_assistant_value)
+                else:
+                    self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
-            self.assertEqual(scope['test_ac_binding_01'].values_by_capability[cap], values)
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 331)
+            self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 403)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -33,7 +74,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
             self.assertFalse(local_control_value_authorized(extended, scope, binding_id=binding,
                 model_id=feature['model_id'], capability_id=feature['capability_id'], local_request_value='not-an-observed-option'))
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
-                     if d not in base.descriptors]
+                     if d.key not in {original.key for original in base.descriptors}]
         self.assertEqual({d.home_assistant_entity_key for d in factories} - {'local_cst170_button_sound', 'local_cst570_button_sound', 'local_dhum_button_sound', 'local_hum_button_sound', 'local_hum_sound_melody', 'local_styler_night_start_time', 'local_styler_night_end_time'},
                          {'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_styler_time_display', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
                           'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation',

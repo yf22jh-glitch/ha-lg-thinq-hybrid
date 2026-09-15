@@ -17,7 +17,7 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 
-CATALOGUE_SHA256 = 'b6dc7f8d245dc379a41ec54e47abd274666144cf13f9c268bae492dc4339fdb7'
+CATALOGUE_SHA256 = 'bfea154e05dd280cbb724733a47f17e742e721593266f130624a674ae068b490'
 
 
 def load_confirmed_features():
@@ -57,11 +57,52 @@ def augment_confirmed_features(contract, eligibility, binding_models):
     by_model = {model: tuple(rows) for model, rows in contract.descriptors_by_model.items()}
     bindings = dict(eligibility)
     additions = []
+    replacements = {}
     for feature in features:
         model = feature['model_id']
         capability = feature['capability_id']
         selected = [binding for binding in bindings if binding_models[binding] == model]
         if not selected:
+            continue
+        if feature.get('value_source') == 'exact-model-web-domain':
+            matches = [d for d in by_model.get(model, ()) if d.capability_id == capability]
+            if len(matches) != 1:
+                raise ValueError('Numeric extension requires exactly one existing owner')
+            old = matches[0]
+            values = tuple(v['value'] for v in feature['values'])
+            if (old.input_kind not in ('number', 'enum') or old.entity_domain not in ('number','select')
+                    or not values or len(set(values)) != len(values)
+                    or any(not isinstance(v,str) or not v.isascii() or not v.isdecimal() or str(int(v)) != v for v in values)
+                    or set(values).intersection(old.exact_local_request_values)):
+                raise ValueError('Numeric extension must contain only new canonical values')
+            supported = tuple(sorted(int(v) for v in (*old.exact_local_request_values, *values)))
+            gaps = {b-a for a,b in zip(supported,supported[1:])}
+            # Keep existing select owners; irregular domains must not create
+            # an apparently legal min/max/step lattice with unsupported points.
+            domain = 'number' if old.entity_domain == 'number' and len(gaps) == 1 else 'select'
+            # Existing select labels are an automation contract, not display decoration.
+            plain_select = old.entity_domain == 'select' and all(
+                v.home_assistant_value == v.local_request_value for v in old.value_mappings)
+            old_labels = {v.local_request_value: v.home_assistant_value for v in old.value_mappings}
+            mappings = tuple(LocalControlValueMapping(
+                n if domain == 'number' else (
+                    old_labels.get(str(n), str(n) if plain_select else f"{n}{old.unit or ''}")
+                    if old.entity_domain == 'select' else f"{n}{old.unit or ''}"), str(n)) for n in supported)
+            descriptor = replace(old, supported_values=supported, value_mappings=mappings,
+                entity_domain=domain, input_kind='number' if domain == 'number' else 'enum',
+                number_min=supported[0] if domain == 'number' else None,
+                number_max=supported[-1] if domain == 'number' else None,
+                number_step=next(iter(gaps)) if domain == 'number' else None)
+            replacements[old.key] = descriptor
+            by_model[model] = tuple(descriptor if d.key == old.key else d for d in by_model[model])
+            for binding in selected:
+                prior = bindings[binding]
+                # Preserve any reviewed-value restriction. This extension owns
+                # only the added values, not an old command's authorization.
+                allowed = tuple(str(n) for n in sorted(int(v) for v in (
+                    *prior.values_by_capability.get(capability, ()), *values)))
+                bindings[binding] = replace(prior, values_by_capability=MappingProxyType({
+                    **prior.values_by_capability, capability: allowed}))
             continue
         if any(d.capability_id == capability for d in by_model.get(model, ())):
             raise ValueError('Confirmed feature would replace an existing control')
@@ -92,5 +133,5 @@ def augment_confirmed_features(contract, eligibility, binding_models):
             bindings[binding] = LocalControlBindingEligibility(binding, MappingProxyType({
                 **prior.values_by_capability, capability: descriptor.exact_local_request_values,
             }))
-    return replace(contract, descriptors=(*contract.descriptors, *additions),
+    return replace(contract, descriptors=(*(replacements.get(d.key,d) for d in contract.descriptors), *additions),
                    descriptors_by_model=MappingProxyType(by_model)), MappingProxyType(bindings)

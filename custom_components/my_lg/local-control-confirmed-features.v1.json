@@ -1,7 +1,588 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "b6dc7f8d245dc379a41ec54e47abd274666144cf13f9c268bae492dc4339fdb7",
+  "catalogue_sha256": "bfea154e05dd280cbb724733a47f17e742e721593266f130624a674ae068b490",
   "features": [
+    {
+      "model_id": "DHUM_056905_WW",
+      "capability_id": "humidity.target_pct",
+      "entity_key": "humidity_target_pct",
+      "label_ko": "희망 습도",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "30",
+          "label": "30%",
+          "ordered_frame_sha256s": [
+            "ec3ecad9522013f1e7763bd95528db179b94a24ed4179ac8fbb082f2957e25d7"
+          ]
+        },
+        {
+          "value": "35",
+          "label": "35%",
+          "ordered_frame_sha256s": [
+            "45341f20c430ec9cb69f06f85039d5cb39603fb0fe6f5b1ee5ca9b4a6b941c77"
+          ]
+        },
+        {
+          "value": "40",
+          "label": "40%",
+          "ordered_frame_sha256s": [
+            "449d3a24f60413907eb90a91539ae693e18edf83009dde495de7aa1510015670"
+          ]
+        },
+        {
+          "value": "45",
+          "label": "45%",
+          "ordered_frame_sha256s": [
+            "686b9843d0f642f636621098a89b2b4ff327d026c95f5ca65071920f72883582"
+          ]
+        },
+        {
+          "value": "60",
+          "label": "60%",
+          "ordered_frame_sha256s": [
+            "fad0b5a8d09c043dad11ba4462698e77be6b9da4bce3fab0e974059a861ae77b"
+          ]
+        },
+        {
+          "value": "65",
+          "label": "65%",
+          "ordered_frame_sha256s": [
+            "e66761cb7dcd76e9875e474cf3ac7f7c30a00eec812a4ae8c9d9b9838ed78d48"
+          ]
+        },
+        {
+          "value": "70",
+          "label": "70%",
+          "ordered_frame_sha256s": [
+            "98c5ef84a197add9babf3fa7f9a459750455b6fe2d1088626ab2cc9083d65b83"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "humidity.target_pct",
+      "entity_key": "humidity_target_pct",
+      "label_ko": "희망 습도",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "30",
+          "label": "30%",
+          "ordered_frame_sha256s": [
+            "ec3ecad9522013f1e7763bd95528db179b94a24ed4179ac8fbb082f2957e25d7"
+          ]
+        },
+        {
+          "value": "35",
+          "label": "35%",
+          "ordered_frame_sha256s": [
+            "45341f20c430ec9cb69f06f85039d5cb39603fb0fe6f5b1ee5ca9b4a6b941c77"
+          ]
+        },
+        {
+          "value": "40",
+          "label": "40%",
+          "ordered_frame_sha256s": [
+            "449d3a24f60413907eb90a91539ae693e18edf83009dde495de7aa1510015670"
+          ]
+        },
+        {
+          "value": "45",
+          "label": "45%",
+          "ordered_frame_sha256s": [
+            "686b9843d0f642f636621098a89b2b4ff327d026c95f5ca65071920f72883582"
+          ]
+        },
+        {
+          "value": "50",
+          "label": "50%",
+          "ordered_frame_sha256s": [
+            "775e5ef7344718ec9ef2740ea0f758b503e19f76b916c2417c6ca43f0acacb54"
+          ]
+        },
+        {
+          "value": "65",
+          "label": "65%",
+          "ordered_frame_sha256s": [
+            "e66761cb7dcd76e9875e474cf3ac7f7c30a00eec812a4ae8c9d9b9838ed78d48"
+          ]
+        },
+        {
+          "value": "70",
+          "label": "70%",
+          "ordered_frame_sha256s": [
+            "98c5ef84a197add9babf3fa7f9a459750455b6fe2d1088626ab2cc9083d65b83"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "DHUM_056905_WW",
+      "capability_id": "timer.off_remaining_min",
+      "entity_key": "timer_off_remaining_min",
+      "label_ko": "꺼짐 예약",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "120",
+          "label": "120분",
+          "ordered_frame_sha256s": [
+            "2dd14d28c9c46f14399057546715ca1046b39a66f8b4b9817ee16b7be04bc5e1"
+          ]
+        },
+        {
+          "value": "180",
+          "label": "180분",
+          "ordered_frame_sha256s": [
+            "5b9cb16080448f7854a53c62117a692799403410df19b4045d113f0780fda601"
+          ]
+        },
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "30e6c061dfe3e847a2fdcd3b997edde294aff4944a66eea18f656d9729435c5c"
+          ]
+        },
+        {
+          "value": "300",
+          "label": "300분",
+          "ordered_frame_sha256s": [
+            "1f6a839ec9f702f0a618b6f34ba3b2f136175dd66b514703e4b179014691712a"
+          ]
+        },
+        {
+          "value": "360",
+          "label": "360분",
+          "ordered_frame_sha256s": [
+            "ae5171db5860dd9cb1de13755c15074a594f365a999026ecfff141fdb157ee8f"
+          ]
+        },
+        {
+          "value": "420",
+          "label": "420분",
+          "ordered_frame_sha256s": [
+            "cdf4f47f9e155362556773bc0083645eae36f23ebe19b7e6fd4f6590a85b6dab"
+          ]
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "f386cd3a5b118ff3e727794821c902f627854a9d7dcdedd292f63b15dd280761"
+          ]
+        },
+        {
+          "value": "540",
+          "label": "540분",
+          "ordered_frame_sha256s": [
+            "7d41a6e73b89125e678a378282ebcabd12f51333f9dfb8f766e75396fbdbe2f5"
+          ]
+        },
+        {
+          "value": "600",
+          "label": "600분",
+          "ordered_frame_sha256s": [
+            "791c9f79645125d22a371298638f3c0434a331529d7766676eccc2b91c896b93"
+          ]
+        },
+        {
+          "value": "660",
+          "label": "660분",
+          "ordered_frame_sha256s": [
+            "8ac568022776b2c5652892872ffef0724dce2497751953d7a9403622652b9ed9"
+          ]
+        },
+        {
+          "value": "720",
+          "label": "720분",
+          "ordered_frame_sha256s": [
+            "ef47d7363d75107d3b1d168223ede43ebac98c3841cb7b77115c83415e56a259"
+          ]
+        },
+        {
+          "value": "780",
+          "label": "780분",
+          "ordered_frame_sha256s": [
+            "f00186e5b11a5b10e1ccd50b69d81d165ca30b9dd1b0c5a08a23c42d65a6d0b0"
+          ]
+        },
+        {
+          "value": "840",
+          "label": "840분",
+          "ordered_frame_sha256s": [
+            "d5b020600a66ac27b992e1a6f326ce5b88f6fefdaab0da67d12f578cceaeb46d"
+          ]
+        },
+        {
+          "value": "900",
+          "label": "900분",
+          "ordered_frame_sha256s": [
+            "794bb1742e960eda3682652e9960f9b81b266480912e6c4430b23a01a3e7f4af"
+          ]
+        },
+        {
+          "value": "960",
+          "label": "960분",
+          "ordered_frame_sha256s": [
+            "a3cdeb32b7ab567bc70dbf50067840ae0e8b9bdf308b4a66f4e51d7c2895e93f"
+          ]
+        },
+        {
+          "value": "1020",
+          "label": "1020분",
+          "ordered_frame_sha256s": [
+            "ddef7fc64a4ce63764b53c31c9b8075fcc7546efcb8f79e60a28b69759b66a6f"
+          ]
+        },
+        {
+          "value": "1080",
+          "label": "1080분",
+          "ordered_frame_sha256s": [
+            "90da4d99b77b7732b9b8bb24bcf21a5fd9633bf01634b2c2c9dcfce68608d0f9"
+          ]
+        },
+        {
+          "value": "1140",
+          "label": "1140분",
+          "ordered_frame_sha256s": [
+            "fda23e03a98559b1a5136f771176c5d10f4e5c3f7430554bd2f56a90b68ebf92"
+          ]
+        },
+        {
+          "value": "1200",
+          "label": "1200분",
+          "ordered_frame_sha256s": [
+            "0bb7b803cfb114d2bc857e88ebd5d54373fe5c24a6f490a21019b094551aa5fc"
+          ]
+        },
+        {
+          "value": "1260",
+          "label": "1260분",
+          "ordered_frame_sha256s": [
+            "1315583d0c289ee5196350e79b12840e43fee5fe88fb024b37f99f054acdba52"
+          ]
+        },
+        {
+          "value": "1320",
+          "label": "1320분",
+          "ordered_frame_sha256s": [
+            "7453284fda445117986c125bbe749750087a346f4d5db34336ed74d490e5af13"
+          ]
+        },
+        {
+          "value": "1380",
+          "label": "1380분",
+          "ordered_frame_sha256s": [
+            "48e0eeabde00828b7e6cfe1fd4467a82485589e8a1464aaf9ee8222da6dedf67"
+          ]
+        },
+        {
+          "value": "1440",
+          "label": "1440분",
+          "ordered_frame_sha256s": [
+            "36a454b4063b651fcc428d16fe87c9e6286335c60128f61cecb55576f41e7de4"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "timer.off_remaining_min",
+      "entity_key": "timer_off_remaining_min",
+      "label_ko": "꺼짐 예약",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "30",
+          "label": "30분",
+          "ordered_frame_sha256s": [
+            "a142053d4744b7e521150758535f4a74355744ff734b68ad07abe92fbae8161f"
+          ]
+        },
+        {
+          "value": "120",
+          "label": "120분",
+          "ordered_frame_sha256s": [
+            "2dd14d28c9c46f14399057546715ca1046b39a66f8b4b9817ee16b7be04bc5e1"
+          ]
+        },
+        {
+          "value": "180",
+          "label": "180분",
+          "ordered_frame_sha256s": [
+            "5b9cb16080448f7854a53c62117a692799403410df19b4045d113f0780fda601"
+          ]
+        },
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "30e6c061dfe3e847a2fdcd3b997edde294aff4944a66eea18f656d9729435c5c"
+          ]
+        },
+        {
+          "value": "300",
+          "label": "300분",
+          "ordered_frame_sha256s": [
+            "1f6a839ec9f702f0a618b6f34ba3b2f136175dd66b514703e4b179014691712a"
+          ]
+        },
+        {
+          "value": "360",
+          "label": "360분",
+          "ordered_frame_sha256s": [
+            "ae5171db5860dd9cb1de13755c15074a594f365a999026ecfff141fdb157ee8f"
+          ]
+        },
+        {
+          "value": "420",
+          "label": "420분",
+          "ordered_frame_sha256s": [
+            "cdf4f47f9e155362556773bc0083645eae36f23ebe19b7e6fd4f6590a85b6dab"
+          ]
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "f386cd3a5b118ff3e727794821c902f627854a9d7dcdedd292f63b15dd280761"
+          ]
+        },
+        {
+          "value": "540",
+          "label": "540분",
+          "ordered_frame_sha256s": [
+            "7d41a6e73b89125e678a378282ebcabd12f51333f9dfb8f766e75396fbdbe2f5"
+          ]
+        },
+        {
+          "value": "600",
+          "label": "600분",
+          "ordered_frame_sha256s": [
+            "791c9f79645125d22a371298638f3c0434a331529d7766676eccc2b91c896b93"
+          ]
+        },
+        {
+          "value": "660",
+          "label": "660분",
+          "ordered_frame_sha256s": [
+            "8ac568022776b2c5652892872ffef0724dce2497751953d7a9403622652b9ed9"
+          ]
+        },
+        {
+          "value": "720",
+          "label": "720분",
+          "ordered_frame_sha256s": [
+            "ef47d7363d75107d3b1d168223ede43ebac98c3841cb7b77115c83415e56a259"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_910604_WW",
+      "capability_id": "timer.sleep_remaining_min",
+      "entity_key": "timer_sleep_remaining_min",
+      "label_ko": "취침 예약",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
+          ]
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
+          ]
+        },
+        {
+          "value": "720",
+          "label": "720분",
+          "ordered_frame_sha256s": [
+            "d0b3366266011d3ce3958b6125aa73465ef6dcd609fe416ec91f407e328684f7"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_2C0001_WW",
+      "capability_id": "timer.sleep_remaining_min",
+      "entity_key": "timer_sleep_remaining_min",
+      "label_ko": "취침 예약",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "120",
+          "label": "120분",
+          "ordered_frame_sha256s": [
+            "34abed66a7f74d8be8b279f2756cf44802568c1e5b98fab3db1ee4d0c049f390"
+          ]
+        },
+        {
+          "value": "180",
+          "label": "180분",
+          "ordered_frame_sha256s": [
+            "3888cc30f9728648bb69f5ab9cbeede3fe474d147e23cda8408b2e2f1eef65d1"
+          ]
+        },
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
+          ]
+        },
+        {
+          "value": "300",
+          "label": "300분",
+          "ordered_frame_sha256s": [
+            "0182d79cc6402c78c72a3ae754b5e961d8afe56502975b22e1a494561f253bce"
+          ]
+        },
+        {
+          "value": "360",
+          "label": "360분",
+          "ordered_frame_sha256s": [
+            "5f16ef34bc5c4db578e0e15ab4ed13a941a4e3238e83d0276e050055a9997a93"
+          ]
+        },
+        {
+          "value": "420",
+          "label": "420분",
+          "ordered_frame_sha256s": [
+            "75148641173ddc8c23ad7b6b8744ba2678f4f74aea5c6065249c7e82c8b984bf"
+          ]
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
+          ]
+        },
+        {
+          "value": "540",
+          "label": "540분",
+          "ordered_frame_sha256s": [
+            "1e53e346e22dbd0b9c8fb814954f24c1e20087574dae2b9fe6bb0315870cf3f3"
+          ]
+        },
+        {
+          "value": "600",
+          "label": "600분",
+          "ordered_frame_sha256s": [
+            "dfa995c7365005dcecccb5e2ec3b8566f29db632c14d25fe3a94112ee6c6b243"
+          ]
+        },
+        {
+          "value": "660",
+          "label": "660분",
+          "ordered_frame_sha256s": [
+            "3d28c2c7fd2149d96cf26c05340fe11815406090abbfcd98633e218a85940bca"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "timer.sleep_remaining_min",
+      "entity_key": "timer_sleep_remaining_min",
+      "label_ko": "취침 예약",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "60",
+          "label": "60분",
+          "ordered_frame_sha256s": [
+            "20af8216a15ccf08885608f4728499ba2f0a8a46ea10780f9de1477dfc53e83e"
+          ]
+        },
+        {
+          "value": "90",
+          "label": "90분",
+          "ordered_frame_sha256s": [
+            "5ccb8733d486e5592ded74a4976dd962de0e89827d3c10ce6a8e53159934d5cd"
+          ]
+        },
+        {
+          "value": "120",
+          "label": "120분",
+          "ordered_frame_sha256s": [
+            "34abed66a7f74d8be8b279f2756cf44802568c1e5b98fab3db1ee4d0c049f390"
+          ]
+        },
+        {
+          "value": "150",
+          "label": "150분",
+          "ordered_frame_sha256s": [
+            "de78cb99bcf8e7e889b6f22a08ee163c66b6519d873e2ba7647ec2ddee3ead24"
+          ]
+        },
+        {
+          "value": "180",
+          "label": "180분",
+          "ordered_frame_sha256s": [
+            "3888cc30f9728648bb69f5ab9cbeede3fe474d147e23cda8408b2e2f1eef65d1"
+          ]
+        },
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
+          ]
+        },
+        {
+          "value": "300",
+          "label": "300분",
+          "ordered_frame_sha256s": [
+            "0182d79cc6402c78c72a3ae754b5e961d8afe56502975b22e1a494561f253bce"
+          ]
+        },
+        {
+          "value": "360",
+          "label": "360분",
+          "ordered_frame_sha256s": [
+            "5f16ef34bc5c4db578e0e15ab4ed13a941a4e3238e83d0276e050055a9997a93"
+          ]
+        },
+        {
+          "value": "420",
+          "label": "420분",
+          "ordered_frame_sha256s": [
+            "75148641173ddc8c23ad7b6b8744ba2678f4f74aea5c6065249c7e82c8b984bf"
+          ]
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "1WPD4CMIDR__3",
       "capability_id": "water.do_not_disturb.window_kst",
