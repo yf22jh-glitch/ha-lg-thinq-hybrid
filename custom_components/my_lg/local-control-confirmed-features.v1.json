@@ -1,7 +1,4439 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "dbcab82685e03b3be76a0b87d9185c2c2ea8f9557e9c92068656afecd41e661b",
+  "catalogue_sha256": "aa6490215dbde5ba321284828164892b9c43649e4fb898366545055111a6d73c",
   "features": [
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "climate.mode_fan_setpoint",
+      "entity_key": "climate_mode_fan_setpoint",
+      "label_ko": "냉방 운전 조합",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "cool|very low|16C",
+          "label": "cool|very low|16C",
+          "ordered_frame_sha256s": [
+            "f679069134cd15c3fe71e354a93c9dd1c1b9506edfd59fee69cb3d0f5a38c359"
+          ],
+          "reported_value": "cool|very low|16C"
+        },
+        {
+          "value": "cool|very low|16.5C",
+          "label": "cool|very low|16.5C",
+          "ordered_frame_sha256s": [
+            "6527d8e5c1c3cc82b93ad76b5231966e7e82f7c7b18e2012c34cb019a98701c6"
+          ],
+          "reported_value": "cool|very low|16.5C"
+        },
+        {
+          "value": "cool|very low|17C",
+          "label": "cool|very low|17C",
+          "ordered_frame_sha256s": [
+            "256251b0606d95355d7f84dadeceb428066818b6c2a118a50ee8b6bf5c35cce6"
+          ],
+          "reported_value": "cool|very low|17C"
+        },
+        {
+          "value": "cool|very low|17.5C",
+          "label": "cool|very low|17.5C",
+          "ordered_frame_sha256s": [
+            "f13bd456e3f67396df19097674abe0c24fbe5e018d4c479402d95359ab791ac5"
+          ],
+          "reported_value": "cool|very low|17.5C"
+        },
+        {
+          "value": "cool|very low|18.5C",
+          "label": "cool|very low|18.5C",
+          "ordered_frame_sha256s": [
+            "527ef6ebd9f550febbc46a40407bddf614b108b38639fa267fece68b59824c30"
+          ],
+          "reported_value": "cool|very low|18.5C"
+        },
+        {
+          "value": "cool|very low|19C",
+          "label": "cool|very low|19C",
+          "ordered_frame_sha256s": [
+            "6397cc5ec4d861c1d795ea8f32de0f1a47ff92385a2ad28e889af919ff7352a0"
+          ],
+          "reported_value": "cool|very low|19C"
+        },
+        {
+          "value": "cool|very low|19.5C",
+          "label": "cool|very low|19.5C",
+          "ordered_frame_sha256s": [
+            "321123ec0394c22ec2b1da6049a93b26ae4e4b637e2abb27eaece29e0c2f1756"
+          ],
+          "reported_value": "cool|very low|19.5C"
+        },
+        {
+          "value": "cool|very low|20C",
+          "label": "cool|very low|20C",
+          "ordered_frame_sha256s": [
+            "0efebf43f8482062ddacd72f552daa82fafa9f7066dc52f16e218d1eadee22e4"
+          ],
+          "reported_value": "cool|very low|20C"
+        },
+        {
+          "value": "cool|very low|20.5C",
+          "label": "cool|very low|20.5C",
+          "ordered_frame_sha256s": [
+            "93c2d001d301c2af4295b97f9f34554ce054c222025594f860b7151ce369e534"
+          ],
+          "reported_value": "cool|very low|20.5C"
+        },
+        {
+          "value": "cool|very low|21C",
+          "label": "cool|very low|21C",
+          "ordered_frame_sha256s": [
+            "9aab2e7b56c41b5e41705ae8a30c5c189e8261616e715c33d1ced1da28aa9b40"
+          ],
+          "reported_value": "cool|very low|21C"
+        },
+        {
+          "value": "cool|very low|21.5C",
+          "label": "cool|very low|21.5C",
+          "ordered_frame_sha256s": [
+            "8d746682aa204feeb077b8589e036d99e25de496541c30c5a3cebd00409ee6c3"
+          ],
+          "reported_value": "cool|very low|21.5C"
+        },
+        {
+          "value": "cool|very low|22C",
+          "label": "cool|very low|22C",
+          "ordered_frame_sha256s": [
+            "e3a0735b229a74e8859c974a8d1c22768941e358613f37829e0e5c6560c9ecdc"
+          ],
+          "reported_value": "cool|very low|22C"
+        },
+        {
+          "value": "cool|very low|22.5C",
+          "label": "cool|very low|22.5C",
+          "ordered_frame_sha256s": [
+            "ffc1dc5f60c1830c55c863153c607d6a0e6fd260c701aa52f8487f433127cecc"
+          ],
+          "reported_value": "cool|very low|22.5C"
+        },
+        {
+          "value": "cool|very low|23C",
+          "label": "cool|very low|23C",
+          "ordered_frame_sha256s": [
+            "33df72465ab39b49dc426a46b0e4671c13c2678b8ba930db51cf9b2a65dc3514"
+          ],
+          "reported_value": "cool|very low|23C"
+        },
+        {
+          "value": "cool|very low|23.5C",
+          "label": "cool|very low|23.5C",
+          "ordered_frame_sha256s": [
+            "ca652a909ef9f6cd092b01fe83fbc3ada8006c6fecd87a2658930f89c04dea2d"
+          ],
+          "reported_value": "cool|very low|23.5C"
+        },
+        {
+          "value": "cool|very low|24.5C",
+          "label": "cool|very low|24.5C",
+          "ordered_frame_sha256s": [
+            "b3ceca01be72274ef32ad9a73582835e83f205e1767aa5b6e7847c80e4a9da6c"
+          ],
+          "reported_value": "cool|very low|24.5C"
+        },
+        {
+          "value": "cool|very low|25C",
+          "label": "cool|very low|25C",
+          "ordered_frame_sha256s": [
+            "ee150d776e0aca1c6a5aa871cea641cfcdd3c37e1c562afc114d7c40e757a63d"
+          ],
+          "reported_value": "cool|very low|25C"
+        },
+        {
+          "value": "cool|very low|25.5C",
+          "label": "cool|very low|25.5C",
+          "ordered_frame_sha256s": [
+            "9374e54010450bc47a51bf4c6f651f4cc20d7e598219d2fc3055d82131c8ad24"
+          ],
+          "reported_value": "cool|very low|25.5C"
+        },
+        {
+          "value": "cool|very low|26C",
+          "label": "cool|very low|26C",
+          "ordered_frame_sha256s": [
+            "084d60971b90cf428e0712655f3750aef956ed337ded38a5e57152959c757b90"
+          ],
+          "reported_value": "cool|very low|26C"
+        },
+        {
+          "value": "cool|very low|26.5C",
+          "label": "cool|very low|26.5C",
+          "ordered_frame_sha256s": [
+            "7af0420712e1f9f747d65fe385896c9bb0263025e445922fe9bc5dda8717b57d"
+          ],
+          "reported_value": "cool|very low|26.5C"
+        },
+        {
+          "value": "cool|very low|27C",
+          "label": "cool|very low|27C",
+          "ordered_frame_sha256s": [
+            "8c4827b48e583c28f1352542cb22c08bedb89566a72a4d6e87d10094f11424d7"
+          ],
+          "reported_value": "cool|very low|27C"
+        },
+        {
+          "value": "cool|very low|27.5C",
+          "label": "cool|very low|27.5C",
+          "ordered_frame_sha256s": [
+            "f6930e8f67349bf602165718f536373b4ccfcde7944b8953c46bb4f12083a245"
+          ],
+          "reported_value": "cool|very low|27.5C"
+        },
+        {
+          "value": "cool|very low|28C",
+          "label": "cool|very low|28C",
+          "ordered_frame_sha256s": [
+            "906eaccac61a9d721d1009bc0441385aacdcad1531562c3504c139d5b35ecaff"
+          ],
+          "reported_value": "cool|very low|28C"
+        },
+        {
+          "value": "cool|very low|28.5C",
+          "label": "cool|very low|28.5C",
+          "ordered_frame_sha256s": [
+            "f93ce3fd9d3e415f8e0aae204435887a71bb85e3fdff3f2d475049b4f916715e"
+          ],
+          "reported_value": "cool|very low|28.5C"
+        },
+        {
+          "value": "cool|very low|29C",
+          "label": "cool|very low|29C",
+          "ordered_frame_sha256s": [
+            "61ea20fd4e2677b7452b010defda76f8e09bd31a36862a422bbb5e73decaa9b2"
+          ],
+          "reported_value": "cool|very low|29C"
+        },
+        {
+          "value": "cool|very low|29.5C",
+          "label": "cool|very low|29.5C",
+          "ordered_frame_sha256s": [
+            "da875097a04a6ffdd8bed36b51968a1afde11eda76036f304b2ca563cdcab3f5"
+          ],
+          "reported_value": "cool|very low|29.5C"
+        },
+        {
+          "value": "cool|very low|30C",
+          "label": "cool|very low|30C",
+          "ordered_frame_sha256s": [
+            "8d022e776b597e1ede43ec7a19c6c6cd355f74ac3c0544d1a67f77d478ca57d4"
+          ],
+          "reported_value": "cool|very low|30C"
+        },
+        {
+          "value": "cool|low|16C",
+          "label": "cool|low|16C",
+          "ordered_frame_sha256s": [
+            "14f72a0cb2f02d7a4f0eb905cf0cf67143705ea9a79cfa6deda7de424eb3b8f1"
+          ],
+          "reported_value": "cool|low|16C"
+        },
+        {
+          "value": "cool|low|16.5C",
+          "label": "cool|low|16.5C",
+          "ordered_frame_sha256s": [
+            "e7f021461b30afcf24772cfbac54880918070d8cf01021be40bc37ad7c32b7df"
+          ],
+          "reported_value": "cool|low|16.5C"
+        },
+        {
+          "value": "cool|low|17C",
+          "label": "cool|low|17C",
+          "ordered_frame_sha256s": [
+            "3a20bae3d876dd3d8b5408e42716e9426c6af7f54bd52614661905f8279e72f0"
+          ],
+          "reported_value": "cool|low|17C"
+        },
+        {
+          "value": "cool|low|17.5C",
+          "label": "cool|low|17.5C",
+          "ordered_frame_sha256s": [
+            "8775187932017f435de13cabc9b3a21c86bee6b4a0a1d093b7229a6090f65ab3"
+          ],
+          "reported_value": "cool|low|17.5C"
+        },
+        {
+          "value": "cool|low|18.5C",
+          "label": "cool|low|18.5C",
+          "ordered_frame_sha256s": [
+            "d89371597ee3f67568d037de3ab0088be60ebce0411f53754eb2f39d1f139ed6"
+          ],
+          "reported_value": "cool|low|18.5C"
+        },
+        {
+          "value": "cool|low|19C",
+          "label": "cool|low|19C",
+          "ordered_frame_sha256s": [
+            "b96b131cd21d7f20b263286f6e5abcb5713c152e23daba8773de360e01aa70ef"
+          ],
+          "reported_value": "cool|low|19C"
+        },
+        {
+          "value": "cool|low|19.5C",
+          "label": "cool|low|19.5C",
+          "ordered_frame_sha256s": [
+            "8af255da63868018b840a492a30e7902794818bbb36b3ed0414f64d4aeb94d42"
+          ],
+          "reported_value": "cool|low|19.5C"
+        },
+        {
+          "value": "cool|low|20C",
+          "label": "cool|low|20C",
+          "ordered_frame_sha256s": [
+            "ea651ad168f9730952c2034cfb8c99f843bfe8e49866e4cc5ac888117506308e"
+          ],
+          "reported_value": "cool|low|20C"
+        },
+        {
+          "value": "cool|low|20.5C",
+          "label": "cool|low|20.5C",
+          "ordered_frame_sha256s": [
+            "83615f441c2adecfb36aa0000e7662584bc63bcb308dfa27569bea68f46d71c0"
+          ],
+          "reported_value": "cool|low|20.5C"
+        },
+        {
+          "value": "cool|low|21C",
+          "label": "cool|low|21C",
+          "ordered_frame_sha256s": [
+            "2169af9ac22ef977a317b07d0cdbf26b070e9a715865a7e640e0cf17d86d3802"
+          ],
+          "reported_value": "cool|low|21C"
+        },
+        {
+          "value": "cool|low|21.5C",
+          "label": "cool|low|21.5C",
+          "ordered_frame_sha256s": [
+            "35c16f309b536719db5812447d0f239f2860210e8f16a84d51cad78270bb684c"
+          ],
+          "reported_value": "cool|low|21.5C"
+        },
+        {
+          "value": "cool|low|22.5C",
+          "label": "cool|low|22.5C",
+          "ordered_frame_sha256s": [
+            "5ae5abd377a090c87ba2aa50b0969313f8b0bc3e7a2451614107d2812f1eab29"
+          ],
+          "reported_value": "cool|low|22.5C"
+        },
+        {
+          "value": "cool|low|23.5C",
+          "label": "cool|low|23.5C",
+          "ordered_frame_sha256s": [
+            "333353c0f987c4f8297af93b91a36c50000832caaf4415116f671255e3c95bfb"
+          ],
+          "reported_value": "cool|low|23.5C"
+        },
+        {
+          "value": "cool|low|24.5C",
+          "label": "cool|low|24.5C",
+          "ordered_frame_sha256s": [
+            "efc85999401dc1a5dc2428e873051a1a03ac2ce1815eddaa08a599c26ba353aa"
+          ],
+          "reported_value": "cool|low|24.5C"
+        },
+        {
+          "value": "cool|low|25.5C",
+          "label": "cool|low|25.5C",
+          "ordered_frame_sha256s": [
+            "e256d812cf46a08e11b62ab135d29314f3d64a3a0309baebd82ff5cab999252c"
+          ],
+          "reported_value": "cool|low|25.5C"
+        },
+        {
+          "value": "cool|low|26C",
+          "label": "cool|low|26C",
+          "ordered_frame_sha256s": [
+            "5e71969f44f300e0b9ac4827964f7be0b6324629bea52878a23043bc162a3c09"
+          ],
+          "reported_value": "cool|low|26C"
+        },
+        {
+          "value": "cool|low|26.5C",
+          "label": "cool|low|26.5C",
+          "ordered_frame_sha256s": [
+            "e4c4a5995b2eaa655752ee184fe2ee6c8648bfca39fea5acbab73ebee95eb7c1"
+          ],
+          "reported_value": "cool|low|26.5C"
+        },
+        {
+          "value": "cool|low|27C",
+          "label": "cool|low|27C",
+          "ordered_frame_sha256s": [
+            "4d6f716ca26e6f8d852a1bc20931a68021f63690bad92a17ab43be20dbb84670"
+          ],
+          "reported_value": "cool|low|27C"
+        },
+        {
+          "value": "cool|low|27.5C",
+          "label": "cool|low|27.5C",
+          "ordered_frame_sha256s": [
+            "eee05b704ca74f6b5d33c077871493d86bfac21c199a536951f4382486ffb9ac"
+          ],
+          "reported_value": "cool|low|27.5C"
+        },
+        {
+          "value": "cool|low|28C",
+          "label": "cool|low|28C",
+          "ordered_frame_sha256s": [
+            "d02e3f19394026bf2a9747519ef8a3219f0470ddd4f3bd0f8190c7dc1c6fac6d"
+          ],
+          "reported_value": "cool|low|28C"
+        },
+        {
+          "value": "cool|low|28.5C",
+          "label": "cool|low|28.5C",
+          "ordered_frame_sha256s": [
+            "50a2d57823a5ab2721759321d31f7d36c743851979f6376090a08b92ef9838a4"
+          ],
+          "reported_value": "cool|low|28.5C"
+        },
+        {
+          "value": "cool|low|29C",
+          "label": "cool|low|29C",
+          "ordered_frame_sha256s": [
+            "efc1e408cf068d7d8363beccf7ac7db0b42387b633dc8ec9a8ae717e07cca34b"
+          ],
+          "reported_value": "cool|low|29C"
+        },
+        {
+          "value": "cool|low|29.5C",
+          "label": "cool|low|29.5C",
+          "ordered_frame_sha256s": [
+            "96f649c2ce7ee43b1451e63f91798e11c4e79724ef3aecebc0d05044f394a6f8"
+          ],
+          "reported_value": "cool|low|29.5C"
+        },
+        {
+          "value": "cool|low|30C",
+          "label": "cool|low|30C",
+          "ordered_frame_sha256s": [
+            "80b4a34c613c7c1b5de3b6f9ce2eeac8d206bb98e41251eb08b5b43587584bec"
+          ],
+          "reported_value": "cool|low|30C"
+        },
+        {
+          "value": "cool|medium|16C",
+          "label": "cool|medium|16C",
+          "ordered_frame_sha256s": [
+            "a0dac0bf8a2969d148f9f7eb8c811c754745f0548115977646468e9403b66af5"
+          ],
+          "reported_value": "cool|medium|16C"
+        },
+        {
+          "value": "cool|medium|16.5C",
+          "label": "cool|medium|16.5C",
+          "ordered_frame_sha256s": [
+            "b551333c185d0c5c3d374e253e9bf6528dfb87d02c794edbfb1ff7ff11916564"
+          ],
+          "reported_value": "cool|medium|16.5C"
+        },
+        {
+          "value": "cool|medium|17C",
+          "label": "cool|medium|17C",
+          "ordered_frame_sha256s": [
+            "1eb588edb5fb7d15e9f1342642e245d70c7b747203fcbc1f6d3bceb87853718f"
+          ],
+          "reported_value": "cool|medium|17C"
+        },
+        {
+          "value": "cool|medium|17.5C",
+          "label": "cool|medium|17.5C",
+          "ordered_frame_sha256s": [
+            "6ea3f8078b43b9096ae38402f646577ab36b4cb244767f5c04d72c188ad35b24"
+          ],
+          "reported_value": "cool|medium|17.5C"
+        },
+        {
+          "value": "cool|medium|18C",
+          "label": "cool|medium|18C",
+          "ordered_frame_sha256s": [
+            "6715b7e7a6e21d950315a7bf914739145c7ba48263dcdb1c7ead872521435a44"
+          ],
+          "reported_value": "cool|medium|18C"
+        },
+        {
+          "value": "cool|medium|18.5C",
+          "label": "cool|medium|18.5C",
+          "ordered_frame_sha256s": [
+            "104be14d703b96e6d1af3953bf7a89f2cfe73093d492982261dd584a7bac833d"
+          ],
+          "reported_value": "cool|medium|18.5C"
+        },
+        {
+          "value": "cool|medium|19C",
+          "label": "cool|medium|19C",
+          "ordered_frame_sha256s": [
+            "073817b6879cbea4b7b44386cfa0b481610703446cdcb64287b3989e4d77e812"
+          ],
+          "reported_value": "cool|medium|19C"
+        },
+        {
+          "value": "cool|medium|19.5C",
+          "label": "cool|medium|19.5C",
+          "ordered_frame_sha256s": [
+            "a290387eea099328f1adf05439785cf9d6eca86f347895050b56c22243499d9e"
+          ],
+          "reported_value": "cool|medium|19.5C"
+        },
+        {
+          "value": "cool|medium|20C",
+          "label": "cool|medium|20C",
+          "ordered_frame_sha256s": [
+            "0ca573d7034f01ac9cd34ed4a1350ac582e77192085bf33d435d252c24400f58"
+          ],
+          "reported_value": "cool|medium|20C"
+        },
+        {
+          "value": "cool|medium|20.5C",
+          "label": "cool|medium|20.5C",
+          "ordered_frame_sha256s": [
+            "88dac4f87b120d3e417a08f3e31b6d0e13e2d29f1d199f571bfdd940a4bd13ed"
+          ],
+          "reported_value": "cool|medium|20.5C"
+        },
+        {
+          "value": "cool|medium|21C",
+          "label": "cool|medium|21C",
+          "ordered_frame_sha256s": [
+            "b85636ff846a91a73e3eb2084ebfae5aa7b3bb5fb6c87dcb24b0d155f3f0f930"
+          ],
+          "reported_value": "cool|medium|21C"
+        },
+        {
+          "value": "cool|medium|21.5C",
+          "label": "cool|medium|21.5C",
+          "ordered_frame_sha256s": [
+            "5f85e533b45855e3063df9689267aa0cfa217658995ad7548b27be9bbdacf6fa"
+          ],
+          "reported_value": "cool|medium|21.5C"
+        },
+        {
+          "value": "cool|medium|22.5C",
+          "label": "cool|medium|22.5C",
+          "ordered_frame_sha256s": [
+            "7752813d50348ae034e3aed18d08fd0ddf1d1407ec3b3cde2b49acb27291430d"
+          ],
+          "reported_value": "cool|medium|22.5C"
+        },
+        {
+          "value": "cool|medium|24.5C",
+          "label": "cool|medium|24.5C",
+          "ordered_frame_sha256s": [
+            "e918159e1e8578f545be77698ad13225d29ac13f4b8049dcbf8138e7c758fd6a"
+          ],
+          "reported_value": "cool|medium|24.5C"
+        },
+        {
+          "value": "cool|medium|25C",
+          "label": "cool|medium|25C",
+          "ordered_frame_sha256s": [
+            "c8a7be0edd2501005fdd90f361b15fcee73412ae950c6a0e317855299572d0fe"
+          ],
+          "reported_value": "cool|medium|25C"
+        },
+        {
+          "value": "cool|medium|25.5C",
+          "label": "cool|medium|25.5C",
+          "ordered_frame_sha256s": [
+            "4f4d78ee2399ac36321589aa379f40f8ff976abf7c110f63aab7fcc36ef491e7"
+          ],
+          "reported_value": "cool|medium|25.5C"
+        },
+        {
+          "value": "cool|medium|26C",
+          "label": "cool|medium|26C",
+          "ordered_frame_sha256s": [
+            "0fbe73c641234afbe88b2f9daddda90c82c2947a84116b75a2a11d73345da81f"
+          ],
+          "reported_value": "cool|medium|26C"
+        },
+        {
+          "value": "cool|medium|26.5C",
+          "label": "cool|medium|26.5C",
+          "ordered_frame_sha256s": [
+            "02ea86acee66338e1e95d0ca51c3e3d3c27aa6db8ff5afbab392ad0184531572"
+          ],
+          "reported_value": "cool|medium|26.5C"
+        },
+        {
+          "value": "cool|medium|27C",
+          "label": "cool|medium|27C",
+          "ordered_frame_sha256s": [
+            "956451ca583d7a6dec00f536c2dccb3b92123f565d1161ad43ba622cbdce0f5c"
+          ],
+          "reported_value": "cool|medium|27C"
+        },
+        {
+          "value": "cool|medium|27.5C",
+          "label": "cool|medium|27.5C",
+          "ordered_frame_sha256s": [
+            "960bdb06f13791cf55a0ea07652c638bd47e07df404993e820db843856a983ea"
+          ],
+          "reported_value": "cool|medium|27.5C"
+        },
+        {
+          "value": "cool|medium|28C",
+          "label": "cool|medium|28C",
+          "ordered_frame_sha256s": [
+            "b4acee9f7370e1c3fccd9694493f4a89c3562f3e5a00cbe880e76d2d9f98c974"
+          ],
+          "reported_value": "cool|medium|28C"
+        },
+        {
+          "value": "cool|medium|28.5C",
+          "label": "cool|medium|28.5C",
+          "ordered_frame_sha256s": [
+            "b983a7d2d1fe3305c1f81d5625526b4036ce9608bae0c91294ccb10dbb3843a0"
+          ],
+          "reported_value": "cool|medium|28.5C"
+        },
+        {
+          "value": "cool|medium|29C",
+          "label": "cool|medium|29C",
+          "ordered_frame_sha256s": [
+            "f4405a9b855fd0a3d3ced774685cb5150e58bebb986f2018ea5ea65ff77d3edd"
+          ],
+          "reported_value": "cool|medium|29C"
+        },
+        {
+          "value": "cool|medium|29.5C",
+          "label": "cool|medium|29.5C",
+          "ordered_frame_sha256s": [
+            "adeab7a3d8c3debd47ed1910103fce4b68a4dd1ee4ca954025b606a8fb4781c1"
+          ],
+          "reported_value": "cool|medium|29.5C"
+        },
+        {
+          "value": "cool|medium|30C",
+          "label": "cool|medium|30C",
+          "ordered_frame_sha256s": [
+            "2a4e47a3f38ad9bd08fe98fe3ca6185b2442edc3add510f3aff0be19ed54634e"
+          ],
+          "reported_value": "cool|medium|30C"
+        },
+        {
+          "value": "cool|high|16C",
+          "label": "cool|high|16C",
+          "ordered_frame_sha256s": [
+            "2046edbb4e74dfcad0568437f5cb461f05c97e8a427a7925cbe7492b000d648d"
+          ],
+          "reported_value": "cool|high|16C"
+        },
+        {
+          "value": "cool|high|16.5C",
+          "label": "cool|high|16.5C",
+          "ordered_frame_sha256s": [
+            "2fb60f5d19222d4b2c0e0a45d949e6eb9c4e37c15175a246db1104e08de30c0e"
+          ],
+          "reported_value": "cool|high|16.5C"
+        },
+        {
+          "value": "cool|high|17C",
+          "label": "cool|high|17C",
+          "ordered_frame_sha256s": [
+            "a44c447b4672d201182bf609d908aadf58c8bdc26ffb5b0edd14ef090a93d728"
+          ],
+          "reported_value": "cool|high|17C"
+        },
+        {
+          "value": "cool|high|17.5C",
+          "label": "cool|high|17.5C",
+          "ordered_frame_sha256s": [
+            "5f16d30f487c316b6e7388bee983720c56587f97393ed36aa4f0f4d1d16e724c"
+          ],
+          "reported_value": "cool|high|17.5C"
+        },
+        {
+          "value": "cool|high|18C",
+          "label": "cool|high|18C",
+          "ordered_frame_sha256s": [
+            "0c8c379b2989561f6cc97865bcc0c5a4f9afbba210fd9dc3bfff7ccf51c94cfb"
+          ],
+          "reported_value": "cool|high|18C"
+        },
+        {
+          "value": "cool|high|18.5C",
+          "label": "cool|high|18.5C",
+          "ordered_frame_sha256s": [
+            "204cbd509b2a114e693d5c81ccef6f47fc67e94e0636e692c47fdf29b3e469ce"
+          ],
+          "reported_value": "cool|high|18.5C"
+        },
+        {
+          "value": "cool|high|19C",
+          "label": "cool|high|19C",
+          "ordered_frame_sha256s": [
+            "4a7a09f83772e59b35f16db925cbb7a7621131fdc55d7732ddb9294478987a73"
+          ],
+          "reported_value": "cool|high|19C"
+        },
+        {
+          "value": "cool|high|19.5C",
+          "label": "cool|high|19.5C",
+          "ordered_frame_sha256s": [
+            "636e0797cdc9fb56f54e91f95216a654f22db3952a557522a084c5115fe690a3"
+          ],
+          "reported_value": "cool|high|19.5C"
+        },
+        {
+          "value": "cool|high|20C",
+          "label": "cool|high|20C",
+          "ordered_frame_sha256s": [
+            "0b1170e06ca5bb02a71dc78754d1ccb796a5f77297c66fc60b6a363a992df49a"
+          ],
+          "reported_value": "cool|high|20C"
+        },
+        {
+          "value": "cool|high|20.5C",
+          "label": "cool|high|20.5C",
+          "ordered_frame_sha256s": [
+            "90594256554eff125d9d7d6a6d6ce1418172906304a66c541899842ac3ab4d83"
+          ],
+          "reported_value": "cool|high|20.5C"
+        },
+        {
+          "value": "cool|high|21.5C",
+          "label": "cool|high|21.5C",
+          "ordered_frame_sha256s": [
+            "f55ce128afad139fb499b6ef0f1d0ba9f0d7ac725ec5c49ba29b167c618d0ddd"
+          ],
+          "reported_value": "cool|high|21.5C"
+        },
+        {
+          "value": "cool|high|22.5C",
+          "label": "cool|high|22.5C",
+          "ordered_frame_sha256s": [
+            "6fee011671b4faa99c6a83ace6ffe8ee9ac5ac562ff59fa55e4674f6b5e8e0a7"
+          ],
+          "reported_value": "cool|high|22.5C"
+        },
+        {
+          "value": "cool|high|23.5C",
+          "label": "cool|high|23.5C",
+          "ordered_frame_sha256s": [
+            "a43a21ee5a5578b62a5eb3f12742300a7fad76e2fa07627d03085c20d00e9434"
+          ],
+          "reported_value": "cool|high|23.5C"
+        },
+        {
+          "value": "cool|high|24.5C",
+          "label": "cool|high|24.5C",
+          "ordered_frame_sha256s": [
+            "2ebdca4ae323e48f540cadbe9f9c5d670dc86e17d9effd2a7a0fdec664f00d52"
+          ],
+          "reported_value": "cool|high|24.5C"
+        },
+        {
+          "value": "cool|high|25.5C",
+          "label": "cool|high|25.5C",
+          "ordered_frame_sha256s": [
+            "82a74944470aa4a36d1b50482ce608dda5c69ca14bc069f2fb3147b9dfb7d527"
+          ],
+          "reported_value": "cool|high|25.5C"
+        },
+        {
+          "value": "cool|high|26C",
+          "label": "cool|high|26C",
+          "ordered_frame_sha256s": [
+            "53b068541647aedbaa541ea1789c49d3ffbfa2adadc15ebee1b30ab9a562f050"
+          ],
+          "reported_value": "cool|high|26C"
+        },
+        {
+          "value": "cool|high|26.5C",
+          "label": "cool|high|26.5C",
+          "ordered_frame_sha256s": [
+            "d559f8686c7a1f084ad17fe8b1fc296f532cd262080add5c3375a4aa1002d9ef"
+          ],
+          "reported_value": "cool|high|26.5C"
+        },
+        {
+          "value": "cool|high|27C",
+          "label": "cool|high|27C",
+          "ordered_frame_sha256s": [
+            "65dd7510356f925c106c432b955c0c5ec8c9d1cae43beffb290c5eece00c2402"
+          ],
+          "reported_value": "cool|high|27C"
+        },
+        {
+          "value": "cool|high|27.5C",
+          "label": "cool|high|27.5C",
+          "ordered_frame_sha256s": [
+            "aad4f46108022219da55aa7d2f7679a344bdd724708df64974aa7a1202602f0b"
+          ],
+          "reported_value": "cool|high|27.5C"
+        },
+        {
+          "value": "cool|high|28C",
+          "label": "cool|high|28C",
+          "ordered_frame_sha256s": [
+            "e49db3914d4014a9833c511f9d8ad2adcf7c1253eed870221861e256de1a0adb"
+          ],
+          "reported_value": "cool|high|28C"
+        },
+        {
+          "value": "cool|high|28.5C",
+          "label": "cool|high|28.5C",
+          "ordered_frame_sha256s": [
+            "c984739e1ecccb0f06c2f8e2e1398e9b9c7d7ec5d3ead2cbe5462468da8838a6"
+          ],
+          "reported_value": "cool|high|28.5C"
+        },
+        {
+          "value": "cool|high|29C",
+          "label": "cool|high|29C",
+          "ordered_frame_sha256s": [
+            "3c252573ea159709fb4e4b56e89a62b0ca396610cadc6f9079616e3298a4be86"
+          ],
+          "reported_value": "cool|high|29C"
+        },
+        {
+          "value": "cool|high|29.5C",
+          "label": "cool|high|29.5C",
+          "ordered_frame_sha256s": [
+            "e7d68c0585f320fbf2acb9812d93e76a2e255784310b7378910d9959d10739f2"
+          ],
+          "reported_value": "cool|high|29.5C"
+        },
+        {
+          "value": "cool|high|30C",
+          "label": "cool|high|30C",
+          "ordered_frame_sha256s": [
+            "26cd7f4b2f8ed7edb459825238733da67ab41f243f08b246aa4279bbb395c302"
+          ],
+          "reported_value": "cool|high|30C"
+        },
+        {
+          "value": "cool|auto|16C",
+          "label": "cool|auto|16C",
+          "ordered_frame_sha256s": [
+            "4464e99145a734e2bc1cff970a5deb80e6b8a2e76ffcf940c7596ef6c724e30f"
+          ],
+          "reported_value": "cool|auto|16C"
+        },
+        {
+          "value": "cool|auto|16.5C",
+          "label": "cool|auto|16.5C",
+          "ordered_frame_sha256s": [
+            "446b5497bb94560936b9dba78b3c0b692af5d3027efdb86e063355fbd4f98f88"
+          ],
+          "reported_value": "cool|auto|16.5C"
+        },
+        {
+          "value": "cool|auto|17C",
+          "label": "cool|auto|17C",
+          "ordered_frame_sha256s": [
+            "7199688f0e8dafb8a9acdf46f432a81264c7d582360405c927cac8cd38ad321e"
+          ],
+          "reported_value": "cool|auto|17C"
+        },
+        {
+          "value": "cool|auto|17.5C",
+          "label": "cool|auto|17.5C",
+          "ordered_frame_sha256s": [
+            "cb48aad140d290dbde6d1699a4b6d0fe2afe543578c2af358117e3340614cb95"
+          ],
+          "reported_value": "cool|auto|17.5C"
+        },
+        {
+          "value": "cool|auto|18.5C",
+          "label": "cool|auto|18.5C",
+          "ordered_frame_sha256s": [
+            "2b2b968b59d1458ae0a6e27267c3b33cda051c8924d77f6b09328cd5c7db436d"
+          ],
+          "reported_value": "cool|auto|18.5C"
+        },
+        {
+          "value": "cool|auto|19C",
+          "label": "cool|auto|19C",
+          "ordered_frame_sha256s": [
+            "54f434008da7dade0dfbe3c2353c0a5efd287c9619710088897238d74ff17ffe"
+          ],
+          "reported_value": "cool|auto|19C"
+        },
+        {
+          "value": "cool|auto|19.5C",
+          "label": "cool|auto|19.5C",
+          "ordered_frame_sha256s": [
+            "fc87bc207a62be6fed289fd32b05405825ff039c57742152c1aa7c325f999eb4"
+          ],
+          "reported_value": "cool|auto|19.5C"
+        },
+        {
+          "value": "cool|auto|20C",
+          "label": "cool|auto|20C",
+          "ordered_frame_sha256s": [
+            "e774d964be565422f88106166a8b74bb68e0ccb3616b9641fb50cd539283edad"
+          ],
+          "reported_value": "cool|auto|20C"
+        },
+        {
+          "value": "cool|auto|20.5C",
+          "label": "cool|auto|20.5C",
+          "ordered_frame_sha256s": [
+            "d211a7bf59ddf7e7820771fe8cf99bc9920829ecb7fb216037bd90e432a802d9"
+          ],
+          "reported_value": "cool|auto|20.5C"
+        },
+        {
+          "value": "cool|auto|21C",
+          "label": "cool|auto|21C",
+          "ordered_frame_sha256s": [
+            "7f74c0051b0dff9b1d9938e2098d757c3b522f0d5b8869c81aa24eb57feb7203"
+          ],
+          "reported_value": "cool|auto|21C"
+        },
+        {
+          "value": "cool|auto|21.5C",
+          "label": "cool|auto|21.5C",
+          "ordered_frame_sha256s": [
+            "05f7b1b4b214fd9796902a8f29c690e6f535dc59e888e31402bdb29832403ea9"
+          ],
+          "reported_value": "cool|auto|21.5C"
+        },
+        {
+          "value": "cool|auto|22C",
+          "label": "cool|auto|22C",
+          "ordered_frame_sha256s": [
+            "f0720a84a8288c7626767591708e6de2ab8f77e44ab7374100eefaa0d7924104"
+          ],
+          "reported_value": "cool|auto|22C"
+        },
+        {
+          "value": "cool|auto|22.5C",
+          "label": "cool|auto|22.5C",
+          "ordered_frame_sha256s": [
+            "e40f34d09d9d3f10a2476db86a28777257ff7e7ff7f0902420506e4466e3ccda"
+          ],
+          "reported_value": "cool|auto|22.5C"
+        },
+        {
+          "value": "cool|auto|23C",
+          "label": "cool|auto|23C",
+          "ordered_frame_sha256s": [
+            "9e0025795e501a7620f27ae560c57485c7b8cb0888bf53bd8e90144350e1e4bb"
+          ],
+          "reported_value": "cool|auto|23C"
+        },
+        {
+          "value": "cool|auto|23.5C",
+          "label": "cool|auto|23.5C",
+          "ordered_frame_sha256s": [
+            "736b4fe7ed657586e565500ef9a3762d7f873bf1b33e36fa210abde17d22576e"
+          ],
+          "reported_value": "cool|auto|23.5C"
+        },
+        {
+          "value": "cool|auto|25.5C",
+          "label": "cool|auto|25.5C",
+          "ordered_frame_sha256s": [
+            "f6966fbaa040959d238897ca2c283d555797ac575e1aca64cf807aead3eedb13"
+          ],
+          "reported_value": "cool|auto|25.5C"
+        },
+        {
+          "value": "cool|auto|26C",
+          "label": "cool|auto|26C",
+          "ordered_frame_sha256s": [
+            "fc6cf81cad0f20311d1113361b173bae9dd0895c5a46af2205834ae95b62fcb2"
+          ],
+          "reported_value": "cool|auto|26C"
+        },
+        {
+          "value": "cool|auto|26.5C",
+          "label": "cool|auto|26.5C",
+          "ordered_frame_sha256s": [
+            "4f086e195803ca57fb2b57680883ed090eb289c4e77064fb555e2d349a5c9dde"
+          ],
+          "reported_value": "cool|auto|26.5C"
+        },
+        {
+          "value": "cool|auto|27C",
+          "label": "cool|auto|27C",
+          "ordered_frame_sha256s": [
+            "b625555312700150dadfe03efd95f8765acacb6d6b178282ac59514e2a8a66a5"
+          ],
+          "reported_value": "cool|auto|27C"
+        },
+        {
+          "value": "cool|auto|27.5C",
+          "label": "cool|auto|27.5C",
+          "ordered_frame_sha256s": [
+            "7210f6d4dba3b31f373501995a05823033d10e18faa19438e558a8988aa13ec9"
+          ],
+          "reported_value": "cool|auto|27.5C"
+        },
+        {
+          "value": "cool|auto|28C",
+          "label": "cool|auto|28C",
+          "ordered_frame_sha256s": [
+            "dc9a00fa932abd5841326b43f69478a24d2823d84e1c8a2cde59f64a7cedc982"
+          ],
+          "reported_value": "cool|auto|28C"
+        },
+        {
+          "value": "cool|auto|28.5C",
+          "label": "cool|auto|28.5C",
+          "ordered_frame_sha256s": [
+            "62f5f39740a4b1ab4e5a33a3aa0f69f6902115f4976b26a3d2c052b0154ac703"
+          ],
+          "reported_value": "cool|auto|28.5C"
+        },
+        {
+          "value": "cool|auto|29C",
+          "label": "cool|auto|29C",
+          "ordered_frame_sha256s": [
+            "1653859c6daa2af0ff0489c54213ac8389c4cb9ac392177e90e17aa901a28778"
+          ],
+          "reported_value": "cool|auto|29C"
+        },
+        {
+          "value": "cool|auto|29.5C",
+          "label": "cool|auto|29.5C",
+          "ordered_frame_sha256s": [
+            "8ee4b69c2eaf71357c525d1e8bd6cf628677e73a5890c9f267ce1d1717f4f4c3"
+          ],
+          "reported_value": "cool|auto|29.5C"
+        },
+        {
+          "value": "cool|auto|30C",
+          "label": "cool|auto|30C",
+          "ordered_frame_sha256s": [
+            "5bfd9d262aeea667e24e20ccfceb7937242f3392e33f8c726aad74d914c599a9"
+          ],
+          "reported_value": "cool|auto|30C"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "climate.power_on_with_setpoint",
+      "entity_key": "climate_power_on_with_setpoint",
+      "label_ko": "냉방 운전 조합",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "cool|very low|16C",
+          "label": "cool|very low|16C",
+          "ordered_frame_sha256s": [
+            "ac4219256c48f2eb2c97ff213556d15a8682528082368c55f161b1a2b9aecf64"
+          ],
+          "reported_value": "cool|very low|16C"
+        },
+        {
+          "value": "cool|very low|16.5C",
+          "label": "cool|very low|16.5C",
+          "ordered_frame_sha256s": [
+            "76a2c0a639b74f2187338becd6c9cd137df180e9e0706ef371ad75bbdba0a8d6"
+          ],
+          "reported_value": "cool|very low|16.5C"
+        },
+        {
+          "value": "cool|very low|17C",
+          "label": "cool|very low|17C",
+          "ordered_frame_sha256s": [
+            "f426d7075d8a6e36c6a2e6bed1e60f60895bfef69b3d3edb490226ab7c47976f"
+          ],
+          "reported_value": "cool|very low|17C"
+        },
+        {
+          "value": "cool|very low|17.5C",
+          "label": "cool|very low|17.5C",
+          "ordered_frame_sha256s": [
+            "6133160e716fcc873d2bc1cdf20affe428cb096f9e998d903f0b0482c5a7db8f"
+          ],
+          "reported_value": "cool|very low|17.5C"
+        },
+        {
+          "value": "cool|very low|18.5C",
+          "label": "cool|very low|18.5C",
+          "ordered_frame_sha256s": [
+            "88599e684fcfd65c71c1a885488cec9cca88dc3a56c75fd8a5e1be59fe23972a"
+          ],
+          "reported_value": "cool|very low|18.5C"
+        },
+        {
+          "value": "cool|very low|19C",
+          "label": "cool|very low|19C",
+          "ordered_frame_sha256s": [
+            "961f5231e58f72eccb3298b65b8fce526262f9470992f9a8b08d1d613808c0ef"
+          ],
+          "reported_value": "cool|very low|19C"
+        },
+        {
+          "value": "cool|very low|19.5C",
+          "label": "cool|very low|19.5C",
+          "ordered_frame_sha256s": [
+            "3aed4e32bb82f7968f8f2654b1ed28025b867b66b03a8bfc1ac714ea3f29a9b3"
+          ],
+          "reported_value": "cool|very low|19.5C"
+        },
+        {
+          "value": "cool|very low|20C",
+          "label": "cool|very low|20C",
+          "ordered_frame_sha256s": [
+            "25ab96f6ef61fcb8415c9190b60ecc5de6baa9711b4efdab334e55a4cfaf6cd5"
+          ],
+          "reported_value": "cool|very low|20C"
+        },
+        {
+          "value": "cool|very low|20.5C",
+          "label": "cool|very low|20.5C",
+          "ordered_frame_sha256s": [
+            "404ce058e4eabebb84b6bc1367801618aab6772603c18f5828a93a1b952b75bc"
+          ],
+          "reported_value": "cool|very low|20.5C"
+        },
+        {
+          "value": "cool|very low|21C",
+          "label": "cool|very low|21C",
+          "ordered_frame_sha256s": [
+            "5104807531a1dd2c17921d2601800dce3255f978740bcb5df3d6e2275984dc72"
+          ],
+          "reported_value": "cool|very low|21C"
+        },
+        {
+          "value": "cool|very low|21.5C",
+          "label": "cool|very low|21.5C",
+          "ordered_frame_sha256s": [
+            "77b37fc498cfd4564e69ab7989dde7ebed6564ce8b9a31328ce7c59e1a293088"
+          ],
+          "reported_value": "cool|very low|21.5C"
+        },
+        {
+          "value": "cool|very low|22C",
+          "label": "cool|very low|22C",
+          "ordered_frame_sha256s": [
+            "0db6a02bb4baa1f57e254e32c2f7c600e669d980867d0bc6973d32503fd71b5e"
+          ],
+          "reported_value": "cool|very low|22C"
+        },
+        {
+          "value": "cool|very low|22.5C",
+          "label": "cool|very low|22.5C",
+          "ordered_frame_sha256s": [
+            "c111a7f36160bd506d12cee09d1268d36986ee3525aaea59618e51678f4d5604"
+          ],
+          "reported_value": "cool|very low|22.5C"
+        },
+        {
+          "value": "cool|very low|23C",
+          "label": "cool|very low|23C",
+          "ordered_frame_sha256s": [
+            "7201b51ac5e7a875cb8cf7bec04641e051dacaa81639e9eef90cfc1a085519ba"
+          ],
+          "reported_value": "cool|very low|23C"
+        },
+        {
+          "value": "cool|very low|23.5C",
+          "label": "cool|very low|23.5C",
+          "ordered_frame_sha256s": [
+            "870b776a563eee64196d8fb0372bf34c2b494de1e622cfd9a2fefa2dc415d0a0"
+          ],
+          "reported_value": "cool|very low|23.5C"
+        },
+        {
+          "value": "cool|very low|24.5C",
+          "label": "cool|very low|24.5C",
+          "ordered_frame_sha256s": [
+            "d13b0dec9a922bec828fc0bed7dd823268dbab2e5b201eb3c70e9320494c3e37"
+          ],
+          "reported_value": "cool|very low|24.5C"
+        },
+        {
+          "value": "cool|very low|25C",
+          "label": "cool|very low|25C",
+          "ordered_frame_sha256s": [
+            "08fb43c3d0181d82c6c3da69204096b63c72d36077bae8f83eb8bdd570f929ca"
+          ],
+          "reported_value": "cool|very low|25C"
+        },
+        {
+          "value": "cool|very low|25.5C",
+          "label": "cool|very low|25.5C",
+          "ordered_frame_sha256s": [
+            "f637e545b424509b5891d8c27b4d5d07a6eeffca16b4152e5ead1b4b0748830c"
+          ],
+          "reported_value": "cool|very low|25.5C"
+        },
+        {
+          "value": "cool|very low|26C",
+          "label": "cool|very low|26C",
+          "ordered_frame_sha256s": [
+            "b0249af3a2fe53f5f5a90d8186cca9d213970c8ec525303e1f3f9d55834235c2"
+          ],
+          "reported_value": "cool|very low|26C"
+        },
+        {
+          "value": "cool|very low|26.5C",
+          "label": "cool|very low|26.5C",
+          "ordered_frame_sha256s": [
+            "a053c714a3a1f0d5ea4ef0bd90402a28bbd6ff4371768caf4f5ab345d71eddd6"
+          ],
+          "reported_value": "cool|very low|26.5C"
+        },
+        {
+          "value": "cool|very low|27C",
+          "label": "cool|very low|27C",
+          "ordered_frame_sha256s": [
+            "6ec02b501a2af2060afd593eeecc90fa2db0af0cced70099f5d96feaf7e27aa5"
+          ],
+          "reported_value": "cool|very low|27C"
+        },
+        {
+          "value": "cool|very low|27.5C",
+          "label": "cool|very low|27.5C",
+          "ordered_frame_sha256s": [
+            "e73a7424e06bbff093d01028509adedebc3627e9030e6df381d77006d7416fef"
+          ],
+          "reported_value": "cool|very low|27.5C"
+        },
+        {
+          "value": "cool|very low|28C",
+          "label": "cool|very low|28C",
+          "ordered_frame_sha256s": [
+            "b54c0c3ba70c429021ff9f1f8247860e7762fe67911fe61ca8316d2f2b1f1139"
+          ],
+          "reported_value": "cool|very low|28C"
+        },
+        {
+          "value": "cool|very low|28.5C",
+          "label": "cool|very low|28.5C",
+          "ordered_frame_sha256s": [
+            "6a1e77ee8f70a8a78f6ed20ba5f8c5565146e9d6f529efb245ac7da5882994ef"
+          ],
+          "reported_value": "cool|very low|28.5C"
+        },
+        {
+          "value": "cool|very low|29C",
+          "label": "cool|very low|29C",
+          "ordered_frame_sha256s": [
+            "99287c117a01954e83939d2e3029a0b302322f0d8970e6af566009f910c4cc10"
+          ],
+          "reported_value": "cool|very low|29C"
+        },
+        {
+          "value": "cool|very low|29.5C",
+          "label": "cool|very low|29.5C",
+          "ordered_frame_sha256s": [
+            "76cfff16dbd0a4b8cb475ad5f664cb48298a4376cf1468ba561f80c13616977d"
+          ],
+          "reported_value": "cool|very low|29.5C"
+        },
+        {
+          "value": "cool|very low|30C",
+          "label": "cool|very low|30C",
+          "ordered_frame_sha256s": [
+            "877fd6143f2a8b95017a9344071ffc544476ee0565adbd2bb4dfc63d7c1f46c2"
+          ],
+          "reported_value": "cool|very low|30C"
+        },
+        {
+          "value": "cool|low|16C",
+          "label": "cool|low|16C",
+          "ordered_frame_sha256s": [
+            "8a99e26315d95243877d811421733bb0875d4e16105b24d422dfaf968abf8ca3"
+          ],
+          "reported_value": "cool|low|16C"
+        },
+        {
+          "value": "cool|low|16.5C",
+          "label": "cool|low|16.5C",
+          "ordered_frame_sha256s": [
+            "6cbdc0be161c5adfb3f65a6a2c570f661ea5f580b58a74357caecde9ff927dec"
+          ],
+          "reported_value": "cool|low|16.5C"
+        },
+        {
+          "value": "cool|low|17C",
+          "label": "cool|low|17C",
+          "ordered_frame_sha256s": [
+            "d1cd818bf778b5ab6ac2828b73b71b7ec13f4ee072268c10bcc1f14cd8a0594b"
+          ],
+          "reported_value": "cool|low|17C"
+        },
+        {
+          "value": "cool|low|17.5C",
+          "label": "cool|low|17.5C",
+          "ordered_frame_sha256s": [
+            "c4d3479837bf0fcb438308b321f647a02b954f5858d69ebcc4ee33d817f0e085"
+          ],
+          "reported_value": "cool|low|17.5C"
+        },
+        {
+          "value": "cool|low|18C",
+          "label": "cool|low|18C",
+          "ordered_frame_sha256s": [
+            "87ba6a170642a5706f3640e5bde7b6b61db954c29c36ecccafaf6d5821399a76"
+          ],
+          "reported_value": "cool|low|18C"
+        },
+        {
+          "value": "cool|low|18.5C",
+          "label": "cool|low|18.5C",
+          "ordered_frame_sha256s": [
+            "3f4a0e08f30c763dd0edd0b83afe220e6fd939101a23a318ca69390f56404dd1"
+          ],
+          "reported_value": "cool|low|18.5C"
+        },
+        {
+          "value": "cool|low|19C",
+          "label": "cool|low|19C",
+          "ordered_frame_sha256s": [
+            "6c45eaa3b6463d1037b9d90a53c64dc0acfefacc0ab6a73c37076ede1c849822"
+          ],
+          "reported_value": "cool|low|19C"
+        },
+        {
+          "value": "cool|low|19.5C",
+          "label": "cool|low|19.5C",
+          "ordered_frame_sha256s": [
+            "de14c412ad8156af609beabd115cd88f262e60d4d316a25a07db1b647a462e40"
+          ],
+          "reported_value": "cool|low|19.5C"
+        },
+        {
+          "value": "cool|low|20C",
+          "label": "cool|low|20C",
+          "ordered_frame_sha256s": [
+            "78bc40144acc255e93011debb8842adee01e89c10a83df3c4c865931843c4502"
+          ],
+          "reported_value": "cool|low|20C"
+        },
+        {
+          "value": "cool|low|20.5C",
+          "label": "cool|low|20.5C",
+          "ordered_frame_sha256s": [
+            "19f97139560719af95cd658c186c6822398cb6ff9f352ff2e28cff2f02e16880"
+          ],
+          "reported_value": "cool|low|20.5C"
+        },
+        {
+          "value": "cool|low|21C",
+          "label": "cool|low|21C",
+          "ordered_frame_sha256s": [
+            "ef93fed1b28616a29d75ccd0347a2271a90d1b9a7076e5fe6f2861d96a254594"
+          ],
+          "reported_value": "cool|low|21C"
+        },
+        {
+          "value": "cool|low|21.5C",
+          "label": "cool|low|21.5C",
+          "ordered_frame_sha256s": [
+            "dddf6b2fed8a09bb4b8ec8a65ff7f68a94a6db3a6f4d5c0bee5ec0bec755a6ca"
+          ],
+          "reported_value": "cool|low|21.5C"
+        },
+        {
+          "value": "cool|low|22.5C",
+          "label": "cool|low|22.5C",
+          "ordered_frame_sha256s": [
+            "21bf7e5f6ee64bda8cff0a4c4e8e503baaa190e30a0e3c4c5ad5a26904536d1d"
+          ],
+          "reported_value": "cool|low|22.5C"
+        },
+        {
+          "value": "cool|low|23C",
+          "label": "cool|low|23C",
+          "ordered_frame_sha256s": [
+            "ed0e10683a048e53161e902324c8365f6d964786a966680e00b4a7dc403e4ebd"
+          ],
+          "reported_value": "cool|low|23C"
+        },
+        {
+          "value": "cool|low|23.5C",
+          "label": "cool|low|23.5C",
+          "ordered_frame_sha256s": [
+            "7844c5a1d05a23d3dddea44f579d63fb07de9c2fc81d6f58a50629ff540f26af"
+          ],
+          "reported_value": "cool|low|23.5C"
+        },
+        {
+          "value": "cool|low|24C",
+          "label": "cool|low|24C",
+          "ordered_frame_sha256s": [
+            "636df12a13d08332f00a09a5a92725f47c4d4482f56404b3fe7acfc96a79d164"
+          ],
+          "reported_value": "cool|low|24C"
+        },
+        {
+          "value": "cool|low|24.5C",
+          "label": "cool|low|24.5C",
+          "ordered_frame_sha256s": [
+            "048afa3a097a8699c69e0e180a31c063487cfdc60f30a5485c5721e7ca9e8446"
+          ],
+          "reported_value": "cool|low|24.5C"
+        },
+        {
+          "value": "cool|low|25C",
+          "label": "cool|low|25C",
+          "ordered_frame_sha256s": [
+            "9580349fc4ae7361deeb4c0ae41c4084c4bfd40a97b09e268da6d1b3cba55b8b"
+          ],
+          "reported_value": "cool|low|25C"
+        },
+        {
+          "value": "cool|low|25.5C",
+          "label": "cool|low|25.5C",
+          "ordered_frame_sha256s": [
+            "fbe3e498e5427007bee615f0e0d9ba0950e339a4715193d2ce34fa07c041429d"
+          ],
+          "reported_value": "cool|low|25.5C"
+        },
+        {
+          "value": "cool|low|26C",
+          "label": "cool|low|26C",
+          "ordered_frame_sha256s": [
+            "a97ed477a0f299fe5358a194fb9787338072e30befbf07f2652efaf23faf8b5b"
+          ],
+          "reported_value": "cool|low|26C"
+        },
+        {
+          "value": "cool|low|26.5C",
+          "label": "cool|low|26.5C",
+          "ordered_frame_sha256s": [
+            "af6b0acaf9c840159b21dfb39cfc8a7753c1ce4221b58cf7b5ba4bf7fd251b2c"
+          ],
+          "reported_value": "cool|low|26.5C"
+        },
+        {
+          "value": "cool|low|27C",
+          "label": "cool|low|27C",
+          "ordered_frame_sha256s": [
+            "e401e1d7211ff7a7bd87daea09f26bbeab251447dd764d89101fa29c6626f07c"
+          ],
+          "reported_value": "cool|low|27C"
+        },
+        {
+          "value": "cool|low|27.5C",
+          "label": "cool|low|27.5C",
+          "ordered_frame_sha256s": [
+            "e951b7fde4d87329bb6db92ba0d412024c82f0a2a3c976e8767a76a23a183150"
+          ],
+          "reported_value": "cool|low|27.5C"
+        },
+        {
+          "value": "cool|low|28C",
+          "label": "cool|low|28C",
+          "ordered_frame_sha256s": [
+            "90d9541fd785e75118df7eb51fee1840adec7f6ef64598827b187ea6665cdbbe"
+          ],
+          "reported_value": "cool|low|28C"
+        },
+        {
+          "value": "cool|low|28.5C",
+          "label": "cool|low|28.5C",
+          "ordered_frame_sha256s": [
+            "790c7ee42ae3ee68138e9df26dd6b329676a1177be89dcbacbe85459584f89ea"
+          ],
+          "reported_value": "cool|low|28.5C"
+        },
+        {
+          "value": "cool|low|29C",
+          "label": "cool|low|29C",
+          "ordered_frame_sha256s": [
+            "cfbe941fe7679a11641eb4582da3ed6bb055fa1894cbd7c2588b082ee141ebd4"
+          ],
+          "reported_value": "cool|low|29C"
+        },
+        {
+          "value": "cool|low|29.5C",
+          "label": "cool|low|29.5C",
+          "ordered_frame_sha256s": [
+            "96adc7a4e26065c9ddbf957404d1fff5d7c1f627898f4b2a68d7790a56f48363"
+          ],
+          "reported_value": "cool|low|29.5C"
+        },
+        {
+          "value": "cool|low|30C",
+          "label": "cool|low|30C",
+          "ordered_frame_sha256s": [
+            "5552e97f6fc96213508929decd49dbd476a73ff3d0e99cc30a137a148351a859"
+          ],
+          "reported_value": "cool|low|30C"
+        },
+        {
+          "value": "cool|medium|16C",
+          "label": "cool|medium|16C",
+          "ordered_frame_sha256s": [
+            "d45ef5c48eff2fee714820017e065003accffd4c26dcb2d2747f3ae45d6d3dce"
+          ],
+          "reported_value": "cool|medium|16C"
+        },
+        {
+          "value": "cool|medium|16.5C",
+          "label": "cool|medium|16.5C",
+          "ordered_frame_sha256s": [
+            "5aaa70a9de66d0bc608e8342cff51ebb9eaf65bdbc21c560ecb3ff9cf42a685b"
+          ],
+          "reported_value": "cool|medium|16.5C"
+        },
+        {
+          "value": "cool|medium|17C",
+          "label": "cool|medium|17C",
+          "ordered_frame_sha256s": [
+            "d80e36dec4f5c5706fdabfb4d3d3d15da843b577ad7ad85e9d85e0a6a0377fa8"
+          ],
+          "reported_value": "cool|medium|17C"
+        },
+        {
+          "value": "cool|medium|17.5C",
+          "label": "cool|medium|17.5C",
+          "ordered_frame_sha256s": [
+            "d490e24f6ab099751a079452e911bbdde8e8b9886644b234d07147bb323f8523"
+          ],
+          "reported_value": "cool|medium|17.5C"
+        },
+        {
+          "value": "cool|medium|18C",
+          "label": "cool|medium|18C",
+          "ordered_frame_sha256s": [
+            "b4e59eb3c3c189b559e228e13c38629c3189cd360af255ea829769901e8b2055"
+          ],
+          "reported_value": "cool|medium|18C"
+        },
+        {
+          "value": "cool|medium|18.5C",
+          "label": "cool|medium|18.5C",
+          "ordered_frame_sha256s": [
+            "30fe04e01cdc261057c316c7a697245e9672efe7766b6f6bdc4834afe17047e5"
+          ],
+          "reported_value": "cool|medium|18.5C"
+        },
+        {
+          "value": "cool|medium|19C",
+          "label": "cool|medium|19C",
+          "ordered_frame_sha256s": [
+            "a3dff5523497a5b0b45ca5b9947b9f3bab0d58bf3506bf6fe3b6df35f883403d"
+          ],
+          "reported_value": "cool|medium|19C"
+        },
+        {
+          "value": "cool|medium|19.5C",
+          "label": "cool|medium|19.5C",
+          "ordered_frame_sha256s": [
+            "9f4173bcffcb1043bccfd96ac1b3fb1db0bbeb67084a8b0b9723673907043c7f"
+          ],
+          "reported_value": "cool|medium|19.5C"
+        },
+        {
+          "value": "cool|medium|20C",
+          "label": "cool|medium|20C",
+          "ordered_frame_sha256s": [
+            "1e3aa5af99947cf456bc01ced0832226f3bec8c06a2db15a586c498ed3fff57b"
+          ],
+          "reported_value": "cool|medium|20C"
+        },
+        {
+          "value": "cool|medium|20.5C",
+          "label": "cool|medium|20.5C",
+          "ordered_frame_sha256s": [
+            "f30cb313a284a2aa5bec4599fd44561c30e6ef818dd92684982e8dd7ade57ba5"
+          ],
+          "reported_value": "cool|medium|20.5C"
+        },
+        {
+          "value": "cool|medium|21C",
+          "label": "cool|medium|21C",
+          "ordered_frame_sha256s": [
+            "8840b86b063a6f6615170c243df65993cfed5e950f488bc172cf1277eeaf1d66"
+          ],
+          "reported_value": "cool|medium|21C"
+        },
+        {
+          "value": "cool|medium|21.5C",
+          "label": "cool|medium|21.5C",
+          "ordered_frame_sha256s": [
+            "6bd67b50d09627877b1de9988220a3899d73ac52515a5311755ccb02990ce319"
+          ],
+          "reported_value": "cool|medium|21.5C"
+        },
+        {
+          "value": "cool|medium|22.5C",
+          "label": "cool|medium|22.5C",
+          "ordered_frame_sha256s": [
+            "f419a69a90017d765bbba146c1afef6d5f84b1329bbb5fc4f39663998fa010b5"
+          ],
+          "reported_value": "cool|medium|22.5C"
+        },
+        {
+          "value": "cool|medium|23C",
+          "label": "cool|medium|23C",
+          "ordered_frame_sha256s": [
+            "d5fcef1a7220901dfce86267b8bdbdba6ddaa35c7259c9646195a79eaf77594c"
+          ],
+          "reported_value": "cool|medium|23C"
+        },
+        {
+          "value": "cool|medium|23.5C",
+          "label": "cool|medium|23.5C",
+          "ordered_frame_sha256s": [
+            "e95be267dcddacc8278a8878b53f36a925f755d1019c1aa6a1d62fd967d8d996"
+          ],
+          "reported_value": "cool|medium|23.5C"
+        },
+        {
+          "value": "cool|medium|24C",
+          "label": "cool|medium|24C",
+          "ordered_frame_sha256s": [
+            "ff7ae3d189a55f4226427f80e204ca83ab49eac771120501efbb5546ba290577"
+          ],
+          "reported_value": "cool|medium|24C"
+        },
+        {
+          "value": "cool|medium|24.5C",
+          "label": "cool|medium|24.5C",
+          "ordered_frame_sha256s": [
+            "81c2608e2155fb9a834feedc5cf2e5c546ff7a0b0113f22af9867c8838c83773"
+          ],
+          "reported_value": "cool|medium|24.5C"
+        },
+        {
+          "value": "cool|medium|25C",
+          "label": "cool|medium|25C",
+          "ordered_frame_sha256s": [
+            "3d04db1bd6730a3cb033a4a5424317d46d5791cd62fdb4906cf44cdf31f2c1fd"
+          ],
+          "reported_value": "cool|medium|25C"
+        },
+        {
+          "value": "cool|medium|25.5C",
+          "label": "cool|medium|25.5C",
+          "ordered_frame_sha256s": [
+            "25c557aebe775097e4d2475b3861a50816383eee720c9aef9108b4ef263438bc"
+          ],
+          "reported_value": "cool|medium|25.5C"
+        },
+        {
+          "value": "cool|medium|26C",
+          "label": "cool|medium|26C",
+          "ordered_frame_sha256s": [
+            "22a73371abc3ec177df8386cf5a7f1bd0f14b2115acff65a8a38d634e7751d77"
+          ],
+          "reported_value": "cool|medium|26C"
+        },
+        {
+          "value": "cool|medium|26.5C",
+          "label": "cool|medium|26.5C",
+          "ordered_frame_sha256s": [
+            "ee04508bff095287f4c32188069924eb4f2dc1e47a56c13990e7a80a941f2711"
+          ],
+          "reported_value": "cool|medium|26.5C"
+        },
+        {
+          "value": "cool|medium|27C",
+          "label": "cool|medium|27C",
+          "ordered_frame_sha256s": [
+            "7674f89ecc663d5587aa085965bd8eb72b5fcae1bda4a953456b294dcb5ffa2f"
+          ],
+          "reported_value": "cool|medium|27C"
+        },
+        {
+          "value": "cool|medium|27.5C",
+          "label": "cool|medium|27.5C",
+          "ordered_frame_sha256s": [
+            "bb6269f79cc03b7f3a00628becac2b24da0a34a8e237a279b734ba93ef81dc42"
+          ],
+          "reported_value": "cool|medium|27.5C"
+        },
+        {
+          "value": "cool|medium|28C",
+          "label": "cool|medium|28C",
+          "ordered_frame_sha256s": [
+            "0ec4a582373fb8ebfedf77a85a317af940995d4e14856868030f076c77bc7f99"
+          ],
+          "reported_value": "cool|medium|28C"
+        },
+        {
+          "value": "cool|medium|28.5C",
+          "label": "cool|medium|28.5C",
+          "ordered_frame_sha256s": [
+            "b9ff138b2151ac2a96d40669b7509d73ff2350c9a53fb23217a9c20ecc35e702"
+          ],
+          "reported_value": "cool|medium|28.5C"
+        },
+        {
+          "value": "cool|medium|29C",
+          "label": "cool|medium|29C",
+          "ordered_frame_sha256s": [
+            "5766e26fafead322f54e345b4429674209b9473014bc423dcd6efb5f705e6c68"
+          ],
+          "reported_value": "cool|medium|29C"
+        },
+        {
+          "value": "cool|medium|29.5C",
+          "label": "cool|medium|29.5C",
+          "ordered_frame_sha256s": [
+            "14eee828f76a7653852b0865ad20f0283f9670eee0b2779b8b04ccd4497b3ec0"
+          ],
+          "reported_value": "cool|medium|29.5C"
+        },
+        {
+          "value": "cool|medium|30C",
+          "label": "cool|medium|30C",
+          "ordered_frame_sha256s": [
+            "628c871c3493818097cb07104cee70d91474efd7d9067ca0e2a7493e7e9b1291"
+          ],
+          "reported_value": "cool|medium|30C"
+        },
+        {
+          "value": "cool|high|16C",
+          "label": "cool|high|16C",
+          "ordered_frame_sha256s": [
+            "4b0a068cc0ea6b1bd038b862404ed7526114e889ae4ee14e680d1c56ccdd12d3"
+          ],
+          "reported_value": "cool|high|16C"
+        },
+        {
+          "value": "cool|high|16.5C",
+          "label": "cool|high|16.5C",
+          "ordered_frame_sha256s": [
+            "346acab6b93d4b129c5f62004894b1a58e02364da1ae33435179bbb39bbd3e5e"
+          ],
+          "reported_value": "cool|high|16.5C"
+        },
+        {
+          "value": "cool|high|17C",
+          "label": "cool|high|17C",
+          "ordered_frame_sha256s": [
+            "017a25fc598f0ea7d71ee28e4445a8d88dde6994cde76a3b48e78fdc3d4d7372"
+          ],
+          "reported_value": "cool|high|17C"
+        },
+        {
+          "value": "cool|high|17.5C",
+          "label": "cool|high|17.5C",
+          "ordered_frame_sha256s": [
+            "8de2940fba46a9ae105e83969b861feaa898279207d89d458dfeb6c01134ab39"
+          ],
+          "reported_value": "cool|high|17.5C"
+        },
+        {
+          "value": "cool|high|18C",
+          "label": "cool|high|18C",
+          "ordered_frame_sha256s": [
+            "4de05d126405ca73b3ef7d6c6d3222d22ed716243e4e4e659fd253c99fb3c25c"
+          ],
+          "reported_value": "cool|high|18C"
+        },
+        {
+          "value": "cool|high|18.5C",
+          "label": "cool|high|18.5C",
+          "ordered_frame_sha256s": [
+            "784e167cdcab2f0afaa79d749527a5ffd52c8ae5996d40d260be3cf3e9f91c88"
+          ],
+          "reported_value": "cool|high|18.5C"
+        },
+        {
+          "value": "cool|high|19C",
+          "label": "cool|high|19C",
+          "ordered_frame_sha256s": [
+            "c42cc8e1b0b19f4df90503ec0ec9c8ca99820fa3dff80cbc05f9d5d3c320afcb"
+          ],
+          "reported_value": "cool|high|19C"
+        },
+        {
+          "value": "cool|high|19.5C",
+          "label": "cool|high|19.5C",
+          "ordered_frame_sha256s": [
+            "dcb35a6f6b4b6108181d9241abf3125015763f11060e92663a1b81cf3b589e4e"
+          ],
+          "reported_value": "cool|high|19.5C"
+        },
+        {
+          "value": "cool|high|20C",
+          "label": "cool|high|20C",
+          "ordered_frame_sha256s": [
+            "be9f668a51dc2e932493d71884a837bf5b15f03eecec35e2d61f5d7edebc3d38"
+          ],
+          "reported_value": "cool|high|20C"
+        },
+        {
+          "value": "cool|high|20.5C",
+          "label": "cool|high|20.5C",
+          "ordered_frame_sha256s": [
+            "f551a02dae4b79f426c4acb7ef83f5bcc9564c0352bb43369941c0c4bd461f44"
+          ],
+          "reported_value": "cool|high|20.5C"
+        },
+        {
+          "value": "cool|high|21.5C",
+          "label": "cool|high|21.5C",
+          "ordered_frame_sha256s": [
+            "b9a496e67b25fca0fd43267b1c56de5887734699e277aa48b1ffe16f2e6a986f"
+          ],
+          "reported_value": "cool|high|21.5C"
+        },
+        {
+          "value": "cool|high|22.5C",
+          "label": "cool|high|22.5C",
+          "ordered_frame_sha256s": [
+            "76eb0c727f59db1ac8b5d681ef614860c5d15d7e7654ec924cb2f80b79a84077"
+          ],
+          "reported_value": "cool|high|22.5C"
+        },
+        {
+          "value": "cool|high|23C",
+          "label": "cool|high|23C",
+          "ordered_frame_sha256s": [
+            "56eb654f84941a91c06231665c3d7b0eb989ad211964a388bc4c8e0839adb4d0"
+          ],
+          "reported_value": "cool|high|23C"
+        },
+        {
+          "value": "cool|high|23.5C",
+          "label": "cool|high|23.5C",
+          "ordered_frame_sha256s": [
+            "033a792eb975331e6926d4a28af4b7f0d40ceaae76b5fc2806058cacb2cdb987"
+          ],
+          "reported_value": "cool|high|23.5C"
+        },
+        {
+          "value": "cool|high|24.5C",
+          "label": "cool|high|24.5C",
+          "ordered_frame_sha256s": [
+            "68e930f69c3ae5d2b18b8a81e15473113c71185e9edb150d4308d91057deb543"
+          ],
+          "reported_value": "cool|high|24.5C"
+        },
+        {
+          "value": "cool|high|25C",
+          "label": "cool|high|25C",
+          "ordered_frame_sha256s": [
+            "76c212f4bcd24fb61e4d7f2d750635dcfe3c26fbd3afcf0f342164cc13435360"
+          ],
+          "reported_value": "cool|high|25C"
+        },
+        {
+          "value": "cool|high|25.5C",
+          "label": "cool|high|25.5C",
+          "ordered_frame_sha256s": [
+            "7c43c75f5d19cdbd93c7eeddcd7efd1b7415a6e77326d79c244f0b0fe38e49eb"
+          ],
+          "reported_value": "cool|high|25.5C"
+        },
+        {
+          "value": "cool|high|26C",
+          "label": "cool|high|26C",
+          "ordered_frame_sha256s": [
+            "ef17ac7b29a4adfaea3b995dc5f72b34481472d7bfb3bb6ffab9540bfc618094"
+          ],
+          "reported_value": "cool|high|26C"
+        },
+        {
+          "value": "cool|high|26.5C",
+          "label": "cool|high|26.5C",
+          "ordered_frame_sha256s": [
+            "6c20c0877cc6a67a641a2820cc3dae1269ae54a40774976499a68b77882bf893"
+          ],
+          "reported_value": "cool|high|26.5C"
+        },
+        {
+          "value": "cool|high|27C",
+          "label": "cool|high|27C",
+          "ordered_frame_sha256s": [
+            "dc5e27ceb343c06e09a8bf1c101a57ab9c94f9c28d7de744e094b044ed512f4f"
+          ],
+          "reported_value": "cool|high|27C"
+        },
+        {
+          "value": "cool|high|27.5C",
+          "label": "cool|high|27.5C",
+          "ordered_frame_sha256s": [
+            "b3b44bd88bbd4d5f88a89731ca719bd89958e022e231b5bfd8a2ba8c892b4b67"
+          ],
+          "reported_value": "cool|high|27.5C"
+        },
+        {
+          "value": "cool|high|28C",
+          "label": "cool|high|28C",
+          "ordered_frame_sha256s": [
+            "897f581a5768f5f0133b838d66f64d31fd88b13dd2189de0f2122a54006f4046"
+          ],
+          "reported_value": "cool|high|28C"
+        },
+        {
+          "value": "cool|high|28.5C",
+          "label": "cool|high|28.5C",
+          "ordered_frame_sha256s": [
+            "d753327088426bd12a74be548c9d5f0cfb7846c042163f0ec2f12cf4e1c8d549"
+          ],
+          "reported_value": "cool|high|28.5C"
+        },
+        {
+          "value": "cool|high|29C",
+          "label": "cool|high|29C",
+          "ordered_frame_sha256s": [
+            "6fc21d98a05a44e9aad5895531594b5bf22f7519a5ea9f8858c9bec528018969"
+          ],
+          "reported_value": "cool|high|29C"
+        },
+        {
+          "value": "cool|high|29.5C",
+          "label": "cool|high|29.5C",
+          "ordered_frame_sha256s": [
+            "563b281b4c643d4456fd0bc3e3bf1147184681727d0b817e6543e9766f640f93"
+          ],
+          "reported_value": "cool|high|29.5C"
+        },
+        {
+          "value": "cool|high|30C",
+          "label": "cool|high|30C",
+          "ordered_frame_sha256s": [
+            "722ee3a79d895d81ee65356bbc07a502928fd3e7c7b2695cf035e99628bbaeb7"
+          ],
+          "reported_value": "cool|high|30C"
+        },
+        {
+          "value": "cool|auto|16C",
+          "label": "cool|auto|16C",
+          "ordered_frame_sha256s": [
+            "900dcbb214d816cd4fe05bb22fc16428076b6a2be8bbea23bcd440abb0313c8d"
+          ],
+          "reported_value": "cool|auto|16C"
+        },
+        {
+          "value": "cool|auto|16.5C",
+          "label": "cool|auto|16.5C",
+          "ordered_frame_sha256s": [
+            "6fd929f97baaad22b8f59696e72498c21ed4b1c3233240cb0b9be6e6fa79c1d1"
+          ],
+          "reported_value": "cool|auto|16.5C"
+        },
+        {
+          "value": "cool|auto|17C",
+          "label": "cool|auto|17C",
+          "ordered_frame_sha256s": [
+            "ef451333e59c2ab62c632fa67414961f429edae4f24779211d40df10571deb56"
+          ],
+          "reported_value": "cool|auto|17C"
+        },
+        {
+          "value": "cool|auto|17.5C",
+          "label": "cool|auto|17.5C",
+          "ordered_frame_sha256s": [
+            "4ddfac9f73f3eef655c9963f1ebb50f5057b8fed3f0506761f8760072f5d9a3f"
+          ],
+          "reported_value": "cool|auto|17.5C"
+        },
+        {
+          "value": "cool|auto|18C",
+          "label": "cool|auto|18C",
+          "ordered_frame_sha256s": [
+            "a2f52f87fd50bf1fdf6467e6dc3e47c217145879e1a9060aca7784d153df8a4a"
+          ],
+          "reported_value": "cool|auto|18C"
+        },
+        {
+          "value": "cool|auto|18.5C",
+          "label": "cool|auto|18.5C",
+          "ordered_frame_sha256s": [
+            "37fdef40c8acc13a69809ea1779c4c429c64a1329bb48f90ed5d178a555fd732"
+          ],
+          "reported_value": "cool|auto|18.5C"
+        },
+        {
+          "value": "cool|auto|19C",
+          "label": "cool|auto|19C",
+          "ordered_frame_sha256s": [
+            "729798dd456fb25556bb65d61d98f1f16ee2bec4ba1ae0148ee2ee20ac0de36b"
+          ],
+          "reported_value": "cool|auto|19C"
+        },
+        {
+          "value": "cool|auto|19.5C",
+          "label": "cool|auto|19.5C",
+          "ordered_frame_sha256s": [
+            "c48d082406f50ad0f8137a1e7c249a9d04c60109a478a0e9d87ce88e8ed58148"
+          ],
+          "reported_value": "cool|auto|19.5C"
+        },
+        {
+          "value": "cool|auto|20C",
+          "label": "cool|auto|20C",
+          "ordered_frame_sha256s": [
+            "f2083f7d105820c426210a741936161ddd615428030bd8c91a75f5b27bf587f9"
+          ],
+          "reported_value": "cool|auto|20C"
+        },
+        {
+          "value": "cool|auto|20.5C",
+          "label": "cool|auto|20.5C",
+          "ordered_frame_sha256s": [
+            "9a6e1a1fddb05db5da08c2b760be687ebc9b773f9967fa2a93148b7f097a49eb"
+          ],
+          "reported_value": "cool|auto|20.5C"
+        },
+        {
+          "value": "cool|auto|21C",
+          "label": "cool|auto|21C",
+          "ordered_frame_sha256s": [
+            "6288bd9f17f519b1d537150b5b2a035b4fd9f28518930b6217203cd907cc246b"
+          ],
+          "reported_value": "cool|auto|21C"
+        },
+        {
+          "value": "cool|auto|21.5C",
+          "label": "cool|auto|21.5C",
+          "ordered_frame_sha256s": [
+            "3e5a7bd3bee306dea8fd6c23c1b99477f6ed2d18c36268def800f4611e4bf872"
+          ],
+          "reported_value": "cool|auto|21.5C"
+        },
+        {
+          "value": "cool|auto|22C",
+          "label": "cool|auto|22C",
+          "ordered_frame_sha256s": [
+            "3bbcd99f102c0fda9cdfd45277a75db155a2c779dfae27d1429076ebe58f1ff8"
+          ],
+          "reported_value": "cool|auto|22C"
+        },
+        {
+          "value": "cool|auto|22.5C",
+          "label": "cool|auto|22.5C",
+          "ordered_frame_sha256s": [
+            "a1b7160b141a905c50b344ffbf77d68deafcc86ea8470970a4bda1323cf68915"
+          ],
+          "reported_value": "cool|auto|22.5C"
+        },
+        {
+          "value": "cool|auto|23C",
+          "label": "cool|auto|23C",
+          "ordered_frame_sha256s": [
+            "823ee0227e98cf11d8abc3404a2877e1dabd68c8c8f153d33fcd54f61df5ed99"
+          ],
+          "reported_value": "cool|auto|23C"
+        },
+        {
+          "value": "cool|auto|23.5C",
+          "label": "cool|auto|23.5C",
+          "ordered_frame_sha256s": [
+            "3e159b8b37c67570c1c412e1ee7defb84ef9fcca6bc9eea45f4b9c8ef39faac2"
+          ],
+          "reported_value": "cool|auto|23.5C"
+        },
+        {
+          "value": "cool|auto|24C",
+          "label": "cool|auto|24C",
+          "ordered_frame_sha256s": [
+            "cc42554b274dc028f23376b3c50093d726a29e7227cb5cd99ed1c20172ff16e7"
+          ],
+          "reported_value": "cool|auto|24C"
+        },
+        {
+          "value": "cool|auto|24.5C",
+          "label": "cool|auto|24.5C",
+          "ordered_frame_sha256s": [
+            "8139100610c56d0340801a1cfaec59746499bc91c3c0ca3bb81f8b645059bb84"
+          ],
+          "reported_value": "cool|auto|24.5C"
+        },
+        {
+          "value": "cool|auto|25C",
+          "label": "cool|auto|25C",
+          "ordered_frame_sha256s": [
+            "8182996026cbe3cf76a4885d55f5a214d1538607e8e21a90670efa9de2c2040f"
+          ],
+          "reported_value": "cool|auto|25C"
+        },
+        {
+          "value": "cool|auto|25.5C",
+          "label": "cool|auto|25.5C",
+          "ordered_frame_sha256s": [
+            "e8544169fc3309d40a608fb8b42bead88f58afdd714cc831936c02d8aebc25f4"
+          ],
+          "reported_value": "cool|auto|25.5C"
+        },
+        {
+          "value": "cool|auto|26C",
+          "label": "cool|auto|26C",
+          "ordered_frame_sha256s": [
+            "9b6edba57c05eda38e8a936dce0975e17438cb88d04034e36d4c0bd18e0ab1e6"
+          ],
+          "reported_value": "cool|auto|26C"
+        },
+        {
+          "value": "cool|auto|26.5C",
+          "label": "cool|auto|26.5C",
+          "ordered_frame_sha256s": [
+            "d52f602ce891279107d318a4c013cf120149f88b1b19952d840fe5c0fd3b3c6a"
+          ],
+          "reported_value": "cool|auto|26.5C"
+        },
+        {
+          "value": "cool|auto|27C",
+          "label": "cool|auto|27C",
+          "ordered_frame_sha256s": [
+            "a120233496c01bd45e203d23bacb40d1a58676061ddfe4b6285e5053c59a0193"
+          ],
+          "reported_value": "cool|auto|27C"
+        },
+        {
+          "value": "cool|auto|27.5C",
+          "label": "cool|auto|27.5C",
+          "ordered_frame_sha256s": [
+            "47e8a566a65808bd73dfffffb03bd08cc93527cf3c5c5a91779c28ac507642c9"
+          ],
+          "reported_value": "cool|auto|27.5C"
+        },
+        {
+          "value": "cool|auto|28C",
+          "label": "cool|auto|28C",
+          "ordered_frame_sha256s": [
+            "43a0cbd551c79c2426b2944d9e123b467f7c6a6a04b13d585dc66452fa6392a4"
+          ],
+          "reported_value": "cool|auto|28C"
+        },
+        {
+          "value": "cool|auto|28.5C",
+          "label": "cool|auto|28.5C",
+          "ordered_frame_sha256s": [
+            "bc9d6f7aaa6331361ef7fb43a90eddcefcf35f594c236edaf7cd8dd9ab4e17e5"
+          ],
+          "reported_value": "cool|auto|28.5C"
+        },
+        {
+          "value": "cool|auto|29C",
+          "label": "cool|auto|29C",
+          "ordered_frame_sha256s": [
+            "04b6460bd928b30d255a772ac9c51c18d0b93ed6c212ff15791414d560f9388f"
+          ],
+          "reported_value": "cool|auto|29C"
+        },
+        {
+          "value": "cool|auto|29.5C",
+          "label": "cool|auto|29.5C",
+          "ordered_frame_sha256s": [
+            "200a5590277cbb9ecaa7d84052d41a8a236ca4e561adf7b177d0ba75fe1e9a73"
+          ],
+          "reported_value": "cool|auto|29.5C"
+        },
+        {
+          "value": "cool|auto|30C",
+          "label": "cool|auto|30C",
+          "ordered_frame_sha256s": [
+            "f5c2e2a1fbfd3f07d79707ad900b3d502c07bed2929d441e29636e3a91425883"
+          ],
+          "reported_value": "cool|auto|30C"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "climate.mode_fan_setpoint",
+      "entity_key": "climate_mode_fan_setpoint",
+      "label_ko": "냉방 운전 조합",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "cool|very low|16C",
+          "label": "cool|very low|16C",
+          "ordered_frame_sha256s": [
+            "f679069134cd15c3fe71e354a93c9dd1c1b9506edfd59fee69cb3d0f5a38c359"
+          ],
+          "reported_value": "cool|very low|16C"
+        },
+        {
+          "value": "cool|very low|16.5C",
+          "label": "cool|very low|16.5C",
+          "ordered_frame_sha256s": [
+            "6527d8e5c1c3cc82b93ad76b5231966e7e82f7c7b18e2012c34cb019a98701c6"
+          ],
+          "reported_value": "cool|very low|16.5C"
+        },
+        {
+          "value": "cool|very low|17C",
+          "label": "cool|very low|17C",
+          "ordered_frame_sha256s": [
+            "256251b0606d95355d7f84dadeceb428066818b6c2a118a50ee8b6bf5c35cce6"
+          ],
+          "reported_value": "cool|very low|17C"
+        },
+        {
+          "value": "cool|very low|17.5C",
+          "label": "cool|very low|17.5C",
+          "ordered_frame_sha256s": [
+            "f13bd456e3f67396df19097674abe0c24fbe5e018d4c479402d95359ab791ac5"
+          ],
+          "reported_value": "cool|very low|17.5C"
+        },
+        {
+          "value": "cool|very low|18C",
+          "label": "cool|very low|18C",
+          "ordered_frame_sha256s": [
+            "7c0c2908f1979281461239cde0e75c8ca658fefee70f0f92a5eab9b8e8f19495"
+          ],
+          "reported_value": "cool|very low|18C"
+        },
+        {
+          "value": "cool|very low|18.5C",
+          "label": "cool|very low|18.5C",
+          "ordered_frame_sha256s": [
+            "527ef6ebd9f550febbc46a40407bddf614b108b38639fa267fece68b59824c30"
+          ],
+          "reported_value": "cool|very low|18.5C"
+        },
+        {
+          "value": "cool|very low|19C",
+          "label": "cool|very low|19C",
+          "ordered_frame_sha256s": [
+            "6397cc5ec4d861c1d795ea8f32de0f1a47ff92385a2ad28e889af919ff7352a0"
+          ],
+          "reported_value": "cool|very low|19C"
+        },
+        {
+          "value": "cool|very low|19.5C",
+          "label": "cool|very low|19.5C",
+          "ordered_frame_sha256s": [
+            "321123ec0394c22ec2b1da6049a93b26ae4e4b637e2abb27eaece29e0c2f1756"
+          ],
+          "reported_value": "cool|very low|19.5C"
+        },
+        {
+          "value": "cool|very low|20C",
+          "label": "cool|very low|20C",
+          "ordered_frame_sha256s": [
+            "0efebf43f8482062ddacd72f552daa82fafa9f7066dc52f16e218d1eadee22e4"
+          ],
+          "reported_value": "cool|very low|20C"
+        },
+        {
+          "value": "cool|very low|20.5C",
+          "label": "cool|very low|20.5C",
+          "ordered_frame_sha256s": [
+            "93c2d001d301c2af4295b97f9f34554ce054c222025594f860b7151ce369e534"
+          ],
+          "reported_value": "cool|very low|20.5C"
+        },
+        {
+          "value": "cool|very low|21C",
+          "label": "cool|very low|21C",
+          "ordered_frame_sha256s": [
+            "9aab2e7b56c41b5e41705ae8a30c5c189e8261616e715c33d1ced1da28aa9b40"
+          ],
+          "reported_value": "cool|very low|21C"
+        },
+        {
+          "value": "cool|very low|21.5C",
+          "label": "cool|very low|21.5C",
+          "ordered_frame_sha256s": [
+            "8d746682aa204feeb077b8589e036d99e25de496541c30c5a3cebd00409ee6c3"
+          ],
+          "reported_value": "cool|very low|21.5C"
+        },
+        {
+          "value": "cool|very low|22C",
+          "label": "cool|very low|22C",
+          "ordered_frame_sha256s": [
+            "e3a0735b229a74e8859c974a8d1c22768941e358613f37829e0e5c6560c9ecdc"
+          ],
+          "reported_value": "cool|very low|22C"
+        },
+        {
+          "value": "cool|very low|22.5C",
+          "label": "cool|very low|22.5C",
+          "ordered_frame_sha256s": [
+            "ffc1dc5f60c1830c55c863153c607d6a0e6fd260c701aa52f8487f433127cecc"
+          ],
+          "reported_value": "cool|very low|22.5C"
+        },
+        {
+          "value": "cool|very low|23C",
+          "label": "cool|very low|23C",
+          "ordered_frame_sha256s": [
+            "33df72465ab39b49dc426a46b0e4671c13c2678b8ba930db51cf9b2a65dc3514"
+          ],
+          "reported_value": "cool|very low|23C"
+        },
+        {
+          "value": "cool|very low|23.5C",
+          "label": "cool|very low|23.5C",
+          "ordered_frame_sha256s": [
+            "ca652a909ef9f6cd092b01fe83fbc3ada8006c6fecd87a2658930f89c04dea2d"
+          ],
+          "reported_value": "cool|very low|23.5C"
+        },
+        {
+          "value": "cool|very low|24C",
+          "label": "cool|very low|24C",
+          "ordered_frame_sha256s": [
+            "1306fcef3e54f42825447b57883578ce517b6175cc27784c89a8afdcd34c2cc3"
+          ],
+          "reported_value": "cool|very low|24C"
+        },
+        {
+          "value": "cool|very low|24.5C",
+          "label": "cool|very low|24.5C",
+          "ordered_frame_sha256s": [
+            "b3ceca01be72274ef32ad9a73582835e83f205e1767aa5b6e7847c80e4a9da6c"
+          ],
+          "reported_value": "cool|very low|24.5C"
+        },
+        {
+          "value": "cool|very low|25C",
+          "label": "cool|very low|25C",
+          "ordered_frame_sha256s": [
+            "ee150d776e0aca1c6a5aa871cea641cfcdd3c37e1c562afc114d7c40e757a63d"
+          ],
+          "reported_value": "cool|very low|25C"
+        },
+        {
+          "value": "cool|very low|25.5C",
+          "label": "cool|very low|25.5C",
+          "ordered_frame_sha256s": [
+            "9374e54010450bc47a51bf4c6f651f4cc20d7e598219d2fc3055d82131c8ad24"
+          ],
+          "reported_value": "cool|very low|25.5C"
+        },
+        {
+          "value": "cool|very low|26C",
+          "label": "cool|very low|26C",
+          "ordered_frame_sha256s": [
+            "084d60971b90cf428e0712655f3750aef956ed337ded38a5e57152959c757b90"
+          ],
+          "reported_value": "cool|very low|26C"
+        },
+        {
+          "value": "cool|very low|26.5C",
+          "label": "cool|very low|26.5C",
+          "ordered_frame_sha256s": [
+            "7af0420712e1f9f747d65fe385896c9bb0263025e445922fe9bc5dda8717b57d"
+          ],
+          "reported_value": "cool|very low|26.5C"
+        },
+        {
+          "value": "cool|very low|27C",
+          "label": "cool|very low|27C",
+          "ordered_frame_sha256s": [
+            "8c4827b48e583c28f1352542cb22c08bedb89566a72a4d6e87d10094f11424d7"
+          ],
+          "reported_value": "cool|very low|27C"
+        },
+        {
+          "value": "cool|very low|27.5C",
+          "label": "cool|very low|27.5C",
+          "ordered_frame_sha256s": [
+            "f6930e8f67349bf602165718f536373b4ccfcde7944b8953c46bb4f12083a245"
+          ],
+          "reported_value": "cool|very low|27.5C"
+        },
+        {
+          "value": "cool|very low|28C",
+          "label": "cool|very low|28C",
+          "ordered_frame_sha256s": [
+            "906eaccac61a9d721d1009bc0441385aacdcad1531562c3504c139d5b35ecaff"
+          ],
+          "reported_value": "cool|very low|28C"
+        },
+        {
+          "value": "cool|very low|28.5C",
+          "label": "cool|very low|28.5C",
+          "ordered_frame_sha256s": [
+            "f93ce3fd9d3e415f8e0aae204435887a71bb85e3fdff3f2d475049b4f916715e"
+          ],
+          "reported_value": "cool|very low|28.5C"
+        },
+        {
+          "value": "cool|very low|29C",
+          "label": "cool|very low|29C",
+          "ordered_frame_sha256s": [
+            "61ea20fd4e2677b7452b010defda76f8e09bd31a36862a422bbb5e73decaa9b2"
+          ],
+          "reported_value": "cool|very low|29C"
+        },
+        {
+          "value": "cool|very low|29.5C",
+          "label": "cool|very low|29.5C",
+          "ordered_frame_sha256s": [
+            "da875097a04a6ffdd8bed36b51968a1afde11eda76036f304b2ca563cdcab3f5"
+          ],
+          "reported_value": "cool|very low|29.5C"
+        },
+        {
+          "value": "cool|very low|30C",
+          "label": "cool|very low|30C",
+          "ordered_frame_sha256s": [
+            "8d022e776b597e1ede43ec7a19c6c6cd355f74ac3c0544d1a67f77d478ca57d4"
+          ],
+          "reported_value": "cool|very low|30C"
+        },
+        {
+          "value": "cool|low|16C",
+          "label": "cool|low|16C",
+          "ordered_frame_sha256s": [
+            "14f72a0cb2f02d7a4f0eb905cf0cf67143705ea9a79cfa6deda7de424eb3b8f1"
+          ],
+          "reported_value": "cool|low|16C"
+        },
+        {
+          "value": "cool|low|16.5C",
+          "label": "cool|low|16.5C",
+          "ordered_frame_sha256s": [
+            "e7f021461b30afcf24772cfbac54880918070d8cf01021be40bc37ad7c32b7df"
+          ],
+          "reported_value": "cool|low|16.5C"
+        },
+        {
+          "value": "cool|low|17C",
+          "label": "cool|low|17C",
+          "ordered_frame_sha256s": [
+            "3a20bae3d876dd3d8b5408e42716e9426c6af7f54bd52614661905f8279e72f0"
+          ],
+          "reported_value": "cool|low|17C"
+        },
+        {
+          "value": "cool|low|17.5C",
+          "label": "cool|low|17.5C",
+          "ordered_frame_sha256s": [
+            "8775187932017f435de13cabc9b3a21c86bee6b4a0a1d093b7229a6090f65ab3"
+          ],
+          "reported_value": "cool|low|17.5C"
+        },
+        {
+          "value": "cool|low|18C",
+          "label": "cool|low|18C",
+          "ordered_frame_sha256s": [
+            "be553ab989559d91f42ac8a094d22c3e8bb4f795035ba7ab3246f512527c5cf1"
+          ],
+          "reported_value": "cool|low|18C"
+        },
+        {
+          "value": "cool|low|18.5C",
+          "label": "cool|low|18.5C",
+          "ordered_frame_sha256s": [
+            "d89371597ee3f67568d037de3ab0088be60ebce0411f53754eb2f39d1f139ed6"
+          ],
+          "reported_value": "cool|low|18.5C"
+        },
+        {
+          "value": "cool|low|19C",
+          "label": "cool|low|19C",
+          "ordered_frame_sha256s": [
+            "b96b131cd21d7f20b263286f6e5abcb5713c152e23daba8773de360e01aa70ef"
+          ],
+          "reported_value": "cool|low|19C"
+        },
+        {
+          "value": "cool|low|19.5C",
+          "label": "cool|low|19.5C",
+          "ordered_frame_sha256s": [
+            "8af255da63868018b840a492a30e7902794818bbb36b3ed0414f64d4aeb94d42"
+          ],
+          "reported_value": "cool|low|19.5C"
+        },
+        {
+          "value": "cool|low|20C",
+          "label": "cool|low|20C",
+          "ordered_frame_sha256s": [
+            "ea651ad168f9730952c2034cfb8c99f843bfe8e49866e4cc5ac888117506308e"
+          ],
+          "reported_value": "cool|low|20C"
+        },
+        {
+          "value": "cool|low|20.5C",
+          "label": "cool|low|20.5C",
+          "ordered_frame_sha256s": [
+            "83615f441c2adecfb36aa0000e7662584bc63bcb308dfa27569bea68f46d71c0"
+          ],
+          "reported_value": "cool|low|20.5C"
+        },
+        {
+          "value": "cool|low|21C",
+          "label": "cool|low|21C",
+          "ordered_frame_sha256s": [
+            "2169af9ac22ef977a317b07d0cdbf26b070e9a715865a7e640e0cf17d86d3802"
+          ],
+          "reported_value": "cool|low|21C"
+        },
+        {
+          "value": "cool|low|21.5C",
+          "label": "cool|low|21.5C",
+          "ordered_frame_sha256s": [
+            "35c16f309b536719db5812447d0f239f2860210e8f16a84d51cad78270bb684c"
+          ],
+          "reported_value": "cool|low|21.5C"
+        },
+        {
+          "value": "cool|low|22C",
+          "label": "cool|low|22C",
+          "ordered_frame_sha256s": [
+            "ec112e588e90cbf810551350dfc3785eacfae8bc7bced363bceda003733c75b9"
+          ],
+          "reported_value": "cool|low|22C"
+        },
+        {
+          "value": "cool|low|22.5C",
+          "label": "cool|low|22.5C",
+          "ordered_frame_sha256s": [
+            "5ae5abd377a090c87ba2aa50b0969313f8b0bc3e7a2451614107d2812f1eab29"
+          ],
+          "reported_value": "cool|low|22.5C"
+        },
+        {
+          "value": "cool|low|23C",
+          "label": "cool|low|23C",
+          "ordered_frame_sha256s": [
+            "889ab0b90df3975f62199e4eec0fdfcce4858ccc6460ef6acafaad2687e7181f"
+          ],
+          "reported_value": "cool|low|23C"
+        },
+        {
+          "value": "cool|low|23.5C",
+          "label": "cool|low|23.5C",
+          "ordered_frame_sha256s": [
+            "333353c0f987c4f8297af93b91a36c50000832caaf4415116f671255e3c95bfb"
+          ],
+          "reported_value": "cool|low|23.5C"
+        },
+        {
+          "value": "cool|low|24.5C",
+          "label": "cool|low|24.5C",
+          "ordered_frame_sha256s": [
+            "efc85999401dc1a5dc2428e873051a1a03ac2ce1815eddaa08a599c26ba353aa"
+          ],
+          "reported_value": "cool|low|24.5C"
+        },
+        {
+          "value": "cool|low|25C",
+          "label": "cool|low|25C",
+          "ordered_frame_sha256s": [
+            "5cbca5d94c62098c9cbb64b31d82e73cb940632e70ecbb3ce0f050d9265adbc8"
+          ],
+          "reported_value": "cool|low|25C"
+        },
+        {
+          "value": "cool|low|25.5C",
+          "label": "cool|low|25.5C",
+          "ordered_frame_sha256s": [
+            "e256d812cf46a08e11b62ab135d29314f3d64a3a0309baebd82ff5cab999252c"
+          ],
+          "reported_value": "cool|low|25.5C"
+        },
+        {
+          "value": "cool|low|26C",
+          "label": "cool|low|26C",
+          "ordered_frame_sha256s": [
+            "5e71969f44f300e0b9ac4827964f7be0b6324629bea52878a23043bc162a3c09"
+          ],
+          "reported_value": "cool|low|26C"
+        },
+        {
+          "value": "cool|low|26.5C",
+          "label": "cool|low|26.5C",
+          "ordered_frame_sha256s": [
+            "e4c4a5995b2eaa655752ee184fe2ee6c8648bfca39fea5acbab73ebee95eb7c1"
+          ],
+          "reported_value": "cool|low|26.5C"
+        },
+        {
+          "value": "cool|low|27C",
+          "label": "cool|low|27C",
+          "ordered_frame_sha256s": [
+            "4d6f716ca26e6f8d852a1bc20931a68021f63690bad92a17ab43be20dbb84670"
+          ],
+          "reported_value": "cool|low|27C"
+        },
+        {
+          "value": "cool|low|27.5C",
+          "label": "cool|low|27.5C",
+          "ordered_frame_sha256s": [
+            "eee05b704ca74f6b5d33c077871493d86bfac21c199a536951f4382486ffb9ac"
+          ],
+          "reported_value": "cool|low|27.5C"
+        },
+        {
+          "value": "cool|low|28C",
+          "label": "cool|low|28C",
+          "ordered_frame_sha256s": [
+            "d02e3f19394026bf2a9747519ef8a3219f0470ddd4f3bd0f8190c7dc1c6fac6d"
+          ],
+          "reported_value": "cool|low|28C"
+        },
+        {
+          "value": "cool|low|28.5C",
+          "label": "cool|low|28.5C",
+          "ordered_frame_sha256s": [
+            "50a2d57823a5ab2721759321d31f7d36c743851979f6376090a08b92ef9838a4"
+          ],
+          "reported_value": "cool|low|28.5C"
+        },
+        {
+          "value": "cool|low|29C",
+          "label": "cool|low|29C",
+          "ordered_frame_sha256s": [
+            "efc1e408cf068d7d8363beccf7ac7db0b42387b633dc8ec9a8ae717e07cca34b"
+          ],
+          "reported_value": "cool|low|29C"
+        },
+        {
+          "value": "cool|low|29.5C",
+          "label": "cool|low|29.5C",
+          "ordered_frame_sha256s": [
+            "96f649c2ce7ee43b1451e63f91798e11c4e79724ef3aecebc0d05044f394a6f8"
+          ],
+          "reported_value": "cool|low|29.5C"
+        },
+        {
+          "value": "cool|low|30C",
+          "label": "cool|low|30C",
+          "ordered_frame_sha256s": [
+            "80b4a34c613c7c1b5de3b6f9ce2eeac8d206bb98e41251eb08b5b43587584bec"
+          ],
+          "reported_value": "cool|low|30C"
+        },
+        {
+          "value": "cool|medium|16C",
+          "label": "cool|medium|16C",
+          "ordered_frame_sha256s": [
+            "a0dac0bf8a2969d148f9f7eb8c811c754745f0548115977646468e9403b66af5"
+          ],
+          "reported_value": "cool|medium|16C"
+        },
+        {
+          "value": "cool|medium|16.5C",
+          "label": "cool|medium|16.5C",
+          "ordered_frame_sha256s": [
+            "b551333c185d0c5c3d374e253e9bf6528dfb87d02c794edbfb1ff7ff11916564"
+          ],
+          "reported_value": "cool|medium|16.5C"
+        },
+        {
+          "value": "cool|medium|17C",
+          "label": "cool|medium|17C",
+          "ordered_frame_sha256s": [
+            "1eb588edb5fb7d15e9f1342642e245d70c7b747203fcbc1f6d3bceb87853718f"
+          ],
+          "reported_value": "cool|medium|17C"
+        },
+        {
+          "value": "cool|medium|17.5C",
+          "label": "cool|medium|17.5C",
+          "ordered_frame_sha256s": [
+            "6ea3f8078b43b9096ae38402f646577ab36b4cb244767f5c04d72c188ad35b24"
+          ],
+          "reported_value": "cool|medium|17.5C"
+        },
+        {
+          "value": "cool|medium|18C",
+          "label": "cool|medium|18C",
+          "ordered_frame_sha256s": [
+            "6715b7e7a6e21d950315a7bf914739145c7ba48263dcdb1c7ead872521435a44"
+          ],
+          "reported_value": "cool|medium|18C"
+        },
+        {
+          "value": "cool|medium|18.5C",
+          "label": "cool|medium|18.5C",
+          "ordered_frame_sha256s": [
+            "104be14d703b96e6d1af3953bf7a89f2cfe73093d492982261dd584a7bac833d"
+          ],
+          "reported_value": "cool|medium|18.5C"
+        },
+        {
+          "value": "cool|medium|19C",
+          "label": "cool|medium|19C",
+          "ordered_frame_sha256s": [
+            "073817b6879cbea4b7b44386cfa0b481610703446cdcb64287b3989e4d77e812"
+          ],
+          "reported_value": "cool|medium|19C"
+        },
+        {
+          "value": "cool|medium|19.5C",
+          "label": "cool|medium|19.5C",
+          "ordered_frame_sha256s": [
+            "a290387eea099328f1adf05439785cf9d6eca86f347895050b56c22243499d9e"
+          ],
+          "reported_value": "cool|medium|19.5C"
+        },
+        {
+          "value": "cool|medium|20C",
+          "label": "cool|medium|20C",
+          "ordered_frame_sha256s": [
+            "0ca573d7034f01ac9cd34ed4a1350ac582e77192085bf33d435d252c24400f58"
+          ],
+          "reported_value": "cool|medium|20C"
+        },
+        {
+          "value": "cool|medium|20.5C",
+          "label": "cool|medium|20.5C",
+          "ordered_frame_sha256s": [
+            "88dac4f87b120d3e417a08f3e31b6d0e13e2d29f1d199f571bfdd940a4bd13ed"
+          ],
+          "reported_value": "cool|medium|20.5C"
+        },
+        {
+          "value": "cool|medium|21C",
+          "label": "cool|medium|21C",
+          "ordered_frame_sha256s": [
+            "b85636ff846a91a73e3eb2084ebfae5aa7b3bb5fb6c87dcb24b0d155f3f0f930"
+          ],
+          "reported_value": "cool|medium|21C"
+        },
+        {
+          "value": "cool|medium|21.5C",
+          "label": "cool|medium|21.5C",
+          "ordered_frame_sha256s": [
+            "5f85e533b45855e3063df9689267aa0cfa217658995ad7548b27be9bbdacf6fa"
+          ],
+          "reported_value": "cool|medium|21.5C"
+        },
+        {
+          "value": "cool|medium|22C",
+          "label": "cool|medium|22C",
+          "ordered_frame_sha256s": [
+            "0f62422cdff34566c088ce0e3553ce4b8a74fd2b54a30ab2c468f55eef6640ba"
+          ],
+          "reported_value": "cool|medium|22C"
+        },
+        {
+          "value": "cool|medium|22.5C",
+          "label": "cool|medium|22.5C",
+          "ordered_frame_sha256s": [
+            "7752813d50348ae034e3aed18d08fd0ddf1d1407ec3b3cde2b49acb27291430d"
+          ],
+          "reported_value": "cool|medium|22.5C"
+        },
+        {
+          "value": "cool|medium|23C",
+          "label": "cool|medium|23C",
+          "ordered_frame_sha256s": [
+            "692fb049e44f50c829fb0f8b3965bcd1c9d668797b482ba1c5c43033afa8abb9"
+          ],
+          "reported_value": "cool|medium|23C"
+        },
+        {
+          "value": "cool|medium|23.5C",
+          "label": "cool|medium|23.5C",
+          "ordered_frame_sha256s": [
+            "973f80b5f9a560d3cff8ab3119f0df6270af15ad8a9c7970070c64169d6144df"
+          ],
+          "reported_value": "cool|medium|23.5C"
+        },
+        {
+          "value": "cool|medium|24.5C",
+          "label": "cool|medium|24.5C",
+          "ordered_frame_sha256s": [
+            "e918159e1e8578f545be77698ad13225d29ac13f4b8049dcbf8138e7c758fd6a"
+          ],
+          "reported_value": "cool|medium|24.5C"
+        },
+        {
+          "value": "cool|medium|25C",
+          "label": "cool|medium|25C",
+          "ordered_frame_sha256s": [
+            "c8a7be0edd2501005fdd90f361b15fcee73412ae950c6a0e317855299572d0fe"
+          ],
+          "reported_value": "cool|medium|25C"
+        },
+        {
+          "value": "cool|medium|25.5C",
+          "label": "cool|medium|25.5C",
+          "ordered_frame_sha256s": [
+            "4f4d78ee2399ac36321589aa379f40f8ff976abf7c110f63aab7fcc36ef491e7"
+          ],
+          "reported_value": "cool|medium|25.5C"
+        },
+        {
+          "value": "cool|medium|26C",
+          "label": "cool|medium|26C",
+          "ordered_frame_sha256s": [
+            "0fbe73c641234afbe88b2f9daddda90c82c2947a84116b75a2a11d73345da81f"
+          ],
+          "reported_value": "cool|medium|26C"
+        },
+        {
+          "value": "cool|medium|26.5C",
+          "label": "cool|medium|26.5C",
+          "ordered_frame_sha256s": [
+            "02ea86acee66338e1e95d0ca51c3e3d3c27aa6db8ff5afbab392ad0184531572"
+          ],
+          "reported_value": "cool|medium|26.5C"
+        },
+        {
+          "value": "cool|medium|27C",
+          "label": "cool|medium|27C",
+          "ordered_frame_sha256s": [
+            "956451ca583d7a6dec00f536c2dccb3b92123f565d1161ad43ba622cbdce0f5c"
+          ],
+          "reported_value": "cool|medium|27C"
+        },
+        {
+          "value": "cool|medium|27.5C",
+          "label": "cool|medium|27.5C",
+          "ordered_frame_sha256s": [
+            "960bdb06f13791cf55a0ea07652c638bd47e07df404993e820db843856a983ea"
+          ],
+          "reported_value": "cool|medium|27.5C"
+        },
+        {
+          "value": "cool|medium|28C",
+          "label": "cool|medium|28C",
+          "ordered_frame_sha256s": [
+            "b4acee9f7370e1c3fccd9694493f4a89c3562f3e5a00cbe880e76d2d9f98c974"
+          ],
+          "reported_value": "cool|medium|28C"
+        },
+        {
+          "value": "cool|medium|28.5C",
+          "label": "cool|medium|28.5C",
+          "ordered_frame_sha256s": [
+            "b983a7d2d1fe3305c1f81d5625526b4036ce9608bae0c91294ccb10dbb3843a0"
+          ],
+          "reported_value": "cool|medium|28.5C"
+        },
+        {
+          "value": "cool|medium|29C",
+          "label": "cool|medium|29C",
+          "ordered_frame_sha256s": [
+            "f4405a9b855fd0a3d3ced774685cb5150e58bebb986f2018ea5ea65ff77d3edd"
+          ],
+          "reported_value": "cool|medium|29C"
+        },
+        {
+          "value": "cool|medium|29.5C",
+          "label": "cool|medium|29.5C",
+          "ordered_frame_sha256s": [
+            "adeab7a3d8c3debd47ed1910103fce4b68a4dd1ee4ca954025b606a8fb4781c1"
+          ],
+          "reported_value": "cool|medium|29.5C"
+        },
+        {
+          "value": "cool|medium|30C",
+          "label": "cool|medium|30C",
+          "ordered_frame_sha256s": [
+            "2a4e47a3f38ad9bd08fe98fe3ca6185b2442edc3add510f3aff0be19ed54634e"
+          ],
+          "reported_value": "cool|medium|30C"
+        },
+        {
+          "value": "cool|high|16C",
+          "label": "cool|high|16C",
+          "ordered_frame_sha256s": [
+            "2046edbb4e74dfcad0568437f5cb461f05c97e8a427a7925cbe7492b000d648d"
+          ],
+          "reported_value": "cool|high|16C"
+        },
+        {
+          "value": "cool|high|16.5C",
+          "label": "cool|high|16.5C",
+          "ordered_frame_sha256s": [
+            "2fb60f5d19222d4b2c0e0a45d949e6eb9c4e37c15175a246db1104e08de30c0e"
+          ],
+          "reported_value": "cool|high|16.5C"
+        },
+        {
+          "value": "cool|high|17C",
+          "label": "cool|high|17C",
+          "ordered_frame_sha256s": [
+            "a44c447b4672d201182bf609d908aadf58c8bdc26ffb5b0edd14ef090a93d728"
+          ],
+          "reported_value": "cool|high|17C"
+        },
+        {
+          "value": "cool|high|17.5C",
+          "label": "cool|high|17.5C",
+          "ordered_frame_sha256s": [
+            "5f16d30f487c316b6e7388bee983720c56587f97393ed36aa4f0f4d1d16e724c"
+          ],
+          "reported_value": "cool|high|17.5C"
+        },
+        {
+          "value": "cool|high|18C",
+          "label": "cool|high|18C",
+          "ordered_frame_sha256s": [
+            "0c8c379b2989561f6cc97865bcc0c5a4f9afbba210fd9dc3bfff7ccf51c94cfb"
+          ],
+          "reported_value": "cool|high|18C"
+        },
+        {
+          "value": "cool|high|18.5C",
+          "label": "cool|high|18.5C",
+          "ordered_frame_sha256s": [
+            "204cbd509b2a114e693d5c81ccef6f47fc67e94e0636e692c47fdf29b3e469ce"
+          ],
+          "reported_value": "cool|high|18.5C"
+        },
+        {
+          "value": "cool|high|19C",
+          "label": "cool|high|19C",
+          "ordered_frame_sha256s": [
+            "4a7a09f83772e59b35f16db925cbb7a7621131fdc55d7732ddb9294478987a73"
+          ],
+          "reported_value": "cool|high|19C"
+        },
+        {
+          "value": "cool|high|19.5C",
+          "label": "cool|high|19.5C",
+          "ordered_frame_sha256s": [
+            "636e0797cdc9fb56f54e91f95216a654f22db3952a557522a084c5115fe690a3"
+          ],
+          "reported_value": "cool|high|19.5C"
+        },
+        {
+          "value": "cool|high|20C",
+          "label": "cool|high|20C",
+          "ordered_frame_sha256s": [
+            "0b1170e06ca5bb02a71dc78754d1ccb796a5f77297c66fc60b6a363a992df49a"
+          ],
+          "reported_value": "cool|high|20C"
+        },
+        {
+          "value": "cool|high|20.5C",
+          "label": "cool|high|20.5C",
+          "ordered_frame_sha256s": [
+            "90594256554eff125d9d7d6a6d6ce1418172906304a66c541899842ac3ab4d83"
+          ],
+          "reported_value": "cool|high|20.5C"
+        },
+        {
+          "value": "cool|high|21C",
+          "label": "cool|high|21C",
+          "ordered_frame_sha256s": [
+            "ec4920e614a6e6099237817785008d1926f4e4a76be951c14d9844bab7ba7d9e"
+          ],
+          "reported_value": "cool|high|21C"
+        },
+        {
+          "value": "cool|high|21.5C",
+          "label": "cool|high|21.5C",
+          "ordered_frame_sha256s": [
+            "f55ce128afad139fb499b6ef0f1d0ba9f0d7ac725ec5c49ba29b167c618d0ddd"
+          ],
+          "reported_value": "cool|high|21.5C"
+        },
+        {
+          "value": "cool|high|22C",
+          "label": "cool|high|22C",
+          "ordered_frame_sha256s": [
+            "d5a5d25b6a8e1ed4d8f99711326928ffe5e48c0253ff4e03c3e7b20ed3801a75"
+          ],
+          "reported_value": "cool|high|22C"
+        },
+        {
+          "value": "cool|high|22.5C",
+          "label": "cool|high|22.5C",
+          "ordered_frame_sha256s": [
+            "6fee011671b4faa99c6a83ace6ffe8ee9ac5ac562ff59fa55e4674f6b5e8e0a7"
+          ],
+          "reported_value": "cool|high|22.5C"
+        },
+        {
+          "value": "cool|high|23C",
+          "label": "cool|high|23C",
+          "ordered_frame_sha256s": [
+            "5d8130d62f2dce610867ca25b95633f988c570146a972526617610022c9df525"
+          ],
+          "reported_value": "cool|high|23C"
+        },
+        {
+          "value": "cool|high|23.5C",
+          "label": "cool|high|23.5C",
+          "ordered_frame_sha256s": [
+            "a43a21ee5a5578b62a5eb3f12742300a7fad76e2fa07627d03085c20d00e9434"
+          ],
+          "reported_value": "cool|high|23.5C"
+        },
+        {
+          "value": "cool|high|24.5C",
+          "label": "cool|high|24.5C",
+          "ordered_frame_sha256s": [
+            "2ebdca4ae323e48f540cadbe9f9c5d670dc86e17d9effd2a7a0fdec664f00d52"
+          ],
+          "reported_value": "cool|high|24.5C"
+        },
+        {
+          "value": "cool|high|25C",
+          "label": "cool|high|25C",
+          "ordered_frame_sha256s": [
+            "0fee03f3a331348597dcddc4c1bed47c80be22e459b0bd6f2b7054a290fbf43d"
+          ],
+          "reported_value": "cool|high|25C"
+        },
+        {
+          "value": "cool|high|25.5C",
+          "label": "cool|high|25.5C",
+          "ordered_frame_sha256s": [
+            "82a74944470aa4a36d1b50482ce608dda5c69ca14bc069f2fb3147b9dfb7d527"
+          ],
+          "reported_value": "cool|high|25.5C"
+        },
+        {
+          "value": "cool|high|26C",
+          "label": "cool|high|26C",
+          "ordered_frame_sha256s": [
+            "53b068541647aedbaa541ea1789c49d3ffbfa2adadc15ebee1b30ab9a562f050"
+          ],
+          "reported_value": "cool|high|26C"
+        },
+        {
+          "value": "cool|high|26.5C",
+          "label": "cool|high|26.5C",
+          "ordered_frame_sha256s": [
+            "d559f8686c7a1f084ad17fe8b1fc296f532cd262080add5c3375a4aa1002d9ef"
+          ],
+          "reported_value": "cool|high|26.5C"
+        },
+        {
+          "value": "cool|high|27C",
+          "label": "cool|high|27C",
+          "ordered_frame_sha256s": [
+            "65dd7510356f925c106c432b955c0c5ec8c9d1cae43beffb290c5eece00c2402"
+          ],
+          "reported_value": "cool|high|27C"
+        },
+        {
+          "value": "cool|high|27.5C",
+          "label": "cool|high|27.5C",
+          "ordered_frame_sha256s": [
+            "aad4f46108022219da55aa7d2f7679a344bdd724708df64974aa7a1202602f0b"
+          ],
+          "reported_value": "cool|high|27.5C"
+        },
+        {
+          "value": "cool|high|28C",
+          "label": "cool|high|28C",
+          "ordered_frame_sha256s": [
+            "e49db3914d4014a9833c511f9d8ad2adcf7c1253eed870221861e256de1a0adb"
+          ],
+          "reported_value": "cool|high|28C"
+        },
+        {
+          "value": "cool|high|28.5C",
+          "label": "cool|high|28.5C",
+          "ordered_frame_sha256s": [
+            "c984739e1ecccb0f06c2f8e2e1398e9b9c7d7ec5d3ead2cbe5462468da8838a6"
+          ],
+          "reported_value": "cool|high|28.5C"
+        },
+        {
+          "value": "cool|high|29C",
+          "label": "cool|high|29C",
+          "ordered_frame_sha256s": [
+            "3c252573ea159709fb4e4b56e89a62b0ca396610cadc6f9079616e3298a4be86"
+          ],
+          "reported_value": "cool|high|29C"
+        },
+        {
+          "value": "cool|high|29.5C",
+          "label": "cool|high|29.5C",
+          "ordered_frame_sha256s": [
+            "e7d68c0585f320fbf2acb9812d93e76a2e255784310b7378910d9959d10739f2"
+          ],
+          "reported_value": "cool|high|29.5C"
+        },
+        {
+          "value": "cool|high|30C",
+          "label": "cool|high|30C",
+          "ordered_frame_sha256s": [
+            "26cd7f4b2f8ed7edb459825238733da67ab41f243f08b246aa4279bbb395c302"
+          ],
+          "reported_value": "cool|high|30C"
+        },
+        {
+          "value": "cool|auto|16C",
+          "label": "cool|auto|16C",
+          "ordered_frame_sha256s": [
+            "4464e99145a734e2bc1cff970a5deb80e6b8a2e76ffcf940c7596ef6c724e30f"
+          ],
+          "reported_value": "cool|auto|16C"
+        },
+        {
+          "value": "cool|auto|16.5C",
+          "label": "cool|auto|16.5C",
+          "ordered_frame_sha256s": [
+            "446b5497bb94560936b9dba78b3c0b692af5d3027efdb86e063355fbd4f98f88"
+          ],
+          "reported_value": "cool|auto|16.5C"
+        },
+        {
+          "value": "cool|auto|17C",
+          "label": "cool|auto|17C",
+          "ordered_frame_sha256s": [
+            "7199688f0e8dafb8a9acdf46f432a81264c7d582360405c927cac8cd38ad321e"
+          ],
+          "reported_value": "cool|auto|17C"
+        },
+        {
+          "value": "cool|auto|17.5C",
+          "label": "cool|auto|17.5C",
+          "ordered_frame_sha256s": [
+            "cb48aad140d290dbde6d1699a4b6d0fe2afe543578c2af358117e3340614cb95"
+          ],
+          "reported_value": "cool|auto|17.5C"
+        },
+        {
+          "value": "cool|auto|18C",
+          "label": "cool|auto|18C",
+          "ordered_frame_sha256s": [
+            "2a3e92789204686c3f25a457827c56f1395da6f1334625509311f2654ec27ad8"
+          ],
+          "reported_value": "cool|auto|18C"
+        },
+        {
+          "value": "cool|auto|18.5C",
+          "label": "cool|auto|18.5C",
+          "ordered_frame_sha256s": [
+            "2b2b968b59d1458ae0a6e27267c3b33cda051c8924d77f6b09328cd5c7db436d"
+          ],
+          "reported_value": "cool|auto|18.5C"
+        },
+        {
+          "value": "cool|auto|19C",
+          "label": "cool|auto|19C",
+          "ordered_frame_sha256s": [
+            "54f434008da7dade0dfbe3c2353c0a5efd287c9619710088897238d74ff17ffe"
+          ],
+          "reported_value": "cool|auto|19C"
+        },
+        {
+          "value": "cool|auto|19.5C",
+          "label": "cool|auto|19.5C",
+          "ordered_frame_sha256s": [
+            "fc87bc207a62be6fed289fd32b05405825ff039c57742152c1aa7c325f999eb4"
+          ],
+          "reported_value": "cool|auto|19.5C"
+        },
+        {
+          "value": "cool|auto|20C",
+          "label": "cool|auto|20C",
+          "ordered_frame_sha256s": [
+            "e774d964be565422f88106166a8b74bb68e0ccb3616b9641fb50cd539283edad"
+          ],
+          "reported_value": "cool|auto|20C"
+        },
+        {
+          "value": "cool|auto|20.5C",
+          "label": "cool|auto|20.5C",
+          "ordered_frame_sha256s": [
+            "d211a7bf59ddf7e7820771fe8cf99bc9920829ecb7fb216037bd90e432a802d9"
+          ],
+          "reported_value": "cool|auto|20.5C"
+        },
+        {
+          "value": "cool|auto|21C",
+          "label": "cool|auto|21C",
+          "ordered_frame_sha256s": [
+            "7f74c0051b0dff9b1d9938e2098d757c3b522f0d5b8869c81aa24eb57feb7203"
+          ],
+          "reported_value": "cool|auto|21C"
+        },
+        {
+          "value": "cool|auto|21.5C",
+          "label": "cool|auto|21.5C",
+          "ordered_frame_sha256s": [
+            "05f7b1b4b214fd9796902a8f29c690e6f535dc59e888e31402bdb29832403ea9"
+          ],
+          "reported_value": "cool|auto|21.5C"
+        },
+        {
+          "value": "cool|auto|22C",
+          "label": "cool|auto|22C",
+          "ordered_frame_sha256s": [
+            "f0720a84a8288c7626767591708e6de2ab8f77e44ab7374100eefaa0d7924104"
+          ],
+          "reported_value": "cool|auto|22C"
+        },
+        {
+          "value": "cool|auto|22.5C",
+          "label": "cool|auto|22.5C",
+          "ordered_frame_sha256s": [
+            "e40f34d09d9d3f10a2476db86a28777257ff7e7ff7f0902420506e4466e3ccda"
+          ],
+          "reported_value": "cool|auto|22.5C"
+        },
+        {
+          "value": "cool|auto|23C",
+          "label": "cool|auto|23C",
+          "ordered_frame_sha256s": [
+            "9e0025795e501a7620f27ae560c57485c7b8cb0888bf53bd8e90144350e1e4bb"
+          ],
+          "reported_value": "cool|auto|23C"
+        },
+        {
+          "value": "cool|auto|23.5C",
+          "label": "cool|auto|23.5C",
+          "ordered_frame_sha256s": [
+            "736b4fe7ed657586e565500ef9a3762d7f873bf1b33e36fa210abde17d22576e"
+          ],
+          "reported_value": "cool|auto|23.5C"
+        },
+        {
+          "value": "cool|auto|25C",
+          "label": "cool|auto|25C",
+          "ordered_frame_sha256s": [
+            "85300f038c9d927b736f63531dcccff1865b34efde8d6f607d506f03cf518b4c"
+          ],
+          "reported_value": "cool|auto|25C"
+        },
+        {
+          "value": "cool|auto|25.5C",
+          "label": "cool|auto|25.5C",
+          "ordered_frame_sha256s": [
+            "f6966fbaa040959d238897ca2c283d555797ac575e1aca64cf807aead3eedb13"
+          ],
+          "reported_value": "cool|auto|25.5C"
+        },
+        {
+          "value": "cool|auto|26C",
+          "label": "cool|auto|26C",
+          "ordered_frame_sha256s": [
+            "fc6cf81cad0f20311d1113361b173bae9dd0895c5a46af2205834ae95b62fcb2"
+          ],
+          "reported_value": "cool|auto|26C"
+        },
+        {
+          "value": "cool|auto|26.5C",
+          "label": "cool|auto|26.5C",
+          "ordered_frame_sha256s": [
+            "4f086e195803ca57fb2b57680883ed090eb289c4e77064fb555e2d349a5c9dde"
+          ],
+          "reported_value": "cool|auto|26.5C"
+        },
+        {
+          "value": "cool|auto|27C",
+          "label": "cool|auto|27C",
+          "ordered_frame_sha256s": [
+            "b625555312700150dadfe03efd95f8765acacb6d6b178282ac59514e2a8a66a5"
+          ],
+          "reported_value": "cool|auto|27C"
+        },
+        {
+          "value": "cool|auto|27.5C",
+          "label": "cool|auto|27.5C",
+          "ordered_frame_sha256s": [
+            "7210f6d4dba3b31f373501995a05823033d10e18faa19438e558a8988aa13ec9"
+          ],
+          "reported_value": "cool|auto|27.5C"
+        },
+        {
+          "value": "cool|auto|28C",
+          "label": "cool|auto|28C",
+          "ordered_frame_sha256s": [
+            "dc9a00fa932abd5841326b43f69478a24d2823d84e1c8a2cde59f64a7cedc982"
+          ],
+          "reported_value": "cool|auto|28C"
+        },
+        {
+          "value": "cool|auto|28.5C",
+          "label": "cool|auto|28.5C",
+          "ordered_frame_sha256s": [
+            "62f5f39740a4b1ab4e5a33a3aa0f69f6902115f4976b26a3d2c052b0154ac703"
+          ],
+          "reported_value": "cool|auto|28.5C"
+        },
+        {
+          "value": "cool|auto|29C",
+          "label": "cool|auto|29C",
+          "ordered_frame_sha256s": [
+            "1653859c6daa2af0ff0489c54213ac8389c4cb9ac392177e90e17aa901a28778"
+          ],
+          "reported_value": "cool|auto|29C"
+        },
+        {
+          "value": "cool|auto|29.5C",
+          "label": "cool|auto|29.5C",
+          "ordered_frame_sha256s": [
+            "8ee4b69c2eaf71357c525d1e8bd6cf628677e73a5890c9f267ce1d1717f4f4c3"
+          ],
+          "reported_value": "cool|auto|29.5C"
+        },
+        {
+          "value": "cool|auto|30C",
+          "label": "cool|auto|30C",
+          "ordered_frame_sha256s": [
+            "5bfd9d262aeea667e24e20ccfceb7937242f3392e33f8c726aad74d914c599a9"
+          ],
+          "reported_value": "cool|auto|30C"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "climate.power_on_with_setpoint",
+      "entity_key": "climate_power_on_with_setpoint",
+      "label_ko": "냉방 운전 조합",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "cool|very low|16C",
+          "label": "cool|very low|16C",
+          "ordered_frame_sha256s": [
+            "ac4219256c48f2eb2c97ff213556d15a8682528082368c55f161b1a2b9aecf64"
+          ],
+          "reported_value": "cool|very low|16C"
+        },
+        {
+          "value": "cool|very low|16.5C",
+          "label": "cool|very low|16.5C",
+          "ordered_frame_sha256s": [
+            "76a2c0a639b74f2187338becd6c9cd137df180e9e0706ef371ad75bbdba0a8d6"
+          ],
+          "reported_value": "cool|very low|16.5C"
+        },
+        {
+          "value": "cool|very low|17C",
+          "label": "cool|very low|17C",
+          "ordered_frame_sha256s": [
+            "f426d7075d8a6e36c6a2e6bed1e60f60895bfef69b3d3edb490226ab7c47976f"
+          ],
+          "reported_value": "cool|very low|17C"
+        },
+        {
+          "value": "cool|very low|17.5C",
+          "label": "cool|very low|17.5C",
+          "ordered_frame_sha256s": [
+            "6133160e716fcc873d2bc1cdf20affe428cb096f9e998d903f0b0482c5a7db8f"
+          ],
+          "reported_value": "cool|very low|17.5C"
+        },
+        {
+          "value": "cool|very low|18C",
+          "label": "cool|very low|18C",
+          "ordered_frame_sha256s": [
+            "63161ee8f0c5e7e91bd21e9b5734100d00d910e4c38a505f65b5545eadb01cf4"
+          ],
+          "reported_value": "cool|very low|18C"
+        },
+        {
+          "value": "cool|very low|18.5C",
+          "label": "cool|very low|18.5C",
+          "ordered_frame_sha256s": [
+            "88599e684fcfd65c71c1a885488cec9cca88dc3a56c75fd8a5e1be59fe23972a"
+          ],
+          "reported_value": "cool|very low|18.5C"
+        },
+        {
+          "value": "cool|very low|19C",
+          "label": "cool|very low|19C",
+          "ordered_frame_sha256s": [
+            "961f5231e58f72eccb3298b65b8fce526262f9470992f9a8b08d1d613808c0ef"
+          ],
+          "reported_value": "cool|very low|19C"
+        },
+        {
+          "value": "cool|very low|19.5C",
+          "label": "cool|very low|19.5C",
+          "ordered_frame_sha256s": [
+            "3aed4e32bb82f7968f8f2654b1ed28025b867b66b03a8bfc1ac714ea3f29a9b3"
+          ],
+          "reported_value": "cool|very low|19.5C"
+        },
+        {
+          "value": "cool|very low|20C",
+          "label": "cool|very low|20C",
+          "ordered_frame_sha256s": [
+            "25ab96f6ef61fcb8415c9190b60ecc5de6baa9711b4efdab334e55a4cfaf6cd5"
+          ],
+          "reported_value": "cool|very low|20C"
+        },
+        {
+          "value": "cool|very low|20.5C",
+          "label": "cool|very low|20.5C",
+          "ordered_frame_sha256s": [
+            "404ce058e4eabebb84b6bc1367801618aab6772603c18f5828a93a1b952b75bc"
+          ],
+          "reported_value": "cool|very low|20.5C"
+        },
+        {
+          "value": "cool|very low|21C",
+          "label": "cool|very low|21C",
+          "ordered_frame_sha256s": [
+            "5104807531a1dd2c17921d2601800dce3255f978740bcb5df3d6e2275984dc72"
+          ],
+          "reported_value": "cool|very low|21C"
+        },
+        {
+          "value": "cool|very low|21.5C",
+          "label": "cool|very low|21.5C",
+          "ordered_frame_sha256s": [
+            "77b37fc498cfd4564e69ab7989dde7ebed6564ce8b9a31328ce7c59e1a293088"
+          ],
+          "reported_value": "cool|very low|21.5C"
+        },
+        {
+          "value": "cool|very low|22C",
+          "label": "cool|very low|22C",
+          "ordered_frame_sha256s": [
+            "0db6a02bb4baa1f57e254e32c2f7c600e669d980867d0bc6973d32503fd71b5e"
+          ],
+          "reported_value": "cool|very low|22C"
+        },
+        {
+          "value": "cool|very low|22.5C",
+          "label": "cool|very low|22.5C",
+          "ordered_frame_sha256s": [
+            "c111a7f36160bd506d12cee09d1268d36986ee3525aaea59618e51678f4d5604"
+          ],
+          "reported_value": "cool|very low|22.5C"
+        },
+        {
+          "value": "cool|very low|23C",
+          "label": "cool|very low|23C",
+          "ordered_frame_sha256s": [
+            "7201b51ac5e7a875cb8cf7bec04641e051dacaa81639e9eef90cfc1a085519ba"
+          ],
+          "reported_value": "cool|very low|23C"
+        },
+        {
+          "value": "cool|very low|23.5C",
+          "label": "cool|very low|23.5C",
+          "ordered_frame_sha256s": [
+            "870b776a563eee64196d8fb0372bf34c2b494de1e622cfd9a2fefa2dc415d0a0"
+          ],
+          "reported_value": "cool|very low|23.5C"
+        },
+        {
+          "value": "cool|very low|24C",
+          "label": "cool|very low|24C",
+          "ordered_frame_sha256s": [
+            "1dcc921d96a8c97639c2f3d46c552ec920533b7c4dc06f5e8d37240bc5b2801b"
+          ],
+          "reported_value": "cool|very low|24C"
+        },
+        {
+          "value": "cool|very low|24.5C",
+          "label": "cool|very low|24.5C",
+          "ordered_frame_sha256s": [
+            "d13b0dec9a922bec828fc0bed7dd823268dbab2e5b201eb3c70e9320494c3e37"
+          ],
+          "reported_value": "cool|very low|24.5C"
+        },
+        {
+          "value": "cool|very low|25C",
+          "label": "cool|very low|25C",
+          "ordered_frame_sha256s": [
+            "08fb43c3d0181d82c6c3da69204096b63c72d36077bae8f83eb8bdd570f929ca"
+          ],
+          "reported_value": "cool|very low|25C"
+        },
+        {
+          "value": "cool|very low|25.5C",
+          "label": "cool|very low|25.5C",
+          "ordered_frame_sha256s": [
+            "f637e545b424509b5891d8c27b4d5d07a6eeffca16b4152e5ead1b4b0748830c"
+          ],
+          "reported_value": "cool|very low|25.5C"
+        },
+        {
+          "value": "cool|very low|26C",
+          "label": "cool|very low|26C",
+          "ordered_frame_sha256s": [
+            "b0249af3a2fe53f5f5a90d8186cca9d213970c8ec525303e1f3f9d55834235c2"
+          ],
+          "reported_value": "cool|very low|26C"
+        },
+        {
+          "value": "cool|very low|26.5C",
+          "label": "cool|very low|26.5C",
+          "ordered_frame_sha256s": [
+            "a053c714a3a1f0d5ea4ef0bd90402a28bbd6ff4371768caf4f5ab345d71eddd6"
+          ],
+          "reported_value": "cool|very low|26.5C"
+        },
+        {
+          "value": "cool|very low|27C",
+          "label": "cool|very low|27C",
+          "ordered_frame_sha256s": [
+            "6ec02b501a2af2060afd593eeecc90fa2db0af0cced70099f5d96feaf7e27aa5"
+          ],
+          "reported_value": "cool|very low|27C"
+        },
+        {
+          "value": "cool|very low|27.5C",
+          "label": "cool|very low|27.5C",
+          "ordered_frame_sha256s": [
+            "e73a7424e06bbff093d01028509adedebc3627e9030e6df381d77006d7416fef"
+          ],
+          "reported_value": "cool|very low|27.5C"
+        },
+        {
+          "value": "cool|very low|28C",
+          "label": "cool|very low|28C",
+          "ordered_frame_sha256s": [
+            "b54c0c3ba70c429021ff9f1f8247860e7762fe67911fe61ca8316d2f2b1f1139"
+          ],
+          "reported_value": "cool|very low|28C"
+        },
+        {
+          "value": "cool|very low|28.5C",
+          "label": "cool|very low|28.5C",
+          "ordered_frame_sha256s": [
+            "6a1e77ee8f70a8a78f6ed20ba5f8c5565146e9d6f529efb245ac7da5882994ef"
+          ],
+          "reported_value": "cool|very low|28.5C"
+        },
+        {
+          "value": "cool|very low|29C",
+          "label": "cool|very low|29C",
+          "ordered_frame_sha256s": [
+            "99287c117a01954e83939d2e3029a0b302322f0d8970e6af566009f910c4cc10"
+          ],
+          "reported_value": "cool|very low|29C"
+        },
+        {
+          "value": "cool|very low|29.5C",
+          "label": "cool|very low|29.5C",
+          "ordered_frame_sha256s": [
+            "76cfff16dbd0a4b8cb475ad5f664cb48298a4376cf1468ba561f80c13616977d"
+          ],
+          "reported_value": "cool|very low|29.5C"
+        },
+        {
+          "value": "cool|very low|30C",
+          "label": "cool|very low|30C",
+          "ordered_frame_sha256s": [
+            "877fd6143f2a8b95017a9344071ffc544476ee0565adbd2bb4dfc63d7c1f46c2"
+          ],
+          "reported_value": "cool|very low|30C"
+        },
+        {
+          "value": "cool|low|16C",
+          "label": "cool|low|16C",
+          "ordered_frame_sha256s": [
+            "8a99e26315d95243877d811421733bb0875d4e16105b24d422dfaf968abf8ca3"
+          ],
+          "reported_value": "cool|low|16C"
+        },
+        {
+          "value": "cool|low|16.5C",
+          "label": "cool|low|16.5C",
+          "ordered_frame_sha256s": [
+            "6cbdc0be161c5adfb3f65a6a2c570f661ea5f580b58a74357caecde9ff927dec"
+          ],
+          "reported_value": "cool|low|16.5C"
+        },
+        {
+          "value": "cool|low|17C",
+          "label": "cool|low|17C",
+          "ordered_frame_sha256s": [
+            "d1cd818bf778b5ab6ac2828b73b71b7ec13f4ee072268c10bcc1f14cd8a0594b"
+          ],
+          "reported_value": "cool|low|17C"
+        },
+        {
+          "value": "cool|low|17.5C",
+          "label": "cool|low|17.5C",
+          "ordered_frame_sha256s": [
+            "c4d3479837bf0fcb438308b321f647a02b954f5858d69ebcc4ee33d817f0e085"
+          ],
+          "reported_value": "cool|low|17.5C"
+        },
+        {
+          "value": "cool|low|18C",
+          "label": "cool|low|18C",
+          "ordered_frame_sha256s": [
+            "87ba6a170642a5706f3640e5bde7b6b61db954c29c36ecccafaf6d5821399a76"
+          ],
+          "reported_value": "cool|low|18C"
+        },
+        {
+          "value": "cool|low|18.5C",
+          "label": "cool|low|18.5C",
+          "ordered_frame_sha256s": [
+            "3f4a0e08f30c763dd0edd0b83afe220e6fd939101a23a318ca69390f56404dd1"
+          ],
+          "reported_value": "cool|low|18.5C"
+        },
+        {
+          "value": "cool|low|19C",
+          "label": "cool|low|19C",
+          "ordered_frame_sha256s": [
+            "6c45eaa3b6463d1037b9d90a53c64dc0acfefacc0ab6a73c37076ede1c849822"
+          ],
+          "reported_value": "cool|low|19C"
+        },
+        {
+          "value": "cool|low|19.5C",
+          "label": "cool|low|19.5C",
+          "ordered_frame_sha256s": [
+            "de14c412ad8156af609beabd115cd88f262e60d4d316a25a07db1b647a462e40"
+          ],
+          "reported_value": "cool|low|19.5C"
+        },
+        {
+          "value": "cool|low|20C",
+          "label": "cool|low|20C",
+          "ordered_frame_sha256s": [
+            "78bc40144acc255e93011debb8842adee01e89c10a83df3c4c865931843c4502"
+          ],
+          "reported_value": "cool|low|20C"
+        },
+        {
+          "value": "cool|low|20.5C",
+          "label": "cool|low|20.5C",
+          "ordered_frame_sha256s": [
+            "19f97139560719af95cd658c186c6822398cb6ff9f352ff2e28cff2f02e16880"
+          ],
+          "reported_value": "cool|low|20.5C"
+        },
+        {
+          "value": "cool|low|21C",
+          "label": "cool|low|21C",
+          "ordered_frame_sha256s": [
+            "ef93fed1b28616a29d75ccd0347a2271a90d1b9a7076e5fe6f2861d96a254594"
+          ],
+          "reported_value": "cool|low|21C"
+        },
+        {
+          "value": "cool|low|21.5C",
+          "label": "cool|low|21.5C",
+          "ordered_frame_sha256s": [
+            "dddf6b2fed8a09bb4b8ec8a65ff7f68a94a6db3a6f4d5c0bee5ec0bec755a6ca"
+          ],
+          "reported_value": "cool|low|21.5C"
+        },
+        {
+          "value": "cool|low|22C",
+          "label": "cool|low|22C",
+          "ordered_frame_sha256s": [
+            "ce6403df31a0fe8057d62d1842cc2b7eded9f85d833b05d667fc93f01fb82478"
+          ],
+          "reported_value": "cool|low|22C"
+        },
+        {
+          "value": "cool|low|22.5C",
+          "label": "cool|low|22.5C",
+          "ordered_frame_sha256s": [
+            "21bf7e5f6ee64bda8cff0a4c4e8e503baaa190e30a0e3c4c5ad5a26904536d1d"
+          ],
+          "reported_value": "cool|low|22.5C"
+        },
+        {
+          "value": "cool|low|23C",
+          "label": "cool|low|23C",
+          "ordered_frame_sha256s": [
+            "ed0e10683a048e53161e902324c8365f6d964786a966680e00b4a7dc403e4ebd"
+          ],
+          "reported_value": "cool|low|23C"
+        },
+        {
+          "value": "cool|low|23.5C",
+          "label": "cool|low|23.5C",
+          "ordered_frame_sha256s": [
+            "7844c5a1d05a23d3dddea44f579d63fb07de9c2fc81d6f58a50629ff540f26af"
+          ],
+          "reported_value": "cool|low|23.5C"
+        },
+        {
+          "value": "cool|low|24C",
+          "label": "cool|low|24C",
+          "ordered_frame_sha256s": [
+            "636df12a13d08332f00a09a5a92725f47c4d4482f56404b3fe7acfc96a79d164"
+          ],
+          "reported_value": "cool|low|24C"
+        },
+        {
+          "value": "cool|low|24.5C",
+          "label": "cool|low|24.5C",
+          "ordered_frame_sha256s": [
+            "048afa3a097a8699c69e0e180a31c063487cfdc60f30a5485c5721e7ca9e8446"
+          ],
+          "reported_value": "cool|low|24.5C"
+        },
+        {
+          "value": "cool|low|25C",
+          "label": "cool|low|25C",
+          "ordered_frame_sha256s": [
+            "9580349fc4ae7361deeb4c0ae41c4084c4bfd40a97b09e268da6d1b3cba55b8b"
+          ],
+          "reported_value": "cool|low|25C"
+        },
+        {
+          "value": "cool|low|25.5C",
+          "label": "cool|low|25.5C",
+          "ordered_frame_sha256s": [
+            "fbe3e498e5427007bee615f0e0d9ba0950e339a4715193d2ce34fa07c041429d"
+          ],
+          "reported_value": "cool|low|25.5C"
+        },
+        {
+          "value": "cool|low|26C",
+          "label": "cool|low|26C",
+          "ordered_frame_sha256s": [
+            "a97ed477a0f299fe5358a194fb9787338072e30befbf07f2652efaf23faf8b5b"
+          ],
+          "reported_value": "cool|low|26C"
+        },
+        {
+          "value": "cool|low|26.5C",
+          "label": "cool|low|26.5C",
+          "ordered_frame_sha256s": [
+            "af6b0acaf9c840159b21dfb39cfc8a7753c1ce4221b58cf7b5ba4bf7fd251b2c"
+          ],
+          "reported_value": "cool|low|26.5C"
+        },
+        {
+          "value": "cool|low|27C",
+          "label": "cool|low|27C",
+          "ordered_frame_sha256s": [
+            "e401e1d7211ff7a7bd87daea09f26bbeab251447dd764d89101fa29c6626f07c"
+          ],
+          "reported_value": "cool|low|27C"
+        },
+        {
+          "value": "cool|low|27.5C",
+          "label": "cool|low|27.5C",
+          "ordered_frame_sha256s": [
+            "e951b7fde4d87329bb6db92ba0d412024c82f0a2a3c976e8767a76a23a183150"
+          ],
+          "reported_value": "cool|low|27.5C"
+        },
+        {
+          "value": "cool|low|28C",
+          "label": "cool|low|28C",
+          "ordered_frame_sha256s": [
+            "90d9541fd785e75118df7eb51fee1840adec7f6ef64598827b187ea6665cdbbe"
+          ],
+          "reported_value": "cool|low|28C"
+        },
+        {
+          "value": "cool|low|28.5C",
+          "label": "cool|low|28.5C",
+          "ordered_frame_sha256s": [
+            "790c7ee42ae3ee68138e9df26dd6b329676a1177be89dcbacbe85459584f89ea"
+          ],
+          "reported_value": "cool|low|28.5C"
+        },
+        {
+          "value": "cool|low|29C",
+          "label": "cool|low|29C",
+          "ordered_frame_sha256s": [
+            "cfbe941fe7679a11641eb4582da3ed6bb055fa1894cbd7c2588b082ee141ebd4"
+          ],
+          "reported_value": "cool|low|29C"
+        },
+        {
+          "value": "cool|low|29.5C",
+          "label": "cool|low|29.5C",
+          "ordered_frame_sha256s": [
+            "96adc7a4e26065c9ddbf957404d1fff5d7c1f627898f4b2a68d7790a56f48363"
+          ],
+          "reported_value": "cool|low|29.5C"
+        },
+        {
+          "value": "cool|low|30C",
+          "label": "cool|low|30C",
+          "ordered_frame_sha256s": [
+            "5552e97f6fc96213508929decd49dbd476a73ff3d0e99cc30a137a148351a859"
+          ],
+          "reported_value": "cool|low|30C"
+        },
+        {
+          "value": "cool|medium|16C",
+          "label": "cool|medium|16C",
+          "ordered_frame_sha256s": [
+            "d45ef5c48eff2fee714820017e065003accffd4c26dcb2d2747f3ae45d6d3dce"
+          ],
+          "reported_value": "cool|medium|16C"
+        },
+        {
+          "value": "cool|medium|16.5C",
+          "label": "cool|medium|16.5C",
+          "ordered_frame_sha256s": [
+            "5aaa70a9de66d0bc608e8342cff51ebb9eaf65bdbc21c560ecb3ff9cf42a685b"
+          ],
+          "reported_value": "cool|medium|16.5C"
+        },
+        {
+          "value": "cool|medium|17C",
+          "label": "cool|medium|17C",
+          "ordered_frame_sha256s": [
+            "d80e36dec4f5c5706fdabfb4d3d3d15da843b577ad7ad85e9d85e0a6a0377fa8"
+          ],
+          "reported_value": "cool|medium|17C"
+        },
+        {
+          "value": "cool|medium|17.5C",
+          "label": "cool|medium|17.5C",
+          "ordered_frame_sha256s": [
+            "d490e24f6ab099751a079452e911bbdde8e8b9886644b234d07147bb323f8523"
+          ],
+          "reported_value": "cool|medium|17.5C"
+        },
+        {
+          "value": "cool|medium|18C",
+          "label": "cool|medium|18C",
+          "ordered_frame_sha256s": [
+            "b4e59eb3c3c189b559e228e13c38629c3189cd360af255ea829769901e8b2055"
+          ],
+          "reported_value": "cool|medium|18C"
+        },
+        {
+          "value": "cool|medium|18.5C",
+          "label": "cool|medium|18.5C",
+          "ordered_frame_sha256s": [
+            "30fe04e01cdc261057c316c7a697245e9672efe7766b6f6bdc4834afe17047e5"
+          ],
+          "reported_value": "cool|medium|18.5C"
+        },
+        {
+          "value": "cool|medium|19C",
+          "label": "cool|medium|19C",
+          "ordered_frame_sha256s": [
+            "a3dff5523497a5b0b45ca5b9947b9f3bab0d58bf3506bf6fe3b6df35f883403d"
+          ],
+          "reported_value": "cool|medium|19C"
+        },
+        {
+          "value": "cool|medium|19.5C",
+          "label": "cool|medium|19.5C",
+          "ordered_frame_sha256s": [
+            "9f4173bcffcb1043bccfd96ac1b3fb1db0bbeb67084a8b0b9723673907043c7f"
+          ],
+          "reported_value": "cool|medium|19.5C"
+        },
+        {
+          "value": "cool|medium|20C",
+          "label": "cool|medium|20C",
+          "ordered_frame_sha256s": [
+            "1e3aa5af99947cf456bc01ced0832226f3bec8c06a2db15a586c498ed3fff57b"
+          ],
+          "reported_value": "cool|medium|20C"
+        },
+        {
+          "value": "cool|medium|20.5C",
+          "label": "cool|medium|20.5C",
+          "ordered_frame_sha256s": [
+            "f30cb313a284a2aa5bec4599fd44561c30e6ef818dd92684982e8dd7ade57ba5"
+          ],
+          "reported_value": "cool|medium|20.5C"
+        },
+        {
+          "value": "cool|medium|21C",
+          "label": "cool|medium|21C",
+          "ordered_frame_sha256s": [
+            "8840b86b063a6f6615170c243df65993cfed5e950f488bc172cf1277eeaf1d66"
+          ],
+          "reported_value": "cool|medium|21C"
+        },
+        {
+          "value": "cool|medium|21.5C",
+          "label": "cool|medium|21.5C",
+          "ordered_frame_sha256s": [
+            "6bd67b50d09627877b1de9988220a3899d73ac52515a5311755ccb02990ce319"
+          ],
+          "reported_value": "cool|medium|21.5C"
+        },
+        {
+          "value": "cool|medium|22C",
+          "label": "cool|medium|22C",
+          "ordered_frame_sha256s": [
+            "918a1c37aad8b0011195c276b03b36402d22d87e7a5edf8d95f874673f934563"
+          ],
+          "reported_value": "cool|medium|22C"
+        },
+        {
+          "value": "cool|medium|22.5C",
+          "label": "cool|medium|22.5C",
+          "ordered_frame_sha256s": [
+            "f419a69a90017d765bbba146c1afef6d5f84b1329bbb5fc4f39663998fa010b5"
+          ],
+          "reported_value": "cool|medium|22.5C"
+        },
+        {
+          "value": "cool|medium|23C",
+          "label": "cool|medium|23C",
+          "ordered_frame_sha256s": [
+            "d5fcef1a7220901dfce86267b8bdbdba6ddaa35c7259c9646195a79eaf77594c"
+          ],
+          "reported_value": "cool|medium|23C"
+        },
+        {
+          "value": "cool|medium|23.5C",
+          "label": "cool|medium|23.5C",
+          "ordered_frame_sha256s": [
+            "e95be267dcddacc8278a8878b53f36a925f755d1019c1aa6a1d62fd967d8d996"
+          ],
+          "reported_value": "cool|medium|23.5C"
+        },
+        {
+          "value": "cool|medium|24C",
+          "label": "cool|medium|24C",
+          "ordered_frame_sha256s": [
+            "ff7ae3d189a55f4226427f80e204ca83ab49eac771120501efbb5546ba290577"
+          ],
+          "reported_value": "cool|medium|24C"
+        },
+        {
+          "value": "cool|medium|24.5C",
+          "label": "cool|medium|24.5C",
+          "ordered_frame_sha256s": [
+            "81c2608e2155fb9a834feedc5cf2e5c546ff7a0b0113f22af9867c8838c83773"
+          ],
+          "reported_value": "cool|medium|24.5C"
+        },
+        {
+          "value": "cool|medium|25C",
+          "label": "cool|medium|25C",
+          "ordered_frame_sha256s": [
+            "3d04db1bd6730a3cb033a4a5424317d46d5791cd62fdb4906cf44cdf31f2c1fd"
+          ],
+          "reported_value": "cool|medium|25C"
+        },
+        {
+          "value": "cool|medium|25.5C",
+          "label": "cool|medium|25.5C",
+          "ordered_frame_sha256s": [
+            "25c557aebe775097e4d2475b3861a50816383eee720c9aef9108b4ef263438bc"
+          ],
+          "reported_value": "cool|medium|25.5C"
+        },
+        {
+          "value": "cool|medium|26C",
+          "label": "cool|medium|26C",
+          "ordered_frame_sha256s": [
+            "22a73371abc3ec177df8386cf5a7f1bd0f14b2115acff65a8a38d634e7751d77"
+          ],
+          "reported_value": "cool|medium|26C"
+        },
+        {
+          "value": "cool|medium|26.5C",
+          "label": "cool|medium|26.5C",
+          "ordered_frame_sha256s": [
+            "ee04508bff095287f4c32188069924eb4f2dc1e47a56c13990e7a80a941f2711"
+          ],
+          "reported_value": "cool|medium|26.5C"
+        },
+        {
+          "value": "cool|medium|27C",
+          "label": "cool|medium|27C",
+          "ordered_frame_sha256s": [
+            "7674f89ecc663d5587aa085965bd8eb72b5fcae1bda4a953456b294dcb5ffa2f"
+          ],
+          "reported_value": "cool|medium|27C"
+        },
+        {
+          "value": "cool|medium|27.5C",
+          "label": "cool|medium|27.5C",
+          "ordered_frame_sha256s": [
+            "bb6269f79cc03b7f3a00628becac2b24da0a34a8e237a279b734ba93ef81dc42"
+          ],
+          "reported_value": "cool|medium|27.5C"
+        },
+        {
+          "value": "cool|medium|28C",
+          "label": "cool|medium|28C",
+          "ordered_frame_sha256s": [
+            "0ec4a582373fb8ebfedf77a85a317af940995d4e14856868030f076c77bc7f99"
+          ],
+          "reported_value": "cool|medium|28C"
+        },
+        {
+          "value": "cool|medium|28.5C",
+          "label": "cool|medium|28.5C",
+          "ordered_frame_sha256s": [
+            "b9ff138b2151ac2a96d40669b7509d73ff2350c9a53fb23217a9c20ecc35e702"
+          ],
+          "reported_value": "cool|medium|28.5C"
+        },
+        {
+          "value": "cool|medium|29C",
+          "label": "cool|medium|29C",
+          "ordered_frame_sha256s": [
+            "5766e26fafead322f54e345b4429674209b9473014bc423dcd6efb5f705e6c68"
+          ],
+          "reported_value": "cool|medium|29C"
+        },
+        {
+          "value": "cool|medium|29.5C",
+          "label": "cool|medium|29.5C",
+          "ordered_frame_sha256s": [
+            "14eee828f76a7653852b0865ad20f0283f9670eee0b2779b8b04ccd4497b3ec0"
+          ],
+          "reported_value": "cool|medium|29.5C"
+        },
+        {
+          "value": "cool|medium|30C",
+          "label": "cool|medium|30C",
+          "ordered_frame_sha256s": [
+            "628c871c3493818097cb07104cee70d91474efd7d9067ca0e2a7493e7e9b1291"
+          ],
+          "reported_value": "cool|medium|30C"
+        },
+        {
+          "value": "cool|high|16C",
+          "label": "cool|high|16C",
+          "ordered_frame_sha256s": [
+            "4b0a068cc0ea6b1bd038b862404ed7526114e889ae4ee14e680d1c56ccdd12d3"
+          ],
+          "reported_value": "cool|high|16C"
+        },
+        {
+          "value": "cool|high|16.5C",
+          "label": "cool|high|16.5C",
+          "ordered_frame_sha256s": [
+            "346acab6b93d4b129c5f62004894b1a58e02364da1ae33435179bbb39bbd3e5e"
+          ],
+          "reported_value": "cool|high|16.5C"
+        },
+        {
+          "value": "cool|high|17C",
+          "label": "cool|high|17C",
+          "ordered_frame_sha256s": [
+            "017a25fc598f0ea7d71ee28e4445a8d88dde6994cde76a3b48e78fdc3d4d7372"
+          ],
+          "reported_value": "cool|high|17C"
+        },
+        {
+          "value": "cool|high|17.5C",
+          "label": "cool|high|17.5C",
+          "ordered_frame_sha256s": [
+            "8de2940fba46a9ae105e83969b861feaa898279207d89d458dfeb6c01134ab39"
+          ],
+          "reported_value": "cool|high|17.5C"
+        },
+        {
+          "value": "cool|high|18C",
+          "label": "cool|high|18C",
+          "ordered_frame_sha256s": [
+            "4de05d126405ca73b3ef7d6c6d3222d22ed716243e4e4e659fd253c99fb3c25c"
+          ],
+          "reported_value": "cool|high|18C"
+        },
+        {
+          "value": "cool|high|18.5C",
+          "label": "cool|high|18.5C",
+          "ordered_frame_sha256s": [
+            "784e167cdcab2f0afaa79d749527a5ffd52c8ae5996d40d260be3cf3e9f91c88"
+          ],
+          "reported_value": "cool|high|18.5C"
+        },
+        {
+          "value": "cool|high|19C",
+          "label": "cool|high|19C",
+          "ordered_frame_sha256s": [
+            "c42cc8e1b0b19f4df90503ec0ec9c8ca99820fa3dff80cbc05f9d5d3c320afcb"
+          ],
+          "reported_value": "cool|high|19C"
+        },
+        {
+          "value": "cool|high|19.5C",
+          "label": "cool|high|19.5C",
+          "ordered_frame_sha256s": [
+            "dcb35a6f6b4b6108181d9241abf3125015763f11060e92663a1b81cf3b589e4e"
+          ],
+          "reported_value": "cool|high|19.5C"
+        },
+        {
+          "value": "cool|high|20C",
+          "label": "cool|high|20C",
+          "ordered_frame_sha256s": [
+            "be9f668a51dc2e932493d71884a837bf5b15f03eecec35e2d61f5d7edebc3d38"
+          ],
+          "reported_value": "cool|high|20C"
+        },
+        {
+          "value": "cool|high|20.5C",
+          "label": "cool|high|20.5C",
+          "ordered_frame_sha256s": [
+            "f551a02dae4b79f426c4acb7ef83f5bcc9564c0352bb43369941c0c4bd461f44"
+          ],
+          "reported_value": "cool|high|20.5C"
+        },
+        {
+          "value": "cool|high|21C",
+          "label": "cool|high|21C",
+          "ordered_frame_sha256s": [
+            "19011d71c82a58b55b2303fb0f9361a35405f3dfccfb3e3417f501e264f38a23"
+          ],
+          "reported_value": "cool|high|21C"
+        },
+        {
+          "value": "cool|high|21.5C",
+          "label": "cool|high|21.5C",
+          "ordered_frame_sha256s": [
+            "b9a496e67b25fca0fd43267b1c56de5887734699e277aa48b1ffe16f2e6a986f"
+          ],
+          "reported_value": "cool|high|21.5C"
+        },
+        {
+          "value": "cool|high|22C",
+          "label": "cool|high|22C",
+          "ordered_frame_sha256s": [
+            "8f0c4a2d42beb577b3eab726002dc2f113453b830718ab6236b7dd6922e34986"
+          ],
+          "reported_value": "cool|high|22C"
+        },
+        {
+          "value": "cool|high|22.5C",
+          "label": "cool|high|22.5C",
+          "ordered_frame_sha256s": [
+            "76eb0c727f59db1ac8b5d681ef614860c5d15d7e7654ec924cb2f80b79a84077"
+          ],
+          "reported_value": "cool|high|22.5C"
+        },
+        {
+          "value": "cool|high|23C",
+          "label": "cool|high|23C",
+          "ordered_frame_sha256s": [
+            "56eb654f84941a91c06231665c3d7b0eb989ad211964a388bc4c8e0839adb4d0"
+          ],
+          "reported_value": "cool|high|23C"
+        },
+        {
+          "value": "cool|high|23.5C",
+          "label": "cool|high|23.5C",
+          "ordered_frame_sha256s": [
+            "033a792eb975331e6926d4a28af4b7f0d40ceaae76b5fc2806058cacb2cdb987"
+          ],
+          "reported_value": "cool|high|23.5C"
+        },
+        {
+          "value": "cool|high|24C",
+          "label": "cool|high|24C",
+          "ordered_frame_sha256s": [
+            "53ea0c87b0ad7411126c3350f6304bcfd634591e0270f9ece118ffcc5ee2a986"
+          ],
+          "reported_value": "cool|high|24C"
+        },
+        {
+          "value": "cool|high|24.5C",
+          "label": "cool|high|24.5C",
+          "ordered_frame_sha256s": [
+            "68e930f69c3ae5d2b18b8a81e15473113c71185e9edb150d4308d91057deb543"
+          ],
+          "reported_value": "cool|high|24.5C"
+        },
+        {
+          "value": "cool|high|25C",
+          "label": "cool|high|25C",
+          "ordered_frame_sha256s": [
+            "76c212f4bcd24fb61e4d7f2d750635dcfe3c26fbd3afcf0f342164cc13435360"
+          ],
+          "reported_value": "cool|high|25C"
+        },
+        {
+          "value": "cool|high|25.5C",
+          "label": "cool|high|25.5C",
+          "ordered_frame_sha256s": [
+            "7c43c75f5d19cdbd93c7eeddcd7efd1b7415a6e77326d79c244f0b0fe38e49eb"
+          ],
+          "reported_value": "cool|high|25.5C"
+        },
+        {
+          "value": "cool|high|26C",
+          "label": "cool|high|26C",
+          "ordered_frame_sha256s": [
+            "ef17ac7b29a4adfaea3b995dc5f72b34481472d7bfb3bb6ffab9540bfc618094"
+          ],
+          "reported_value": "cool|high|26C"
+        },
+        {
+          "value": "cool|high|26.5C",
+          "label": "cool|high|26.5C",
+          "ordered_frame_sha256s": [
+            "6c20c0877cc6a67a641a2820cc3dae1269ae54a40774976499a68b77882bf893"
+          ],
+          "reported_value": "cool|high|26.5C"
+        },
+        {
+          "value": "cool|high|27C",
+          "label": "cool|high|27C",
+          "ordered_frame_sha256s": [
+            "dc5e27ceb343c06e09a8bf1c101a57ab9c94f9c28d7de744e094b044ed512f4f"
+          ],
+          "reported_value": "cool|high|27C"
+        },
+        {
+          "value": "cool|high|27.5C",
+          "label": "cool|high|27.5C",
+          "ordered_frame_sha256s": [
+            "b3b44bd88bbd4d5f88a89731ca719bd89958e022e231b5bfd8a2ba8c892b4b67"
+          ],
+          "reported_value": "cool|high|27.5C"
+        },
+        {
+          "value": "cool|high|28C",
+          "label": "cool|high|28C",
+          "ordered_frame_sha256s": [
+            "897f581a5768f5f0133b838d66f64d31fd88b13dd2189de0f2122a54006f4046"
+          ],
+          "reported_value": "cool|high|28C"
+        },
+        {
+          "value": "cool|high|28.5C",
+          "label": "cool|high|28.5C",
+          "ordered_frame_sha256s": [
+            "d753327088426bd12a74be548c9d5f0cfb7846c042163f0ec2f12cf4e1c8d549"
+          ],
+          "reported_value": "cool|high|28.5C"
+        },
+        {
+          "value": "cool|high|29C",
+          "label": "cool|high|29C",
+          "ordered_frame_sha256s": [
+            "6fc21d98a05a44e9aad5895531594b5bf22f7519a5ea9f8858c9bec528018969"
+          ],
+          "reported_value": "cool|high|29C"
+        },
+        {
+          "value": "cool|high|29.5C",
+          "label": "cool|high|29.5C",
+          "ordered_frame_sha256s": [
+            "563b281b4c643d4456fd0bc3e3bf1147184681727d0b817e6543e9766f640f93"
+          ],
+          "reported_value": "cool|high|29.5C"
+        },
+        {
+          "value": "cool|high|30C",
+          "label": "cool|high|30C",
+          "ordered_frame_sha256s": [
+            "722ee3a79d895d81ee65356bbc07a502928fd3e7c7b2695cf035e99628bbaeb7"
+          ],
+          "reported_value": "cool|high|30C"
+        },
+        {
+          "value": "cool|auto|16C",
+          "label": "cool|auto|16C",
+          "ordered_frame_sha256s": [
+            "900dcbb214d816cd4fe05bb22fc16428076b6a2be8bbea23bcd440abb0313c8d"
+          ],
+          "reported_value": "cool|auto|16C"
+        },
+        {
+          "value": "cool|auto|16.5C",
+          "label": "cool|auto|16.5C",
+          "ordered_frame_sha256s": [
+            "6fd929f97baaad22b8f59696e72498c21ed4b1c3233240cb0b9be6e6fa79c1d1"
+          ],
+          "reported_value": "cool|auto|16.5C"
+        },
+        {
+          "value": "cool|auto|17C",
+          "label": "cool|auto|17C",
+          "ordered_frame_sha256s": [
+            "ef451333e59c2ab62c632fa67414961f429edae4f24779211d40df10571deb56"
+          ],
+          "reported_value": "cool|auto|17C"
+        },
+        {
+          "value": "cool|auto|17.5C",
+          "label": "cool|auto|17.5C",
+          "ordered_frame_sha256s": [
+            "4ddfac9f73f3eef655c9963f1ebb50f5057b8fed3f0506761f8760072f5d9a3f"
+          ],
+          "reported_value": "cool|auto|17.5C"
+        },
+        {
+          "value": "cool|auto|18C",
+          "label": "cool|auto|18C",
+          "ordered_frame_sha256s": [
+            "a2f52f87fd50bf1fdf6467e6dc3e47c217145879e1a9060aca7784d153df8a4a"
+          ],
+          "reported_value": "cool|auto|18C"
+        },
+        {
+          "value": "cool|auto|18.5C",
+          "label": "cool|auto|18.5C",
+          "ordered_frame_sha256s": [
+            "37fdef40c8acc13a69809ea1779c4c429c64a1329bb48f90ed5d178a555fd732"
+          ],
+          "reported_value": "cool|auto|18.5C"
+        },
+        {
+          "value": "cool|auto|19C",
+          "label": "cool|auto|19C",
+          "ordered_frame_sha256s": [
+            "729798dd456fb25556bb65d61d98f1f16ee2bec4ba1ae0148ee2ee20ac0de36b"
+          ],
+          "reported_value": "cool|auto|19C"
+        },
+        {
+          "value": "cool|auto|19.5C",
+          "label": "cool|auto|19.5C",
+          "ordered_frame_sha256s": [
+            "c48d082406f50ad0f8137a1e7c249a9d04c60109a478a0e9d87ce88e8ed58148"
+          ],
+          "reported_value": "cool|auto|19.5C"
+        },
+        {
+          "value": "cool|auto|20C",
+          "label": "cool|auto|20C",
+          "ordered_frame_sha256s": [
+            "f2083f7d105820c426210a741936161ddd615428030bd8c91a75f5b27bf587f9"
+          ],
+          "reported_value": "cool|auto|20C"
+        },
+        {
+          "value": "cool|auto|20.5C",
+          "label": "cool|auto|20.5C",
+          "ordered_frame_sha256s": [
+            "9a6e1a1fddb05db5da08c2b760be687ebc9b773f9967fa2a93148b7f097a49eb"
+          ],
+          "reported_value": "cool|auto|20.5C"
+        },
+        {
+          "value": "cool|auto|21C",
+          "label": "cool|auto|21C",
+          "ordered_frame_sha256s": [
+            "6288bd9f17f519b1d537150b5b2a035b4fd9f28518930b6217203cd907cc246b"
+          ],
+          "reported_value": "cool|auto|21C"
+        },
+        {
+          "value": "cool|auto|21.5C",
+          "label": "cool|auto|21.5C",
+          "ordered_frame_sha256s": [
+            "3e5a7bd3bee306dea8fd6c23c1b99477f6ed2d18c36268def800f4611e4bf872"
+          ],
+          "reported_value": "cool|auto|21.5C"
+        },
+        {
+          "value": "cool|auto|22C",
+          "label": "cool|auto|22C",
+          "ordered_frame_sha256s": [
+            "3bbcd99f102c0fda9cdfd45277a75db155a2c779dfae27d1429076ebe58f1ff8"
+          ],
+          "reported_value": "cool|auto|22C"
+        },
+        {
+          "value": "cool|auto|22.5C",
+          "label": "cool|auto|22.5C",
+          "ordered_frame_sha256s": [
+            "a1b7160b141a905c50b344ffbf77d68deafcc86ea8470970a4bda1323cf68915"
+          ],
+          "reported_value": "cool|auto|22.5C"
+        },
+        {
+          "value": "cool|auto|23C",
+          "label": "cool|auto|23C",
+          "ordered_frame_sha256s": [
+            "823ee0227e98cf11d8abc3404a2877e1dabd68c8c8f153d33fcd54f61df5ed99"
+          ],
+          "reported_value": "cool|auto|23C"
+        },
+        {
+          "value": "cool|auto|23.5C",
+          "label": "cool|auto|23.5C",
+          "ordered_frame_sha256s": [
+            "3e159b8b37c67570c1c412e1ee7defb84ef9fcca6bc9eea45f4b9c8ef39faac2"
+          ],
+          "reported_value": "cool|auto|23.5C"
+        },
+        {
+          "value": "cool|auto|24C",
+          "label": "cool|auto|24C",
+          "ordered_frame_sha256s": [
+            "cc42554b274dc028f23376b3c50093d726a29e7227cb5cd99ed1c20172ff16e7"
+          ],
+          "reported_value": "cool|auto|24C"
+        },
+        {
+          "value": "cool|auto|24.5C",
+          "label": "cool|auto|24.5C",
+          "ordered_frame_sha256s": [
+            "8139100610c56d0340801a1cfaec59746499bc91c3c0ca3bb81f8b645059bb84"
+          ],
+          "reported_value": "cool|auto|24.5C"
+        },
+        {
+          "value": "cool|auto|25C",
+          "label": "cool|auto|25C",
+          "ordered_frame_sha256s": [
+            "8182996026cbe3cf76a4885d55f5a214d1538607e8e21a90670efa9de2c2040f"
+          ],
+          "reported_value": "cool|auto|25C"
+        },
+        {
+          "value": "cool|auto|25.5C",
+          "label": "cool|auto|25.5C",
+          "ordered_frame_sha256s": [
+            "e8544169fc3309d40a608fb8b42bead88f58afdd714cc831936c02d8aebc25f4"
+          ],
+          "reported_value": "cool|auto|25.5C"
+        },
+        {
+          "value": "cool|auto|26C",
+          "label": "cool|auto|26C",
+          "ordered_frame_sha256s": [
+            "9b6edba57c05eda38e8a936dce0975e17438cb88d04034e36d4c0bd18e0ab1e6"
+          ],
+          "reported_value": "cool|auto|26C"
+        },
+        {
+          "value": "cool|auto|26.5C",
+          "label": "cool|auto|26.5C",
+          "ordered_frame_sha256s": [
+            "d52f602ce891279107d318a4c013cf120149f88b1b19952d840fe5c0fd3b3c6a"
+          ],
+          "reported_value": "cool|auto|26.5C"
+        },
+        {
+          "value": "cool|auto|27C",
+          "label": "cool|auto|27C",
+          "ordered_frame_sha256s": [
+            "a120233496c01bd45e203d23bacb40d1a58676061ddfe4b6285e5053c59a0193"
+          ],
+          "reported_value": "cool|auto|27C"
+        },
+        {
+          "value": "cool|auto|27.5C",
+          "label": "cool|auto|27.5C",
+          "ordered_frame_sha256s": [
+            "47e8a566a65808bd73dfffffb03bd08cc93527cf3c5c5a91779c28ac507642c9"
+          ],
+          "reported_value": "cool|auto|27.5C"
+        },
+        {
+          "value": "cool|auto|28C",
+          "label": "cool|auto|28C",
+          "ordered_frame_sha256s": [
+            "43a0cbd551c79c2426b2944d9e123b467f7c6a6a04b13d585dc66452fa6392a4"
+          ],
+          "reported_value": "cool|auto|28C"
+        },
+        {
+          "value": "cool|auto|28.5C",
+          "label": "cool|auto|28.5C",
+          "ordered_frame_sha256s": [
+            "bc9d6f7aaa6331361ef7fb43a90eddcefcf35f594c236edaf7cd8dd9ab4e17e5"
+          ],
+          "reported_value": "cool|auto|28.5C"
+        },
+        {
+          "value": "cool|auto|29C",
+          "label": "cool|auto|29C",
+          "ordered_frame_sha256s": [
+            "04b6460bd928b30d255a772ac9c51c18d0b93ed6c212ff15791414d560f9388f"
+          ],
+          "reported_value": "cool|auto|29C"
+        },
+        {
+          "value": "cool|auto|29.5C",
+          "label": "cool|auto|29.5C",
+          "ordered_frame_sha256s": [
+            "200a5590277cbb9ecaa7d84052d41a8a236ca4e561adf7b177d0ba75fe1e9a73"
+          ],
+          "reported_value": "cool|auto|29.5C"
+        },
+        {
+          "value": "cool|auto|30C",
+          "label": "cool|auto|30C",
+          "ordered_frame_sha256s": [
+            "f5c2e2a1fbfd3f07d79707ad900b3d502c07bed2929d441e29636e3a91425883"
+          ],
+          "reported_value": "cool|auto|30C"
+        }
+      ]
+    },
     {
       "model_id": "2REFO1DBN3K_U",
       "capability_id": "compartment.fridge.setpoint_raw",
@@ -239,6 +4671,50 @@
             "341479831874f0f56e662a84d6a8f3396aa4ab4a4d5abfe67c74c5fdbdbf676e"
           ],
           "reported_value": "mid"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "vane.vertical_position",
+      "entity_key": "vane_vertical_position",
+      "label_ko": "수직 베인 위치",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "position 1",
+          "label": "position 1",
+          "ordered_frame_sha256s": [
+            "653a379d5d7017d62635abeab868e8bc558d4518e0cb4c81f202378ab9e82c83"
+          ],
+          "reported_value": "position 1"
+        },
+        {
+          "value": "position 4",
+          "label": "position 4",
+          "ordered_frame_sha256s": [
+            "f4cb5b50c9b78af4d34e7db95b8d357d402b3ddb97bdb3d6212eef264c67d077"
+          ],
+          "reported_value": "position 4"
+        },
+        {
+          "value": "position 5",
+          "label": "position 5",
+          "ordered_frame_sha256s": [
+            "9679405f9f8a1ec600c7c9687384c4b6073bb66dc067d7da85bb5ce72343c04a"
+          ],
+          "reported_value": "position 5"
+        },
+        {
+          "value": "position 6",
+          "label": "position 6",
+          "ordered_frame_sha256s": [
+            "cf06ac9287ab2efa3688cd0d08068108c7907401f37a3aea53598d732025153d"
+          ],
+          "reported_value": "position 6"
         }
       ]
     },
@@ -1095,6 +5571,38 @@
           "label": "480분",
           "ordered_frame_sha256s": [
             "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "vane.vertical_position",
+      "entity_key": "vane_vertical_position",
+      "label_ko": "수직 베인 위치",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "1",
+          "label": "1",
+          "ordered_frame_sha256s": [
+            "653a379d5d7017d62635abeab868e8bc558d4518e0cb4c81f202378ab9e82c83"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "2",
+          "ordered_frame_sha256s": [
+            "4b0cdf3d008e018071ae891eb17565d628e61d162bdb0942c6ea056e8367a546"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "3",
+          "ordered_frame_sha256s": [
+            "4a4838516c74487f02cbe7b1bfbfd31c9e34911207c07e5fb317e62e2537bac7"
           ]
         }
       ]

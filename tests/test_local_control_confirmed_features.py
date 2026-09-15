@@ -8,6 +8,53 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_vane_extensions_keep_each_models_labels_and_complete_seven_exact_positions(self):
+        base = load_local_control_entity_contract()
+        models = {'test_vane_binding_170': 'CST_170004_WW', 'test_vane_binding_570': 'CST_570004_WW'}
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        extended, scope = augment_confirmed_features(base, prior, models)
+        for binding, model in models.items():
+            old = next(d for d in base.descriptors if d.model_id == model and d.capability_id == 'vane.vertical_position')
+            new = next(d for d in extended.descriptors if d.key == old.key)
+            self.assertEqual(new.entity_domain, 'select')
+            self.assertEqual(new.home_assistant_entity_key, old.home_assistant_entity_key)
+            self.assertEqual(len(new.value_mappings), 7)
+            self.assertEqual({v.local_request_value: v.home_assistant_value for v in new.value_mappings
+                              if v.local_request_value in old.exact_local_request_values},
+                             {v.local_request_value: v.home_assistant_value for v in old.value_mappings})
+            if model == 'CST_170004_WW':
+                self.assertEqual(set(new.supported_values), {'stop', *(f'position {n}' for n in range(1, 7))})
+            else:
+                self.assertEqual(new.supported_values, tuple(range(7)))
+
+    def test_cooling_tuple_extension_preserves_native_climate_owner_and_old_denials(self):
+        from dataclasses import replace
+        base = load_local_control_entity_contract()
+        models = {'test_cooling_170': 'CST_170004_WW', 'test_cooling_570': 'CST_570004_WW'}
+        prior = dict(resolve_local_control_binding_eligibility({}, base, models))
+        for binding in prior:
+            prior[binding] = replace(prior[binding], values_by_capability={
+                **prior[binding].values_by_capability, 'climate.mode_fan_setpoint': (),
+                'climate.power_on_with_setpoint': (),
+            })
+        extended, scope = augment_confirmed_features(base, prior, models)
+        self.assertEqual(base.root_sha256, extended.root_sha256)
+        for binding, model in models.items():
+            for capability in ('climate.mode_fan_setpoint', 'climate.power_on_with_setpoint'):
+                before = next(d for d in base.descriptors if d.model_id == model and d.capability_id == capability)
+                after = next(d for d in extended.descriptors if d.key == before.key)
+                feature = next(f for f in load_confirmed_features() if f['model_id'] == model and f['capability_id'] == capability)
+                new = tuple(v['value'] for v in feature['values'])
+                self.assertFalse(after.factory_eligible)
+                self.assertEqual(before.home_assistant_entity_key, after.home_assistant_entity_key)
+                self.assertEqual(after.value_mappings[:len(before.value_mappings)], before.value_mappings)
+                self.assertEqual(scope[binding].values_by_capability[capability], new)
+                self.assertFalse(set(new).intersection(before.exact_local_request_values))
+                self.assertIn('cool|medium|26.5C', new)
+                self.assertFalse(any(not v.startswith('cool|') or '|power|' in v for v in new))
+                if model == 'CST_170004_WW':
+                    self.assertNotIn('cool|high|21C', new)
+
     def test_cst570_enum_extension_reuses_native_owners_and_their_existing_request_vocabulary(self):
         base = load_local_control_entity_contract()
         model = 'CST_570004_WW'
@@ -116,7 +163,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 452)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 1007)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
