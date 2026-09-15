@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
@@ -244,6 +244,26 @@ WIDEQ_SWITCHES_BY_TYPE: dict[str, tuple[MyLgWideqSwitchDescription, ...]] = {
 }
 
 
+def _wideq_switch_for_model(
+    description: MyLgWideqSwitchDescription, model: str
+) -> MyLgWideqSwitchDescription:
+    # Keep the existing UVnano entity/unique_id. This exact model already has
+    # an independently authorized boolean reader and ON/OFF local commands;
+    # an empty legacy cloud snapshot must not strand its original switch.
+    # Other dehumidifiers retain their existing cloud ownership.
+    if (
+        model == "DHUM_056905_WW"
+        and description.key == "uvnano"
+        and description.data_key == "airState.miscFuncState.Uvnano"
+    ):
+        return replace(
+            description,
+            local_read_semantic="sterilization.uvnano_enabled",
+            local_control_semantic="sterilization.uvnano_enabled",
+        )
+    return description
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: MyLgConfigEntry,
@@ -298,6 +318,7 @@ async def async_setup_entry(
                 coordinator.device_id
             )
             for wdesc in WIDEQ_SWITCHES_BY_TYPE.get(coordinator.device_type, ()):
+                wdesc = _wideq_switch_for_model(wdesc, coordinator.model)
                 if (
                     wdesc.supported_models
                     and coordinator.model not in wdesc.supported_models
@@ -539,7 +560,9 @@ class MyLgWideqSwitch(_LocalReadSwitchMixin, MyLgWideqEntity, SwitchEntity):
         local_read_provider: TlvReadShadowProvider | None = None,
     ) -> None:
         super().__init__(wideq_coordinator, pat_coordinator, description.key)
-        self.entity_description = description
+        self.entity_description = description = _wideq_switch_for_model(
+            description, pat_coordinator.model
+        )
         self._local_control = local_control
         self._configure_local_read(
             local_read_provider, description.local_read_semantic
