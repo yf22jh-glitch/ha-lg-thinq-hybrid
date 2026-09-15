@@ -8,6 +8,31 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_cst570_enum_extension_reuses_native_owners_and_their_existing_request_vocabulary(self):
+        base = load_local_control_entity_contract()
+        model = 'CST_570004_WW'
+        models = {'test_cst570_binding': model}
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        extended, scope = augment_confirmed_features(base, prior, models)
+        # MyLgWideqSelect's existing local_value_map uses these exact requests.
+        expected = {'auto_dry.mode': {'off', '10 min or firmware ON', '30 min', '60 min', 'smart'},
+                    'display.brightness_level': {'off', '50%', '100%'}}
+        for cap, values in expected.items():
+            old = next(d for d in base.descriptors_by_model[model] if d.capability_id == cap)
+            new = next(d for d in extended.descriptors_by_model[model] if d.capability_id == cap)
+            self.assertFalse(new.factory_eligible)  # no second select entity
+            self.assertEqual(new.home_assistant_entity_key, old.home_assistant_entity_key)
+            self.assertEqual(set(scope['test_cst570_binding'].values_by_capability[cap]), values)
+            self.assertEqual(set(new.exact_local_request_values), values)
+            self.assertEqual(set(new.supported_values), values)
+        from dataclasses import replace
+        row = prior['test_cst570_binding']
+        restricted = {'test_cst570_binding': replace(row, values_by_capability={**row.values_by_capability,
+            'auto_dry.mode': ('smart',)})}
+        _, scope = augment_confirmed_features(base, restricted, models)
+        self.assertNotIn('60 min', scope['test_cst570_binding'].values_by_capability['auto_dry.mode'])
+        self.assertIn('30 min', scope['test_cst570_binding'].values_by_capability['auto_dry.mode'])
+
     def test_existing_label_changes_require_explicit_migration(self):
         from unittest.mock import patch
         import sys
@@ -76,7 +101,11 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current.home_assistant_entity_key, row.home_assistant_entity_key)
                     self.assertTrue(set(row.exact_local_request_values) <= set(current.exact_local_request_values))
                     binding = next(b for b, m in models.items() if m == model)
-                    self.assertIn(current, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model))
+                    self.assertEqual(current.factory_eligible, row.factory_eligible)
+                    if row.factory_eligible:
+                        self.assertIn(current, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model))
+                    else:
+                        self.assertNotIn(current, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model))
                     labelled = any(f.get('display_labels') and f['model_id'] == model and f['capability_id'] == row.capability_id for f in load_confirmed_features())
                     if row.entity_domain == 'select' and not labelled:
                         labels = {v.local_request_value: v.home_assistant_value for v in current.value_mappings}
@@ -86,7 +115,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 431)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 435)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:

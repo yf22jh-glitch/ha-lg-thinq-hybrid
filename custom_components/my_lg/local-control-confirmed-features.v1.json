@@ -1,7 +1,63 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "5c501b3d490825cb9c38629f5ca6ae119647ff485fb65fde136e05a9f37ccded",
+  "catalogue_sha256": "31d67145eaf47f1afefbcb2ad7045ce5063bc4cd6ec603d7986fba9ad828457e",
   "features": [
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "auto_dry.mode",
+      "entity_key": "auto_dry_mode",
+      "label_ko": "자동건조 모드",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "off",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "8d9c207673aff42ac44875c6a61292bcf04c2422cb6fccd4f74192ab2936146a"
+          ],
+          "reported_value": "off"
+        },
+        {
+          "value": "10 min or firmware ON",
+          "label": "10 min",
+          "ordered_frame_sha256s": [
+            "52597a90c75d0ee0ea5d9b6218431d16a82e714adf3b3311b0b0fd100ca326a8"
+          ],
+          "reported_value": "10 min or firmware ON"
+        },
+        {
+          "value": "30 min",
+          "label": "30 min",
+          "ordered_frame_sha256s": [
+            "a402f40752eb1f46d52d7915ba9dd924b4e6b29243ea248eeffb74f958186d48"
+          ],
+          "reported_value": "30 min"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "display.brightness_level",
+      "entity_key": "display_brightness_level",
+      "label_ko": "화면 밝기",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "100%",
+          "label": "100%",
+          "ordered_frame_sha256s": [
+            "13a00ded00beacf822c5d4583ef45d904afba4b7a84b2f7efe360d7709cb4aa9"
+          ],
+          "reported_value": "100%"
+        }
+      ]
+    },
     {
       "model_id": "1WPD4CMIDR__3",
       "capability_id": "water.amount_presets_ml",

@@ -18,7 +18,7 @@ from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 
-CATALOGUE_SHA256 = '5c501b3d490825cb9c38629f5ca6ae119647ff485fb65fde136e05a9f37ccded'
+CATALOGUE_SHA256 = '31d67145eaf47f1afefbcb2ad7045ce5063bc4cd6ec603d7986fba9ad828457e'
 
 
 def load_confirmed_features():
@@ -71,6 +71,27 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                 raise ValueError('Numeric extension requires exactly one existing owner')
             old = matches[0]
             values = tuple(v['value'] for v in feature['values'])
+            if feature.get('value_kind') == 'enum':
+                reports = tuple(v.get('reported_value') for v in feature['values'])
+                labels = tuple(v['label'] for v in feature['values'])
+                if (old.input_kind != 'enum' or old.entity_domain != 'select' or not values
+                        or any(not isinstance(v, str) or not v for v in (*values, *labels, *reports))
+                        or len(set(values)) != len(values) or len(set(reports)) != len(reports)
+                        or set(values).intersection(old.exact_local_request_values)
+                        or set(reports).intersection(old.supported_values)
+                        or set(labels).intersection(v.home_assistant_value for v in old.value_mappings)):
+                    raise ValueError('Enum extension requires disjoint exact request and report values')
+                descriptor = replace(old, supported_values=(*old.supported_values, *reports),
+                    value_mappings=(*old.value_mappings, *(LocalControlValueMapping(label, value)
+                        for label, value in zip(labels, values))))
+                replacements[old.key] = descriptor
+                by_model[model] = tuple(descriptor if d.key == old.key else d for d in by_model[model])
+                for binding in selected:
+                    prior = bindings[binding]
+                    bindings[binding] = replace(prior, values_by_capability=MappingProxyType({
+                        **prior.values_by_capability, capability: (
+                            *prior.values_by_capability.get(capability, ()), *values)}))
+                continue
             if (old.input_kind not in ('number', 'enum') or old.entity_domain not in ('number','select')
                     or not values or len(set(values)) != len(values)
                     or any(not isinstance(v,str) or not v.isascii() or not v.isdecimal() or str(int(v)) != v for v in values)
