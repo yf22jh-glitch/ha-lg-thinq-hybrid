@@ -1399,6 +1399,12 @@ class LocalSemanticShadowProvider:
         self._session_id: str | None = None
         self._sequence = 0
         self._state_payload: str | None = None
+        # MQTT delivers state and its exact completion marker separately. Keep
+        # an uncommitted candidate out of the observable shadow until both pass
+        # the existing final-current validator; never invent a new observation.
+        self._pending_live_state: (
+            tuple[bytes, tuple[int, int | None, int], str] | None
+        ) = None
         self._state_published_at: datetime | None = None
         self._state_availability_coordinate: tuple[int, int | None, int] | None = (
             None
@@ -1793,6 +1799,7 @@ class LocalSemanticShadowProvider:
         )
         self._transport_ready = ready
         if not ready:
+            self._pending_live_state = None
             self._control_state_current = False
             self._semantic_transport_current = False
             self._presence_live_received_at = None
@@ -1931,6 +1938,75 @@ class LocalSemanticShadowProvider:
         self._presence_valid_until = None
         self._presence_live_received_at = None
         self._control_state_current = False
+        return changed
+
+    def ingest_live_semantic_publication(
+        self, topic: str, payload: object, *, qos: int, retained: bool
+    ) -> bool:
+        """Commit V3 live state+availability atomically, using existing checks.
+
+        The last *completed* pair remains visible, with its original field
+        timestamps and liveness fences. Pending data cannot grant new state or
+        refresh freshness. Offline, tombstone and transport events are immediate.
+        Bootstrap and the legacy per-message ingest API keep their old contract.
+        """
+        if topic not in (
+            self.state_topic, self.availability_topic
+        ) or self._is_retained_delete(payload):
+            changed = self.ingest(topic, payload, qos=qos, retained=retained)
+            if self._is_retained_delete(payload) or not self.shadow_healthy:
+                self._pending_live_state = None
+            return changed
+        try:
+            if type(qos) is not int or qos != 1 or type(retained) is not bool:
+                _contract_error(
+                    "Local provider live publication transport flags are invalid"
+                )
+            now = _utc_now(self._now)
+            if topic == self.state_topic:
+                snapshot, session, sequence, _, _ = _parse_state(
+                    payload, self.binding_id, self.profile, now,
+                    self.expected_proof, self.require_identity,
+                )
+                if snapshot["schema_version"] != 3:
+                    return self._finish_update(self._ingest_state(payload, now))
+                self._ingest_state(payload, now, validate_only=True)
+                coordinate = self._snapshot_availability_coordinate(snapshot, sequence)
+                assert coordinate is not None
+                canonical = _canonical_payload(snapshot).encode()
+                pending = self._pending_live_state
+                if pending is not None:
+                    if coordinate < pending[1]:
+                        _contract_error("Local provider pending live state regressed")
+                    if coordinate[:2] == pending[1][:2] and session != pending[2]:
+                        _contract_error("Local provider pending live session collided")
+                    if coordinate == pending[1] and canonical != pending[0]:
+                        _contract_error("Local provider pending live cursor collided")
+                self._pending_live_state = (canonical, coordinate, session)
+                return False
+            availability, status, session, _ = _parse_availability(
+                payload, now, self.expected_proof, self.require_identity
+            )
+        except LocalProviderContractError:
+            self._rejected_messages += 1
+            raise
+        pending = self._pending_live_state
+        if (
+            pending is not None
+            and self._availability_coordinate(availability) == pending[1]
+            and session == pending[2]
+        ):
+            changed = self.ingest_semantic_bootstrap_final_current(
+                {
+                    self.state_topic: (pending[0], qos, retained),
+                    self.availability_topic: (payload, qos, retained),
+                }
+            )
+            self._pending_live_state = None
+            return changed
+        changed = self.ingest(topic, payload, qos=qos, retained=retained)
+        if status == "offline":
+            self._pending_live_state = None
         return changed
 
     def ingest(
@@ -2655,7 +2731,9 @@ class LocalSemanticShadowProvider:
             self._rejected_messages += 1
             raise
 
-    def _ingest_state(self, payload: object, now: datetime) -> bool:
+    def _ingest_state(
+        self, payload: object, now: datetime, *, validate_only: bool = False
+    ) -> bool:
         snapshot, session_id, sequence, fields, published_at = _parse_state(
             payload, self.binding_id, self.profile, now, self.expected_proof, self.require_identity
         )
@@ -2682,6 +2760,8 @@ class LocalSemanticShadowProvider:
             if len(self._tombstoned_sessions) >= MAX_TOMBSTONED_GENERATIONS:
                 _contract_error("Local provider session tombstone bound is exhausted")
 
+        if validate_only:
+            return True
         if cohort_advanced or session_id != self._session_id:
             if self._session_id is not None and not cohort_advanced:
                 self._tombstoned_sessions.add(self._session_id)

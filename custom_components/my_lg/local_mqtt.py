@@ -649,7 +649,10 @@ class LocalPilotMqttSubscriber:
         self, topic: str, payload: bytes, qos: int, retained: bool
     ) -> None:
         try:
-            self.provider.ingest(topic, payload, qos=qos, retained=retained)
+            ingest = getattr(
+                self.provider, "ingest_live_semantic_publication", self.provider.ingest
+            )
+            ingest(topic, payload, qos=qos, retained=retained)
         except LocalProviderContractError:
             self._record_provider_rejection()
         finally:

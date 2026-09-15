@@ -1671,6 +1671,55 @@ class IdentityBoundPublicationTests(unittest.TestCase):
                     provider.state_topic, self.payload(2, **override), qos=1, retained=True
                 )
 
+    def test_live_atomic_pair_retains_the_previous_committed_snapshot(self) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=2, sequence=1)
+        notifications = []
+        provider.async_add_listener(lambda: notifications.append((provider.sequence, provider.shadow_healthy)))
+        next_state = self.payload(3, sequence=2)
+        self.assertFalse(provider.ingest_live_semantic_publication(provider.state_topic, next_state, qos=1, retained=False))
+        self.assertEqual(provider.sequence, 1)
+        self.assertTrue(provider.shadow_healthy)
+        self.assertEqual(notifications, [])
+        provider.ingest_live_semantic_publication(provider.availability_topic, self.availability(3, state_sequence=2), qos=1, retained=False)
+        self.assertEqual(notifications, [(2, True)])
+        self.assertEqual(provider.shadow_fields['door.open'].observed_at.isoformat(), '2026-08-13T00:59:58+00:00')
+        provider.ingest_live_semantic_publication(provider.state_topic, self.payload(3, cohort_generation=3, sequence=1), qos=1, retained=False)
+        self.assertEqual(provider.cohort_generation, 2)
+        provider.ingest_live_semantic_publication(provider.availability_topic, self.availability(3, cohort_generation=3), qos=1, retained=False)
+        self.assertEqual(provider.cohort_generation, 3)
+        self.assertTrue(all(healthy for _, healthy in notifications))
+
+    def test_live_atomic_pair_never_defers_real_offline_or_transport_loss(self) -> None:
+        for topic_kind in ('device', 'runtime', 'transport', 'delete'):
+            with self.subTest(topic_kind=topic_kind):
+                provider = self.healthy_v3_provider(cohort_generation=2, sequence=1)
+                provider.ingest_live_semantic_publication(provider.state_topic, self.payload(3, sequence=2), qos=1, retained=False)
+                if topic_kind == 'transport':
+                    provider.set_transport_ready(False)
+                elif topic_kind == 'delete':
+                    provider.ingest_live_semantic_publication(provider.state_topic, b'', qos=1, retained=False)
+                elif topic_kind == 'runtime':
+                    provider.ingest_live_semantic_publication(provider.runtime_availability_topic, runtime_payload('offline'), qos=1, retained=False)
+                else:
+                    provider.ingest_live_semantic_publication(provider.availability_topic, self.availability(3, status='offline'), qos=1, retained=False)
+                self.assertFalse(provider.shadow_healthy)
+
+    def test_live_atomic_pair_rejects_pending_regression_and_wrong_ack(self) -> None:
+        provider = self.healthy_v3_provider(cohort_generation=2, sequence=1)
+        provider.ingest_live_semantic_publication(provider.state_topic, self.payload(3, sequence=3), qos=1, retained=False)
+        for topic, payload in (
+            (provider.state_topic, self.payload(3, sequence=2)),
+            (provider.availability_topic, self.availability(3, state_sequence=2)),
+            (provider.state_topic, self.payload(3, sequence=3, session_id=SESSION_TWO)),
+            (provider.state_topic, self.payload(3, sequence=4, pat_device_id_proof_sha256='0'*64)),
+        ):
+            with self.assertRaises(local.LocalProviderContractError):
+                provider.ingest_live_semantic_publication(topic, payload, qos=1, retained=False)
+            self.assertEqual(provider.sequence, 1)
+        provider.ingest_live_semantic_publication(provider.availability_topic, self.availability(3, state_sequence=3), qos=1, retained=False)
+        self.assertEqual(provider.sequence, 3)
+        self.assertTrue(provider.shadow_healthy)
+
     def test_live_state_advance_waits_for_its_exact_same_status_availability(self) -> None:
         provider = self.provider(
             pat_device_id=self.PAT_DEVICE_ID, require_identity=True

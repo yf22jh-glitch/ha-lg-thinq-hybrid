@@ -917,6 +917,48 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(provider.session_id, "session_dhum_provider_002")
         await subscriber.async_stop()
 
+    async def test_live_v3_transport_commits_the_pair_without_an_unavailable_edge(self) -> None:
+        from tests.test_local_provider import IdentityBoundPublicationTests
+
+        fixture = IdentityBoundPublicationTests()
+        provider = local.LocalSemanticShadowProvider(
+            BINDING_ID,
+            local.LocalSemanticProfile(
+                profile_id='synthetic-identity-v1', model_id='SYNTHETIC_MODEL', platform='thinq2',
+                semantics_revision=31,
+                fields={'door.open': local.LocalSemanticFieldContract(value_type='boolean', exposure='state', confidence=('confirmed-synthetic',))},
+            ),
+            pat_device_id=fixture.PAT_DEVICE_ID, require_identity=True, now=lambda: NOW,
+        )
+        mqtt_module = FakeMqttV1()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        client = mqtt_module.clients[0]
+        client.on_connect(client, None, {}, 0)
+        client.on_subscribe(client, None, 41, [1, 1, 1])
+        def message(topic, payload):
+            client.on_message(client, None, SimpleNamespace(topic=topic, payload=payload, qos=1, retain=False))
+        for topic, payload in (
+            (provider.state_topic, fixture.payload(3)),
+            (provider.availability_topic, fixture.availability(3)),
+            (provider.runtime_availability_topic, runtime_payload('online')),
+        ):
+            message(topic, payload)
+        await asyncio.sleep(0)
+        self.assertTrue(provider.shadow_healthy)
+        changes = []
+        provider.async_add_listener(lambda: changes.append((provider.sequence, provider.shadow_healthy)))
+        message(provider.state_topic, fixture.payload(3, sequence=2))
+        await asyncio.sleep(0)
+        self.assertEqual(provider.sequence, 1)
+        self.assertEqual(changes, [])
+        message(provider.availability_topic, fixture.availability(3, state_sequence=2))
+        await asyncio.sleep(0)
+        self.assertEqual(changes, [(2, True)])
+        self.assertEqual(subscriber.rejected_messages, 0)
+        await subscriber.async_stop()
+        self.assertFalse(provider.shadow_healthy)
+
     async def test_invalid_messages_are_isolated_and_never_escape_callback_thread(
         self,
     ) -> None:
