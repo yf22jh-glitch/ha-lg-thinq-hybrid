@@ -1,7 +1,17 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "f8469dff57239d767c2000e45db45701a2d23abb1158412ac0236061cde8e9cc",
+  "catalogue_sha256": "235972d1f997294ffc52a50bb0dac39799c4b08902f25844a4252172632e5013",
   "features": [
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.course_option_program",
+      "entity_key": "local_dryer_course_option_replacement",
+      "label_ko": "건조 코스·옵션 전체 재적용 (구김방지·물기알림 초기화 가능, 시작 아님)",
+      "domain": "text",
+      "parameter_schema": "dryer-course-option-replacement-v1",
+      "existing_owner": false,
+      "values": []
+    },
     {
       "model_id": "ST_R_ETH01Y_",
       "capability_id": "styler.operation.start_with_options",

@@ -17,7 +17,7 @@ class WasherOptionsTests(unittest.TestCase):
         eligibility = resolve_local_control_binding_eligibility({}, base, models)
         extended, scope = augment_confirmed_features(base, eligibility, models)
         owners = eligible_factory_descriptors(extended, scope, binding_id='test_washer_options', model_id=MODEL, domain='text')
-        self.assertEqual([d.capability_id for d in owners], [CAPABILITY])
+        self.assertEqual([d.capability_id for d in owners if d.capability_id.startswith('washer.')], [CAPABILITY])
         self.assertEqual(len(next(d for d in extended.descriptors if d.capability_id == 'washer.course_program').value_mappings),45)
         self.assertTrue(local_control_value_authorized(extended,scope,binding_id='test_washer_options',model_id=MODEL,capability_id=CAPABILITY,local_request_value=VALUE))
         self.assertFalse(local_control_value_authorized(extended,scope,binding_id='missing',model_id=MODEL,capability_id=CAPABILITY,local_request_value=VALUE))

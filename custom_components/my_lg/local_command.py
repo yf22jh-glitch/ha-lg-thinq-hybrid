@@ -28,6 +28,7 @@ from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANC
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, is_canonical_window
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, is_canonical_parameter
 from .local_washer_options import CAPABILITY as WASHER_PROGRAM, is_canonical_program
+from .local_dryer_options import CAPABILITY as DRYER_PROGRAM, is_canonical_program as is_dryer_program
 
 CLIMATE_TUPLE_CAPABILITY = "climate.mode_fan_setpoint"
 CLIMATE_POWER_ON_CAPABILITY = "climate.power_on_with_setpoint"
@@ -452,6 +453,8 @@ class LocalCommandClient:
             return value if is_canonical_program(value) else None
         if capability == WATER_DND_WINDOW:
             return value if is_canonical_window(value) else None
+        if capability == DRYER_PROGRAM:
+            return value if is_dryer_program(value) else None
         if capability in WATER_PARAMETER_SCHEMAS:
             return value if is_canonical_parameter(capability,value) else None
         if capability in APPLIANCE_VALUE_MODELS:

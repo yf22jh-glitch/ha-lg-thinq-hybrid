@@ -1036,6 +1036,10 @@ def local_control_value_authorized(
         from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_SCHEMA, is_canonical_window
         from .local_water_parameters import SCHEMAS as WATER_SCHEMAS, is_canonical_parameter
         from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA, is_canonical_program
+        from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA, is_canonical_program as is_dryer_program
+        if model_id == DRYER_MODEL and capability_id == DRYER_PROGRAM and descriptor.parameter_schema == DRYER_SCHEMA:
+            return (allowed == descriptor.exact_local_request_values and allowed is not None
+                    and is_dryer_program(local_request_value))
         from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA, is_canonical_program as is_styler_program
         if model_id == STYLER_MODEL and capability_id == STYLER_PROGRAM and descriptor.parameter_schema == STYLER_SCHEMA:
             return (allowed == descriptor.exact_local_request_values and allowed is not None

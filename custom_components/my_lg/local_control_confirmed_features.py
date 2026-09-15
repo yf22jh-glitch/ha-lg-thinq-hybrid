@@ -18,9 +18,10 @@ from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA
+from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 
-CATALOGUE_SHA256 = 'f8469dff57239d767c2000e45db45701a2d23abb1158412ac0236061cde8e9cc'
+CATALOGUE_SHA256 = '235972d1f997294ffc52a50bb0dac39799c4b08902f25844a4252172632e5013'
 
 
 def load_confirmed_features():
@@ -67,6 +68,7 @@ APPLIANCE_SETTING_MODELS = MappingProxyType({
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
     if (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == WASHER_PROGRAM)
+       or (feature['model_id'] == DRYER_MODEL and feature['capability_id'] == DRYER_PROGRAM)
        or (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
         ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))
        or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
@@ -201,6 +203,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         values = feature['values']
         parameter_schema = feature.get('parameter_schema')
         valid_parameter = ((model == VACUUM_MODEL and capability == SCHEDULE and parameter_schema == SCHEMA)
+                           or (model == DRYER_MODEL and capability == DRYER_PROGRAM and parameter_schema == DRYER_SCHEMA)
                            or (model == STYLER_MODEL and capability == STYLER_PROGRAM and parameter_schema == STYLER_SCHEMA)
                            or (model == WASHER_MODEL and capability == WASHER_PROGRAM and parameter_schema == WASHER_SCHEMA)
                            or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA)
