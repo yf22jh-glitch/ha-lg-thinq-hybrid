@@ -192,18 +192,64 @@ class LocalControlRouter:
         # Desired UI choice only, not an appliance report. No wire traffic until Start.
         # Deliberately not restored across HA reload or an operator's Start press.
         self._styler_course_choices: dict[str, str] = {}
+        self._styler_option_choices: dict[str, str] = {}
+        self._styler_choice_listeners: dict[str, set[Callable[[], None]]] = {}
+
+    def subscribe_styler_choice(self, device_id: str, listener: Callable[[], None]) -> Callable[[], None]:
+        listeners = self._styler_choice_listeners.setdefault(device_id, set())
+        listeners.add(listener)
+        def remove() -> None:
+            listeners.discard(listener)
+            if not listeners:
+                self._styler_choice_listeners.pop(device_id, None)
+        return remove
+
+    def _notify_styler_choice(self, device_id: str) -> None:
+        # UI notification must not change the result of consuming a start draft.
+        for listener in tuple(self._styler_choice_listeners.get(device_id, ())):
+            try:
+                listener()
+            except Exception:
+                _LOGGER.warning('Could not refresh a Styler draft entity')
 
     def select_styler_course(self, pat_device_id: str, value: str) -> None:
         if not self.value_authorized(pat_device_id, "styler.operation.start_or_resume", value):
             raise ValueError("Styler course is not authorized for this binding")
         self._styler_course_choices[pat_device_id] = value
+        self._styler_option_choices.pop(pat_device_id, None)
+        self._notify_styler_choice(pat_device_id)
+
+    def select_styler_options(self, pat_device_id: str, value: str) -> None:
+        from .local_styler_options import CAPABILITY, canonical_program
+        request = canonical_program(value)
+        if not self.value_authorized(pat_device_id, CAPABILITY, request):
+            raise ValueError('Styler option program is not authorized for this binding')
+        self._styler_option_choices[pat_device_id] = request
+        self._styler_course_choices.pop(pat_device_id, None)
+        self._notify_styler_choice(pat_device_id)
+
+    def selected_styler_options(self, pat_device_id: str) -> str | None:
+        return self._styler_option_choices.get(pat_device_id)
+
+    def take_styler_start(self, pat_device_id: str) -> tuple[str, str] | None:
+        from .local_styler_options import CAPABILITY
+        value = self._styler_option_choices.pop(pat_device_id, None)
+        if value is not None:
+            self._styler_course_choices.pop(pat_device_id, None)
+            self._notify_styler_choice(pat_device_id)
+            return CAPABILITY, value
+        value = self.take_styler_course(pat_device_id)
+        return ('styler.operation.start_or_resume', value) if value is not None else None
 
     def selected_styler_course(self, pat_device_id: str) -> str | None:
         return self._styler_course_choices.get(pat_device_id)
 
     def take_styler_course(self, pat_device_id: str) -> str | None:
         # Consume before dispatch: an ambiguous delivery must not be retried by another press.
-        return self._styler_course_choices.pop(pat_device_id, None)
+        value = self._styler_course_choices.pop(pat_device_id, None)
+        if value is not None:
+            self._notify_styler_choice(pat_device_id)
+        return value
 
     def _tuple_lock(self, pat_device_id: str) -> asyncio.Lock:
         lock = self._tuple_locks.get(pat_device_id)

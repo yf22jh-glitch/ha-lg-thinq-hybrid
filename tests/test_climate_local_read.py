@@ -612,6 +612,25 @@ class LocalNativeClimateTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((entity.min_temp, entity.max_temp), (16, 30))
         self.assertEqual(entity.target_temperature_step, 0.5)
 
+    async def test_cst570_horizontal_extension_is_a_native_climate_control_not_a_second_switch(self):
+        from custom_components.my_lg.local_control_contract import load_local_control_entity_contract, resolve_local_control_binding_eligibility, eligible_factory_descriptors
+        from custom_components.my_lg.local_control_confirmed_features import augment_confirmed_features
+        model, binding = 'CST_570004_WW', 'test_swing_binding_570'
+        base = load_local_control_entity_contract()
+        models = {binding: model}
+        contract, scope = augment_confirmed_features(base, resolve_local_control_binding_eligibility({}, base, models), models)
+        router = FakeLocalOnlyRouter()
+        # Drive the real native entity using the actual augmented value grants.
+        router.capability_authorized = lambda _device, cap: cap in scope[binding].values_by_capability
+        router.value_authorized = lambda _device, cap, value: value in scope[binding].values_by_capability.get(cap, ())
+        entity, _, coordinator = make_local_only_entity(self._provider(), FakePatCoordinator(model=model), router)
+        self.assertIn(SWING_HORIZONTAL, entity.swing_modes)
+        self.assertIn(SWING_BOTH, entity.swing_modes)
+        await entity.async_set_swing_mode(SWING_VERTICAL)
+        self.assertTrue(any(kind == 'flag' and call['capability'] == 'swing.horizontal_enabled' and call['enabled'] is False for kind, call in router.calls))
+        self.assertFalse(any(d.capability_id == 'swing.horizontal_enabled' for d in eligible_factory_descriptors(contract, scope, binding_id=binding, model_id=model)))
+        self.assertEqual(coordinator.controls, [])
+
     async def test_powered_off_device_remains_available_and_turn_on_is_local_only(
         self,
     ) -> None:

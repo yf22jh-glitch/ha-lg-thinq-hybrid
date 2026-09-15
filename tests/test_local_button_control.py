@@ -46,10 +46,18 @@ class Router:
         self.outcome = outcome
         self.calls: list[tuple[str, str, str]] = []
         self.choice = None
+        self.option_choice = None
 
     def take_styler_course(self, device_id):
         value, self.choice = self.choice, None
         return value
+
+    def take_styler_start(self, device_id):
+        if self.option_choice is not None:
+            value, self.option_choice = self.option_choice, None
+            return ('styler.operation.start_with_options', value)
+        value = self.take_styler_course(device_id)
+        return ('styler.operation.start_or_resume', value) if value is not None else None
 
     async def async_execute(
         self, device_id: str, capability: str, value: str = "true"
@@ -61,6 +69,23 @@ class Router:
 
 
 class LocalPauseButtonTests(unittest.IsolatedAsyncioTestCase):
+    async def test_styler_option_start_is_consumed_even_on_refusal_or_ambiguity(self):
+        value = 'DRY_TIME_23|on|240|60'
+        for outcome in (LocalCommandResult('confirmed', {}), None, LocalCommandFailed('ambiguous')):
+            coordinator = Coordinator()
+            router = Router(outcome)
+            router.option_choice = value
+            button = MyLgButton(coordinator, _description('styler_start'), router)
+            if outcome is None or isinstance(outcome, Exception):
+                with self.assertRaises(HomeAssistantError):
+                    await button.async_press()
+            else:
+                await button.async_press()
+            with self.assertRaises(HomeAssistantError):
+                await button.async_press()
+            self.assertEqual(router.calls, [(coordinator.device_id, 'styler.operation.start_with_options', value)])
+            self.assertEqual(coordinator.controls, [])
+
     async def test_styler_start_consumes_selected_course_once_and_never_cloud_fallback(self):
         for outcome in (LocalCommandResult('confirmed', {}), LocalCommandResult('unverifiable', {}), None, LocalCommandFailed('ambiguous')):
             coordinator = Coordinator()

@@ -223,11 +223,12 @@ class MyLgButton(MyLgEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         if self.entity_description.key == "styler_start" and self._local_control is not None:
-            value = self._local_control.take_styler_course(self.coordinator.device_id)
-            if value is None:
-                raise HomeAssistantError("먼저 ‘실행할 코스’에서 코스를 선택해 주세요. 선택만으로는 가동되지 않아요.")
+            selected = self._local_control.take_styler_start(self.coordinator.device_id)
+            if selected is None:
+                raise HomeAssistantError("먼저 실행할 코스 또는 코스·옵션 입력을 선택해 주세요. 선택만으로는 가동되지 않아요.")
+            capability, value = selected
             try:
-                outcome = await self._local_control.async_execute(self.coordinator.device_id, "styler.operation.start_or_resume", value)
+                outcome = await self._local_control.async_execute(self.coordinator.device_id, capability, value)
             except LocalCommandFailed as err:
                 raise HomeAssistantError("스타일러 실행 결과를 확인할 수 없어요. 상태를 확인한 뒤 다시 선택해 주세요.") from err
             if outcome is None:

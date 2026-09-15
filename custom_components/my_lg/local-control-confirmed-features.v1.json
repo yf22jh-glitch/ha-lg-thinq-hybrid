@@ -1,7 +1,17 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "5ad3e59bc2f10f6810b7d438fac7afbf7ad90769a7a923ddc4985d073cfeb7a2",
+  "catalogue_sha256": "a6afa34e600fe3a807bf1ef2b925e7eefc13173ef24162ea3a2a22f086aa2734",
   "features": [
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.operation.start_with_options",
+      "entity_key": "local_styler_start_option_draft",
+      "label_ko": "시작할 코스·야간건조·예약·건조시간 (입력 후 시작 버튼)",
+      "domain": "text",
+      "parameter_schema": "styler-start-option-program-v1",
+      "existing_owner": false,
+      "values": []
+    },
     {
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "washer.course_option_program",
@@ -13853,6 +13863,35 @@
             "c3405f88c0a47a937ba5ba72855dde56f3d64fd24f1af0a28b235058d68c4bda"
           ],
           "reported_value": "SOUND4"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "swing.horizontal_enabled",
+      "entity_key": "swing_horizontal_enabled",
+      "label_ko": "좌우 스윙",
+      "domain": "switch",
+      "existing_owner": true,
+      "wire_evidence": "exact-model-declared-values-no-own-golden",
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "78c5cc06cb07d8b5a8e4f780e73265b720c123fddac55bd914f2a511a3454990"
+          ],
+          "reported_value": false
+        },
+        {
+          "value": "true",
+          "label": "true",
+          "ordered_frame_sha256s": [
+            "9c8cb2b719f2ca4f85dbde349a7b13d96518ec952bce64ad3adc0678e43a2422"
+          ],
+          "reported_value": true
         }
       ]
     },

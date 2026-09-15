@@ -29,6 +29,7 @@ from .local_control_contract import (
 from .local_control_router import LocalControlRouter
 from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
 from .local_washer_options import CAPABILITY as WASHER_PROGRAM, canonical_program
+from .local_styler_options import CAPABILITY as STYLER_PROGRAM, canonical_program as canonical_styler_program
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, canonical_window
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, canonical_parameter
 from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
@@ -132,6 +133,10 @@ class _LocalContractEntity(MyLgEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        if self._descriptor.capability_id in (STYLER_PROGRAM, 'styler.operation.start_or_resume'):
+            self._remove_local_listeners.append(
+                self._router.subscribe_styler_choice(self.coordinator.device_id, self._handle_local_update)
+            )
         self._remove_local_listeners.append(
             self._primary_provider.async_add_listener(self._handle_local_update)
         )
@@ -514,6 +519,24 @@ class MyLgLocalContractNumber(_LocalContractEntity, NumberEntity):
         await self._async_send(mapping.local_request_value)
 
 
+class MyLgStylerOptionDraftText(_LocalContractEntity, TextEntity):
+    """Volatile desired start parameters, never an appliance state or write."""
+    _attr_native_min = 0
+    _attr_native_max = 160
+    _attr_icon = 'mdi:wardrobe-outline'
+
+    @property
+    def native_value(self):
+        return self._router.selected_styler_options(self.coordinator.device_id)
+
+    async def async_set_value(self, value):
+        try:
+            self._router.select_styler_options(self.coordinator.device_id, canonical_styler_program(value))
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
+        self.async_write_ha_state()
+
+
 class MyLgLocalContractButton(_LocalContractEntity, ButtonEntity):
     """One reviewed, parameterless one-shot command."""
 
@@ -568,6 +591,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 # per surface instead of creating duplicate registry owners.
                 continue
             seen_surfaces.add(surface)
+            if descriptor.capability_id == STYLER_PROGRAM and domain == 'text':
+                entities.append(MyLgStylerOptionDraftText(coordinator, descriptor, router, primary, read))
+                continue
             if APPLIANCE_SETTING_MODELS.get(descriptor.capability_id) == descriptor.model_id and domain == 'switch':
                 entities.append(MyLgApplianceSettingSwitch(coordinator, descriptor, router, primary, read))
                 continue

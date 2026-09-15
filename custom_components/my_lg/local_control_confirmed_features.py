@@ -18,8 +18,9 @@ from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA
+from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 
-CATALOGUE_SHA256 = '5ad3e59bc2f10f6810b7d438fac7afbf7ad90769a7a923ddc4985d073cfeb7a2'
+CATALOGUE_SHA256 = 'a6afa34e600fe3a807bf1ef2b925e7eefc13173ef24162ea3a2a22f086aa2734'
 
 
 def load_confirmed_features():
@@ -95,7 +96,14 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         selected = [binding for binding in bindings if binding_models[binding] == model]
         if not selected:
             continue
-        if feature.get('value_source') == 'exact-model-web-domain':
+        # Missing CST570 descriptor, existing native climate owner. This narrow
+        # case must not weaken the required-owner check for numeric overlays.
+        native_horizontal = (model == 'CST_570004_WW' and capability == 'swing.horizontal_enabled'
+                             and feature['existing_owner'] is True and feature['domain'] == 'switch'
+                             and feature.get('wire_evidence') == 'exact-model-declared-values-no-own-golden'
+                             and tuple(v['value'] for v in feature['values']) == ('false', 'true')
+                             and tuple(v.get('reported_value') for v in feature['values']) == (False, True))
+        if feature.get('value_source') == 'exact-model-web-domain' and not native_horizontal:
             matches = [d for d in by_model.get(model, ()) if d.capability_id == capability]
             if len(matches) != 1:
                 raise ValueError('Numeric extension requires exactly one existing owner')
@@ -171,6 +179,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         values = feature['values']
         parameter_schema = feature.get('parameter_schema')
         valid_parameter = ((model == VACUUM_MODEL and capability == SCHEDULE and parameter_schema == SCHEMA)
+                           or (model == STYLER_MODEL and capability == STYLER_PROGRAM and parameter_schema == STYLER_SCHEMA)
                            or (model == WASHER_MODEL and capability == WASHER_PROGRAM and parameter_schema == WASHER_SCHEMA)
                            or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA)
                            or (model == WATER_MODEL and capability in WATER_PARAMETER_SCHEMAS and parameter_schema == WATER_PARAMETER_SCHEMAS[capability]))
