@@ -29,6 +29,7 @@ from .local_control_contract import (
 from .local_control_router import LocalControlRouter
 from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, canonical_window
+from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, canonical_parameter
 from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_provider import TlvReadShadowProvider
@@ -414,8 +415,8 @@ class MyLgWaterDndText(_LocalContractEntity, TextEntity):
 
     async def async_update(self) -> None:
         try:
-            value=await self._router.async_appliance_setting_state(self.coordinator.device_id,WATER_DND_WINDOW)
-            self._reported_value=canonical_window(value) if isinstance(value,str) else None
+            value=await self._router.async_appliance_setting_state(self.coordinator.device_id,self._descriptor.capability_id)
+            self._reported_value=self._canonical(value) if isinstance(value,str) else None
         except (TimeoutError,OSError,ValueError,aiohttp.ClientError):
             self._reported_value=None
 
@@ -426,12 +427,24 @@ class MyLgWaterDndText(_LocalContractEntity, TextEntity):
 
     async def async_set_value(self, value: str) -> None:
         try:
-            request=canonical_window(value)
+            request=self._canonical(value)
         except ValueError as err:
             raise HomeAssistantError(str(err)) from err
         await self._async_send(request)
         await self.async_update()
         self.async_write_ha_state()
+
+    def _canonical(self, value: str) -> str:
+        return canonical_window(value)
+
+
+class MyLgWaterParameterText(MyLgWaterDndText):
+    """Whole preset transaction or date-preserving calendar; never dispense/start."""
+    _attr_native_min = 11
+    _attr_native_max = 19
+
+    def _canonical(self, value: str) -> str:
+        return canonical_parameter(self._descriptor.capability_id, value)
 
 
 class MyLgLocalContractNumber(_LocalContractEntity, NumberEntity):
@@ -553,6 +566,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                     continue
                 if domain == 'text' and descriptor.capability_id == WATER_DND_WINDOW:
                     entities.append(MyLgWaterDndText(coordinator, descriptor, router, primary, read))
+                    continue
+                if domain == 'text' and descriptor.capability_id in WATER_PARAMETER_SCHEMAS:
+                    entities.append(MyLgWaterParameterText(coordinator, descriptor, router, primary, read))
                     continue
             if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id in ('clean_dry.enabled', 'rapid_operation.enabled') and domain == 'switch':
                 entities.append(MyLgAirExtraSwitch(coordinator, descriptor, router, primary, read))

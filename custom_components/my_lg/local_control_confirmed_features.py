@@ -16,8 +16,9 @@ from .local_control_contract import (
 )
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
+from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 
-CATALOGUE_SHA256 = 'ec4795bc5e1c6e0a55c9b56ae3da6303e3751c2828b39d8719dff8a46b567531'
+CATALOGUE_SHA256 = '5c501b3d490825cb9c38629f5ca6ae119647ff485fb65fde136e05a9f37ccded'
 
 
 def load_confirmed_features():
@@ -35,7 +36,7 @@ APPLIANCE_SETTING_MODELS = MappingProxyType({
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
     if (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
-        ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW))
+        ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))
        or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
        or (feature['model_id'] == 'ST_R_ETH01Y_' and feature['capability_id'] in
            ('styler.sound.volume_level', 'styler.sound.melody', 'styler.display.startup_image', 'styler.smart_care.night_start_time', 'styler.smart_care.night_end_time'))
@@ -82,6 +83,10 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                     or any(not isinstance(v, str) or not v for v in labels.values())
                     or len(set(labels.values())) != len(labels)):
                 raise ValueError('Numeric display labels must cover the exact value domain')
+            if labels is not None and old.entity_domain == 'select' and any(
+                    labels[v.local_request_value] != v.home_assistant_value for v in old.value_mappings
+            ) and feature.get('relabels_existing') is not True:
+                raise ValueError('Existing option relabeling requires an explicit migration declaration')
             gaps = {b-a for a,b in zip(supported,supported[1:])}
             # Keep existing select owners; irregular domains must not create
             # an apparently legal min/max/step lattice with unsupported points.
@@ -115,7 +120,8 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         values = feature['values']
         parameter_schema = feature.get('parameter_schema')
         valid_parameter = ((model == VACUUM_MODEL and capability == SCHEDULE and parameter_schema == SCHEMA)
-                           or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA))
+                           or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA)
+                           or (model == WATER_MODEL and capability in WATER_PARAMETER_SCHEMAS and parameter_schema == WATER_PARAMETER_SCHEMAS[capability]))
         if parameter_schema is not None and (not valid_parameter or feature['domain'] != 'text' or values):
             raise ValueError('Unsupported confirmed parameter schema')
         boolean_values = feature['domain'] == 'switch' or capability == 'washer.fresh_care_enabled'

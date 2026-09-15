@@ -1,7 +1,27 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "ec4795bc5e1c6e0a55c9b56ae3da6303e3751c2828b39d8719dff8a46b567531",
+  "catalogue_sha256": "5c501b3d490825cb9c38629f5ca6ae119647ff485fb65fde136e05a9f37ccded",
   "features": [
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.amount_presets_ml",
+      "entity_key": "local_water_amount_presets",
+      "label_ko": "출수량 프리셋 4개 (mL, 쉼표 구분)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-amount-presets-ml-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.sterilization_calendar",
+      "entity_key": "local_water_sterilization_time",
+      "label_ko": "살균 예약 (MM-DD HH:MM, 날짜 유지)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-sterilization-calendar-v1",
+      "values": []
+    },
     {
       "model_id": "HUM_056905_WW",
       "capability_id": "water_tank.light_brightness_raw",
@@ -22,6 +42,7 @@
         "190": "90%",
         "200": "100%"
       },
+      "relabels_existing": true,
       "values": [
         {
           "value": "110",
@@ -120,6 +141,7 @@
         "25": "tangerine",
         "26": "ruby"
       },
+      "relabels_existing": true,
       "values": [
         {
           "value": "3",

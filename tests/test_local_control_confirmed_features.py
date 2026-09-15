@@ -8,6 +8,19 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_existing_label_changes_require_explicit_migration(self):
+        from unittest.mock import patch
+        import sys
+        features = [dict(f) for f in load_confirmed_features()]
+        for feature in features:
+            feature.pop('relabels_existing', None)
+        base = load_local_control_entity_contract()
+        models = {'test_hum_binding': 'HUM_056905_WW'}
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        with patch.object(sys.modules[augment_confirmed_features.__module__], 'load_confirmed_features', return_value=features):
+            with self.assertRaisesRegex(ValueError, 'explicit migration'):
+                augment_confirmed_features(base, prior, models)
+
     def test_numeric_overlay_keeps_base_pins_and_exact_choices_without_restoring_old_denials(self):
         base = load_local_control_entity_contract()
         models = {'test_numeric_hum': 'HUM_056905_WW', 'test_numeric_air': 'AIR_910604_WW'}
@@ -84,11 +97,11 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
                      if d.key not in {original.key for original in base.descriptors}]
         self.assertEqual({d.home_assistant_entity_key for d in factories} - {'local_cst170_button_sound', 'local_cst570_button_sound', 'local_dhum_button_sound', 'local_hum_button_sound', 'local_hum_sound_melody', 'local_styler_night_start_time', 'local_styler_night_end_time'},
-                         {'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_styler_time_display', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
+                         {'local_water_amount_presets', 'local_water_sterilization_time', 'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_styler_time_display', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
                           'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation',
                           'local_styler_auto_course_arrange', 'local_styler_remember_last_course', 'local_styler_smart_care_night', 'local_styler_smart_care_humidity', 'local_styler_smart_care_fine_dust', 'local_styler_date_display', 'local_styler_24_hour_display', 'local_water_ice_lock', 'local_styler_recorded_resume',
                           'local_water_do_not_disturb', 'local_water_24_hour_display', 'local_water_long_unused_notice', 'local_water_voice_guidance', 'local_water_ice_priority', 'local_water_hot_water_lock', 'local_vacuum_dust_emptying_reservation', 'local_vacuum_dust_emptying_schedule'})
-        self.assertEqual(len(factories), 45)
+        self.assertEqual(len(factories), 47)
         vacuum = next(d for d in factories if d.home_assistant_entity_key == 'local_vacuum_dust_emptying')
         self.assertEqual(vacuum.entity_domain, 'button')
         self.assertTrue(vacuum.one_shot)
