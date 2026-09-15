@@ -21,7 +21,7 @@ from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PR
 from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 
-CATALOGUE_SHA256 = '235972d1f997294ffc52a50bb0dac39799c4b08902f25844a4252172632e5013'
+CATALOGUE_SHA256 = '5c73fffabf4ee37c2ceec81bbe6b882e9ac2b2a149ec74d88c893d8d7f670ad9'
 
 
 def load_confirmed_features():
@@ -68,6 +68,7 @@ APPLIANCE_SETTING_MODELS = MappingProxyType({
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
     if (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == WASHER_PROGRAM)
+       or (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == 'washer.sound.volume_level')
        or (feature['model_id'] == DRYER_MODEL and feature['capability_id'] == DRYER_PROGRAM)
        or (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
         ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))

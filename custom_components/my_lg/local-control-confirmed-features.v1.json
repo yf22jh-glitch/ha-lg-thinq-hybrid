@@ -1,7 +1,53 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "235972d1f997294ffc52a50bb0dac39799c4b08902f25844a4252172632e5013",
+  "catalogue_sha256": "5c73fffabf4ee37c2ceec81bbe6b882e9ac2b2a149ec74d88c893d8d7f670ad9",
   "features": [
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.sound.volume_level",
+      "entity_key": "local_washer_volume",
+      "label_ko": "세탁부 알림음 단계 (대기·일시정지)",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-not-accepted",
+      "values": [
+        {
+          "value": "0",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "7c808a3006face1dfc496bd1edeef76ad1a83d9b0fba8d4c7afa3a9f6929f6e4"
+          ]
+        },
+        {
+          "value": "1",
+          "label": "1단계",
+          "ordered_frame_sha256s": [
+            "c406c5c0702b85c5becf491e42fc2b982b1d4b1e60ef63612fa9a7efcef412f2"
+          ]
+        },
+        {
+          "value": "2",
+          "label": "2단계",
+          "ordered_frame_sha256s": [
+            "2b39629e35fa6e7df2dd06e511507bddbc44d32b144fce787fd0cad69dca50d5"
+          ]
+        },
+        {
+          "value": "3",
+          "label": "3단계",
+          "ordered_frame_sha256s": [
+            "2e7d7baebb68ac34d900d3fed398a99ffd921bd42f39512333f2924f635ae3dc"
+          ]
+        },
+        {
+          "value": "4",
+          "label": "4단계",
+          "ordered_frame_sha256s": [
+            "b69d9a754cc65b3bc87095d0a0097a0e42669f03b0cc0fcdb87373a5695ead6c"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "dryer.course_option_program",
