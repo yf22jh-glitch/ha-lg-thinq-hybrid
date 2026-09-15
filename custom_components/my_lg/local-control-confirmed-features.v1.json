@@ -1,7 +1,261 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "bfea154e05dd280cbb724733a47f17e742e721593266f130624a674ae068b490",
+  "catalogue_sha256": "ec4795bc5e1c6e0a55c9b56ae3da6303e3751c2828b39d8719dff8a46b567531",
   "features": [
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "water_tank.light_brightness_raw",
+      "entity_key": "water_tank_light_brightness_raw",
+      "label_ko": "무드등 밝기",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "display_labels": {
+        "110": "10%",
+        "120": "20%",
+        "130": "30%",
+        "140": "40%",
+        "150": "50%",
+        "160": "60%",
+        "170": "70%",
+        "180": "80%",
+        "190": "90%",
+        "200": "100%"
+      },
+      "values": [
+        {
+          "value": "110",
+          "label": "10%",
+          "ordered_frame_sha256s": [
+            "de71ed97eefbd7fbf7aa63e23f31e86356bbf517c0165cdeec6edd4f6a35e807"
+          ]
+        },
+        {
+          "value": "120",
+          "label": "20%",
+          "ordered_frame_sha256s": [
+            "646ead541ab44cc0a54b36ec18f952e266c14ae551b331ec7d2c6e24cbdcfe65"
+          ]
+        },
+        {
+          "value": "130",
+          "label": "30%",
+          "ordered_frame_sha256s": [
+            "99f2c945a62bf8be8eb65144f29b0308e36b81c8fa2881cfbbacb4b6c9679f00"
+          ]
+        },
+        {
+          "value": "140",
+          "label": "40%",
+          "ordered_frame_sha256s": [
+            "61bd355b1755c8da0b3ec1dc8e7f7f9b51f646ea8d1a611ac99a81380800d5cd"
+          ]
+        },
+        {
+          "value": "160",
+          "label": "60%",
+          "ordered_frame_sha256s": [
+            "0ed18e0db7c9028721b366515c2342171edce0bdb5b9a7401a41f2162dd1b62f"
+          ]
+        },
+        {
+          "value": "170",
+          "label": "70%",
+          "ordered_frame_sha256s": [
+            "a59a9c604d069ba29a6d0b32325ad1c185107d0d41a79e67bb657e99c9e6c5ce"
+          ]
+        },
+        {
+          "value": "180",
+          "label": "80%",
+          "ordered_frame_sha256s": [
+            "ac58ef07f68cf63e45485ca3a1d7c1b34e79e7fa93c161382520ae51c9bc0d15"
+          ]
+        },
+        {
+          "value": "190",
+          "label": "90%",
+          "ordered_frame_sha256s": [
+            "20b4d711d95c188432fede38f914fcd39e980da49d5a1a9008ae8796b129933d"
+          ]
+        },
+        {
+          "value": "200",
+          "label": "100%",
+          "ordered_frame_sha256s": [
+            "2808c0e7b578004389fb49f163e96fbb13cd8670d84d537a984bfcaa8fcd6355"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "mood_light.color_raw",
+      "entity_key": "mood_light_color_raw",
+      "label_ko": "무드등 색상",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "display_labels": {
+        "3": "red",
+        "6": "yellow",
+        "7": "pink",
+        "8": "pureWhite",
+        "9": "aquarium",
+        "10": "candleLight",
+        "11": "sunLight",
+        "12": "rose",
+        "13": "mint",
+        "14": "lime",
+        "15": "veryPeri",
+        "16": "warmWhite",
+        "17": "coolWhite",
+        "18": "sapphire",
+        "19": "rainbow",
+        "20": "salmonPink",
+        "21": "lavender",
+        "22": "orange",
+        "23": "amber",
+        "24": "lgMagenta",
+        "25": "tangerine",
+        "26": "ruby"
+      },
+      "values": [
+        {
+          "value": "3",
+          "label": "red",
+          "ordered_frame_sha256s": [
+            "8495e329308d7ea8cc6c82916200f2034ee4d410c473f149c367252874a8068e"
+          ]
+        },
+        {
+          "value": "6",
+          "label": "yellow",
+          "ordered_frame_sha256s": [
+            "305c9f43cc85d636863b4abc02e9b22d03e6de7a2eb3d7ed0910ba0f5485ac96"
+          ]
+        },
+        {
+          "value": "7",
+          "label": "pink",
+          "ordered_frame_sha256s": [
+            "4e8b0ad7bd57fd26067f68002fa9e349aabe8a64b5fa8c72fc9cf0f375115ffa"
+          ]
+        },
+        {
+          "value": "8",
+          "label": "pureWhite",
+          "ordered_frame_sha256s": [
+            "1db6fc8c275791c9221871e1c84f08001fc7b5980d738e74fb171f96ba48d44f"
+          ]
+        },
+        {
+          "value": "10",
+          "label": "candleLight",
+          "ordered_frame_sha256s": [
+            "b3b1aba8ba9848a0ad99069e3a630b6880906b249a390ab9fc73d960bcfbe3e3"
+          ]
+        },
+        {
+          "value": "11",
+          "label": "sunLight",
+          "ordered_frame_sha256s": [
+            "ce2e22a78d4d74ee9b5895047f1eb3bf4ceeede37b2e364345d91fd6fc4c999e"
+          ]
+        },
+        {
+          "value": "12",
+          "label": "rose",
+          "ordered_frame_sha256s": [
+            "11808b050ba0ead63ae1358ec2cbc2128d8f0442366b5cc3f7e9acde3fc19b8f"
+          ]
+        },
+        {
+          "value": "13",
+          "label": "mint",
+          "ordered_frame_sha256s": [
+            "4ea7d946e26afc4d5eaaa5ad43c663908a8fe0fd30f498a8ae1c6b1d6f989ba4"
+          ]
+        },
+        {
+          "value": "14",
+          "label": "lime",
+          "ordered_frame_sha256s": [
+            "d18424c2bf891dc72fbd9e1358746664096f95694937130fdc2bb9139ef9e9a1"
+          ]
+        },
+        {
+          "value": "15",
+          "label": "veryPeri",
+          "ordered_frame_sha256s": [
+            "647c1d9cac9383c191fb5f9fbf23147cb7b88381b7b75852e04156c79104ee16"
+          ]
+        },
+        {
+          "value": "16",
+          "label": "warmWhite",
+          "ordered_frame_sha256s": [
+            "d17efa6707f219dbd5e47993246427ce5e49cd90d43c5a19d32a724e4099c19f"
+          ]
+        },
+        {
+          "value": "17",
+          "label": "coolWhite",
+          "ordered_frame_sha256s": [
+            "2300d9060d7cb5484913ae447f29233136c513cd64a24aff6e658eac9561566d"
+          ]
+        },
+        {
+          "value": "18",
+          "label": "sapphire",
+          "ordered_frame_sha256s": [
+            "8901f7d096f413f147b0169554574f1b271c7b281c5cad640bb0fa1c65271c12"
+          ]
+        },
+        {
+          "value": "19",
+          "label": "rainbow",
+          "ordered_frame_sha256s": [
+            "9fe6bd506aef7839dfa80951519beacfe847a0c894b2d794c6da58474a2e4a7d"
+          ]
+        },
+        {
+          "value": "20",
+          "label": "salmonPink",
+          "ordered_frame_sha256s": [
+            "81425364f336c9c8745f4568b71a89424b158ec9dcee61d69c14a11bbb000782"
+          ]
+        },
+        {
+          "value": "23",
+          "label": "amber",
+          "ordered_frame_sha256s": [
+            "95a53c8d187face6c59390b38c96da63f519e6bc4e137b3398f377374bd1eafe"
+          ]
+        },
+        {
+          "value": "24",
+          "label": "lgMagenta",
+          "ordered_frame_sha256s": [
+            "a324b1317765bcb0684eb2af78e07122158540df9dd01048512f1aec892f1982"
+          ]
+        },
+        {
+          "value": "25",
+          "label": "tangerine",
+          "ordered_frame_sha256s": [
+            "f50dd1dfd6abd390c1851bcf554b392daae4d24fb321076b9942102a9ab09151"
+          ]
+        },
+        {
+          "value": "26",
+          "label": "ruby",
+          "ordered_frame_sha256s": [
+            "896b09c07eb3e63f47a6046934335bc420d6a260a21d28e30dee892ff52be4e0"
+          ]
+        }
+      ]
+    },
     {
       "model_id": "DHUM_056905_WW",
       "capability_id": "humidity.target_pct",

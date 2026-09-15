@@ -17,6 +17,13 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         hum = next(d for d in extended.descriptors_by_model['HUM_056905_WW'] if d.capability_id == 'humidity.target_pct')
         self.assertEqual(hum.supported_values, tuple(range(30, 71, 5)))
         self.assertEqual((hum.number_min, hum.number_max, hum.number_step), (30,70,5))
+        brightness = next(d for d in extended.descriptors_by_model['HUM_056905_WW'] if d.capability_id == 'water_tank.light_brightness_raw')
+        self.assertEqual(brightness.entity_domain, 'select')
+        self.assertEqual([(v.home_assistant_value, v.local_request_value) for v in brightness.value_mappings],
+                         [(f'{n}%', str(n+100)) for n in range(10,101,10)])
+        color = next(d for d in extended.descriptors_by_model['HUM_056905_WW'] if d.capability_id == 'mood_light.color_raw')
+        self.assertEqual(color.entity_domain, 'select')
+        self.assertIn(('lavender','21'), [(v.home_assistant_value, v.local_request_value) for v in color.value_mappings])
         for model, cap, illegal in [('HUM_056905_WW','timer.off_remaining_min','90'),
                                     ('AIR_910604_WW','timer.sleep_remaining_min','360')]:
             d = next(d for d in extended.descriptors_by_model[model] if d.capability_id == cap)
@@ -57,7 +64,8 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertTrue(set(row.exact_local_request_values) <= set(current.exact_local_request_values))
                     binding = next(b for b, m in models.items() if m == model)
                     self.assertIn(current, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model))
-                    if row.entity_domain == 'select':
+                    labelled = any(f.get('display_labels') and f['model_id'] == model and f['capability_id'] == row.capability_id for f in load_confirmed_features())
+                    if row.entity_domain == 'select' and not labelled:
                         labels = {v.local_request_value: v.home_assistant_value for v in current.value_mappings}
                         for value in row.value_mappings:
                             self.assertEqual(labels[value.local_request_value], value.home_assistant_value)
@@ -65,7 +73,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 403)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 431)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:

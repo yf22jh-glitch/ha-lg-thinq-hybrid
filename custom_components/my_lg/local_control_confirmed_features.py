@@ -17,7 +17,7 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 
-CATALOGUE_SHA256 = 'bfea154e05dd280cbb724733a47f17e742e721593266f130624a674ae068b490'
+CATALOGUE_SHA256 = 'ec4795bc5e1c6e0a55c9b56ae3da6303e3751c2828b39d8719dff8a46b567531'
 
 
 def load_confirmed_features():
@@ -76,16 +76,22 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                     or set(values).intersection(old.exact_local_request_values)):
                 raise ValueError('Numeric extension must contain only new canonical values')
             supported = tuple(sorted(int(v) for v in (*old.exact_local_request_values, *values)))
+            labels = feature.get('display_labels')
+            if labels is not None and (not isinstance(labels, dict)
+                    or set(labels) != {str(n) for n in supported}
+                    or any(not isinstance(v, str) or not v for v in labels.values())
+                    or len(set(labels.values())) != len(labels)):
+                raise ValueError('Numeric display labels must cover the exact value domain')
             gaps = {b-a for a,b in zip(supported,supported[1:])}
             # Keep existing select owners; irregular domains must not create
             # an apparently legal min/max/step lattice with unsupported points.
-            domain = 'number' if old.entity_domain == 'number' and len(gaps) == 1 else 'select'
+            domain = 'number' if labels is None and old.entity_domain == 'number' and len(gaps) == 1 else 'select'
             # Existing select labels are an automation contract, not display decoration.
             plain_select = old.entity_domain == 'select' and all(
                 v.home_assistant_value == v.local_request_value for v in old.value_mappings)
             old_labels = {v.local_request_value: v.home_assistant_value for v in old.value_mappings}
             mappings = tuple(LocalControlValueMapping(
-                n if domain == 'number' else (
+                labels[str(n)] if labels is not None else n if domain == 'number' else (
                     old_labels.get(str(n), str(n) if plain_select else f"{n}{old.unit or ''}")
                     if old.entity_domain == 'select' else f"{n}{old.unit or ''}"), str(n)) for n in supported)
             descriptor = replace(old, supported_values=supported, value_mappings=mappings,
