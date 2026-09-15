@@ -486,6 +486,12 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
                     f"{self.coordinator.alias}: {err}"
                 ) from err
             if outcome is None:
+                if d.local_control_on_only and value == d.off_value and (d.local_control_semantic or '').startswith('airflow.'):
+                    raise HomeAssistantError(
+                        f"{self.coordinator.alias}: 현재 Local 전송 조건을 충족하지 않아 보내지 않았어요. "
+                        "전원 ON·냉방/제습·특수 바람 하나만 켜진 상태인지 확인해 주세요. "
+                        "계속 거부되면 기기나 LG 앱에서 꺼 주세요."
+                    )
                 raise HomeAssistantError(
                     f"{self.coordinator.alias}: 이 값은 검증된 Local 명령 범위에 없어서 전송하지 않았어요."
                 )

@@ -842,7 +842,7 @@ class AcLocalSpecialWindWriteTests(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(entity.is_on)
             self.assertEqual(pat.controls, [])
             router.outcome = None
-            with self.assertRaises(HomeAssistantError):
+            with self.assertRaisesRegex(HomeAssistantError, '기기나 LG 앱에서 꺼 주세요'):
                 await winds[0].async_turn_off()
             self.assertEqual(pat.controls, [])
 
