@@ -1,7 +1,171 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "31d67145eaf47f1afefbcb2ad7045ce5063bc4cd6ec603d7986fba9ad828457e",
+  "catalogue_sha256": "dbcab82685e03b3be76a0b87d9185c2c2ea8f9557e9c92068656afecd41e661b",
   "features": [
+    {
+      "model_id": "2REFO1DBN3K_U",
+      "capability_id": "compartment.fridge.setpoint_raw",
+      "entity_key": "compartment_fridge_setpoint_raw",
+      "label_ko": "보관 온도",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "1",
+          "label": "1",
+          "ordered_frame_sha256s": [
+            "0a676c67a106a9e1d113d23f65df5766dda14e28ac364d91c31f20710454771a"
+          ],
+          "reported_value": "1"
+        },
+        {
+          "value": "2",
+          "label": "2",
+          "ordered_frame_sha256s": [
+            "850e03444ec8bee2eefddb706b26d5ebf005d90269b1933c5d0e69a419b0ecb6"
+          ],
+          "reported_value": "2"
+        },
+        {
+          "value": "3",
+          "label": "3",
+          "ordered_frame_sha256s": [
+            "46bd0a1bca2632642329303d6c7e0f5e868b554bfd602b3d2949f905c06a7403"
+          ],
+          "reported_value": "3"
+        },
+        {
+          "value": "6",
+          "label": "6",
+          "ordered_frame_sha256s": [
+            "4b26eb1da45085e4a7f6074de51fd04b5ce80b9e1e53bb3310fb087037fbb523"
+          ],
+          "reported_value": "6"
+        },
+        {
+          "value": "7",
+          "label": "7",
+          "ordered_frame_sha256s": [
+            "5a2f056fcfb01c6634c63dd2dc6542790f078a01cb0967a9e36e00c9f8d34f76"
+          ],
+          "reported_value": "7"
+        }
+      ]
+    },
+    {
+      "model_id": "2REFO1DBN3K_U",
+      "capability_id": "compartment.freezer.setpoint_raw",
+      "entity_key": "compartment_freezer_setpoint_raw",
+      "label_ko": "보관 온도",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "1",
+          "label": "1",
+          "ordered_frame_sha256s": [
+            "321f1a91f1fb24775e77fe0d2c4866efbeba0ae65f35273441ea2255e689343d"
+          ],
+          "reported_value": "1"
+        },
+        {
+          "value": "2",
+          "label": "2",
+          "ordered_frame_sha256s": [
+            "ced4bba68ddd27a590718e01efb39e43a5bfe3fd3fbb164db12ed1ece1f582c3"
+          ],
+          "reported_value": "2"
+        },
+        {
+          "value": "5",
+          "label": "5",
+          "ordered_frame_sha256s": [
+            "2eef403797c5a860b9f376ce404f9b8f281427a618b1121565bc3d027b12e7a2"
+          ],
+          "reported_value": "5"
+        },
+        {
+          "value": "6",
+          "label": "6",
+          "ordered_frame_sha256s": [
+            "18852fb9f48c1af1dc221f4944db621ebbae20ca7bc28e7ec773b7402b27e9da"
+          ],
+          "reported_value": "6"
+        },
+        {
+          "value": "7",
+          "label": "7",
+          "ordered_frame_sha256s": [
+            "c3c0ab77a5d0ce93a991f9494b937b0b50c9255972bb47604c73a3901764de10"
+          ],
+          "reported_value": "7"
+        },
+        {
+          "value": "8",
+          "label": "8",
+          "ordered_frame_sha256s": [
+            "8665bf3d1944b8e3443df8fd7853c4ceace7c003d9a811077d2208b00bae6250"
+          ],
+          "reported_value": "8"
+        },
+        {
+          "value": "9",
+          "label": "9",
+          "ordered_frame_sha256s": [
+            "e634625b516e067576052c40085b7a684b4426c4a4335e8da92590c47e5788a9"
+          ],
+          "reported_value": "9"
+        }
+      ]
+    },
+    {
+      "model_id": "2REFO1DBN3K_U",
+      "capability_id": "door_alarm.sound",
+      "entity_key": "door_alarm_sound",
+      "label_ko": "문 열림 멜로디",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "DEFAULT",
+          "label": "DEFAULT",
+          "ordered_frame_sha256s": [
+            "0cb53fef2732e9c720583717550ca8581e2dfbd90b76a729c74bc4d6ab5f88e5"
+          ],
+          "reported_value": "DEFAULT"
+        },
+        {
+          "value": "SOUND2",
+          "label": "SOUND2",
+          "ordered_frame_sha256s": [
+            "e3de939d14365736e8906d396085679785e3c8735c163a36965c2e82dda8af4b"
+          ],
+          "reported_value": "SOUND2"
+        },
+        {
+          "value": "SOUND3",
+          "label": "SOUND3",
+          "ordered_frame_sha256s": [
+            "2323eebf96cfe73e302cd6da51e3db95f322cc45d87e647ae80161bf358d5832"
+          ],
+          "reported_value": "SOUND3"
+        },
+        {
+          "value": "SOUND4",
+          "label": "SOUND4",
+          "ordered_frame_sha256s": [
+            "c3405f88c0a47a937ba5ba72855dde56f3d64fd24f1af0a28b235058d68c4bda"
+          ],
+          "reported_value": "SOUND4"
+        }
+      ]
+    },
     {
       "model_id": "CST_570004_WW",
       "capability_id": "auto_dry.mode",
@@ -55,6 +219,26 @@
             "13a00ded00beacf822c5d4583ef45d904afba4b7a84b2f7efe360d7709cb4aa9"
           ],
           "reported_value": "100%"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "fan.mode",
+      "entity_key": "fan_mode",
+      "label_ko": "풍량",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "mid",
+          "label": "mid",
+          "ordered_frame_sha256s": [
+            "341479831874f0f56e662a84d6a8f3396aa4ab4a4d5abfe67c74c5fdbdbf676e"
+          ],
+          "reported_value": "mid"
         }
       ]
     },

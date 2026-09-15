@@ -18,7 +18,7 @@ from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 
-CATALOGUE_SHA256 = '31d67145eaf47f1afefbcb2ad7045ce5063bc4cd6ec603d7986fba9ad828457e'
+CATALOGUE_SHA256 = 'dbcab82685e03b3be76a0b87d9185c2c2ea8f9557e9c92068656afecd41e661b'
 
 
 def load_confirmed_features():

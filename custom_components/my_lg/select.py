@@ -146,7 +146,7 @@ SELECTS_BY_TYPE: dict[str, tuple[MyLgSelectDescription, ...]] = {
             group="airFlow", field="windStrength",
             choices=["LOW", "MID", "HIGH", "POWER"],
             local_scalar_semantic="fan.mode",
-            local_scalar_values={"LOW": "low", "HIGH": "high", "POWER": "turbo"},
+            local_scalar_values={"LOW": "low", "MID": "mid", "HIGH": "high", "POWER": "turbo"},
             entity_registry_enabled_default=False,
         ),
         MyLgSelectDescription(

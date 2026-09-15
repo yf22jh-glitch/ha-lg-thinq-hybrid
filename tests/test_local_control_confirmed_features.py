@@ -89,6 +89,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         models['test_cst570_binding'] = 'CST_570004_WW'
         models['test_dhum_binding'] = 'DHUM_056905_WW'
         models['test_hum_binding'] = 'HUM_056905_WW'
+        models['test_fridge_binding'] = '2REFO1DBN3K_U'
         prior = resolve_local_control_binding_eligibility({}, base, models)
         extended, scope = augment_confirmed_features(base, prior, models)
         self.assertEqual(extended.root_sha256, base.root_sha256)
@@ -115,7 +116,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 435)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 452)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
