@@ -1,7 +1,17 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "719e61a8170c59d6844088827e45036f5245814e5cf4266eb22d70f8fe951f58",
+  "catalogue_sha256": "5ad3e59bc2f10f6810b7d438fac7afbf7ad90769a7a923ddc4985d073cfeb7a2",
   "features": [
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.course_option_program",
+      "entity_key": "local_washer_course_option_program",
+      "label_ko": "현재 세탁 코스 옵션·예약 편집",
+      "domain": "text",
+      "parameter_schema": "washer-course-option-program-v1",
+      "existing_owner": false,
+      "values": []
+    },
     {
       "model_id": "CST_170004_WW",
       "capability_id": "climate.mode_fan_setpoint",

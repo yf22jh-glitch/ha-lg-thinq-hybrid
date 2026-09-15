@@ -28,6 +28,7 @@ from .local_control_contract import (
 )
 from .local_control_router import LocalControlRouter
 from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
+from .local_washer_options import CAPABILITY as WASHER_PROGRAM, canonical_program
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, canonical_window
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, canonical_parameter
 from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
@@ -447,6 +448,16 @@ class MyLgWaterParameterText(MyLgWaterDndText):
         return canonical_parameter(self._descriptor.capability_id, value)
 
 
+class MyLgWasherOptionProgramText(MyLgWaterDndText):
+    """Complete current-course option program; starting remains a separate action."""
+    _attr_native_min = 19
+    _attr_native_max = 255
+    _attr_icon = 'mdi:washing-machine'
+
+    def _canonical(self, value: str) -> str:
+        return canonical_program(value)
+
+
 class MyLgLocalContractNumber(_LocalContractEntity, NumberEntity):
     """A complete exact numeric grid; every off-grid write is rejected."""
 
@@ -561,6 +572,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 entities.append(MyLgApplianceSettingSwitch(coordinator, descriptor, router, primary, read))
                 continue
             if APPLIANCE_VALUE_MODELS.get(descriptor.capability_id) == descriptor.model_id:
+                if domain == 'text' and descriptor.capability_id == WASHER_PROGRAM:
+                    entities.append(MyLgWasherOptionProgramText(coordinator, descriptor, router, primary, read))
+                    continue
                 if domain == 'select':
                     entities.append(MyLgApplianceSettingSelect(coordinator, descriptor, router, primary, read))
                     continue

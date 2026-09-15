@@ -17,8 +17,9 @@ from .local_control_contract import (
 from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
+from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA
 
-CATALOGUE_SHA256 = '719e61a8170c59d6844088827e45036f5245814e5cf4266eb22d70f8fe951f58'
+CATALOGUE_SHA256 = '5ad3e59bc2f10f6810b7d438fac7afbf7ad90769a7a923ddc4985d073cfeb7a2'
 
 
 def load_confirmed_features():
@@ -63,7 +64,8 @@ APPLIANCE_SETTING_MODELS = MappingProxyType({
 })
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
+    if (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == WASHER_PROGRAM)
+       or (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
         ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))
        or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
        or (feature['model_id'] == 'ST_R_ETH01Y_' and feature['capability_id'] in
@@ -169,6 +171,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         values = feature['values']
         parameter_schema = feature.get('parameter_schema')
         valid_parameter = ((model == VACUUM_MODEL and capability == SCHEDULE and parameter_schema == SCHEMA)
+                           or (model == WASHER_MODEL and capability == WASHER_PROGRAM and parameter_schema == WASHER_SCHEMA)
                            or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA)
                            or (model == WATER_MODEL and capability in WATER_PARAMETER_SCHEMAS and parameter_schema == WATER_PARAMETER_SCHEMAS[capability]))
         if parameter_schema is not None and (not valid_parameter or feature['domain'] != 'text' or values):
