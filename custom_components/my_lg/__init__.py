@@ -732,6 +732,13 @@ async def _setup_local_shadows(
                 load_local_control_composite_domain_contract
             )
         )
+        from .local_control_confirmed_features import augment_confirmed_climate_domain
+        try:
+            data.local_control_composite_domain_contract = await hass.async_add_executor_job(
+                augment_confirmed_climate_domain, data.local_control_composite_domain_contract
+            )
+        except (OSError, ValueError, KeyError, TypeError):
+            _LOGGER.error('Confirmed climate extension unavailable; base climate domain unchanged')
     except LocalControlCompositeDomainError:
         # Exact scalar controls and every Local read remain independent. Only
         # composable climate writes fail closed when this additive authority is

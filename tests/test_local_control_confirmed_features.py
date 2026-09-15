@@ -8,6 +8,21 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_preserved_climate_overlay_adds_declared_modes_without_resealing_base(self):
+        from custom_components.my_lg.local_control_confirmed_features import augment_confirmed_climate_domain
+        from custom_components.my_lg.local_control_composite_domain import load_local_control_composite_domain_contract
+        base = load_local_control_composite_domain_contract()
+        extended = augment_confirmed_climate_domain(base)
+        self.assertEqual(base.root_sha256, extended.root_sha256)
+        self.assertNotIn('dry', base.capability('CST_170004_WW', 'climate.mode_fan_setpoint').input_domain.modes)
+        for model in ('CST_170004_WW', 'CST_570004_WW'):
+            for cap in ('climate.mode_fan_setpoint', 'climate.power_on_with_setpoint'):
+                domain = extended.capability(model, cap).input_domain
+                self.assertEqual(domain.preserve_setpoint_modes, ('dry', 'fan_only'))
+                for mode in domain.preserve_setpoint_modes:
+                    self.assertTrue(extended.authorizes(model, cap, f'{mode}|low|24C'))
+                    self.assertFalse(extended.authorizes(model, cap, f'{mode}|power|24C'))
+
     def test_vane_extensions_keep_each_models_labels_and_complete_seven_exact_positions(self):
         base = load_local_control_entity_contract()
         models = {'test_vane_binding_170': 'CST_170004_WW', 'test_vane_binding_570': 'CST_570004_WW'}
@@ -51,7 +66,9 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                 self.assertEqual(scope[binding].values_by_capability[capability], new)
                 self.assertFalse(set(new).intersection(before.exact_local_request_values))
                 self.assertIn('cool|medium|26.5C', new)
-                self.assertFalse(any(not v.startswith('cool|') or '|power|' in v for v in new))
+                self.assertIn('dry|high|26.5C', new)
+                self.assertIn('fan_only|low|26.5C', new)
+                self.assertFalse(any(v.split('|')[0] not in ('cool', 'dry', 'fan_only') or '|power|' in v for v in new))
                 if model == 'CST_170004_WW':
                     self.assertNotIn('cool|high|21C', new)
 
@@ -163,7 +180,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 1007)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2161)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:

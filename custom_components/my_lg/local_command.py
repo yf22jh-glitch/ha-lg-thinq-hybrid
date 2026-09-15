@@ -340,6 +340,16 @@ def climate_tuple(
         raise LocalCommandUnavailable(
             "AUTO comfort preference is valid only in AUTO mode"
         )
+    if resolved_mode in ('dry', 'fan_only'):
+        # These modes carry the live Celsius target but do not offer a target
+        # editor. AUTO/power carriers are not temperatures that can be preserved.
+        current_temp = _fresh(shadow.get('temperature.target_c'), now)
+        if (target_c is not None or reported_mode not in ('cool', 'dry', 'fan_only')
+                or reported_fan not in ('very low', 'low', 'medium', 'high', 'auto')
+                or type(current_temp) not in (int, float)):
+            raise LocalCommandUnavailable(
+                'dry/fan modes preserve a fresh ordinary setpoint; temperature editing or AUTO/power carry-over is unavailable'
+            )
     if target_c is not None and resolved_fan == UNWRITABLE_FAN:
         # The frame carries a byte in the target slot, but the appliance does
         # not apply it while power fan is active and reports a temporary 18 C.

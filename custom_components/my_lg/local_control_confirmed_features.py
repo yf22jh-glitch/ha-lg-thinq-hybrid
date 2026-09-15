@@ -18,7 +18,7 @@ from .local_vacuum_reservation import MODEL as VACUUM_MODEL, SCHEDULE, SCHEMA
 from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_DND_SCHEMA
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 
-CATALOGUE_SHA256 = 'aa6490215dbde5ba321284828164892b9c43649e4fb898366545055111a6d73c'
+CATALOGUE_SHA256 = '719e61a8170c59d6844088827e45036f5245814e5cf4266eb22d70f8fe951f58'
 
 
 def load_confirmed_features():
@@ -27,6 +27,34 @@ def load_confirmed_features():
     if document['schema_version'] != 1 or document['catalogue_sha256'] != CATALOGUE_SHA256 or hashlib.sha256(encoded).hexdigest() != CATALOGUE_SHA256:
         raise ValueError('Confirmed feature catalogue does not match this release')
     return document['features']
+
+
+def augment_confirmed_climate_domain(contract):
+    """Overlay release-declared preserved-target modes without altering base pins.
+
+    This exposes the existing native climate owner. Per-value admission and
+    fresh target preservation remain checked by the producer at wire time.
+    """
+    capabilities = dict(contract.capabilities)
+    for feature in load_confirmed_features():
+        modes = feature.get('preserve_setpoint_modes')
+        if modes is None:
+            continue
+        key = (feature['model_id'], feature['capability_id'])
+        old = capabilities.get(key)
+        if (old is None or modes != ['dry', 'fan_only']
+                or feature.get('value_source') != 'exact-model-web-domain'):
+            raise ValueError('Preserved climate overlay requires an existing exact owner')
+        domain = old.input_domain
+        carried_range = domain.target_range('cool')
+        if carried_range is None or not all(any(v['value'].startswith(f'{mode}|') for v in feature['values']) for mode in modes):
+            raise ValueError('Preserved climate overlay lacks declared values or carrier range')
+        capabilities[key] = replace(old, input_domain=replace(domain,
+            modes=tuple(dict.fromkeys((*domain.modes, *modes))),
+            target_ranges_by_mode=MappingProxyType({**domain.target_ranges_by_mode,
+                **{mode: carried_range for mode in modes}}),
+            preserve_setpoint_modes=tuple(modes)))
+    return replace(contract, capabilities=MappingProxyType(capabilities))
 
 
 APPLIANCE_SETTING_MODELS = MappingProxyType({

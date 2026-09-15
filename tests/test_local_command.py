@@ -352,6 +352,17 @@ class ClimateTupleTest(unittest.TestCase):
             "cool|high|24C",
         )
 
+    def test_dry_and_fan_preserve_current_target_and_refuse_temperature_edits(self) -> None:
+        for mode in ('dry', 'fan_only'):
+            self.assertEqual(local_command.climate_tuple(self.shadow, mode=mode, fan='low', now=self.now),
+                             f'{mode}|low|24C')
+            with self.assertRaisesRegex(local_command.LocalCommandUnavailable, 'preserv'):
+                local_command.climate_tuple(self.shadow, mode=mode, target_c=25, now=self.now)
+            self.shadow['fan.mode'] = SimpleNamespace(value='power', observed_at=self.now)
+            with self.assertRaisesRegex(local_command.LocalCommandUnavailable, 'preserv'):
+                local_command.climate_tuple(self.shadow, mode=mode, fan='low', retained_target_c=24, now=self.now)
+            self.shadow['fan.mode'] = SimpleNamespace(value='high', observed_at=self.now)
+
     def test_a_half_degree_keeps_its_half(self) -> None:
         self.shadow["temperature.target_c"] = SimpleNamespace(
             value=24.5, observed_at=self.now - timedelta(seconds=1)

@@ -176,6 +176,9 @@ class LocalControlCompositeInputDomain:
     target_ranges_by_mode: Mapping[str, LocalControlCompositeTargetRange]
     comfort_preference: LocalControlCompositeComfortRange
     interlocks: tuple[LocalControlCompositeInterlock, ...]
+    # Additive release metadata; range describes the carried current value,
+    # not permission to edit temperature in these modes.
+    preserve_setpoint_modes: tuple[str, ...] = ()
 
     def target_range(self, mode: str) -> LocalControlCompositeTargetRange | None:
         """Return the authorized numeric grid for one decoded mode."""

@@ -479,6 +479,7 @@ class MyLgLocalClimate(ClimateEntity):
             mode is not None
             and self._domain is not None
             and self._domain.target_range(mode) is not None
+            and mode not in self._domain.preserve_setpoint_modes
             and self._fan() != "power"
         ):
             features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -604,6 +605,7 @@ class MyLgLocalClimate(ClimateEntity):
             or self._domain is None
             or local_mode not in self._domain.modes
             or self._domain.target_range(local_mode) is None
+            or local_mode in self._domain.preserve_setpoint_modes
             or self._fan() == "power"
         ):
             raise HomeAssistantError(
