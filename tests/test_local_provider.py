@@ -3789,6 +3789,35 @@ class ControlPresenceTests(unittest.TestCase):
         self.assertFalse(provider.shadow_healthy)
 
 
+class CstLiveDecoderContractTests(unittest.TestCase):
+    def test_auto_comfort_and_temperature_retraction_are_accepted_together(self):
+        profiles = local.load_local_semantic_profile_catalogue()[1]
+        for name in ('cst170-core-state-v1', 'cst570-core-state-v1'):
+            with self.subTest(profile=name):
+                profile = profiles[name]
+                provider = local.LocalSemanticShadowProvider(BINDING_ID, profile, now=lambda: NOW)
+                payload = {
+                    'schema_version': 1, 'semantics_revision': 33,
+                    'binding_id': BINDING_ID, 'model_id': profile.model_id,
+                    'platform': 'thinq2', 'session_id': SESSION_ONE,
+                    'sequence': 1, 'published_at': '2026-08-13T00:59:59.000Z',
+                    'fields': {'comfort.preference_step': {
+                        'value': 0, 'value_type': 'number', 'exposure': 'state',
+                        'confidence': 'confirmed-exact-device-five-step-auto-comfort-preference-sweep',
+                        'observed_at': '2026-08-13T00:59:58.000Z',
+                    }},
+                    'invalidated_fields': {'temperature.target_c': {
+                        'observed_at': '2026-08-13T00:59:58.000Z',
+                        'confidence': profile.fields['temperature.target_c'].confidence[0],
+                    }},
+                    'diagnostics': {'rejected_frames': 0,
+                                    'unresolved_fields': 0, 'invalid_values': 0, 'unsupported_frames': 0},
+                }
+                provider.ingest(provider.state_topic, json.dumps(payload).encode(), qos=1, retained=False)
+                self.assertEqual(provider.shadow_fields['comfort.preference_step'].value, 0)
+                self.assertNotIn('temperature.target_c', provider.shadow_fields)
+
+
 class AuthoritativeInvalidationTests(unittest.TestCase):
     """Only a profile that declares it may retract a retained value."""
 

@@ -1275,7 +1275,8 @@
           "value_type": "number",
           "exposure": "state",
           "confidence": [
-            "confirmed-exact-model-live-sweep"
+            "confirmed-exact-model-live-sweep",
+            "confirmed-exact-device-five-step-auto-comfort-preference-sweep"
           ]
         },
         {
@@ -1402,7 +1403,8 @@
             "confirmed-exact-model-live-sweep"
           ]
         }
-      ]
+      ],
+      "authoritative_invalidations": true
     },
     {
       "profile_id": "cst570-core-state-v1",
@@ -1468,7 +1470,8 @@
           "value_type": "number",
           "exposure": "state",
           "confidence": [
-            "confirmed"
+            "confirmed",
+            "confirmed-exact-device-five-step-auto-comfort-preference-sweep"
           ]
         },
         {
@@ -1587,7 +1590,8 @@
             "confirmed"
           ]
         }
-      ]
+      ],
+      "authoritative_invalidations": true
     },
     {
       "profile_id": "washtower-core-state-v1",
