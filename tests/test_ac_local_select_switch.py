@@ -815,6 +815,48 @@ class AcLocalSwitchReadTests(unittest.IsolatedAsyncioTestCase):
 
 
 class AcLocalSpecialWindWriteTests(unittest.IsolatedAsyncioTestCase):
+    async def test_exact_off_extension_completes_native_switches_without_cloud_fallback(self):
+        class ExtendedRouter(FakeLocalRouter):
+            def authorized_values(self, device_id, capability):
+                if capability.startswith('airflow.'):
+                    return ('false', 'true')
+                return super().authorized_values(device_id, capability)
+        for model in SPECIAL_WIND_MODELS:
+            pat = FakePatCoordinator('COOL')
+            pat.model = model
+            router = ExtendedRouter()
+            semantics = {s for _, _, s in SPECIAL_WIND_CASES}
+            provider = FakeReadProvider({s: True for s in semantics})
+            runtime = SimpleNamespace(coordinators={pat.device_id: pat},
+                wideq_coordinator=None, local_control=router,
+                local_read_providers={pat.device_id: provider})
+            entities = []
+            await switch_platform.async_setup_entry(None, SimpleNamespace(runtime_data=runtime), entities.extend)
+            winds = [e for e in entities if e.entity_description.local_control_semantic in semantics]
+            self.assertEqual(len(winds), 5)
+            for entity in winds:
+                await entity.async_turn_off()
+                self.assertEqual(router.calls[-1], ('flag', {'device_id': pat.device_id,
+                    'capability': entity.entity_description.local_control_semantic, 'enabled': False}))
+                # Never optimistically clear an own-state switch.
+                self.assertTrue(entity.is_on)
+            self.assertEqual(pat.controls, [])
+            router.outcome = None
+            with self.assertRaises(HomeAssistantError):
+                await winds[0].async_turn_off()
+            self.assertEqual(pat.controls, [])
+
+    async def test_old_on_only_authority_cannot_send_off_even_with_an_existing_entity(self):
+        pat = FakePatCoordinator('COOL')
+        router = FakeLocalRouter()
+        for key, _, semantic in SPECIAL_WIND_CASES:
+            entity = MyLgSwitch(pat, _pat_switch_description(key), router,
+                FakeReadProvider({semantic: True}))
+            with self.assertRaises(HomeAssistantError):
+                await entity.async_turn_off()
+        self.assertEqual(router.calls, [])
+        self.assertEqual(pat.controls, [])
+
     async def test_one_sided_local_special_winds_are_not_created_as_switches(
         self,
     ) -> None:

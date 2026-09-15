@@ -9,7 +9,8 @@ def canonical_program(value):
     if isinstance(value, str) and len(value) <= 255:
         parts = value.split('|')
         if (len(parts) == 10 and all(re.fullmatch(r'[A-Z][A-Z0-9_]*', v) for v in parts[:9])
-                and re.fullmatch(r'0|[1-9][0-9]*', parts[9]) and 0 <= int(parts[9]) <= 1140):
+                and re.fullmatch(r'0|[1-9][0-9]*', parts[9])
+                and (int(parts[9]) == 0 or 180 <= int(parts[9]) <= 1140 and int(parts[9]) % 30 == 0)):
             return value
     raise ValueError('현재 코스|세탁강도|온도|헹굼|탈수|세제단계|유연제단계|터보|구김방지|예약분 순서로 전체 값을 입력해 주세요. 시작 명령은 보내지 않아요.')
 

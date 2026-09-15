@@ -8,6 +8,26 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_wind_flow_off_preserves_native_switch_owner_and_does_not_rescue_denied_on(self):
+        from dataclasses import replace
+        base = load_local_control_entity_contract()
+        models = {'test_flow_binding_170':'CST_170004_WW','test_flow_binding_570':'CST_570004_WW'}
+        prior = dict(resolve_local_control_binding_eligibility({}, base, models))
+        caps = tuple('airflow.' + name + '_enabled' for name in ('quiet','long_distance','study','auto_temperature','forest'))
+        for binding in prior:
+            prior[binding] = replace(prior[binding], values_by_capability={**prior[binding].values_by_capability, **{cap:() for cap in caps}})
+        extended, scope = augment_confirmed_features(base, prior, models)
+        for binding,model in models.items():
+            for cap in caps:
+                old = next(d for d in base.descriptors_by_model[model] if d.capability_id == cap)
+                new = next(d for d in extended.descriptors_by_model[model] if d.capability_id == cap)
+                self.assertEqual(new.home_assistant_entity_key, old.home_assistant_entity_key)
+                self.assertEqual((new.entity_domain,new.supported_values),('switch',(False,True)))
+                self.assertTrue(new.existing_owner)
+                self.assertFalse(new.factory_eligible)
+                self.assertEqual(scope[binding].values_by_capability[cap], ('false',))
+                self.assertFalse(local_control_value_authorized(extended,scope,binding_id=binding,model_id=model,capability_id=cap,local_request_value='true'))
+
     def test_cst570_horizontal_reuses_native_climate_owner_without_a_duplicate_switch(self):
         base = load_local_control_entity_contract()
         binding = 'test_swing_binding_570'
@@ -198,7 +218,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2163)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2173)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:

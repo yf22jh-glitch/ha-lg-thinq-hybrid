@@ -64,8 +64,8 @@ class MyLgSwitchDescription(SwitchEntityDescription):
     local_read_semantic: str | None = None
     local_control_semantic: str | None = None
     # Some reviewed codecs have appliance-confirmed ON frames but no explicit
-    # OFF frame on the wire.  Those entities may route ON locally, while OFF
-    # must stay on the existing cloud path; read authority remains independent.
+    # OFF golden on the wire. OFF requires an explicit per-value extension
+    # grant; the old ON grant must never implicitly authorize it.
     local_control_on_only: bool = False
 
 
@@ -83,8 +83,8 @@ SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: (
         # Retained 2026-08-19 evidence on both cassette models maps each PAT/
         # WideQ field below to a single TLV ON write, the same-tag readback and
-        # a protocol completion ACK.  No explicit OFF write was observed; OFF
-        # therefore remains PAT-only instead of guessing a local false frame.
+        # a protocol completion ACK. Declared OFF frames use the separately
+        # authorized official WindFlow extension, not these retained ON grants.
         MyLgSwitchDescription(
             key="wind_forest", translation_key="wind_forest",
             group="windDirection", field="forestWind",
@@ -459,6 +459,10 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
         payload = {d.group: {d.field: value}}
         local_write_allowed = (
             not d.local_control_on_only or value == d.on_value
+            or (self._local_control is not None
+                and d.local_control_semantic is not None
+                and "false" in self._local_control.authorized_values(
+                    self.coordinator.device_id, d.local_control_semantic))
         )
         if self._local_read_owns_state():
             if (

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "a6afa34e600fe3a807bf1ef2b925e7eefc13173ef24162ea3a2a22f086aa2734",
+  "catalogue_sha256": "f8469dff57239d767c2000e45db45701a2d23abb1158412ac0236061cde8e9cc",
   "features": [
     {
       "model_id": "ST_R_ETH01Y_",
@@ -13867,6 +13867,206 @@
       ]
     },
     {
+      "model_id": "CST_170004_WW",
+      "capability_id": "airflow.quiet_enabled",
+      "entity_key": "airflow_quiet_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "06914c5d1849630e8b4a45a9a3e113684a6a190181bf798bc488f7455417c286"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "airflow.long_distance_enabled",
+      "entity_key": "airflow_long_distance_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "80ee8fd93e9b459f353fa9d309303d841917cfb56ce3956ba2ec925c1fd66e55"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "airflow.study_enabled",
+      "entity_key": "airflow_study_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "1d3665959ed71c6e1c21818baca711081e9290d877896a7c235be6aa77d11360"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "airflow.auto_temperature_enabled",
+      "entity_key": "airflow_auto_temperature_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "4affab9403672e53a2c4aa8046ebd2ed2668d4049cec10497a87796b27faf9e5"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "airflow.forest_enabled",
+      "entity_key": "airflow_forest_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "a4e95a205d2eb89175d2d6fbb40b2fe60b1f1153fc5a8cf622b82ecaee155b28"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "airflow.quiet_enabled",
+      "entity_key": "airflow_quiet_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "06914c5d1849630e8b4a45a9a3e113684a6a190181bf798bc488f7455417c286"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "airflow.long_distance_enabled",
+      "entity_key": "airflow_long_distance_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "80ee8fd93e9b459f353fa9d309303d841917cfb56ce3956ba2ec925c1fd66e55"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "airflow.study_enabled",
+      "entity_key": "airflow_study_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "1d3665959ed71c6e1c21818baca711081e9290d877896a7c235be6aa77d11360"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "airflow.auto_temperature_enabled",
+      "entity_key": "airflow_auto_temperature_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "4affab9403672e53a2c4aa8046ebd2ed2668d4049cec10497a87796b27faf9e5"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "airflow.forest_enabled",
+      "entity_key": "airflow_forest_enabled",
+      "label_ko": "특수 바람",
+      "domain": "switch",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "boolean",
+      "values": [
+        {
+          "value": "false",
+          "label": "false",
+          "ordered_frame_sha256s": [
+            "a4e95a205d2eb89175d2d6fbb40b2fe60b1f1153fc5a8cf622b82ecaee155b28"
+          ],
+          "reported_value": false
+        }
+      ]
+    },
+    {
       "model_id": "CST_570004_WW",
       "capability_id": "swing.horizontal_enabled",
       "entity_key": "swing_horizontal_enabled",
@@ -13875,7 +14075,7 @@
       "existing_owner": true,
       "wire_evidence": "exact-model-declared-values-no-own-golden",
       "value_source": "exact-model-web-domain",
-      "value_kind": "enum",
+      "value_kind": "boolean",
       "values": [
         {
           "value": "false",

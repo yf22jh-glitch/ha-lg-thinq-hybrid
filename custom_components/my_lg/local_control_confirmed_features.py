@@ -20,7 +20,7 @@ from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 
-CATALOGUE_SHA256 = 'a6afa34e600fe3a807bf1ef2b925e7eefc13173ef24162ea3a2a22f086aa2734'
+CATALOGUE_SHA256 = 'f8469dff57239d767c2000e45db45701a2d23abb1158412ac0236061cde8e9cc'
 
 
 def load_confirmed_features():
@@ -62,6 +62,7 @@ def augment_confirmed_climate_domain(contract):
 APPLIANCE_SETTING_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
     if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2', 'CST_170004_WW', 'CST_570004_WW', 'DHUM_056905_WW', 'HUM_056905_WW') and feature['domain'] == 'switch'
+       and not feature['existing_owner']  # native TLV owners read their own shadow, not this model-specific endpoint
 })
 APPLIANCE_VALUE_MODELS = MappingProxyType({
     feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
@@ -109,6 +110,27 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                 raise ValueError('Numeric extension requires exactly one existing owner')
             old = matches[0]
             values = tuple(v['value'] for v in feature['values'])
+            if feature.get('value_kind') == 'boolean':
+                reports = tuple(v.get('reported_value') for v in feature['values'])
+                if (old.input_kind != 'boolean' or old.entity_domain != 'switch' or feature['domain'] != 'switch'
+                        or not old.existing_owner or feature['existing_owner'] is not True
+                        or not values or len(set(values)) != len(values)
+                        or any(v not in ('false', 'true') for v in values)
+                        or any(type(r) is not bool or r != (v == 'true') for v, r in zip(values, reports))
+                        or set(values).intersection(old.exact_local_request_values)):
+                    raise ValueError('Boolean extension must add exact missing values to an existing switch owner')
+                requests = tuple(v for v in ('false', 'true') if v in (*old.exact_local_request_values, *values))
+                prior_labels = {v.local_request_value: v.home_assistant_value for v in old.value_mappings}
+                descriptor = replace(old, supported_values=tuple(v == 'true' for v in requests),
+                    value_mappings=tuple(LocalControlValueMapping(prior_labels.get(v, v == 'true'), v) for v in requests))
+                replacements[old.key] = descriptor
+                by_model[model] = tuple(descriptor if d.key == old.key else d for d in by_model[model])
+                for binding in selected:
+                    prior = bindings[binding]
+                    allowed = (*prior.values_by_capability.get(capability, ()), *values)
+                    bindings[binding] = replace(prior, values_by_capability=MappingProxyType({
+                        **prior.values_by_capability, capability: tuple(v for v in ('false', 'true') if v in allowed)}))
+                continue
             if feature.get('value_kind') == 'enum':
                 reports = tuple(v.get('reported_value') for v in feature['values'])
                 labels = tuple(v['label'] for v in feature['values'])

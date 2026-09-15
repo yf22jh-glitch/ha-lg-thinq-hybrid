@@ -8,6 +8,8 @@ VALUE = 'AI_COURSE|SOILWASH_NORMAL|TEMP_40|RINSE_2|SPIN_1000|EZCSDT_NORMAL|EZCSS
 class WasherOptionsTests(unittest.TestCase):
     def test_form_and_exact_binding_text_owner_preserve_recorded_program_select(self):
         self.assertEqual(canonical_program(VALUE), VALUE)
+        legal = [m for m in range(1141) if is_canonical_program(VALUE[:-1]+str(m))]
+        self.assertEqual(legal, [0, *range(180, 1141, 30)])
         for bad in (None, VALUE+'|extra', VALUE[:-1]+'01', VALUE[:-1]+'1141', VALUE.lower()):
             self.assertFalse(is_canonical_program(bad))
         base = load_local_control_entity_contract()
