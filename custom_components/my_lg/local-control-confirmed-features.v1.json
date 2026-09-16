@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "5c73fffabf4ee37c2ceec81bbe6b882e9ac2b2a149ec74d88c893d8d7f670ad9",
+  "catalogue_sha256": "2b3a3d3aee1397433a85b382f51c2c92068297b7dad8a710f00d0fe3c604c76a",
   "features": [
     {
       "model_id": "WTL_KPK_BDH_KR_01",
@@ -82,7 +82,7 @@
       "model_id": "CST_170004_WW",
       "capability_id": "climate.mode_fan_setpoint",
       "entity_key": "climate_mode_fan_setpoint",
-      "label_ko": "냉방·제습·송풍 운전 조합",
+      "label_ko": "냉방·제습·송풍·자동 운전 조합",
       "domain": "select",
       "existing_owner": true,
       "value_source": "exact-model-web-domain",
@@ -1091,6 +1091,231 @@
             "5bfd9d262aeea667e24e20ccfceb7937242f3392e33f8c726aad74d914c599a9"
           ],
           "reported_value": "cool|auto|30C"
+        },
+        {
+          "value": "auto|very low|comfort:-2",
+          "label": "auto|very low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "d2e8cf032b15a6a92000564cd6ea55c928e90c42f949f8388c8aaa0a69561621"
+          ],
+          "reported_value": "auto|very low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:-1",
+          "label": "auto|very low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "d1118a22145a8e136df08ddaaa86aed88ebaf60ef886f29e82637ac24c683be0"
+          ],
+          "reported_value": "auto|very low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:0",
+          "label": "auto|very low|comfort:0",
+          "ordered_frame_sha256s": [
+            "d6bf0d020f4bab422df1c9414509eedd5ecbd45632e281c9e35daceffce91965"
+          ],
+          "reported_value": "auto|very low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:1",
+          "label": "auto|very low|comfort:1",
+          "ordered_frame_sha256s": [
+            "49fc03ba7f8bf1724da9a45236f309609d5e7ee6305b982ac2e29886cb88f8cb"
+          ],
+          "reported_value": "auto|very low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:2",
+          "label": "auto|very low|comfort:2",
+          "ordered_frame_sha256s": [
+            "48391d60a22808b69e2fefc816c446776bc93af886508b22ba28ca9a43ff35ab"
+          ],
+          "reported_value": "auto|very low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-2",
+          "label": "auto|low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "0f125eca0a9cda8f13ada64cf2a1e423a0117dfb4a4202a4dade0fc04b4c5372"
+          ],
+          "reported_value": "auto|low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-1",
+          "label": "auto|low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "ac4b893650a577dbb5529724bd915c3b0d5e571f7bfeeb024686732115e91721"
+          ],
+          "reported_value": "auto|low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:0",
+          "label": "auto|low|comfort:0",
+          "ordered_frame_sha256s": [
+            "7283741efd7fb78b3b4d8236f81ab3699ff3f611e9c79f87e68106fa00a0af0a"
+          ],
+          "reported_value": "auto|low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:1",
+          "label": "auto|low|comfort:1",
+          "ordered_frame_sha256s": [
+            "d8ac9f0029dc0889b3880cbeadb85cbd7bbf915299bd8179fa6bd41f1e5ba848"
+          ],
+          "reported_value": "auto|low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:2",
+          "label": "auto|low|comfort:2",
+          "ordered_frame_sha256s": [
+            "e8ed4520b1d52d254208db7170853d0031edf0c8df086423cb60f88f34617810"
+          ],
+          "reported_value": "auto|low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-2",
+          "label": "auto|medium|comfort:-2",
+          "ordered_frame_sha256s": [
+            "a1a2bce3525744e74c7b20bd15d729a70c933115ac1fcca4958b1261f18d9b29"
+          ],
+          "reported_value": "auto|medium|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-1",
+          "label": "auto|medium|comfort:-1",
+          "ordered_frame_sha256s": [
+            "c437c6a9b5cfde262740dae1ce3730ea1ee28950071759a70818dd634e733697"
+          ],
+          "reported_value": "auto|medium|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:0",
+          "label": "auto|medium|comfort:0",
+          "ordered_frame_sha256s": [
+            "fa6e1a223fc54db53de4111432932c2061b08ad8003d13abde98a96127f18fa5"
+          ],
+          "reported_value": "auto|medium|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:1",
+          "label": "auto|medium|comfort:1",
+          "ordered_frame_sha256s": [
+            "8d2e3be02d64f2db34747a81f32e59355c9e71fb5aa05d0e3a2a43dd5f37b662"
+          ],
+          "reported_value": "auto|medium|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:2",
+          "label": "auto|medium|comfort:2",
+          "ordered_frame_sha256s": [
+            "823b7807b5bf9838c1ab4f66e2b8f804fa5bcc5b2413432fe52e3ae3d8172fcd"
+          ],
+          "reported_value": "auto|medium|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-2",
+          "label": "auto|high|comfort:-2",
+          "ordered_frame_sha256s": [
+            "1d2a4036471d6f6f6f3f3be35a7b09640d1d208a83cc28a5f0578a63e6ce19c2"
+          ],
+          "reported_value": "auto|high|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-1",
+          "label": "auto|high|comfort:-1",
+          "ordered_frame_sha256s": [
+            "02dad81c2e639bcf17b9309e02b0ca5e9ee86a6bf80766878439c21fd3007b40"
+          ],
+          "reported_value": "auto|high|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:0",
+          "label": "auto|high|comfort:0",
+          "ordered_frame_sha256s": [
+            "9b0b0a8c9b3c7ae696dcc3c5dac5a94b4fe621f61076d58985e57fa99a631604"
+          ],
+          "reported_value": "auto|high|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:1",
+          "label": "auto|high|comfort:1",
+          "ordered_frame_sha256s": [
+            "f868cb379e656678e1e9fe891198e3cdb0843894097e524c15d7611f6d073075"
+          ],
+          "reported_value": "auto|high|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:2",
+          "label": "auto|high|comfort:2",
+          "ordered_frame_sha256s": [
+            "b4cc94add5852850d4626aea6c2f5d563e022aaeae48e244e22a73319c18a3a8"
+          ],
+          "reported_value": "auto|high|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-2",
+          "label": "auto|auto|comfort:-2",
+          "ordered_frame_sha256s": [
+            "d1add5239b55547778e3694c26991b61494a632990d1953680a8a104c1aa36b1"
+          ],
+          "reported_value": "auto|auto|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-1",
+          "label": "auto|auto|comfort:-1",
+          "ordered_frame_sha256s": [
+            "15987dfd42b27e2c4382390dc87b27157ab549ca4ea1cbafc1851491f284b482"
+          ],
+          "reported_value": "auto|auto|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:0",
+          "label": "auto|auto|comfort:0",
+          "ordered_frame_sha256s": [
+            "011db69e6b830411b465b023748313255f21377a5ada00397787ac7be9ce346a"
+          ],
+          "reported_value": "auto|auto|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:1",
+          "label": "auto|auto|comfort:1",
+          "ordered_frame_sha256s": [
+            "41fe66bebc9ec4056c2d297ccad6db605bb9aee3f7576e8bd4954e7daf0a303c"
+          ],
+          "reported_value": "auto|auto|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:2",
+          "label": "auto|auto|comfort:2",
+          "ordered_frame_sha256s": [
+            "fc32a4d815428d7db8fac5708ef4c42f38fd1f48050643950cfbc63027d996ba"
+          ],
+          "reported_value": "auto|auto|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
         },
         {
           "value": "dry|very low|16C",
@@ -3418,7 +3643,7 @@
       "model_id": "CST_170004_WW",
       "capability_id": "climate.power_on_with_setpoint",
       "entity_key": "climate_power_on_with_setpoint",
-      "label_ko": "냉방·제습·송풍 운전 조합",
+      "label_ko": "냉방·제습·송풍·자동 운전 조합",
       "domain": "select",
       "existing_owner": true,
       "value_source": "exact-model-web-domain",
@@ -4531,6 +4756,231 @@
             "f5c2e2a1fbfd3f07d79707ad900b3d502c07bed2929d441e29636e3a91425883"
           ],
           "reported_value": "cool|auto|30C"
+        },
+        {
+          "value": "auto|very low|comfort:-2",
+          "label": "auto|very low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "a05c277fc516c71f5b9e8c2081df1a9fc887ea406865774c45d639bc14c790a0"
+          ],
+          "reported_value": "auto|very low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:-1",
+          "label": "auto|very low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "b6efa7cc9985206852842469c0e78c409f711a30eb91472c379ff1bfa87e3fe6"
+          ],
+          "reported_value": "auto|very low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:0",
+          "label": "auto|very low|comfort:0",
+          "ordered_frame_sha256s": [
+            "fdf3f95200de2ce1393392f512ff7878623cb0205ab6cd3db12c340c50df0fa5"
+          ],
+          "reported_value": "auto|very low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:1",
+          "label": "auto|very low|comfort:1",
+          "ordered_frame_sha256s": [
+            "6630cc09ea7c6742a081ef7dace2ff42bc94b3c101ae18edb3f61d0b8931b5ea"
+          ],
+          "reported_value": "auto|very low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:2",
+          "label": "auto|very low|comfort:2",
+          "ordered_frame_sha256s": [
+            "481c7987d9e9c539868ed79c64d801eb77527412c65dcfad51ce298e713ba534"
+          ],
+          "reported_value": "auto|very low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-2",
+          "label": "auto|low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "337bb588236828a2ddc72925c6adcc1ffc9edf928527d5d6690df2941928b19a"
+          ],
+          "reported_value": "auto|low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-1",
+          "label": "auto|low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "fef55a064e0560bdd0ddb41cea2ad0faf12d1d102df018947196d53849aff882"
+          ],
+          "reported_value": "auto|low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:0",
+          "label": "auto|low|comfort:0",
+          "ordered_frame_sha256s": [
+            "b6c71c3aebea95a5dae91470089ed47e19b13e8a615cda279ca5f7ae55a96f76"
+          ],
+          "reported_value": "auto|low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:1",
+          "label": "auto|low|comfort:1",
+          "ordered_frame_sha256s": [
+            "149b7830688301b660e4b76ee90ef8c0c4bff6681edf294d4b1c43a5eeefdda9"
+          ],
+          "reported_value": "auto|low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:2",
+          "label": "auto|low|comfort:2",
+          "ordered_frame_sha256s": [
+            "73acee8b22198c1bee91a2db87e1ce49ae921d3da9dea0c5a3c71712d2246f6b"
+          ],
+          "reported_value": "auto|low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-2",
+          "label": "auto|medium|comfort:-2",
+          "ordered_frame_sha256s": [
+            "c386e68e3185950cb485b9021f7fe3c14a4602acbda57d53cf9de68de44bc213"
+          ],
+          "reported_value": "auto|medium|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-1",
+          "label": "auto|medium|comfort:-1",
+          "ordered_frame_sha256s": [
+            "2a76cd37fea5ca6c067a41e28e7ed2e7b77999063e6ce92f8da2b0735d7847fa"
+          ],
+          "reported_value": "auto|medium|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:0",
+          "label": "auto|medium|comfort:0",
+          "ordered_frame_sha256s": [
+            "e7df3e44924e5890d072eca03886414d06112bf34422e2445d2302b85164b6e5"
+          ],
+          "reported_value": "auto|medium|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:1",
+          "label": "auto|medium|comfort:1",
+          "ordered_frame_sha256s": [
+            "e244063346574872b845a47a128f2f45ca13254e49a136f48569a8caa91ce706"
+          ],
+          "reported_value": "auto|medium|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:2",
+          "label": "auto|medium|comfort:2",
+          "ordered_frame_sha256s": [
+            "8df77e598c082cbbea88bf85306798598e5235694cbb38810af39c912fe5bc76"
+          ],
+          "reported_value": "auto|medium|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-2",
+          "label": "auto|high|comfort:-2",
+          "ordered_frame_sha256s": [
+            "15c2478ba0fc1ff6f3da411f9171cbf7cb33550f4bb3cd96336c09d413f93433"
+          ],
+          "reported_value": "auto|high|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-1",
+          "label": "auto|high|comfort:-1",
+          "ordered_frame_sha256s": [
+            "6336662063bf19c8272700fcc10d4580ea3a1f23f46a48bf3685de154858ed0b"
+          ],
+          "reported_value": "auto|high|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:0",
+          "label": "auto|high|comfort:0",
+          "ordered_frame_sha256s": [
+            "52510a83d3d20ffa1eee138bd14f18e3a9295d399c015922e995dd60723415d7"
+          ],
+          "reported_value": "auto|high|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:1",
+          "label": "auto|high|comfort:1",
+          "ordered_frame_sha256s": [
+            "03b864e99e2366544fbef4f8166f2270273f802e297c6fb0a5e5285d078609ff"
+          ],
+          "reported_value": "auto|high|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:2",
+          "label": "auto|high|comfort:2",
+          "ordered_frame_sha256s": [
+            "00467c9251f042db7c13b08e271f01086ffa28f36b46a7975395ef294a4e7ed7"
+          ],
+          "reported_value": "auto|high|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-2",
+          "label": "auto|auto|comfort:-2",
+          "ordered_frame_sha256s": [
+            "fe538b3db00cabb1a461cb882c2cccef5608c21c965e820bf69c9d3f8539c2e6"
+          ],
+          "reported_value": "auto|auto|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-1",
+          "label": "auto|auto|comfort:-1",
+          "ordered_frame_sha256s": [
+            "12cdb89ead30a5d5192be566968ca597e58ce5d7b565b5bcc6671c471ea02ef9"
+          ],
+          "reported_value": "auto|auto|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:0",
+          "label": "auto|auto|comfort:0",
+          "ordered_frame_sha256s": [
+            "6cfc6c0e36d2039bf383e44d0edaf0837e043b5c2e782cebe361991ec3f29f62"
+          ],
+          "reported_value": "auto|auto|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:1",
+          "label": "auto|auto|comfort:1",
+          "ordered_frame_sha256s": [
+            "af1c7fe7f6d9fa66f6c41e504ff2d5e95ed294a119fb48f4861000323eb42b70"
+          ],
+          "reported_value": "auto|auto|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:2",
+          "label": "auto|auto|comfort:2",
+          "ordered_frame_sha256s": [
+            "9e791138329aa2229aa0ed81c841a7c7a5163bd1a7414ceb179068334eb315e9"
+          ],
+          "reported_value": "auto|auto|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
         },
         {
           "value": "dry|very low|16C",
@@ -6858,7 +7308,7 @@
       "model_id": "CST_570004_WW",
       "capability_id": "climate.mode_fan_setpoint",
       "entity_key": "climate_mode_fan_setpoint",
-      "label_ko": "냉방·제습·송풍 운전 조합",
+      "label_ko": "냉방·제습·송풍·자동 운전 조합",
       "domain": "select",
       "existing_owner": true,
       "value_source": "exact-model-web-domain",
@@ -7987,6 +8437,550 @@
             "5bfd9d262aeea667e24e20ccfceb7937242f3392e33f8c726aad74d914c599a9"
           ],
           "reported_value": "cool|auto|30C"
+        },
+        {
+          "value": "cool|power|16C",
+          "label": "cool|power|16C",
+          "ordered_frame_sha256s": [
+            "bcd537c074c1868f55fc4acb79bd1a00770e4ee67e668492192025faec2f3446"
+          ],
+          "reported_value": "cool|power|16C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|16.5C",
+          "label": "cool|power|16.5C",
+          "ordered_frame_sha256s": [
+            "8c4308f45332a6c0b66317a2ff4c0ab93a363f6434416daf69ab32a803069cf9"
+          ],
+          "reported_value": "cool|power|16.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|17C",
+          "label": "cool|power|17C",
+          "ordered_frame_sha256s": [
+            "b956c119484cc4b691241e9b3ee6510afe78d045054013d7595e7cca24377dae"
+          ],
+          "reported_value": "cool|power|17C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|17.5C",
+          "label": "cool|power|17.5C",
+          "ordered_frame_sha256s": [
+            "f34eb46cff5c7e711df8491f8c5ee74a0e16ca77583563b5a141579cef219517"
+          ],
+          "reported_value": "cool|power|17.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|18C",
+          "label": "cool|power|18C",
+          "ordered_frame_sha256s": [
+            "a68a2a021cd7dbe7a10e5dff4f4c99bd77787c5d0b6e8cad8f8bcbb30c46546b"
+          ],
+          "reported_value": "cool|power|18C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|18.5C",
+          "label": "cool|power|18.5C",
+          "ordered_frame_sha256s": [
+            "8f9815ee926888a3978df98613813fe944dc4b63d57fadb58b0ba1e172c6051f"
+          ],
+          "reported_value": "cool|power|18.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|19C",
+          "label": "cool|power|19C",
+          "ordered_frame_sha256s": [
+            "862239b2e016f27e3da6baf78f0cf8d55582556aa405c56de7adfe34f237d3fd"
+          ],
+          "reported_value": "cool|power|19C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|19.5C",
+          "label": "cool|power|19.5C",
+          "ordered_frame_sha256s": [
+            "895557ad0d58e60a1241abecb0c4f191d96d8122d2eed19a0bd56287984212ae"
+          ],
+          "reported_value": "cool|power|19.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|20C",
+          "label": "cool|power|20C",
+          "ordered_frame_sha256s": [
+            "6f39f201a871dceb3f5644ba736883788ea049df6190a56d09f917afd2badcf6"
+          ],
+          "reported_value": "cool|power|20C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|20.5C",
+          "label": "cool|power|20.5C",
+          "ordered_frame_sha256s": [
+            "43d9b325bdab1572184dd892a3c9a02c8a46da3ade8b2c8d6e32f1937e868011"
+          ],
+          "reported_value": "cool|power|20.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|21C",
+          "label": "cool|power|21C",
+          "ordered_frame_sha256s": [
+            "e2e8c4684192f01cd7b60145d2203fa606711893c66f3b79d6e40ccadca6f53a"
+          ],
+          "reported_value": "cool|power|21C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|21.5C",
+          "label": "cool|power|21.5C",
+          "ordered_frame_sha256s": [
+            "b792c16a530955d83b76783581e1586ea3e55ee270fb88e61a0c2445addd9bff"
+          ],
+          "reported_value": "cool|power|21.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|22C",
+          "label": "cool|power|22C",
+          "ordered_frame_sha256s": [
+            "6e3101f5adf60953f8cb11b473a317b542ef87ee5a2ec8e71345876f529e3594"
+          ],
+          "reported_value": "cool|power|22C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|22.5C",
+          "label": "cool|power|22.5C",
+          "ordered_frame_sha256s": [
+            "29ef4f39a2968fa2a7af2030dbc7a95bcaa09fe0b02ff176cb0a3a5df4b05d95"
+          ],
+          "reported_value": "cool|power|22.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|23C",
+          "label": "cool|power|23C",
+          "ordered_frame_sha256s": [
+            "865dd59368c7a1a252e4edb69e77fed717c1aaaae2fbd95fd73516f823f5c3a3"
+          ],
+          "reported_value": "cool|power|23C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|23.5C",
+          "label": "cool|power|23.5C",
+          "ordered_frame_sha256s": [
+            "43f18583daea59a8ed4fa58436936d3e728bb374b8339e59e6211a082c053027"
+          ],
+          "reported_value": "cool|power|23.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|24C",
+          "label": "cool|power|24C",
+          "ordered_frame_sha256s": [
+            "b9b873a2cbb9d5a6943a5adf6148808ec30bc5dd9b5484fad46bf39c198ba424"
+          ],
+          "reported_value": "cool|power|24C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|24.5C",
+          "label": "cool|power|24.5C",
+          "ordered_frame_sha256s": [
+            "18315681880fbedca91e5b9f2d8551935ccb3b5347d4fa44948d2f0067fe6993"
+          ],
+          "reported_value": "cool|power|24.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|25C",
+          "label": "cool|power|25C",
+          "ordered_frame_sha256s": [
+            "8f81a5c762386612dc8d5a99b1c7b2fab58bcdab538b46a3b5c03e80247e4eea"
+          ],
+          "reported_value": "cool|power|25C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|25.5C",
+          "label": "cool|power|25.5C",
+          "ordered_frame_sha256s": [
+            "9f2cd6adbc62bba1425747a8d2e73727f6ca4cd694b6976a95e9e049d96e3619"
+          ],
+          "reported_value": "cool|power|25.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|26C",
+          "label": "cool|power|26C",
+          "ordered_frame_sha256s": [
+            "6975ce37b0945365d4d236de0ce383864cec5a9bd080c81fdbb9673af9d30ca3"
+          ],
+          "reported_value": "cool|power|26C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|26.5C",
+          "label": "cool|power|26.5C",
+          "ordered_frame_sha256s": [
+            "6ebb758bfdac48d77490798ac55f7f81e7e1c7540b2237de85b97eec1b60dbfc"
+          ],
+          "reported_value": "cool|power|26.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|27C",
+          "label": "cool|power|27C",
+          "ordered_frame_sha256s": [
+            "144456338019dd988e633f77f70af927e95edf4f2194dd1d3bdf7580ca758c4b"
+          ],
+          "reported_value": "cool|power|27C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|27.5C",
+          "label": "cool|power|27.5C",
+          "ordered_frame_sha256s": [
+            "732a2c6acc347ae566ee01ddfaa85fedd17cb803d6831d7681de8c5f0f9ea947"
+          ],
+          "reported_value": "cool|power|27.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|28C",
+          "label": "cool|power|28C",
+          "ordered_frame_sha256s": [
+            "11e4cfcd51fdbf4d2e75727f165667a891dd46c5b675a7ca16e93f5dd302bf35"
+          ],
+          "reported_value": "cool|power|28C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|28.5C",
+          "label": "cool|power|28.5C",
+          "ordered_frame_sha256s": [
+            "14f401b6a2853de0a6b102865e151b3b875b486aee7c8abebeff34baa8521336"
+          ],
+          "reported_value": "cool|power|28.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|29C",
+          "label": "cool|power|29C",
+          "ordered_frame_sha256s": [
+            "23e8c5a06fc3d1d786b45794e075f0dafb98d187859dc90f6f76d7fb751a24a2"
+          ],
+          "reported_value": "cool|power|29C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|29.5C",
+          "label": "cool|power|29.5C",
+          "ordered_frame_sha256s": [
+            "e996c1a132ba5d97bfea57a7181266f9c8db14d33abdad5716439be312b7a5a8"
+          ],
+          "reported_value": "cool|power|29.5C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "cool|power|30C",
+          "label": "cool|power|30C",
+          "ordered_frame_sha256s": [
+            "bc52b6481a3e52206f2725e28e71542692a4c29e39c57203e8f911c9af39e59e"
+          ],
+          "reported_value": "cool|power|30C",
+          "wire_evidence": "own-model-power-transition-with-declared-preserved-carrier-domain",
+          "preserves_current_target": true,
+          "confirms_temperature": false
+        },
+        {
+          "value": "auto|very low|comfort:-2",
+          "label": "auto|very low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "d2e8cf032b15a6a92000564cd6ea55c928e90c42f949f8388c8aaa0a69561621"
+          ],
+          "reported_value": "auto|very low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:-1",
+          "label": "auto|very low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "d1118a22145a8e136df08ddaaa86aed88ebaf60ef886f29e82637ac24c683be0"
+          ],
+          "reported_value": "auto|very low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:0",
+          "label": "auto|very low|comfort:0",
+          "ordered_frame_sha256s": [
+            "d6bf0d020f4bab422df1c9414509eedd5ecbd45632e281c9e35daceffce91965"
+          ],
+          "reported_value": "auto|very low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:1",
+          "label": "auto|very low|comfort:1",
+          "ordered_frame_sha256s": [
+            "49fc03ba7f8bf1724da9a45236f309609d5e7ee6305b982ac2e29886cb88f8cb"
+          ],
+          "reported_value": "auto|very low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:2",
+          "label": "auto|very low|comfort:2",
+          "ordered_frame_sha256s": [
+            "48391d60a22808b69e2fefc816c446776bc93af886508b22ba28ca9a43ff35ab"
+          ],
+          "reported_value": "auto|very low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-2",
+          "label": "auto|low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "0f125eca0a9cda8f13ada64cf2a1e423a0117dfb4a4202a4dade0fc04b4c5372"
+          ],
+          "reported_value": "auto|low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-1",
+          "label": "auto|low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "ac4b893650a577dbb5529724bd915c3b0d5e571f7bfeeb024686732115e91721"
+          ],
+          "reported_value": "auto|low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:0",
+          "label": "auto|low|comfort:0",
+          "ordered_frame_sha256s": [
+            "7283741efd7fb78b3b4d8236f81ab3699ff3f611e9c79f87e68106fa00a0af0a"
+          ],
+          "reported_value": "auto|low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:1",
+          "label": "auto|low|comfort:1",
+          "ordered_frame_sha256s": [
+            "d8ac9f0029dc0889b3880cbeadb85cbd7bbf915299bd8179fa6bd41f1e5ba848"
+          ],
+          "reported_value": "auto|low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:2",
+          "label": "auto|low|comfort:2",
+          "ordered_frame_sha256s": [
+            "e8ed4520b1d52d254208db7170853d0031edf0c8df086423cb60f88f34617810"
+          ],
+          "reported_value": "auto|low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-2",
+          "label": "auto|medium|comfort:-2",
+          "ordered_frame_sha256s": [
+            "a1a2bce3525744e74c7b20bd15d729a70c933115ac1fcca4958b1261f18d9b29"
+          ],
+          "reported_value": "auto|medium|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-1",
+          "label": "auto|medium|comfort:-1",
+          "ordered_frame_sha256s": [
+            "c437c6a9b5cfde262740dae1ce3730ea1ee28950071759a70818dd634e733697"
+          ],
+          "reported_value": "auto|medium|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:0",
+          "label": "auto|medium|comfort:0",
+          "ordered_frame_sha256s": [
+            "fa6e1a223fc54db53de4111432932c2061b08ad8003d13abde98a96127f18fa5"
+          ],
+          "reported_value": "auto|medium|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:1",
+          "label": "auto|medium|comfort:1",
+          "ordered_frame_sha256s": [
+            "8d2e3be02d64f2db34747a81f32e59355c9e71fb5aa05d0e3a2a43dd5f37b662"
+          ],
+          "reported_value": "auto|medium|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:2",
+          "label": "auto|medium|comfort:2",
+          "ordered_frame_sha256s": [
+            "823b7807b5bf9838c1ab4f66e2b8f804fa5bcc5b2413432fe52e3ae3d8172fcd"
+          ],
+          "reported_value": "auto|medium|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-2",
+          "label": "auto|high|comfort:-2",
+          "ordered_frame_sha256s": [
+            "1d2a4036471d6f6f6f3f3be35a7b09640d1d208a83cc28a5f0578a63e6ce19c2"
+          ],
+          "reported_value": "auto|high|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-1",
+          "label": "auto|high|comfort:-1",
+          "ordered_frame_sha256s": [
+            "02dad81c2e639bcf17b9309e02b0ca5e9ee86a6bf80766878439c21fd3007b40"
+          ],
+          "reported_value": "auto|high|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:0",
+          "label": "auto|high|comfort:0",
+          "ordered_frame_sha256s": [
+            "9b0b0a8c9b3c7ae696dcc3c5dac5a94b4fe621f61076d58985e57fa99a631604"
+          ],
+          "reported_value": "auto|high|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:1",
+          "label": "auto|high|comfort:1",
+          "ordered_frame_sha256s": [
+            "f868cb379e656678e1e9fe891198e3cdb0843894097e524c15d7611f6d073075"
+          ],
+          "reported_value": "auto|high|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:2",
+          "label": "auto|high|comfort:2",
+          "ordered_frame_sha256s": [
+            "b4cc94add5852850d4626aea6c2f5d563e022aaeae48e244e22a73319c18a3a8"
+          ],
+          "reported_value": "auto|high|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-2",
+          "label": "auto|auto|comfort:-2",
+          "ordered_frame_sha256s": [
+            "d1add5239b55547778e3694c26991b61494a632990d1953680a8a104c1aa36b1"
+          ],
+          "reported_value": "auto|auto|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-1",
+          "label": "auto|auto|comfort:-1",
+          "ordered_frame_sha256s": [
+            "15987dfd42b27e2c4382390dc87b27157ab549ca4ea1cbafc1851491f284b482"
+          ],
+          "reported_value": "auto|auto|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:0",
+          "label": "auto|auto|comfort:0",
+          "ordered_frame_sha256s": [
+            "011db69e6b830411b465b023748313255f21377a5ada00397787ac7be9ce346a"
+          ],
+          "reported_value": "auto|auto|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:1",
+          "label": "auto|auto|comfort:1",
+          "ordered_frame_sha256s": [
+            "41fe66bebc9ec4056c2d297ccad6db605bb9aee3f7576e8bd4954e7daf0a303c"
+          ],
+          "reported_value": "auto|auto|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:2",
+          "label": "auto|auto|comfort:2",
+          "ordered_frame_sha256s": [
+            "fc32a4d815428d7db8fac5708ef4c42f38fd1f48050643950cfbc63027d996ba"
+          ],
+          "reported_value": "auto|auto|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
         },
         {
           "value": "dry|very low|16C",
@@ -10282,7 +11276,7 @@
       "model_id": "CST_570004_WW",
       "capability_id": "climate.power_on_with_setpoint",
       "entity_key": "climate_power_on_with_setpoint",
-      "label_ko": "냉방·제습·송풍 운전 조합",
+      "label_ko": "냉방·제습·송풍·자동 운전 조합",
       "domain": "select",
       "existing_owner": true,
       "value_source": "exact-model-web-domain",
@@ -11451,6 +12445,231 @@
             "f5c2e2a1fbfd3f07d79707ad900b3d502c07bed2929d441e29636e3a91425883"
           ],
           "reported_value": "cool|auto|30C"
+        },
+        {
+          "value": "auto|very low|comfort:-2",
+          "label": "auto|very low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "a05c277fc516c71f5b9e8c2081df1a9fc887ea406865774c45d639bc14c790a0"
+          ],
+          "reported_value": "auto|very low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:-1",
+          "label": "auto|very low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "b6efa7cc9985206852842469c0e78c409f711a30eb91472c379ff1bfa87e3fe6"
+          ],
+          "reported_value": "auto|very low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:0",
+          "label": "auto|very low|comfort:0",
+          "ordered_frame_sha256s": [
+            "fdf3f95200de2ce1393392f512ff7878623cb0205ab6cd3db12c340c50df0fa5"
+          ],
+          "reported_value": "auto|very low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:1",
+          "label": "auto|very low|comfort:1",
+          "ordered_frame_sha256s": [
+            "6630cc09ea7c6742a081ef7dace2ff42bc94b3c101ae18edb3f61d0b8931b5ea"
+          ],
+          "reported_value": "auto|very low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|very low|comfort:2",
+          "label": "auto|very low|comfort:2",
+          "ordered_frame_sha256s": [
+            "481c7987d9e9c539868ed79c64d801eb77527412c65dcfad51ce298e713ba534"
+          ],
+          "reported_value": "auto|very low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-2",
+          "label": "auto|low|comfort:-2",
+          "ordered_frame_sha256s": [
+            "337bb588236828a2ddc72925c6adcc1ffc9edf928527d5d6690df2941928b19a"
+          ],
+          "reported_value": "auto|low|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:-1",
+          "label": "auto|low|comfort:-1",
+          "ordered_frame_sha256s": [
+            "fef55a064e0560bdd0ddb41cea2ad0faf12d1d102df018947196d53849aff882"
+          ],
+          "reported_value": "auto|low|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:0",
+          "label": "auto|low|comfort:0",
+          "ordered_frame_sha256s": [
+            "b6c71c3aebea95a5dae91470089ed47e19b13e8a615cda279ca5f7ae55a96f76"
+          ],
+          "reported_value": "auto|low|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:1",
+          "label": "auto|low|comfort:1",
+          "ordered_frame_sha256s": [
+            "149b7830688301b660e4b76ee90ef8c0c4bff6681edf294d4b1c43a5eeefdda9"
+          ],
+          "reported_value": "auto|low|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|low|comfort:2",
+          "label": "auto|low|comfort:2",
+          "ordered_frame_sha256s": [
+            "73acee8b22198c1bee91a2db87e1ce49ae921d3da9dea0c5a3c71712d2246f6b"
+          ],
+          "reported_value": "auto|low|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-2",
+          "label": "auto|medium|comfort:-2",
+          "ordered_frame_sha256s": [
+            "c386e68e3185950cb485b9021f7fe3c14a4602acbda57d53cf9de68de44bc213"
+          ],
+          "reported_value": "auto|medium|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:-1",
+          "label": "auto|medium|comfort:-1",
+          "ordered_frame_sha256s": [
+            "2a76cd37fea5ca6c067a41e28e7ed2e7b77999063e6ce92f8da2b0735d7847fa"
+          ],
+          "reported_value": "auto|medium|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:0",
+          "label": "auto|medium|comfort:0",
+          "ordered_frame_sha256s": [
+            "e7df3e44924e5890d072eca03886414d06112bf34422e2445d2302b85164b6e5"
+          ],
+          "reported_value": "auto|medium|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:1",
+          "label": "auto|medium|comfort:1",
+          "ordered_frame_sha256s": [
+            "e244063346574872b845a47a128f2f45ca13254e49a136f48569a8caa91ce706"
+          ],
+          "reported_value": "auto|medium|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|medium|comfort:2",
+          "label": "auto|medium|comfort:2",
+          "ordered_frame_sha256s": [
+            "8df77e598c082cbbea88bf85306798598e5235694cbb38810af39c912fe5bc76"
+          ],
+          "reported_value": "auto|medium|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-2",
+          "label": "auto|high|comfort:-2",
+          "ordered_frame_sha256s": [
+            "15c2478ba0fc1ff6f3da411f9171cbf7cb33550f4bb3cd96336c09d413f93433"
+          ],
+          "reported_value": "auto|high|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:-1",
+          "label": "auto|high|comfort:-1",
+          "ordered_frame_sha256s": [
+            "6336662063bf19c8272700fcc10d4580ea3a1f23f46a48bf3685de154858ed0b"
+          ],
+          "reported_value": "auto|high|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:0",
+          "label": "auto|high|comfort:0",
+          "ordered_frame_sha256s": [
+            "52510a83d3d20ffa1eee138bd14f18e3a9295d399c015922e995dd60723415d7"
+          ],
+          "reported_value": "auto|high|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:1",
+          "label": "auto|high|comfort:1",
+          "ordered_frame_sha256s": [
+            "03b864e99e2366544fbef4f8166f2270273f802e297c6fb0a5e5285d078609ff"
+          ],
+          "reported_value": "auto|high|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|high|comfort:2",
+          "label": "auto|high|comfort:2",
+          "ordered_frame_sha256s": [
+            "00467c9251f042db7c13b08e271f01086ffa28f36b46a7975395ef294a4e7ed7"
+          ],
+          "reported_value": "auto|high|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-2",
+          "label": "auto|auto|comfort:-2",
+          "ordered_frame_sha256s": [
+            "fe538b3db00cabb1a461cb882c2cccef5608c21c965e820bf69c9d3f8539c2e6"
+          ],
+          "reported_value": "auto|auto|comfort:-2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:-1",
+          "label": "auto|auto|comfort:-1",
+          "ordered_frame_sha256s": [
+            "12cdb89ead30a5d5192be566968ca597e58ce5d7b565b5bcc6671c471ea02ef9"
+          ],
+          "reported_value": "auto|auto|comfort:-1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:0",
+          "label": "auto|auto|comfort:0",
+          "ordered_frame_sha256s": [
+            "6cfc6c0e36d2039bf383e44d0edaf0837e043b5c2e782cebe361991ec3f29f62"
+          ],
+          "reported_value": "auto|auto|comfort:0",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:1",
+          "label": "auto|auto|comfort:1",
+          "ordered_frame_sha256s": [
+            "af1c7fe7f6d9fa66f6c41e504ff2d5e95ed294a119fb48f4861000323eb42b70"
+          ],
+          "reported_value": "auto|auto|comfort:1",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
+        },
+        {
+          "value": "auto|auto|comfort:2",
+          "label": "auto|auto|comfort:2",
+          "ordered_frame_sha256s": [
+            "9e791138329aa2229aa0ed81c841a7c7a5163bd1a7414ceb179068334eb315e9"
+          ],
+          "reported_value": "auto|auto|comfort:2",
+          "wire_evidence": "own-model-five-step-auto-sweep-with-declared-fan-domain"
         },
         {
           "value": "dry|very low|16C",

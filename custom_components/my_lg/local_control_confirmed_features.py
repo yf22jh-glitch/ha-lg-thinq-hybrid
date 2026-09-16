@@ -21,7 +21,7 @@ from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PR
 from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 
-CATALOGUE_SHA256 = '5c73fffabf4ee37c2ceec81bbe6b882e9ac2b2a149ec74d88c893d8d7f670ad9'
+CATALOGUE_SHA256 = '2b3a3d3aee1397433a85b382f51c2c92068297b7dad8a710f00d0fe3c604c76a'
 
 
 def load_confirmed_features():

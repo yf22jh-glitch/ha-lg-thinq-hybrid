@@ -8,6 +8,37 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_auto_and_power_extensions_reuse_climate_owners_without_reopening_frozen_denials(self):
+        from custom_components.my_lg.local_control_composite_domain import load_local_control_composite_domain_contract
+        composite = load_local_control_composite_domain_contract()
+        base = load_local_control_entity_contract()
+        from dataclasses import replace
+        models = {'test_auto_binding_170': 'CST_170004_WW', 'test_auto_binding_570': 'CST_570004_WW'}
+        prior = dict(resolve_local_control_binding_eligibility({}, base, models))
+        for binding in prior:
+            prior[binding] = replace(prior[binding], values_by_capability={**prior[binding].values_by_capability,
+                'climate.mode_fan_setpoint': (), 'climate.power_on_with_setpoint': ()})
+        extended, scope = augment_confirmed_features(base, prior, models)
+        for binding, model in models.items():
+            for cap in ('climate.mode_fan_setpoint', 'climate.power_on_with_setpoint'):
+                feature = next(f for f in load_confirmed_features() if f['model_id'] == model and f['capability_id'] == cap)
+                values = {v['value'] for v in feature['values']}
+                auto = {v for v in values if v.startswith('auto|')}
+                self.assertEqual(len(auto), 25)
+                for value in auto:
+                    self.assertTrue(composite.authorizes(model, cap, value))
+                    self.assertTrue(local_control_value_authorized(extended, scope, binding_id=binding,
+                        model_id=model, capability_id=cap, local_request_value=value))
+                descriptor = next(d for d in extended.descriptors_by_model[model] if d.capability_id == cap)
+                self.assertTrue(descriptor.existing_owner)
+                self.assertFalse(descriptor.factory_eligible)
+                power = {v for v in values if v.startswith('cool|power|')}
+                self.assertEqual(len(power), 29 if model == 'CST_570004_WW' and cap == 'climate.mode_fan_setpoint' else 0)
+                for value in ('auto|power|comfort:0', 'auto|medium|17C', 'auto|medium|comfort:3'):
+                    self.assertNotIn(value, values)
+        self.assertFalse(local_control_value_authorized(extended, scope, binding_id='test_auto_binding_170',
+            model_id='CST_170004_WW', capability_id='climate.mode_fan_setpoint', local_request_value='cool|power|18C'))
+
     def test_wind_flow_off_preserves_native_switch_owner_and_does_not_rescue_denied_on(self):
         from dataclasses import replace
         base = load_local_control_entity_contract()
@@ -106,7 +137,9 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                 self.assertIn('cool|medium|26.5C', new)
                 self.assertIn('dry|high|26.5C', new)
                 self.assertIn('fan_only|low|26.5C', new)
-                self.assertFalse(any(v.split('|')[0] not in ('cool', 'dry', 'fan_only') or '|power|' in v for v in new))
+                self.assertFalse(any(v.split('|')[0] not in ('cool', 'dry', 'fan_only', 'auto') for v in new))
+                if model != 'CST_570004_WW' or capability != 'climate.mode_fan_setpoint':
+                    self.assertFalse(any('|power|' in v for v in new))
                 if model == 'CST_170004_WW':
                     self.assertNotIn('cool|high|21C', new)
 
@@ -218,7 +251,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2178)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2307)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
