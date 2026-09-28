@@ -1,5 +1,8 @@
 """Additive known commands reuse owners and preserve old authority/scopes."""
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from custom_components.my_lg.local_control_contract import (
     load_local_control_entity_contract, resolve_local_control_binding_eligibility,
     local_control_value_authorized, eligible_factory_descriptors,
@@ -8,6 +11,28 @@ from custom_components.my_lg.local_control_confirmed_features import augment_con
 
 
 class ConfirmedFeaturesTests(unittest.TestCase):
+    def test_complete_database_rollout_does_not_require_old_confirmed_catalogue(self):
+        from custom_components.my_lg import feature_database
+        from custom_components.my_lg import local_control_confirmed_features as confirmed
+        feature = next(row for row in load_confirmed_features()
+                       if row['model_id'] == 'AIR_2C0001_WW')
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'features.sqlite3'
+            feature_database.create_database(path, ({
+                'channel': 'confirmed-control',
+                'model_id': feature['model_id'],
+                'feature_id': feature['capability_id'],
+                'platform': 'thinq2',
+                'definition': feature,
+            },))
+            feature_database.set_model_rollout(path, feature['model_id'], True)
+            with (
+                patch.object(confirmed, 'default_database_path', return_value=path),
+                patch.object(confirmed, '_load_bundled_confirmed_features',
+                             side_effect=AssertionError('old confirmed catalogue used')),
+            ):
+                self.assertEqual(confirmed.load_confirmed_features(), [feature])
+
     def test_auto_and_power_extensions_reuse_climate_owners_without_reopening_frozen_denials(self):
         from custom_components.my_lg.local_control_composite_domain import load_local_control_composite_domain_contract
         composite = load_local_control_composite_domain_contract()
@@ -74,7 +99,7 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         self.assertTrue(d.existing_owner)
         self.assertNotIn(d, eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=models[binding]))
         feature = next(f for f in load_confirmed_features() if f['model_id'] == models[binding] and f['capability_id'] == cap)
-        self.assertEqual(feature['wire_evidence'], 'exact-model-declared-values-no-own-golden')
+        self.assertEqual(feature['wire_evidence'], 'own-model-observed-command-and-state')
         self.assertEqual(scope[binding].values_by_capability[cap], ('false', 'true'))
 
     def test_preserved_climate_overlay_adds_declared_modes_without_resealing_base(self):
@@ -231,8 +256,15 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         for model, rows in base.descriptors_by_model.items():
             for row in rows:
                 current = next(d for d in extended.descriptors_by_model[model] if d.key == row.key)
-                numeric = any(f.get('value_source') == 'exact-model-web-domain' and f['model_id'] == model
-                              and f['capability_id'] == row.capability_id for f in load_confirmed_features())
+                numeric = any(
+                    f['model_id'] == model
+                    and f['capability_id'] == row.capability_id
+                    and (f.get('value_source') == 'exact-model-web-domain'
+                         or (model == 'HUM_056905_WW'
+                             and row.capability_id == 'operation.mode'
+                             and f.get('wire_evidence') == 'own-model-observed-command-and-state'))
+                    for f in load_confirmed_features()
+                )
                 if numeric:
                     self.assertEqual(current.home_assistant_entity_key, row.home_assistant_entity_key)
                     self.assertTrue(set(row.exact_local_request_values) <= set(current.exact_local_request_values))
@@ -251,7 +283,8 @@ class ConfirmedFeaturesTests(unittest.TestCase):
                     self.assertEqual(current, row)
         for cap, values in prior['test_ac_binding_01'].values_by_capability.items():
             self.assertTrue(set(values) <= set(scope['test_ac_binding_01'].values_by_capability[cap]))
-        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2307)
+        self.assertEqual(len(load_confirmed_features()), 128)
+        self.assertEqual(sum(len(f['values']) for f in load_confirmed_features()), 2504)
         for feature in load_confirmed_features():
             binding = next(b for b, m in models.items() if m == feature['model_id'])
             for value in feature['values']:
@@ -262,15 +295,49 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         factories = [d for b, m in models.items() for d in eligible_factory_descriptors(extended, scope, binding_id=b, model_id=m)
                      if d.key not in {original.key for original in base.descriptors}]
         self.assertEqual({d.home_assistant_entity_key for d in factories} - {'local_cst170_button_sound', 'local_cst570_button_sound', 'local_dhum_button_sound', 'local_hum_button_sound', 'local_hum_sound_melody', 'local_styler_night_start_time', 'local_styler_night_end_time'},
-                         {'local_water_amount_presets', 'local_water_sterilization_time', 'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_styler_time_display', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
-                          'local_washer_volume', 'local_dryer_course_option_replacement', 'local_styler_start_option_draft', 'local_washer_course_option_program', 'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation',
+                         {'local_water_amount_presets', 'local_water_sterilization_time', 'local_styler_sound_volume', 'local_styler_sound_melody', 'local_styler_startup_image', 'local_styler_remote_maintain', 'local_kimchi_button_sound', 'local_kimchi_door_melody', 'local_water_button_sound', 'local_water_product_sound', 'local_water_sound_volume', 'local_water_lcd_brightness', 'local_water_do_not_disturb_window',
+                          'local_air_sensor_monitor_mode', 'local_washer_volume', 'local_dryer_course_option_replacement', 'local_styler_start_option_draft', 'local_washer_course_option_program', 'local_washer_course_program', 'local_washer_fresh_care_enabled', 'local_water_custom_recipe_1_transaction', 'local_dryer_course_program', 'local_styler_course_start', 'local_vacuum_dust_emptying', 'local_vacuum_auto_dust_emptying', 'local_air_clean_dry', 'local_air_rapid_operation',
                           'local_styler_auto_course_arrange', 'local_styler_remember_last_course', 'local_styler_smart_care_night', 'local_styler_smart_care_humidity', 'local_styler_smart_care_fine_dust', 'local_styler_date_display', 'local_styler_24_hour_display', 'local_water_ice_lock', 'local_styler_recorded_resume',
-                          'local_water_do_not_disturb', 'local_water_24_hour_display', 'local_water_long_unused_notice', 'local_water_voice_guidance', 'local_water_ice_priority', 'local_water_hot_water_lock', 'local_vacuum_dust_emptying_reservation', 'local_vacuum_dust_emptying_schedule'})
-        self.assertEqual(len(factories), 51)
+                          'local_water_do_not_disturb', 'local_water_24_hour_display', 'local_water_long_unused_notice', 'local_water_voice_guidance', 'local_water_ice_priority', 'local_water_hot_water_lock', 'local_vacuum_dust_emptying_reservation', 'local_vacuum_dust_emptying_schedule',
+                          'local_water_custom_recipe_1', 'local_water_custom_recipe_2',
+                          'local_water_custom_recipe_3', 'local_water_custom_recipe_4',
+                          'local_water_hot_temperature_presets', 'local_water_default_hot_temperature',
+                          'local_water_cold_enabled', 'local_water_ice_lever_enabled', 'local_water_ice_maker_enabled',
+                          'local_hum_sensor_monitor_mode', 'local_dhum_sensor_monitor_mode',
+                          'local_hum_standby_sterilization', 'local_hum_startup_image',
+                          'local_hum_display_glare_reduction', 'local_hum_night_mode', 'local_hum_warm_humidification',
+                          'local_operation_power_requested', 'local_timer_sleep_remaining_min',
+                          'local_washtower_startup_image', 'local_washer_sound_melody', 'local_dryer_sound_melody',
+                          'local_dryer_sound_volume', 'local_washer_dispenser_mode', 'local_washer_detergent_amount',
+                          'local_washer_softener_amount', 'local_washer_auto_course_arrange',
+                          'local_dryer_auto_course_arrange', 'local_dryer_laundry_care',
+                          'local_dryer_damp_dry_level', 'local_dryer_less_dry_level', 'local_dryer_iron_dry_level',
+                          'local_dryer_cupboard_dry_level', 'local_dryer_very_dry_level',
+                          'local_night_anti_glare_off_reset_brightness_30',
+                          'local_kimchi_night_anti_glare_off_reset_brightness_30',
+                          'local_styler_do_not_disturb_reservation', 'local_function_sync',
+                          'local_washer_install_school_uniform', 'local_washer_install_skin_care'})
+        self.assertEqual(len(factories), 91)
         vacuum = next(d for d in factories if d.home_assistant_entity_key == 'local_vacuum_dust_emptying')
         self.assertEqual(vacuum.entity_domain, 'button')
         self.assertTrue(vacuum.one_shot)
         self.assertEqual([(v.home_assistant_value, v.local_request_value) for v in vacuum.value_mappings], [('press', 'true')])
+        function_sync = [d for d in factories if d.home_assistant_entity_key == 'local_function_sync']
+        self.assertEqual(len(function_sync), 2)
+        self.assertTrue(all(
+            [(value.home_assistant_value, value.local_request_value)
+             for value in descriptor.value_mappings] == [('press', 'sync')]
+            for descriptor in function_sync
+        ))
+        kimchi_glare_off = next(
+            d for d in factories
+            if d.home_assistant_entity_key == 'local_kimchi_night_anti_glare_off_reset_brightness_30'
+        )
+        self.assertEqual(
+            [(value.home_assistant_value, value.local_request_value)
+             for value in kimchi_glare_off.value_mappings],
+            [('press', 'OFF')],
+        )
         self.assertNotIn('washer.operation.start_or_resume', prior['test_washtower_binding'].values_by_capability)
 
     def test_smart_courses_extend_the_existing_washer_owner_without_dashboard_changes(self):
@@ -278,11 +345,33 @@ class ConfirmedFeaturesTests(unittest.TestCase):
         self.assertEqual(feature['entity_key'], 'local_washer_course_program')
         self.assertEqual(len(feature['values']), 45)
         school = next(v for v in feature['values'] if v['value'].startswith('School Uniform|'))
-        rinse = next(v for v in feature['values'] if v['value'].startswith('Deep Rinse|'))
+        rinse = next(v for v in feature['values'] if v['value'].startswith('Skin Care|'))
         self.assertTrue(school['label'].startswith('교복'))
-        self.assertTrue(rinse['label'].startswith('꼼꼼헹굼'))
+        self.assertTrue(rinse['label'].startswith('스킨케어'))
         self.assertEqual(school['ordered_frame_sha256s'], ['f01c816c54a4ada661de061d8187d9421a9abe193ca6f76a6ad6af76aadc4729'])
         self.assertEqual(rinse['ordered_frame_sha256s'], ['ff4524b2c2d518cf074057b94558bd24b10ed87359dd80fb8d934dab861d43a5'])
+
+    def test_latest_observed_controls_materialize_as_disabled_one_shot_buttons(self):
+        base = load_local_control_entity_contract()
+        models = {
+            'test_fridge_binding': '2REFO1DBN3K_U',
+            'test_washtower_binding': 'WTL_KPK_BDH_KR_01',
+        }
+        prior = resolve_local_control_binding_eligibility({}, base, models)
+        extended, scope = augment_confirmed_features(base, prior, models)
+        expected = {
+            'night_anti_glare.turn_off_and_reset_brightness_30': 'local_night_anti_glare_off_reset_brightness_30',
+            'washer.download_course.school_uniform.install': 'local_washer_install_school_uniform',
+            'washer.download_course.skin_care.install': 'local_washer_install_skin_care',
+        }
+        rows = [
+            descriptor
+            for binding, model in models.items()
+            for descriptor in eligible_factory_descriptors(extended, scope, binding_id=binding, model_id=model)
+            if descriptor.capability_id in expected
+        ]
+        self.assertEqual({row.capability_id: row.home_assistant_entity_key for row in rows}, expected)
+        self.assertTrue(all(row.entity_domain == 'button' and row.one_shot for row in rows))
 
     def test_missing_scope_cannot_create_or_authorize_any_new_owner(self):
         base = load_local_control_entity_contract()

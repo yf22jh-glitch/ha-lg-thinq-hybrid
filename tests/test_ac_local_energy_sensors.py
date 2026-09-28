@@ -95,6 +95,12 @@ class FakeReadProvider:
         field = self.fields.get(semantic_id)
         return None if field is None else field.value
 
+    def display_field(self, semantic_id: str) -> TlvReadValue | None:
+        return self.fields.get(semantic_id) if self.field_available(semantic_id) else None
+
+    def display_field_available(self, semantic_id: str) -> bool:
+        return self.display_field(semantic_id) is not None
+
     def async_add_listener(self, callback: Callable[[], None]) -> Callable[[], None]:
         self.listeners.append(callback)
 
@@ -526,9 +532,8 @@ class CanonicalAcLocalLeafTests(unittest.IsolatedAsyncioTestCase):
             local_semantic_unique_id("test-ac", "temperature.current_c"),
         )
         provider.available.clear()
-        # HA hides the retained value while the exact Local owner is
-        # unavailable; the entity never substitutes PAT's 27 C.
-        self.assertEqual(entity.native_value, 19.5)
+        # An unavailable Local owner must not substitute PAT's 27 C.
+        self.assertIsNone(entity.native_value)
         self.assertFalse(entity.available)
 
         coordinator.data.clear()

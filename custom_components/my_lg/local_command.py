@@ -24,11 +24,16 @@ from urllib.parse import quote
 from typing import Any, Mapping
 
 import aiohttp
-from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS, APPLIANCE_VALUE_OPTIONS
+from .local_control_confirmed_features import (
+    APPLIANCE_SETTING_MODELS,
+    APPLIANCE_VALUE_MODELS,
+    APPLIANCE_VALUE_OPTIONS,
+)
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, is_canonical_window
 from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, is_canonical_parameter
 from .local_washer_options import CAPABILITY as WASHER_PROGRAM, is_canonical_program
 from .local_dryer_options import CAPABILITY as DRYER_PROGRAM, is_canonical_program as is_dryer_program
+from .local_styler_dnd import RESERVATION as STYLER_DND_RESERVATION, is_canonical_reservation
 
 CLIMATE_TUPLE_CAPABILITY = "climate.mode_fan_setpoint"
 CLIMATE_POWER_ON_CAPABILITY = "climate.power_on_with_setpoint"
@@ -167,6 +172,18 @@ def reflects_the_appliance(outcome: "LocalCommandResult | None") -> bool:
 
 class LocalCommandUnavailable(RuntimeError):
     """The local path refused before a frame could reach the appliance."""
+
+
+class LocalCommandRetryable(LocalCommandUnavailable):
+    """A transient pre-wire refusal that must not disable a Local-only entity."""
+
+
+class LocalCommandBusy(LocalCommandRetryable):
+    """The exact appliance is temporarily fenced by another command."""
+
+
+class LocalCommandNotReady(LocalCommandRetryable):
+    """Current appliance state does not yet satisfy a verified precondition."""
 
 
 class LocalCommandFailed(RuntimeError):
@@ -433,10 +450,12 @@ class LocalCommandClient:
         self._base_url = base_url.rstrip("/")
         self._timeout = aiohttp.ClientTimeout(total=timeout_s)
 
-    async def async_appliance_setting_state(self, device_id: str, capability: str) -> bool | str | None:
+    async def async_appliance_setting_state(
+        self, device_id: str, model_id: str, capability: str
+    ) -> bool | str | None:
         """Read exact own-connection settings; never query the appliance or cloud."""
-        model = APPLIANCE_SETTING_MODELS.get(capability) or APPLIANCE_VALUE_MODELS.get(capability)
-        if model is None:
+        key = (model_id, capability)
+        if key not in APPLIANCE_SETTING_MODELS and key not in APPLIANCE_VALUE_MODELS:
             return None
         async with self._session.get(
             f"{self._base_url}/control/home-assistant/{quote(device_id, safe='')}/appliance-settings-state",
@@ -446,7 +465,7 @@ class LocalCommandClient:
                 return None
             body = await response.json()
         if (not isinstance(body, dict) or body.get('schema_version') != 1
-                or body.get('model_id') != model or not isinstance(body.get('values'), dict)):
+                or body.get('model_id') != model_id or not isinstance(body.get('values'), dict)):
             return None
         value = body['values'].get(capability)
         if capability == WASHER_PROGRAM:
@@ -455,10 +474,12 @@ class LocalCommandClient:
             return value if is_canonical_window(value) else None
         if capability == DRYER_PROGRAM:
             return value if is_dryer_program(value) else None
+        if capability == STYLER_DND_RESERVATION:
+            return value if is_canonical_reservation(value) else None
         if capability in WATER_PARAMETER_SCHEMAS:
             return value if is_canonical_parameter(capability,value) else None
-        if capability in APPLIANCE_VALUE_MODELS:
-            return value if isinstance(value,str) and value in APPLIANCE_VALUE_OPTIONS[capability] else None
+        if key in APPLIANCE_VALUE_MODELS:
+            return value if isinstance(value,str) and value in APPLIANCE_VALUE_OPTIONS[key] else None
         return value if type(value) is bool else None
 
     async def async_air_extra_state(self, device_id: str, capability: str) -> bool | None:
@@ -565,6 +586,10 @@ class LocalCommandClient:
             # turns every failure after that into a verdict, so a 4xx is always a refusal made
             # before the write - which is what makes falling back to the cloud safe rather than
             # a second command for the same request.
+            if status == 409 and fields.get("code") == "appliance-command-busy":
+                raise LocalCommandBusy(detail)
+            if status == 409 and fields.get("code") == "appliance-not-ready":
+                raise LocalCommandNotReady(detail)
             raise LocalCommandUnavailable(detail)
         if status == _NOT_FORWARDED_STATUS:
             # Nothing in front of the bridge had anywhere to forward it, so the endpoint never ran.

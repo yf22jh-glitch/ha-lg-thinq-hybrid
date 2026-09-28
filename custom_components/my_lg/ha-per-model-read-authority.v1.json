@@ -5,118 +5,125 @@
   "feed_schema_version": 3,
   "publication_plan_revision": 2,
   "static_contract_projection_version": 2,
-  "source_inventory_root_sha256": "d1027d8fc79a0b453ead37ec1065d3c4a824e5e1193b9a260ad7b48b5f4e5e93",
+  "source_inventory_root_sha256": "34dc247a4fafcb1280238e6eb33cb6a945c14db65289dc5eb54ba9804445314c",
   "authorities": [
     {
       "profile_id": "1WPD4CMIDR__3:read-sensors-v1",
       "model_id": "1WPD4CMIDR__3",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "3a42032b5dac2e6064b33ba879e11a12c086d179f01542c3d38a05071ab239fa"
+      "semantics_revision": 34,
+      "model_contract_sha256": "8233e4fae4f422a96de959275363f33062475018955cc5e569bba43274478ca8"
     },
     {
       "profile_id": "2REFO1DBN3K_U:read-sensors-v1",
       "model_id": "2REFO1DBN3K_U",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "d26de953c793792552c5c65572f0b16bd3e519a055d2c7fae320609101bdf916"
+      "semantics_revision": 34,
+      "model_contract_sha256": "da1e2060781d2d3a55a805ea0e1739372f5de0a50b4d9070678b407d63c55849"
     },
     {
       "profile_id": "2REK1D04AR170:read-sensors-v1",
       "model_id": "2REK1D04AR170",
       "platform": "thinq1",
-      "semantics_revision": 32,
-      "model_contract_sha256": "a09ae9b7349c33b2d2e5b96e053895b981f607db4564fbf1dc6045e92a39e208"
+      "semantics_revision": 34,
+      "model_contract_sha256": "f40bb3cd566f260130a1d4af9cee9288fd9761a7fbb6f2ba7c74becc0690b1d4"
     },
     {
       "profile_id": "3REK2G03VI230D_2:read-sensors-v1",
       "model_id": "3REK2G03VI230D_2",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "a97d5e5d0866a1d113ed81dcd7e3146986a5224a1f08ca2fab2158d4b3019511"
+      "semantics_revision": 34,
+      "model_contract_sha256": "9bb2b8f4fd78c3e775156e76037397da8da5f226484d5266067851beb0456973"
     },
     {
       "profile_id": "AIR_2C0001_WW:read-sensors-v1",
       "model_id": "AIR_2C0001_WW",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "50714ceb5962b9d5b7ea9c9a143eb82c209d1e6151631e83494a43448b3dc86f"
+      "semantics_revision": 34,
+      "model_contract_sha256": "714d4f061424d973b5db608ba8aa5f8d7de7f592c555228f3510391ff75a1df2"
     },
     {
       "profile_id": "AIR_910604_WW:read-sensors-v1",
       "model_id": "AIR_910604_WW",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "789884a6ccb89fbb679d521a8baee6653fe12ade857c0edc433b3eb22ab39e8b"
+      "semantics_revision": 34,
+      "model_contract_sha256": "497dd3f8ea1150b094bb825c32e2c8105725ba983913c48ec55f7fe0ef934d36"
     },
     {
       "profile_id": "CST_170004_WW:read-sensors-v1",
       "model_id": "CST_170004_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "e884ed3646d166638187a8de3b218853977870b422a8243957e5cd0dc36e0095"
+      "semantics_revision": 34,
+      "model_contract_sha256": "0f6dc6bb1746b04cc932faf9bcfb66c7f60771a502e218c1a950e5935245c5ef"
     },
     {
       "profile_id": "CST_570004_WW:read-sensors-v1",
       "model_id": "CST_570004_WW",
       "platform": "thinq2",
-      "semantics_revision": 33,
-      "model_contract_sha256": "5fee1131795408a685be0d3871a4f83df72411ccef4423055a9ae25cf0fc3c58"
+      "semantics_revision": 34,
+      "model_contract_sha256": "80f61837676426bb1b99eb8d8aa283bcc0a45d084d7a3e665bc579a310c972d5"
     },
     {
       "profile_id": "D121110:read-sensors-v1",
       "model_id": "D121110",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "72802dacbebd37aef5f686f0c0f2b3da232c420a0656f1a029af86fd65b73eef"
+      "semantics_revision": 34,
+      "model_contract_sha256": "3b4cafdcf10b9a49d0277ed45e2b644505538a2a6b4bc1b2443e90f927b97a76"
     },
     {
       "profile_id": "DHUM_056905_WW:read-sensors-v1",
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "875450af69ddbea6ae1d1d800010a0d42cb7c846a9af9f7f6d55672af42caf08"
+      "semantics_revision": 34,
+      "model_contract_sha256": "d041c74a071fa77db557bc8398a3da2f2aa5f26d49e77b4eba047217022e83d7"
     },
     {
       "profile_id": "HUM_056905_WW:read-sensors-v1",
       "model_id": "HUM_056905_WW",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "f4e03100a36ed3164ba0d6eb963c68eff54711c01bc33cdd6fbec39fbe80bd19"
+      "semantics_revision": 34,
+      "model_contract_sha256": "d0b1955778c5cee97a2b2c73d286bfadaea288702470f006d762d7114775ad3a"
+    },
+    {
+      "profile_id": "HWWA9X3C_F2U:read-sensors-v1",
+      "model_id": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semantics_revision": 34,
+      "model_contract_sha256": "fbc50fbb17ddec2046efc77f6bfd13c1a12f5cef8e58a13f76d9d7b8e3184677"
     },
     {
       "profile_id": "ST_R_ETH01Y_:read-sensors-v1",
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "0daae56bb51b50216179f0630c7368084498bf5f7a4f62cb91d1ab5ccbfa3410"
+      "semantics_revision": 34,
+      "model_contract_sha256": "cb92288782510894b516ba062b21402dec3c0abefbbab74bd922895e80238d7e"
     },
     {
       "profile_id": "WBEF3:read-sensors-v1",
       "model_id": "WBEF3",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "72e3fa192e9c246bc9258126e76042a3583a6fbc03958d7407220948d4746e45"
+      "semantics_revision": 34,
+      "model_contract_sha256": "f827fa3bd89a1a25523ac1147a7db67d60809f175f5e837056e012980acf07d2"
     },
     {
       "profile_id": "WMLJ32RS:read-sensors-v1",
       "model_id": "WMLJ32RS",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "9867af144446c0fd5ddcb82c960baf0167dacefc3b248895ae77e0ab9814b7f2"
+      "semantics_revision": 34,
+      "model_contract_sha256": "9661ffb37b5dde4b6754f35997856b10276f9ddef01075772990e85d6f8a2ca5"
     },
     {
       "profile_id": "WTL_KPK_BDH_KR_01:read-sensors-v1",
       "model_id": "WTL_KPK_BDH_KR_01",
       "platform": "thinq2",
-      "semantics_revision": 32,
-      "model_contract_sha256": "d6ed11f00a73b87dcb19f1b614e6719587a92592a5215f61c50d361b720ccc2a"
+      "semantics_revision": 34,
+      "model_contract_sha256": "822a51a8fd1b11a96437fe741b617993024c4b167eb065a646fe6297fea2660b"
     }
   ],
   "stats": {
-    "authority_count": 15,
+    "authority_count": 16,
     "thinq1_authority_count": 1,
-    "thinq2_authority_count": 14
+    "thinq2_authority_count": 15
   },
-  "root_sha256": "b10da7f8b547a986b2d29ecb7a2d20ecff8d508ef53c5b790ac81c1847b9f8df"
+  "root_sha256": "b362370e4d9a8285e2fc4c112418aee610953b71bec1b2462cc144b4b0ca10d0"
 }

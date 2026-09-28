@@ -9,8 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-import voluptuous as vol
-
 from custom_components.my_lg import _async_reload_on_options, binary_sensor, sensor
 from custom_components.my_lg import event as event_platform
 from custom_components.my_lg.config_flow import MyLgOptionsFlow
@@ -50,6 +48,7 @@ from custom_components.my_lg.local_read_provider import (
     load_tlv_read_catalogue,
 )
 from custom_components.my_lg.rethink_event_relay import CONF_RETHINK_EVENT_TOKEN
+import voluptuous as vol
 
 NOW = datetime(2026, 8, 28, 0, 0, tzinfo=timezone.utc)
 ROOT = Path(__file__).resolve().parents[1]
@@ -492,10 +491,18 @@ class LocalReadDuplicateOverlayTests(unittest.IsolatedAsyncioTestCase):
         }
         historical_ghost = {(model_device_ids["D121110"][0], "cycle.course")}
         existing_registry = historical_state | historical_ghost
+        explicit_pat = {
+            (device_id, item.semantic_id)
+            for device_id, provider in disabled_runtime.local_read_providers.items()
+            for item in provider.profile.fields
+            if item.owner == "PAT"
+        }
+        self.assertEqual(len(explicit_pat), 4)
 
         self.assertEqual(track_b & set(disabled_local), historical_state)
         self.assertEqual(
-            set(enabled_local) - set(disabled_local), track_b - historical_state
+            set(enabled_local) - set(disabled_local),
+            (track_b - historical_state) | explicit_pat,
         )
         self.assertEqual(len(track_b - historical_state), 25)
         self.assertEqual(len(track_b - existing_registry), 24)
@@ -517,21 +524,17 @@ class LocalReadDuplicateOverlayTests(unittest.IsolatedAsyncioTestCase):
         )
 
         reviewed_union = set()
-        explicit_pat = set()
         for device_id, provider in disabled_runtime.local_read_providers.items():
             for item in provider.profile.fields:
                 key = (device_id, item.semantic_id)
                 reviewed_union.add(key)
-                if item.owner == "PAT":
-                    explicit_pat.add(key)
         for device_id, provider in disabled_runtime.local_providers.items():
             reviewed_union.update(
                 (device_id, semantic_id) for semantic_id in provider.profile.fields
             )
-        self.assertEqual(len(explicit_pat), 4)
         self.assertEqual(
             set(enabled_local),
-            reviewed_union - explicit_pat - promoted - promoted_climate,
+            reviewed_union - promoted - promoted_climate,
         )
 
     async def test_event_and_control_surfaces_are_outside_the_option(self) -> None:

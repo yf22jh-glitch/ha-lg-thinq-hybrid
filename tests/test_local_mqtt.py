@@ -216,6 +216,28 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
             mqtt_module=mqtt_module,
         )
 
+    async def test_energy_feed_remains_subscribed_without_full_read_menu(self) -> None:
+        profile = local.load_local_semantic_profile_catalogue()[1][
+            "cooktop-left-front-state-v1"
+        ]
+        primary = local.LocalSemanticShadowProvider(
+            BINDING_ID, profile, pat_device_id="pat_energy_test"
+        )
+        energy = local_mqtt.CumulativeEnergyShadowProvider(
+            BINDING_ID, "WBEF3", primary.expected_proof
+        )
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            asyncio.get_running_loop(), primary,
+            host="127.0.0.1", port=18883,
+            username=f"shadow-{BINDING_ID}", password="private-test-password",
+            read_provider=None, energy_provider=energy, mqtt_module=FakeMqttV1(),
+        )
+        self.assertIsNone(subscriber.read_provider)
+        self.assertEqual(
+            set(subscriber.subscription_topics),
+            set(primary.topics) | set(energy.topics),
+        )
+
     async def test_supports_paho_v1_and_v2_with_one_stable_distinct_client_id(
         self,
     ) -> None:

@@ -20,17 +20,18 @@ class ApplianceSettingsTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('바지', descriptor.label_ko)
         self.assertTrue(descriptor.one_shot)
         router = Router()
-        router.async_execute = AsyncMock(return_value=LocalCommandResult('confirmed', {}))
+        router.async_execute_strict = AsyncMock(return_value=LocalCommandResult('confirmed', {}))
         entity = MyLgLocalContractButton(Coordinator(model), descriptor, router, PrimaryProvider(model=model), None)
         entity.async_write_ha_state = lambda: None
-        router.async_execute.assert_not_called()
+        router.async_execute_strict.assert_not_called()
         await entity.async_press()
-        router.async_execute.assert_awaited_once_with(DEVICE_ID, descriptor.capability_id, 'true')
+        router.async_execute_strict.assert_awaited_once_with(DEVICE_ID, descriptor.capability_id, 'true')
 
-    async def test_all_twenty_three_switches_keep_actual_state_after_opposite_command(self):
-        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 23)
+    async def test_all_thirty_one_switches_keep_actual_state_after_opposite_command(self):
+        self.assertEqual(len(APPLIANCE_SETTING_MODELS), 31)
         base = load_local_control_entity_contract()
-        for cap, model in APPLIANCE_SETTING_MODELS.items():
+        for (model, cap), mapped_model in APPLIANCE_SETTING_MODELS.items():
+            self.assertEqual(mapped_model, model)
             models = {'test_candidate_binding': model}
             prior = resolve_local_control_binding_eligibility({}, base, models)
             contract, _ = augment_confirmed_features(base, prior, models)
@@ -52,13 +53,14 @@ class ApplianceSettingsTests(unittest.IsolatedAsyncioTestCase):
     async def test_reader_requires_exact_model_and_boolean_without_redirects(self):
         from tests.test_local_command import Response
         calls = []
-        for cap, model in APPLIANCE_SETTING_MODELS.items():
+        for (model, cap), mapped_model in APPLIANCE_SETTING_MODELS.items():
+            self.assertEqual(mapped_model, model)
             for reported_model in (model, 'wrong'):
                 for value in (False, True, None, 0, 1, 'false'):
                     response = Response(200, {'schema_version': 1, 'model_id': reported_model, 'values': {cap: value}})
                     def get(url, **kwargs): calls.append((url, kwargs)); return response
                     client = LocalCommandClient(SimpleNamespace(get=get))
-                    result = await client.async_appliance_setting_state('test/device', cap)
+                    result = await client.async_appliance_setting_state('test/device', model, cap)
                     self.assertIs(result, value if reported_model == model and type(value) is bool else None)
-                    self.assertIsNone(await client.async_appliance_setting_state('test/device', 'raw.offset_83'))
+                    self.assertIsNone(await client.async_appliance_setting_state('test/device', model, 'raw.offset_83'))
         self.assertTrue(all('/test%2Fdevice/appliance-settings-state' in url and not opts['allow_redirects'] for url, opts in calls))

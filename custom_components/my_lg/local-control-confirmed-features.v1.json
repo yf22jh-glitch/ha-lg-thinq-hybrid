@@ -1,7 +1,179 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "2b3a3d3aee1397433a85b382f51c2c92068297b7dad8a710f00d0fe3c604c76a",
+  "catalogue_sha256": "7efd1f0165709a8e65332c904d464a2cb29c900b4558ecf842920a69544d2a36",
   "features": [
+    {
+      "model_id": "CST_170004_WW",
+      "capability_id": "maintenance.function_sync",
+      "entity_key": "local_function_sync",
+      "label_ko": "기능 동기화",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-response",
+      "values": [
+        {
+          "value": "sync",
+          "label": "동기화",
+          "ordered_frame_sha256s": [
+            "4a2c3e41d3bcc950b2b2d966d3b3583b3d80f03e0c16c595aa683a52add76024"
+          ],
+          "wire_evidence": "own-model-observed-command-and-response"
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "maintenance.function_sync",
+      "entity_key": "local_function_sync",
+      "label_ko": "기능 동기화",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-response",
+      "values": [
+        {
+          "value": "sync",
+          "label": "동기화",
+          "ordered_frame_sha256s": [
+            "4a2c3e41d3bcc950b2b2d966d3b3583b3d80f03e0c16c595aa683a52add76024"
+          ],
+          "wire_evidence": "own-model-observed-command-and-response"
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_910604_WW",
+      "capability_id": "air_quality.monitor_mode",
+      "entity_key": "local_air_sensor_monitor_mode",
+      "label_ko": "공기질 센서 모니터링",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "operation_only",
+          "label": "운전 중",
+          "ordered_frame_sha256s": [
+            "3c7796deda7a8aaf366820dd125f7ebd4588a5ee7e1970378858fd1cf236cbf3"
+          ]
+        },
+        {
+          "value": "always",
+          "label": "항상",
+          "ordered_frame_sha256s": [
+            "83ce18e4ecf1d3513042dd1e6f955ccacf4a3b0413a54fd6848c9766eeecf2eb"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "air_quality.monitor_mode",
+      "entity_key": "local_hum_sensor_monitor_mode",
+      "label_ko": "공기질 센서 모니터링",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "operation_only",
+          "label": "운전 중",
+          "ordered_frame_sha256s": [
+            "3c7796deda7a8aaf366820dd125f7ebd4588a5ee7e1970378858fd1cf236cbf3"
+          ]
+        },
+        {
+          "value": "always",
+          "label": "항상",
+          "ordered_frame_sha256s": [
+            "83ce18e4ecf1d3513042dd1e6f955ccacf4a3b0413a54fd6848c9766eeecf2eb"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "DHUM_056905_WW",
+      "capability_id": "air_quality.monitor_mode",
+      "entity_key": "local_dhum_sensor_monitor_mode",
+      "label_ko": "공기질 센서 모니터링",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "operation_only",
+          "label": "운전 중",
+          "ordered_frame_sha256s": [
+            "3c7796deda7a8aaf366820dd125f7ebd4588a5ee7e1970378858fd1cf236cbf3"
+          ]
+        },
+        {
+          "value": "always",
+          "label": "항상",
+          "ordered_frame_sha256s": [
+            "83ce18e4ecf1d3513042dd1e6f955ccacf4a3b0413a54fd6848c9766eeecf2eb"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "operation.mode",
+      "entity_key": "local_operation_mode",
+      "label_ko": "운전 모드",
+      "domain": "select",
+      "existing_owner": true,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "air clean",
+          "label": "청정",
+          "ordered_frame_sha256s": [
+            "414bb04ec3bc6433a94bec4a6a08c157d944957caf55c4db5fc66a768201bb99"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "humidify+clean",
+          "label": "가습+청정",
+          "ordered_frame_sha256s": [
+            "7fdc95075f1f66ee0fd4715b12c811197c17a9d81cba777a9dc84b75b5930d91"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "humidify",
+          "label": "가습",
+          "ordered_frame_sha256s": [
+            "5d8ee36a17cf4f55c8027b49d3b784289c5d8459ed0189627375d978e4f8f074"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_2C0001_WW",
+      "capability_id": "operation.power_requested",
+      "entity_key": "local_operation_power_requested",
+      "label_ko": "전원",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "7497f7a6dd76e3b2ff4cbd2fb5ab5a2b3f8d7f9eb793acf2e5466e679c72345c"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "eb0d5dda0c6b756f878d3c21dbdce8b3693b2051af8292b43b12c77047931921"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
     {
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "washer.sound.volume_level",
@@ -9,42 +181,1435 @@
       "label_ko": "세탁부 알림음 단계 (대기·일시정지)",
       "domain": "select",
       "existing_owner": false,
-      "wire_evidence": "own-model-observed-command-not-accepted",
+      "wire_evidence": "own-model-observed-command-and-state",
       "values": [
         {
           "value": "0",
           "label": "끄기",
           "ordered_frame_sha256s": [
             "7c808a3006face1dfc496bd1edeef76ad1a83d9b0fba8d4c7afa3a9f6929f6e4"
-          ]
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "1",
           "label": "1단계",
           "ordered_frame_sha256s": [
             "c406c5c0702b85c5becf491e42fc2b982b1d4b1e60ef63612fa9a7efcef412f2"
-          ]
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "2",
           "label": "2단계",
           "ordered_frame_sha256s": [
             "2b39629e35fa6e7df2dd06e511507bddbc44d32b144fce787fd0cad69dca50d5"
-          ]
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "3",
           "label": "3단계",
           "ordered_frame_sha256s": [
             "2e7d7baebb68ac34d900d3fed398a99ffd921bd42f39512333f2924f635ae3dc"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "4단계",
           "ordered_frame_sha256s": [
             "b69d9a754cc65b3bc87095d0a0097a0e42669f03b0cc0fcdb87373a5695ead6c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washtower.display.startup_image",
+      "entity_key": "local_washtower_startup_image",
+      "label_ko": "제품 시작 화면",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "default",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "90027b97a9fac36f451e7aa7371217cfa19dee74934bb5dc96320244d8183d4a"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "winterTheme1Snowman1",
+          "label": "눈사람 1",
+          "ordered_frame_sha256s": [
+            "b1a5f651854abc5e10696e1d52098b5d87923e44980db0acb195077a1eb1bfee"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme2Snowman2",
+          "label": "눈사람 2",
+          "ordered_frame_sha256s": [
+            "34735c11520b20a65c858a2b62155dfbd58c4616385a6934b08b80cb5d7eca79"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme3HelloWinter",
+          "label": "겨울 인사",
+          "ordered_frame_sha256s": [
+            "2cecbbae5580163bec59254dfdab26df5294b8c008fa89cd5a0a43ef8c4bb281"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "springTheme1Hello",
+          "label": "봄 인사",
+          "ordered_frame_sha256s": [
+            "632d8b98b8477ba8f0e7843d887f2b65fc9601b523809563ee8fc58649df17dc"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "springTheme2Earth",
+          "label": "봄 지구",
+          "ordered_frame_sha256s": [
+            "3199c445763b87aba146d469952a59e884c383692b940b513ae9cad28e084546"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "summerTheme1Sun",
+          "label": "여름 태양",
+          "ordered_frame_sha256s": [
+            "3227b76c511b8da98bb003339fbc3fd6d8601553a6037ae6865b66a1aa72bfd1"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "summerTheme2Parasol",
+          "label": "여름 파라솔",
+          "ordered_frame_sha256s": [
+            "bd116d3d3f86d23e1223dfc97b039beece55f92a88e5f867ef85e29c8ddce422"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "autumnTheme1MapleLeaf",
+          "label": "가을 단풍",
+          "ordered_frame_sha256s": [
+            "92495e1bd6537f6a01a9b255cf204815af31ba04541f4d3be7391c25643f5514"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "autumnTheme2Halloween",
+          "label": "할로윈",
+          "ordered_frame_sha256s": [
+            "d80cea358e4a75fefa6cc52e696cc6a0b3c4ac9ec2443108cf0eae935fa9d944"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme4HappyNewYear",
+          "label": "새해",
+          "ordered_frame_sha256s": [
+            "31cbb052b4b40ce423b45f427930d7df5e50fb350e25bf380eb46b05dc850817"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme5Christmas",
+          "label": "크리스마스",
+          "ordered_frame_sha256s": [
+            "ff716890246bbf7ff1fd6d5e5e1d10c87e4f09a56bff6eee1f3c57e2f9a6d34b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.sound.melody",
+      "entity_key": "local_washer_sound_melody",
+      "label_ko": "세탁 완료 알림음",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "336b2404bee6b9940cc8ffe00904c32d03097b02fc52bc3899ea35389d337db5"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "1",
+          "label": "비발디 겨울",
+          "ordered_frame_sha256s": [
+            "e8b1502b6dc6c38deb2f5b3aa54892b62e9efdc180ae0681768bc0ee1b39ffc1"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "2",
+          "label": "바흐 미뉴에트",
+          "ordered_frame_sha256s": [
+            "b7d33f932105fd36a768ffd605a11e6500c28f56966b9c0a5701712b59d57cb7"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "3",
+          "label": "즐거운 나의 집",
+          "ordered_frame_sha256s": [
+            "bd56490f6576fd5b6ca6fd9dbcbb509eb46d83cf0f405cdf4c50bdc07e0eb5d6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "4",
+          "label": "산들바람",
+          "ordered_frame_sha256s": [
+            "4d7cf9cbef1a1917f713f1417df82d71f38ad64678169386f0258714649e8599"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "5",
+          "label": "올드 맥도널드",
+          "ordered_frame_sha256s": [
+            "aea343d6ee14dc3ad77e8db1102db07177428e830c896df90fd57b1d43444d2a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "6",
+          "label": "베르디 라 트라비아타",
+          "ordered_frame_sha256s": [
+            "d59cafbaa2a14b0259a855bfa5c72d4f40ea8b84042825b1ee38946b136a95a4"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "7",
+          "label": "버블",
+          "ordered_frame_sha256s": [
+            "c00ab7e207b29ad5c69cce984849d97f847ab0b39071b0ef69508aa3207915e7"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "8",
+          "label": "베토벤 교향곡 5번",
+          "ordered_frame_sha256s": [
+            "125d0e1a29b5a619c52d9638f71a73f911ce7f12a87ffe2ffb259885f7f56500"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "9",
+          "label": "아리랑",
+          "ordered_frame_sha256s": [
+            "8f770c7f22ed4620e78fa96c7247b1bc754f5b190b1d348dcdcf6900be76a0a8"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "10",
+          "label": "파헬벨 캐논",
+          "ordered_frame_sha256s": [
+            "123844f517bdc4bbfc1d71e54edf99b409b9f168b2de583c01189f9b279f370a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "11",
+          "label": "베토벤 교향곡 9번",
+          "ordered_frame_sha256s": [
+            "7619c92972b3473d390b5f27ef4da258d569e6e69baa78c666725db0589a1e33"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.sound.melody",
+      "entity_key": "local_dryer_sound_melody",
+      "label_ko": "건조 완료 알림음",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "0",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "9f79b8a263a0e60810bd865415cb544ad717e92903c02c86bbf79dc1fe172c72"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "1",
+          "label": "비발디 겨울",
+          "ordered_frame_sha256s": [
+            "c38e7ccdf10d5afc107f336b45458c42b96618311d4d1a4e91197079f095e7c6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "2",
+          "label": "바흐 미뉴에트",
+          "ordered_frame_sha256s": [
+            "a4f693c93c1a90623b3891f462f73d4fbbe0a6115e1eeb971f7b6dd7c738f333"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "3",
+          "label": "즐거운 나의 집",
+          "ordered_frame_sha256s": [
+            "65aae800d33295c226cff2dd3241e7c65c33b1112f9de126347e49d0dc7db8c4"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "4",
+          "label": "산들바람",
+          "ordered_frame_sha256s": [
+            "0f17b0e8e68929ffd24eb2b42e1bd770aaa2b37e24dee161100cf338bc7915d2"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "5",
+          "label": "올드 맥도널드",
+          "ordered_frame_sha256s": [
+            "7a70b1f437d113189005fc42b7534a69e924f5585f003e9b247273aeb1ad60e1"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "6",
+          "label": "베르디 라 트라비아타",
+          "ordered_frame_sha256s": [
+            "02ff76771525150059b7d73bf36043bbb6085907781a4c8f1fd9cf72a8b22109"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "7",
+          "label": "버블",
+          "ordered_frame_sha256s": [
+            "5d33dd3219bfbab2c3a1c094d6e951cd3cef57097d36d4d04747b8786dc07e42"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "8",
+          "label": "베토벤 교향곡 5번",
+          "ordered_frame_sha256s": [
+            "ac4e1e240d78cee7b646481d521f40ec05fc7b36df7943ca07a1ea3cdedca9ac"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "9",
+          "label": "아리랑",
+          "ordered_frame_sha256s": [
+            "fda1ed8b513be064e10a1c76474a96a02eef6cee2175568f1b0b2f0fb23221c6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "10",
+          "label": "파헬벨 캐논",
+          "ordered_frame_sha256s": [
+            "1e73b85b67564782769c4da91f7054fffb9e2e997a0fb182714f50531ef22e33"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "11",
+          "label": "베토벤 교향곡 9번",
+          "ordered_frame_sha256s": [
+            "46ef0c1090ef14ac36df3912421b8ee862f4447bba130d7a60fc538ba99e6104"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.sound.volume_level",
+      "entity_key": "local_dryer_sound_volume",
+      "label_ko": "건조 알림음 단계",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "0",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "d1c3d570a822759c17fcd90cf53414632f0b21d94e0a75ca0efc9d96aabceeef"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "1",
+          "label": "작게",
+          "ordered_frame_sha256s": [
+            "7c884ea0a765d2000ed4b9f6d46af216f4d2b0b214c403e1c505528eebb831bb"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "2",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "379b1219d4d79a0e3750789557760f2465e80ed587a4190740508e11c445fada"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "3",
+          "label": "크게",
+          "ordered_frame_sha256s": [
+            "49f93d6f11a5994eda70218904061cb5f036e6dfa39f8f7eff106404a6d27bb2"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "4",
+          "label": "아주 크게",
+          "ordered_frame_sha256s": [
+            "2a8188045881a5c7a11f2de574ba97cf2a8f148f858938f11f700193f9c34dad"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.detergent.dispenser_mode",
+      "entity_key": "local_washer_dispenser_mode",
+      "label_ko": "자동 투입기 용도",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "detergentAndSoftener",
+          "label": "세제+유연제",
+          "ordered_frame_sha256s": [
+            "e58be0b0bff0713d3744fc619b8eb9ed3e9c989c0f0e12f739b23e472d94e17f"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "oneDetergent",
+          "label": "세제 1개",
+          "ordered_frame_sha256s": [
+            "34c4625871bb19ac97a9eb8a1162a7d7f31cca4d0ee653bd9260af4d2ff4662a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "twoDetergent",
+          "label": "세제 2개",
+          "ordered_frame_sha256s": [
+            "b2b7ecaf5c445df0e8e4cd7f5abaac486befe15d9656c0e281fcb3828ec6ab4d"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.detergent.amount_ml",
+      "entity_key": "local_washer_detergent_amount",
+      "label_ko": "세제 기준 투입량",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "9",
+          "label": "9 mL",
+          "ordered_frame_sha256s": [
+            "4bea07e377d1efec0ee6e864c999f7262f81a0b0a55e937f8ae04f2d2e133183"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "12",
+          "label": "12 mL",
+          "ordered_frame_sha256s": [
+            "a42009842aa60252b68a449b2ff1b9f94822be1f8a6855388424d9581d012015"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "15",
+          "label": "15 mL",
+          "ordered_frame_sha256s": [
+            "dcc08060e40838b6168441bd8c04401ce47d599597eaadc94f9f3430c4eab41c"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "18",
+          "label": "18 mL",
+          "ordered_frame_sha256s": [
+            "1857d54175fe6c5c7d0361ca374c7164c69edb1e696f0bebf9f7ba16da9413df"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "21",
+          "label": "21 mL",
+          "ordered_frame_sha256s": [
+            "c995a5e77518efc406fdb51379f4d7a5605b1d4bd2689fcc63f1efd06c2d3f0c"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "24",
+          "label": "24 mL",
+          "ordered_frame_sha256s": [
+            "69930891f3a830b04a3c67fc4447934ff5c973d0ca37a7dbbc43e78337ad4108"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "27",
+          "label": "27 mL",
+          "ordered_frame_sha256s": [
+            "99425ff38dc9e0f37d980704906ff799b7fd903daea33b3e52995153ea9cf88f"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "30",
+          "label": "30 mL",
+          "ordered_frame_sha256s": [
+            "cece40729d5c1a92fd506ae04f0e5dcd6e7dd24fd7fa451ee00255c621628e3c"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "33",
+          "label": "33 mL",
+          "ordered_frame_sha256s": [
+            "27b57ddbfb6df82c9c5adb8363f0515a3bd4d87a9164ea310e5d0d55cfa8fc95"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "36",
+          "label": "36 mL",
+          "ordered_frame_sha256s": [
+            "0ef7ce41be3d8b881513d7595cbf0af949a77448bd713aeb56984e99a4339de4"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "39",
+          "label": "39 mL",
+          "ordered_frame_sha256s": [
+            "11a70b674a4bc524fb148a33f4ddd667d6b25b725bc50d5967243651775d11e2"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "42",
+          "label": "42 mL",
+          "ordered_frame_sha256s": [
+            "2914695b3f85479c74c9506c524a6a729ead2c3f3d30460cce206be2cbe71dff"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "45",
+          "label": "45 mL",
+          "ordered_frame_sha256s": [
+            "04c64dbf6db3ee72bd9287fc0b1985970e8878f633894a553910733a122c6783"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "48",
+          "label": "48 mL",
+          "ordered_frame_sha256s": [
+            "516bbe47d90c25da9090f99394c12a600598914c70fc70ed2e75fec3a22fa549"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "51",
+          "label": "51 mL",
+          "ordered_frame_sha256s": [
+            "454d6cb195dddec99a86a5b0d1cc9a4204464b8a3fd769c72ffbe4eea05c29a1"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "54",
+          "label": "54 mL",
+          "ordered_frame_sha256s": [
+            "c1a08a8f5f296b316045040bfc10738015738c476884c1b908749cdbf843c872"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "57",
+          "label": "57 mL",
+          "ordered_frame_sha256s": [
+            "ddca595a1cccc4bc6951752b424eca2fada2ba877f847c01ab4dd18975c8eb6d"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "60",
+          "label": "60 mL",
+          "ordered_frame_sha256s": [
+            "c4a01480beedf33abb2eda3fd2792c1fdd4151b25f8b2b244b55cb389a9df431"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "63",
+          "label": "63 mL",
+          "ordered_frame_sha256s": [
+            "6db31e1141d494ac5b36ffd4a2f46cf8c9d729abfed7a9c289d6b1c83d57c9ff"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "66",
+          "label": "66 mL",
+          "ordered_frame_sha256s": [
+            "035b1f9f483262fedece07e368cf3332e4ff53b6050062df8dee2f60b13f4335"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "69",
+          "label": "69 mL",
+          "ordered_frame_sha256s": [
+            "b1d79e923f0c932a5a4cbdadd836b10205064574d4ab8965e278beedcf97092b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "72",
+          "label": "72 mL",
+          "ordered_frame_sha256s": [
+            "cde460b01be7b35fc02b587f7c2f0a754c574139eaab456649314af49eb1024e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "75",
+          "label": "75 mL",
+          "ordered_frame_sha256s": [
+            "9eb4449b8e9d3dc9230df5ac1b3e9e8f8c42dd3a1a401f6a958658c648563053"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "78",
+          "label": "78 mL",
+          "ordered_frame_sha256s": [
+            "c704352fd8550061db4fe807a24644c86b115defa3255c13656feb26a83cc21b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "81",
+          "label": "81 mL",
+          "ordered_frame_sha256s": [
+            "b3c7e7e4dc5e15ff49bfb47972ea4f79c68868c01b7d1eacb6529b1446124104"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "84",
+          "label": "84 mL",
+          "ordered_frame_sha256s": [
+            "1d52e79229ad30b41af75ceed0328f096a9d4cdf37c7577a792b72bf71c4adea"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "87",
+          "label": "87 mL",
+          "ordered_frame_sha256s": [
+            "c61ea26be0fda6fa626d6488672a6a6e019b3a9ab711eb6e32cfa17dc1afbd4e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "90",
+          "label": "90 mL",
+          "ordered_frame_sha256s": [
+            "9ae8a2243d2161fa541c9b94249acc7b3baba6c9602b33e0bf0787c89a15cce7"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "93",
+          "label": "93 mL",
+          "ordered_frame_sha256s": [
+            "535bef23c7ec8eded7c61640753e956c4148425d0325b73281ff4e9021261123"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "96",
+          "label": "96 mL",
+          "ordered_frame_sha256s": [
+            "aefd1b03643f54f0fd5c6f5367e4e410169f6ed77f219f108d133b1ddc5c42e4"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "99",
+          "label": "99 mL",
+          "ordered_frame_sha256s": [
+            "65450670573b9859d6c618a7ba202dcc6edb38f808376aa79e8345bd2659830b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "102",
+          "label": "102 mL",
+          "ordered_frame_sha256s": [
+            "c4fd28877e35a01fec252c66371e19106169d31b6dabb128835af8815ba5a78a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "105",
+          "label": "105 mL",
+          "ordered_frame_sha256s": [
+            "a6834eda7f9f1c738091303256caa16597cf1ecd046c5cb1fc69f9cf270823a7"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "108",
+          "label": "108 mL",
+          "ordered_frame_sha256s": [
+            "b8c4611cdba067a81a144663df677844045dc2a39d2856e474ce1ea61bb5f5c8"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "111",
+          "label": "111 mL",
+          "ordered_frame_sha256s": [
+            "28313d5c234f8c7caefd6e877f3de5bea275616b0eba62463872af82cb10a9bc"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "114",
+          "label": "114 mL",
+          "ordered_frame_sha256s": [
+            "0fa1268c04693163dc1fdee53872791e4bde30e2cab0c143fe7758bb8091575a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "117",
+          "label": "117 mL",
+          "ordered_frame_sha256s": [
+            "e4b1ea8002162feee75134232d6134bf72354a522c8fa6b7b838a73190d915e8"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "120",
+          "label": "120 mL",
+          "ordered_frame_sha256s": [
+            "eb10f94eecccc85cad0fd0ae5cd354a96ea305c216166107661b135c4c139c88"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.softener.amount_ml",
+      "entity_key": "local_washer_softener_amount",
+      "label_ko": "유연제 기준 투입량",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "9",
+          "label": "9 mL",
+          "ordered_frame_sha256s": [
+            "b0d3a0087c16905b5f4e0a53c615bfb6af742f8367451fd84c78511a6a277f66"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "12",
+          "label": "12 mL",
+          "ordered_frame_sha256s": [
+            "1f20854197709dc1b528723253d09b94a9ca08623aceb806301a5ccfe5d3a468"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "15",
+          "label": "15 mL",
+          "ordered_frame_sha256s": [
+            "fb18b3786c41413e574484862040f0a2732f72f8206c15c53ae89ed7214f14a6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "18",
+          "label": "18 mL",
+          "ordered_frame_sha256s": [
+            "7640c3d0a916f0c8454cbdfefe0b47f777a4a371485cccac6734c6f865b021f3"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "21",
+          "label": "21 mL",
+          "ordered_frame_sha256s": [
+            "fb19b692cf9b3d41e284130dbc4112a636c0c6b58f58abf7794355372e727920"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "24",
+          "label": "24 mL",
+          "ordered_frame_sha256s": [
+            "4a23b6f8902b234855f2a69cc7e66de447ff4ac1d5a3d282692fbf6bfe8e0756"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "27",
+          "label": "27 mL",
+          "ordered_frame_sha256s": [
+            "3807b2f36e576a9512eb8bc58486bcc26a1a8561e941690a6afc14622910b115"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "30",
+          "label": "30 mL",
+          "ordered_frame_sha256s": [
+            "25dab8f7d458744b8b50f7496e1985aae25c3df2172a25e37e0de66ebe5c1ae6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "33",
+          "label": "33 mL",
+          "ordered_frame_sha256s": [
+            "6d93952db9d603057a5706469328cc42ac177a2661660b075914362af274df41"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "36",
+          "label": "36 mL",
+          "ordered_frame_sha256s": [
+            "3f72327ed3ff39df2343379a544e15face6cebd711c40fcafbe1d14a940bc786"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "39",
+          "label": "39 mL",
+          "ordered_frame_sha256s": [
+            "8e1da08df9c900d080b2883aadc6bbd34984b0a9f6514991239ea67afd8373af"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "42",
+          "label": "42 mL",
+          "ordered_frame_sha256s": [
+            "75d4e6c814ba230ae084395220698c2ca0f2c9ea68875bdf79f368be87c8cf1e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "45",
+          "label": "45 mL",
+          "ordered_frame_sha256s": [
+            "3232ee0f9c196f04c4d4b2e56840cade639612d26f00cf86d5477fa2517c4640"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "48",
+          "label": "48 mL",
+          "ordered_frame_sha256s": [
+            "2ee267977d3ccaff7c12f629736534cdd6e25fb8553c651658017eaa29778ec6"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "51",
+          "label": "51 mL",
+          "ordered_frame_sha256s": [
+            "7cab868ea9b8bccab6e4d6cb50e1eff512b3e1ef3c4a142adb90ef6ec139a168"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "54",
+          "label": "54 mL",
+          "ordered_frame_sha256s": [
+            "a934c46fdb1d6c696f005e3734f33a2e9abccb7faa69dedc4033b5462c3169cc"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "57",
+          "label": "57 mL",
+          "ordered_frame_sha256s": [
+            "76f9c774f961ad8b09ef5501168b58d61a01726bc91139ac1e44d6a463885ea3"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "60",
+          "label": "60 mL",
+          "ordered_frame_sha256s": [
+            "ab3a387c5020f2f5129d69dafd6bd1373d00ad3feb577d03d25312d3a0b52feb"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "63",
+          "label": "63 mL",
+          "ordered_frame_sha256s": [
+            "0e285ec436ea24a6ff698bd95b5b32cbc9a6c8cc716f1ca98dce097607158b30"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "66",
+          "label": "66 mL",
+          "ordered_frame_sha256s": [
+            "cf63bc2a75323119a552a161a8749949275cc48736e14ef8ae8481ad28cb8025"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "69",
+          "label": "69 mL",
+          "ordered_frame_sha256s": [
+            "52265425dd33c1169e6d2a0785cf790ba6d8554425b98014be7503bf4874b3d5"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "72",
+          "label": "72 mL",
+          "ordered_frame_sha256s": [
+            "2be69bff3c4b93365884b8c238c65231dfdbc2e7b21de66b5a027d4597209261"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "75",
+          "label": "75 mL",
+          "ordered_frame_sha256s": [
+            "10664268f3ae8a7b969d885ab52d63ab7a3aa116275bb56733ba835c1b9544bc"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "78",
+          "label": "78 mL",
+          "ordered_frame_sha256s": [
+            "15aab87c39925cbc580b434d7087d9c18002329aa8ce027d766223594ef69e5c"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "81",
+          "label": "81 mL",
+          "ordered_frame_sha256s": [
+            "326cc8a4164ef55ea88856d0b65f50d4094ab6a7b91a43a1495cd1bed973a9c8"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "84",
+          "label": "84 mL",
+          "ordered_frame_sha256s": [
+            "eb3231191af41a49330974d5288c589e1df9c43aa8255c9ea642215617321015"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "87",
+          "label": "87 mL",
+          "ordered_frame_sha256s": [
+            "1860e7c85ff45359c333f4a7814440713298e255fea2dcd5b346eec2c42cc2e9"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "90",
+          "label": "90 mL",
+          "ordered_frame_sha256s": [
+            "aba455cfbe64efeb5b32f27f78ee9bcb1929f14de5d784e01dca4aa9171ac75f"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "93",
+          "label": "93 mL",
+          "ordered_frame_sha256s": [
+            "8e3163c7ffa52f0b98140bf41d0574cf46a3b13f7775ec2fa43ef23d60ee983b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "96",
+          "label": "96 mL",
+          "ordered_frame_sha256s": [
+            "b46d90756ec4f4ba1b77985fdae26f3a99ce46c71bfd48092d0dc26090aec24e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "99",
+          "label": "99 mL",
+          "ordered_frame_sha256s": [
+            "c2c091ecc0c5fca6276f3c210148389e3b8e298b9f00be6f98ebd9fa8a08e696"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "102",
+          "label": "102 mL",
+          "ordered_frame_sha256s": [
+            "6d647f9bab3496497e944a78797e7e2368019f340082643f9b9ce001e8ac38ba"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "105",
+          "label": "105 mL",
+          "ordered_frame_sha256s": [
+            "edf7d287f0483a5999e8512bcd669c6662bb34d880f35920f5e0af5399c7ed8c"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "108",
+          "label": "108 mL",
+          "ordered_frame_sha256s": [
+            "f787a2750c1a6726e5a14760c45bf4879fd26a4e90d9d39306a3fbf83030a572"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "111",
+          "label": "111 mL",
+          "ordered_frame_sha256s": [
+            "7aab955eee3a2d0f0236514119c6d32525d9d3bd4bb7ccb62db9ce6d1104f875"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "114",
+          "label": "114 mL",
+          "ordered_frame_sha256s": [
+            "9ebaccd89f7a77e54e868bb2d7a9614feecccfd1de1502681605d5e94db6fad9"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "117",
+          "label": "117 mL",
+          "ordered_frame_sha256s": [
+            "823a10ebc696f91b1c426c25186092a6388c188af178499dfad216d568409f9f"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "120",
+          "label": "120 mL",
+          "ordered_frame_sha256s": [
+            "8ce1981b96a03f99027e14b39db0f55405b52b0fafd41eb566709f046d3da896"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.course.auto_arrange_enabled",
+      "entity_key": "local_washer_auto_course_arrange",
+      "label_ko": "세탁 코스 자동 정렬",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "d39b8abb7c5cc2d99f572678c46f0d4e25af3b114e27e28a640e9bd61e173c5a"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "켜기",
+          "ordered_frame_sha256s": [
+            "3f288d67cb79e3d801e655b1961c8dd2b3beb4c656fffec4df4e470efc30fd98"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.course.auto_arrange_enabled",
+      "entity_key": "local_dryer_auto_course_arrange",
+      "label_ko": "건조 코스 자동 정렬",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "e75fd1061d5a1cf7a1d3152f574ff4fa82b1993ced14830ef7b6eead0268a2e8"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "켜기",
+          "ordered_frame_sha256s": [
+            "c72c552b077e9a15d6122347a09ea5581007c3302fdef22348392def7312f01e"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.laundry_care.enabled",
+      "entity_key": "local_dryer_laundry_care",
+      "label_ko": "건조 세탁물 케어",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "끄기",
+          "ordered_frame_sha256s": [
+            "ca3c4dfea6710e2c49244a535573db82cd9a77e8c6eceb7975292a6c2b32fedd"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "켜기",
+          "ordered_frame_sha256s": [
+            "e2e6104ca25d4e96a4403625ae03a6c23633d49c80343dd0382bed892dff8fe6"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.dryness.damp_level",
+      "entity_key": "local_dryer_damp_dry_level",
+      "label_ko": "눌눌하게 건조 보정",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "medium",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "1100ab146975922981c2588352b5e168338adc77a7d8bc87a7a3d13dd432844d"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "high",
+          "label": "높게",
+          "ordered_frame_sha256s": [
+            "edcddc94f808f105b3c617f0b2469073862b225b077a632e6a9a67de281cd95a"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.dryness.less_level",
+      "entity_key": "local_dryer_less_dry_level",
+      "label_ko": "약 건조 보정",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "medium",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "a5897587b6e030a6350394ccff127c21aba65f8792a82e9a87913ad5bc180635"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "low",
+          "label": "낮게",
+          "ordered_frame_sha256s": [
+            "a25f727a8af7e9e6c722f367d52de5c7fe7ea37bd9136c1393a988a38b595b5a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "high",
+          "label": "높게",
+          "ordered_frame_sha256s": [
+            "732147215e9e673b5c522fe8cda0897eb5e45f7094b2a8bbab94dcaeb0f349a1"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.dryness.iron_level",
+      "entity_key": "local_dryer_iron_dry_level",
+      "label_ko": "다림질 건조 보정",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "medium",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "5ed413268f109b719ce987050da3cf76d0c3f1b805f531c37852308491d9fd38"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "low",
+          "label": "낮게",
+          "ordered_frame_sha256s": [
+            "094d9eab1417dbaaf00962a6daf5e60565c380cd1a87db800863310ae92a56b7"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "high",
+          "label": "높게",
+          "ordered_frame_sha256s": [
+            "04d11112fb4d2e7df1051e195a2061b418987a4e6bde9d99a90059d9106eb1b3"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.dryness.cupboard_level",
+      "entity_key": "local_dryer_cupboard_dry_level",
+      "label_ko": "표준 건조 보정",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "medium",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "55d2be9752998fcd2ec51890214390724505bf1640d38be9254b5470e1e19b54"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "low",
+          "label": "낮게",
+          "ordered_frame_sha256s": [
+            "dac9e628653a7ea406e14c5b673bf341c56275e36b1e724abc0a6ccda3b78deb"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "high",
+          "label": "높게",
+          "ordered_frame_sha256s": [
+            "c71365b2f920b5821ab69b132fd1c42b19f3a17a5b32a559c5cab744ba9ea8be"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "dryer.dryness.very_level",
+      "entity_key": "local_dryer_very_dry_level",
+      "label_ko": "강 건조 보정",
+      "domain": "select",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "medium",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "27f4fdc0b47b14f9e4ed2c3f57b47a7e5ad426a3a514c61e574f9ee957ba9e57"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "low",
+          "label": "낮게",
+          "ordered_frame_sha256s": [
+            "e7cf8f1d0f13b39fae093a93fb367106fdc0cb041f9535f78648158099887f95"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -52,9 +1617,9 @@
       "model_id": "WTL_KPK_BDH_KR_01",
       "capability_id": "dryer.course_option_program",
       "entity_key": "local_dryer_course_option_replacement",
-      "label_ko": "건조 코스·옵션 전체 재적용 (구김방지·물기알림 초기화 가능, 시작 아님)",
+      "label_ko": "건조 코스·옵션 전체 재적용 (물기알림·구김방지 포함, 시작 아님)",
       "domain": "text",
-      "parameter_schema": "dryer-course-option-replacement-v1",
+      "parameter_schema": "dryer-course-option-replacement-v2",
       "existing_owner": false,
       "values": []
     },
@@ -15017,7 +16582,8 @@
           "ordered_frame_sha256s": [
             "4b26eb1da45085e4a7f6074de51fd04b5ce80b9e1e53bb3310fb087037fbb523"
           ],
-          "reported_value": "6"
+          "reported_value": "6",
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "7",
@@ -15157,7 +16723,9 @@
           "ordered_frame_sha256s": [
             "06914c5d1849630e8b4a45a9a3e113684a6a190181bf798bc488f7455417c286"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15177,7 +16745,9 @@
           "ordered_frame_sha256s": [
             "80ee8fd93e9b459f353fa9d309303d841917cfb56ce3956ba2ec925c1fd66e55"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15197,7 +16767,9 @@
           "ordered_frame_sha256s": [
             "1d3665959ed71c6e1c21818baca711081e9290d877896a7c235be6aa77d11360"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15217,7 +16789,9 @@
           "ordered_frame_sha256s": [
             "4affab9403672e53a2c4aa8046ebd2ed2668d4049cec10497a87796b27faf9e5"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15237,7 +16811,9 @@
           "ordered_frame_sha256s": [
             "a4e95a205d2eb89175d2d6fbb40b2fe60b1f1153fc5a8cf622b82ecaee155b28"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15257,7 +16833,9 @@
           "ordered_frame_sha256s": [
             "06914c5d1849630e8b4a45a9a3e113684a6a190181bf798bc488f7455417c286"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15277,7 +16855,9 @@
           "ordered_frame_sha256s": [
             "80ee8fd93e9b459f353fa9d309303d841917cfb56ce3956ba2ec925c1fd66e55"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15297,7 +16877,9 @@
           "ordered_frame_sha256s": [
             "1d3665959ed71c6e1c21818baca711081e9290d877896a7c235be6aa77d11360"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15317,7 +16899,9 @@
           "ordered_frame_sha256s": [
             "4affab9403672e53a2c4aa8046ebd2ed2668d4049cec10497a87796b27faf9e5"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15337,7 +16921,9 @@
           "ordered_frame_sha256s": [
             "a4e95a205d2eb89175d2d6fbb40b2fe60b1f1153fc5a8cf622b82ecaee155b28"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15348,7 +16934,7 @@
       "label_ko": "좌우 스윙",
       "domain": "switch",
       "existing_owner": true,
-      "wire_evidence": "exact-model-declared-values-no-own-golden",
+      "wire_evidence": "own-model-observed-command-and-state",
       "value_source": "exact-model-web-domain",
       "value_kind": "boolean",
       "values": [
@@ -15358,7 +16944,9 @@
           "ordered_frame_sha256s": [
             "78c5cc06cb07d8b5a8e4f780e73265b720c123fddac55bd914f2a511a3454990"
           ],
-          "reported_value": false
+          "reported_value": false,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "true",
@@ -15366,7 +16954,9 @@
           "ordered_frame_sha256s": [
             "9c8cb2b719f2ca4f85dbde349a7b13d96518ec952bce64ad3adc0678e43a2422"
           ],
-          "reported_value": true
+          "reported_value": true,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15386,7 +16976,9 @@
           "ordered_frame_sha256s": [
             "8d9c207673aff42ac44875c6a61292bcf04c2422cb6fccd4f74192ab2936146a"
           ],
-          "reported_value": "off"
+          "reported_value": "off",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "10 min or firmware ON",
@@ -15394,7 +16986,9 @@
           "ordered_frame_sha256s": [
             "52597a90c75d0ee0ea5d9b6218431d16a82e714adf3b3311b0b0fd100ca326a8"
           ],
-          "reported_value": "10 min or firmware ON"
+          "reported_value": "10 min or firmware ON",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "30 min",
@@ -15402,7 +16996,9 @@
           "ordered_frame_sha256s": [
             "a402f40752eb1f46d52d7915ba9dd924b4e6b29243ea248eeffb74f958186d48"
           ],
-          "reported_value": "30 min"
+          "reported_value": "30 min",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15422,7 +17018,9 @@
           "ordered_frame_sha256s": [
             "13a00ded00beacf822c5d4583ef45d904afba4b7a84b2f7efe360d7709cb4aa9"
           ],
-          "reported_value": "100%"
+          "reported_value": "100%",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15442,7 +17040,9 @@
           "ordered_frame_sha256s": [
             "341479831874f0f56e662a84d6a8f3396aa4ab4a4d5abfe67c74c5fdbdbf676e"
           ],
-          "reported_value": "mid"
+          "reported_value": "mid",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15462,7 +17062,9 @@
           "ordered_frame_sha256s": [
             "653a379d5d7017d62635abeab868e8bc558d4518e0cb4c81f202378ab9e82c83"
           ],
-          "reported_value": "position 1"
+          "reported_value": "position 1",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "position 4",
@@ -15470,7 +17072,9 @@
           "ordered_frame_sha256s": [
             "f4cb5b50c9b78af4d34e7db95b8d357d402b3ddb97bdb3d6212eef264c67d077"
           ],
-          "reported_value": "position 4"
+          "reported_value": "position 4",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "position 5",
@@ -15478,7 +17082,9 @@
           "ordered_frame_sha256s": [
             "9679405f9f8a1ec600c7c9687384c4b6073bb66dc067d7da85bb5ce72343c04a"
           ],
-          "reported_value": "position 5"
+          "reported_value": "position 5",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         },
         {
           "value": "position 6",
@@ -15486,7 +17092,41 @@
           "ordered_frame_sha256s": [
             "cf06ac9287ab2efa3688cd0d08068108c7907401f37a3aea53598d732025153d"
           ],
-          "reported_value": "position 6"
+          "reported_value": "position 6",
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "AIR_2C0001_WW",
+      "capability_id": "operation.mode",
+      "entity_key": "operation_mode",
+      "label_ko": "운전 모드",
+      "domain": "select",
+      "existing_owner": true,
+      "value_source": "exact-model-web-domain",
+      "value_kind": "enum",
+      "values": [
+        {
+          "value": "pet",
+          "label": "반려동물",
+          "ordered_frame_sha256s": [
+            "91f85621e4dc0b011227540c19694f2cce1bbb3c30847ffca60d6f201a80cab4"
+          ],
+          "reported_value": 51,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "new_home",
+          "label": "새집",
+          "ordered_frame_sha256s": [
+            "e401c61de9428a577c34c7747dca8bcc83bdab97c483f21b34b49a5af7950d2e"
+          ],
+          "reported_value": 52,
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
         }
       ]
     },
@@ -15508,6 +17148,56 @@
       "domain": "text",
       "existing_owner": false,
       "parameter_schema": "water-sterilization-calendar-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.hot_temperature_presets",
+      "entity_key": "local_water_hot_temperature_presets",
+      "label_ko": "온수 온도 프리셋 3개 (°C, 쉼표 구분)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-hot-temperature-presets-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.custom_recipe_1.program",
+      "entity_key": "local_water_custom_recipe_1",
+      "label_ko": "맞춤 레시피 1 (replace|종류|양|온도|타이머 분:초 또는 off)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-custom-recipe-replacement-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.custom_recipe_2.program",
+      "entity_key": "local_water_custom_recipe_2",
+      "label_ko": "맞춤 레시피 2 (replace|종류|양|온도|타이머 분:초 또는 off)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-custom-recipe-replacement-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.custom_recipe_3.program",
+      "entity_key": "local_water_custom_recipe_3",
+      "label_ko": "맞춤 레시피 3 (replace|종류|양|온도|타이머 분:초 또는 off)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-custom-recipe-replacement-v1",
+      "values": []
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.custom_recipe_4.program",
+      "entity_key": "local_water_custom_recipe_4",
+      "label_ko": "맞춤 레시피 4 (replace|종류|양|온도|타이머 분:초 또는 off)",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "water-custom-recipe-replacement-v1",
       "values": []
     },
     {
@@ -15537,63 +17227,72 @@
           "label": "10%",
           "ordered_frame_sha256s": [
             "de71ed97eefbd7fbf7aa63e23f31e86356bbf517c0165cdeec6edd4f6a35e807"
-          ]
+          ],
+          "reported_value": 110
         },
         {
           "value": "120",
           "label": "20%",
           "ordered_frame_sha256s": [
             "646ead541ab44cc0a54b36ec18f952e266c14ae551b331ec7d2c6e24cbdcfe65"
-          ]
+          ],
+          "reported_value": 120
         },
         {
           "value": "130",
           "label": "30%",
           "ordered_frame_sha256s": [
             "99f2c945a62bf8be8eb65144f29b0308e36b81c8fa2881cfbbacb4b6c9679f00"
-          ]
+          ],
+          "reported_value": 130
         },
         {
           "value": "140",
           "label": "40%",
           "ordered_frame_sha256s": [
             "61bd355b1755c8da0b3ec1dc8e7f7f9b51f646ea8d1a611ac99a81380800d5cd"
-          ]
+          ],
+          "reported_value": 140
         },
         {
           "value": "160",
           "label": "60%",
           "ordered_frame_sha256s": [
             "0ed18e0db7c9028721b366515c2342171edce0bdb5b9a7401a41f2162dd1b62f"
-          ]
+          ],
+          "reported_value": 160
         },
         {
           "value": "170",
           "label": "70%",
           "ordered_frame_sha256s": [
             "a59a9c604d069ba29a6d0b32325ad1c185107d0d41a79e67bb657e99c9e6c5ce"
-          ]
+          ],
+          "reported_value": 170
         },
         {
           "value": "180",
           "label": "80%",
           "ordered_frame_sha256s": [
             "ac58ef07f68cf63e45485ca3a1d7c1b34e79e7fa93c161382520ae51c9bc0d15"
-          ]
+          ],
+          "reported_value": 180
         },
         {
           "value": "190",
           "label": "90%",
           "ordered_frame_sha256s": [
             "20b4d711d95c188432fede38f914fcd39e980da49d5a1a9008ae8796b129933d"
-          ]
+          ],
+          "reported_value": 190
         },
         {
           "value": "200",
           "label": "100%",
           "ordered_frame_sha256s": [
             "2808c0e7b578004389fb49f163e96fbb13cd8670d84d537a984bfcaa8fcd6355"
-          ]
+          ],
+          "reported_value": 200
         }
       ]
     },
@@ -15636,133 +17335,152 @@
           "label": "red",
           "ordered_frame_sha256s": [
             "8495e329308d7ea8cc6c82916200f2034ee4d410c473f149c367252874a8068e"
-          ]
+          ],
+          "reported_value": 3
         },
         {
           "value": "6",
           "label": "yellow",
           "ordered_frame_sha256s": [
             "305c9f43cc85d636863b4abc02e9b22d03e6de7a2eb3d7ed0910ba0f5485ac96"
-          ]
+          ],
+          "reported_value": 6
         },
         {
           "value": "7",
           "label": "pink",
           "ordered_frame_sha256s": [
             "4e8b0ad7bd57fd26067f68002fa9e349aabe8a64b5fa8c72fc9cf0f375115ffa"
-          ]
+          ],
+          "reported_value": 7
         },
         {
           "value": "8",
           "label": "pureWhite",
           "ordered_frame_sha256s": [
             "1db6fc8c275791c9221871e1c84f08001fc7b5980d738e74fb171f96ba48d44f"
-          ]
+          ],
+          "reported_value": 8
         },
         {
           "value": "10",
           "label": "candleLight",
           "ordered_frame_sha256s": [
             "b3b1aba8ba9848a0ad99069e3a630b6880906b249a390ab9fc73d960bcfbe3e3"
-          ]
+          ],
+          "reported_value": 10
         },
         {
           "value": "11",
           "label": "sunLight",
           "ordered_frame_sha256s": [
             "ce2e22a78d4d74ee9b5895047f1eb3bf4ceeede37b2e364345d91fd6fc4c999e"
-          ]
+          ],
+          "reported_value": 11
         },
         {
           "value": "12",
           "label": "rose",
           "ordered_frame_sha256s": [
             "11808b050ba0ead63ae1358ec2cbc2128d8f0442366b5cc3f7e9acde3fc19b8f"
-          ]
+          ],
+          "reported_value": 12
         },
         {
           "value": "13",
           "label": "mint",
           "ordered_frame_sha256s": [
             "4ea7d946e26afc4d5eaaa5ad43c663908a8fe0fd30f498a8ae1c6b1d6f989ba4"
-          ]
+          ],
+          "reported_value": 13
         },
         {
           "value": "14",
           "label": "lime",
           "ordered_frame_sha256s": [
             "d18424c2bf891dc72fbd9e1358746664096f95694937130fdc2bb9139ef9e9a1"
-          ]
+          ],
+          "reported_value": 14
         },
         {
           "value": "15",
           "label": "veryPeri",
           "ordered_frame_sha256s": [
             "647c1d9cac9383c191fb5f9fbf23147cb7b88381b7b75852e04156c79104ee16"
-          ]
+          ],
+          "reported_value": 15
         },
         {
           "value": "16",
           "label": "warmWhite",
           "ordered_frame_sha256s": [
             "d17efa6707f219dbd5e47993246427ce5e49cd90d43c5a19d32a724e4099c19f"
-          ]
+          ],
+          "reported_value": 16
         },
         {
           "value": "17",
           "label": "coolWhite",
           "ordered_frame_sha256s": [
             "2300d9060d7cb5484913ae447f29233136c513cd64a24aff6e658eac9561566d"
-          ]
+          ],
+          "reported_value": 17
         },
         {
           "value": "18",
           "label": "sapphire",
           "ordered_frame_sha256s": [
             "8901f7d096f413f147b0169554574f1b271c7b281c5cad640bb0fa1c65271c12"
-          ]
+          ],
+          "reported_value": 18
         },
         {
           "value": "19",
           "label": "rainbow",
           "ordered_frame_sha256s": [
             "9fe6bd506aef7839dfa80951519beacfe847a0c894b2d794c6da58474a2e4a7d"
-          ]
+          ],
+          "reported_value": 19
         },
         {
           "value": "20",
           "label": "salmonPink",
           "ordered_frame_sha256s": [
             "81425364f336c9c8745f4568b71a89424b158ec9dcee61d69c14a11bbb000782"
-          ]
+          ],
+          "reported_value": 20
         },
         {
           "value": "23",
           "label": "amber",
           "ordered_frame_sha256s": [
             "95a53c8d187face6c59390b38c96da63f519e6bc4e137b3398f377374bd1eafe"
-          ]
+          ],
+          "reported_value": 23
         },
         {
           "value": "24",
           "label": "lgMagenta",
           "ordered_frame_sha256s": [
             "a324b1317765bcb0684eb2af78e07122158540df9dd01048512f1aec892f1982"
-          ]
+          ],
+          "reported_value": 24
         },
         {
           "value": "25",
           "label": "tangerine",
           "ordered_frame_sha256s": [
             "f50dd1dfd6abd390c1851bcf554b392daae4d24fb321076b9942102a9ab09151"
-          ]
+          ],
+          "reported_value": 25
         },
         {
           "value": "26",
           "label": "ruby",
           "ordered_frame_sha256s": [
             "896b09c07eb3e63f47a6046934335bc420d6a260a21d28e30dee892ff52be4e0"
-          ]
+          ],
+          "reported_value": 26
         }
       ]
     },
@@ -15780,49 +17498,56 @@
           "label": "30%",
           "ordered_frame_sha256s": [
             "ec3ecad9522013f1e7763bd95528db179b94a24ed4179ac8fbb082f2957e25d7"
-          ]
+          ],
+          "reported_value": 30
         },
         {
           "value": "35",
           "label": "35%",
           "ordered_frame_sha256s": [
             "45341f20c430ec9cb69f06f85039d5cb39603fb0fe6f5b1ee5ca9b4a6b941c77"
-          ]
+          ],
+          "reported_value": 35
         },
         {
           "value": "40",
           "label": "40%",
           "ordered_frame_sha256s": [
             "449d3a24f60413907eb90a91539ae693e18edf83009dde495de7aa1510015670"
-          ]
+          ],
+          "reported_value": 40
         },
         {
           "value": "45",
           "label": "45%",
           "ordered_frame_sha256s": [
             "686b9843d0f642f636621098a89b2b4ff327d026c95f5ca65071920f72883582"
-          ]
+          ],
+          "reported_value": 45
         },
         {
           "value": "60",
           "label": "60%",
           "ordered_frame_sha256s": [
             "fad0b5a8d09c043dad11ba4462698e77be6b9da4bce3fab0e974059a861ae77b"
-          ]
+          ],
+          "reported_value": 60
         },
         {
           "value": "65",
           "label": "65%",
           "ordered_frame_sha256s": [
             "e66761cb7dcd76e9875e474cf3ac7f7c30a00eec812a4ae8c9d9b9838ed78d48"
-          ]
+          ],
+          "reported_value": 65
         },
         {
           "value": "70",
           "label": "70%",
           "ordered_frame_sha256s": [
             "98c5ef84a197add9babf3fa7f9a459750455b6fe2d1088626ab2cc9083d65b83"
-          ]
+          ],
+          "reported_value": 70
         }
       ]
     },
@@ -15840,49 +17565,56 @@
           "label": "30%",
           "ordered_frame_sha256s": [
             "ec3ecad9522013f1e7763bd95528db179b94a24ed4179ac8fbb082f2957e25d7"
-          ]
+          ],
+          "reported_value": 30
         },
         {
           "value": "35",
           "label": "35%",
           "ordered_frame_sha256s": [
             "45341f20c430ec9cb69f06f85039d5cb39603fb0fe6f5b1ee5ca9b4a6b941c77"
-          ]
+          ],
+          "reported_value": 35
         },
         {
           "value": "40",
           "label": "40%",
           "ordered_frame_sha256s": [
             "449d3a24f60413907eb90a91539ae693e18edf83009dde495de7aa1510015670"
-          ]
+          ],
+          "reported_value": 40
         },
         {
           "value": "45",
           "label": "45%",
           "ordered_frame_sha256s": [
             "686b9843d0f642f636621098a89b2b4ff327d026c95f5ca65071920f72883582"
-          ]
+          ],
+          "reported_value": 45
         },
         {
           "value": "50",
           "label": "50%",
           "ordered_frame_sha256s": [
             "775e5ef7344718ec9ef2740ea0f758b503e19f76b916c2417c6ca43f0acacb54"
-          ]
+          ],
+          "reported_value": 50
         },
         {
           "value": "65",
           "label": "65%",
           "ordered_frame_sha256s": [
             "e66761cb7dcd76e9875e474cf3ac7f7c30a00eec812a4ae8c9d9b9838ed78d48"
-          ]
+          ],
+          "reported_value": 65
         },
         {
           "value": "70",
           "label": "70%",
           "ordered_frame_sha256s": [
             "98c5ef84a197add9babf3fa7f9a459750455b6fe2d1088626ab2cc9083d65b83"
-          ]
+          ],
+          "reported_value": 70
         }
       ]
     },
@@ -15900,161 +17632,184 @@
           "label": "120분",
           "ordered_frame_sha256s": [
             "2dd14d28c9c46f14399057546715ca1046b39a66f8b4b9817ee16b7be04bc5e1"
-          ]
+          ],
+          "reported_value": 120
         },
         {
           "value": "180",
           "label": "180분",
           "ordered_frame_sha256s": [
             "5b9cb16080448f7854a53c62117a692799403410df19b4045d113f0780fda601"
-          ]
+          ],
+          "reported_value": 180
         },
         {
           "value": "240",
           "label": "240분",
           "ordered_frame_sha256s": [
             "30e6c061dfe3e847a2fdcd3b997edde294aff4944a66eea18f656d9729435c5c"
-          ]
+          ],
+          "reported_value": 240
         },
         {
           "value": "300",
           "label": "300분",
           "ordered_frame_sha256s": [
             "1f6a839ec9f702f0a618b6f34ba3b2f136175dd66b514703e4b179014691712a"
-          ]
+          ],
+          "reported_value": 300
         },
         {
           "value": "360",
           "label": "360분",
           "ordered_frame_sha256s": [
             "ae5171db5860dd9cb1de13755c15074a594f365a999026ecfff141fdb157ee8f"
-          ]
+          ],
+          "reported_value": 360
         },
         {
           "value": "420",
           "label": "420분",
           "ordered_frame_sha256s": [
             "cdf4f47f9e155362556773bc0083645eae36f23ebe19b7e6fd4f6590a85b6dab"
-          ]
+          ],
+          "reported_value": 420
         },
         {
           "value": "480",
           "label": "480분",
           "ordered_frame_sha256s": [
             "f386cd3a5b118ff3e727794821c902f627854a9d7dcdedd292f63b15dd280761"
-          ]
+          ],
+          "reported_value": 480
         },
         {
           "value": "540",
           "label": "540분",
           "ordered_frame_sha256s": [
             "7d41a6e73b89125e678a378282ebcabd12f51333f9dfb8f766e75396fbdbe2f5"
-          ]
+          ],
+          "reported_value": 540
         },
         {
           "value": "600",
           "label": "600분",
           "ordered_frame_sha256s": [
             "791c9f79645125d22a371298638f3c0434a331529d7766676eccc2b91c896b93"
-          ]
+          ],
+          "reported_value": 600
         },
         {
           "value": "660",
           "label": "660분",
           "ordered_frame_sha256s": [
             "8ac568022776b2c5652892872ffef0724dce2497751953d7a9403622652b9ed9"
-          ]
+          ],
+          "reported_value": 660
         },
         {
           "value": "720",
           "label": "720분",
           "ordered_frame_sha256s": [
             "ef47d7363d75107d3b1d168223ede43ebac98c3841cb7b77115c83415e56a259"
-          ]
+          ],
+          "reported_value": 720
         },
         {
           "value": "780",
           "label": "780분",
           "ordered_frame_sha256s": [
             "f00186e5b11a5b10e1ccd50b69d81d165ca30b9dd1b0c5a08a23c42d65a6d0b0"
-          ]
+          ],
+          "reported_value": 780
         },
         {
           "value": "840",
           "label": "840분",
           "ordered_frame_sha256s": [
             "d5b020600a66ac27b992e1a6f326ce5b88f6fefdaab0da67d12f578cceaeb46d"
-          ]
+          ],
+          "reported_value": 840
         },
         {
           "value": "900",
           "label": "900분",
           "ordered_frame_sha256s": [
             "794bb1742e960eda3682652e9960f9b81b266480912e6c4430b23a01a3e7f4af"
-          ]
+          ],
+          "reported_value": 900
         },
         {
           "value": "960",
           "label": "960분",
           "ordered_frame_sha256s": [
             "a3cdeb32b7ab567bc70dbf50067840ae0e8b9bdf308b4a66f4e51d7c2895e93f"
-          ]
+          ],
+          "reported_value": 960
         },
         {
           "value": "1020",
           "label": "1020분",
           "ordered_frame_sha256s": [
             "ddef7fc64a4ce63764b53c31c9b8075fcc7546efcb8f79e60a28b69759b66a6f"
-          ]
+          ],
+          "reported_value": 1020
         },
         {
           "value": "1080",
           "label": "1080분",
           "ordered_frame_sha256s": [
             "90da4d99b77b7732b9b8bb24bcf21a5fd9633bf01634b2c2c9dcfce68608d0f9"
-          ]
+          ],
+          "reported_value": 1080
         },
         {
           "value": "1140",
           "label": "1140분",
           "ordered_frame_sha256s": [
             "fda23e03a98559b1a5136f771176c5d10f4e5c3f7430554bd2f56a90b68ebf92"
-          ]
+          ],
+          "reported_value": 1140
         },
         {
           "value": "1200",
           "label": "1200분",
           "ordered_frame_sha256s": [
             "0bb7b803cfb114d2bc857e88ebd5d54373fe5c24a6f490a21019b094551aa5fc"
-          ]
+          ],
+          "reported_value": 1200
         },
         {
           "value": "1260",
           "label": "1260분",
           "ordered_frame_sha256s": [
             "1315583d0c289ee5196350e79b12840e43fee5fe88fb024b37f99f054acdba52"
-          ]
+          ],
+          "reported_value": 1260
         },
         {
           "value": "1320",
           "label": "1320분",
           "ordered_frame_sha256s": [
             "7453284fda445117986c125bbe749750087a346f4d5db34336ed74d490e5af13"
-          ]
+          ],
+          "reported_value": 1320
         },
         {
           "value": "1380",
           "label": "1380분",
           "ordered_frame_sha256s": [
             "48e0eeabde00828b7e6cfe1fd4467a82485589e8a1464aaf9ee8222da6dedf67"
-          ]
+          ],
+          "reported_value": 1380
         },
         {
           "value": "1440",
           "label": "1440분",
           "ordered_frame_sha256s": [
             "36a454b4063b651fcc428d16fe87c9e6286335c60128f61cecb55576f41e7de4"
-          ]
+          ],
+          "reported_value": 1440
         }
       ]
     },
@@ -16072,84 +17827,96 @@
           "label": "30분",
           "ordered_frame_sha256s": [
             "a142053d4744b7e521150758535f4a74355744ff734b68ad07abe92fbae8161f"
-          ]
+          ],
+          "reported_value": 30
         },
         {
           "value": "120",
           "label": "120분",
           "ordered_frame_sha256s": [
             "2dd14d28c9c46f14399057546715ca1046b39a66f8b4b9817ee16b7be04bc5e1"
-          ]
+          ],
+          "reported_value": 120
         },
         {
           "value": "180",
           "label": "180분",
           "ordered_frame_sha256s": [
             "5b9cb16080448f7854a53c62117a692799403410df19b4045d113f0780fda601"
-          ]
+          ],
+          "reported_value": 180
         },
         {
           "value": "240",
           "label": "240분",
           "ordered_frame_sha256s": [
             "30e6c061dfe3e847a2fdcd3b997edde294aff4944a66eea18f656d9729435c5c"
-          ]
+          ],
+          "reported_value": 240
         },
         {
           "value": "300",
           "label": "300분",
           "ordered_frame_sha256s": [
             "1f6a839ec9f702f0a618b6f34ba3b2f136175dd66b514703e4b179014691712a"
-          ]
+          ],
+          "reported_value": 300
         },
         {
           "value": "360",
           "label": "360분",
           "ordered_frame_sha256s": [
             "ae5171db5860dd9cb1de13755c15074a594f365a999026ecfff141fdb157ee8f"
-          ]
+          ],
+          "reported_value": 360
         },
         {
           "value": "420",
           "label": "420분",
           "ordered_frame_sha256s": [
             "cdf4f47f9e155362556773bc0083645eae36f23ebe19b7e6fd4f6590a85b6dab"
-          ]
+          ],
+          "reported_value": 420
         },
         {
           "value": "480",
           "label": "480분",
           "ordered_frame_sha256s": [
             "f386cd3a5b118ff3e727794821c902f627854a9d7dcdedd292f63b15dd280761"
-          ]
+          ],
+          "reported_value": 480
         },
         {
           "value": "540",
           "label": "540분",
           "ordered_frame_sha256s": [
             "7d41a6e73b89125e678a378282ebcabd12f51333f9dfb8f766e75396fbdbe2f5"
-          ]
+          ],
+          "reported_value": 540
         },
         {
           "value": "600",
           "label": "600분",
           "ordered_frame_sha256s": [
             "791c9f79645125d22a371298638f3c0434a331529d7766676eccc2b91c896b93"
-          ]
+          ],
+          "reported_value": 600
         },
         {
           "value": "660",
           "label": "660분",
           "ordered_frame_sha256s": [
             "8ac568022776b2c5652892872ffef0724dce2497751953d7a9403622652b9ed9"
-          ]
+          ],
+          "reported_value": 660
         },
         {
           "value": "720",
           "label": "720분",
           "ordered_frame_sha256s": [
             "ef47d7363d75107d3b1d168223ede43ebac98c3841cb7b77115c83415e56a259"
-          ]
+          ],
+          "reported_value": 720
         }
       ]
     },
@@ -16167,21 +17934,24 @@
           "label": "240분",
           "ordered_frame_sha256s": [
             "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
-          ]
+          ],
+          "reported_value": 240
         },
         {
           "value": "480",
           "label": "480분",
           "ordered_frame_sha256s": [
             "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
-          ]
+          ],
+          "reported_value": 480
         },
         {
           "value": "720",
           "label": "720분",
           "ordered_frame_sha256s": [
             "d0b3366266011d3ce3958b6125aa73465ef6dcd609fe416ec91f407e328684f7"
-          ]
+          ],
+          "reported_value": 720
         }
       ]
     },
@@ -16199,70 +17969,80 @@
           "label": "120분",
           "ordered_frame_sha256s": [
             "34abed66a7f74d8be8b279f2756cf44802568c1e5b98fab3db1ee4d0c049f390"
-          ]
+          ],
+          "reported_value": 120
         },
         {
           "value": "180",
           "label": "180분",
           "ordered_frame_sha256s": [
             "3888cc30f9728648bb69f5ab9cbeede3fe474d147e23cda8408b2e2f1eef65d1"
-          ]
+          ],
+          "reported_value": 180
         },
         {
           "value": "240",
           "label": "240분",
           "ordered_frame_sha256s": [
             "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
-          ]
+          ],
+          "reported_value": 240
         },
         {
           "value": "300",
           "label": "300분",
           "ordered_frame_sha256s": [
             "0182d79cc6402c78c72a3ae754b5e961d8afe56502975b22e1a494561f253bce"
-          ]
+          ],
+          "reported_value": 300
         },
         {
           "value": "360",
           "label": "360분",
           "ordered_frame_sha256s": [
             "5f16ef34bc5c4db578e0e15ab4ed13a941a4e3238e83d0276e050055a9997a93"
-          ]
+          ],
+          "reported_value": 360
         },
         {
           "value": "420",
           "label": "420분",
           "ordered_frame_sha256s": [
             "75148641173ddc8c23ad7b6b8744ba2678f4f74aea5c6065249c7e82c8b984bf"
-          ]
+          ],
+          "reported_value": 420
         },
         {
           "value": "480",
           "label": "480분",
           "ordered_frame_sha256s": [
             "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
-          ]
+          ],
+          "reported_value": 480
         },
         {
           "value": "540",
           "label": "540분",
           "ordered_frame_sha256s": [
             "1e53e346e22dbd0b9c8fb814954f24c1e20087574dae2b9fe6bb0315870cf3f3"
-          ]
+          ],
+          "reported_value": 540
         },
         {
           "value": "600",
           "label": "600분",
           "ordered_frame_sha256s": [
             "dfa995c7365005dcecccb5e2ec3b8566f29db632c14d25fe3a94112ee6c6b243"
-          ]
+          ],
+          "reported_value": 600
         },
         {
           "value": "660",
           "label": "660분",
           "ordered_frame_sha256s": [
             "3d28c2c7fd2149d96cf26c05340fe11815406090abbfcd98633e218a85940bca"
-          ]
+          ],
+          "reported_value": 660
         }
       ]
     },
@@ -16280,70 +18060,171 @@
           "label": "60분",
           "ordered_frame_sha256s": [
             "20af8216a15ccf08885608f4728499ba2f0a8a46ea10780f9de1477dfc53e83e"
-          ]
+          ],
+          "reported_value": 60
         },
         {
           "value": "90",
           "label": "90분",
           "ordered_frame_sha256s": [
             "5ccb8733d486e5592ded74a4976dd962de0e89827d3c10ce6a8e53159934d5cd"
-          ]
+          ],
+          "reported_value": 90
         },
         {
           "value": "120",
           "label": "120분",
           "ordered_frame_sha256s": [
             "34abed66a7f74d8be8b279f2756cf44802568c1e5b98fab3db1ee4d0c049f390"
-          ]
+          ],
+          "reported_value": 120
         },
         {
           "value": "150",
           "label": "150분",
           "ordered_frame_sha256s": [
             "de78cb99bcf8e7e889b6f22a08ee163c66b6519d873e2ba7647ec2ddee3ead24"
-          ]
+          ],
+          "reported_value": 150
         },
         {
           "value": "180",
           "label": "180분",
           "ordered_frame_sha256s": [
             "3888cc30f9728648bb69f5ab9cbeede3fe474d147e23cda8408b2e2f1eef65d1"
-          ]
+          ],
+          "reported_value": 180
         },
         {
           "value": "240",
           "label": "240분",
           "ordered_frame_sha256s": [
             "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
-          ]
+          ],
+          "reported_value": 240
         },
         {
           "value": "300",
           "label": "300분",
           "ordered_frame_sha256s": [
             "0182d79cc6402c78c72a3ae754b5e961d8afe56502975b22e1a494561f253bce"
-          ]
+          ],
+          "reported_value": 300
         },
         {
           "value": "360",
           "label": "360분",
           "ordered_frame_sha256s": [
             "5f16ef34bc5c4db578e0e15ab4ed13a941a4e3238e83d0276e050055a9997a93"
-          ]
+          ],
+          "reported_value": 360
         },
         {
           "value": "420",
           "label": "420분",
           "ordered_frame_sha256s": [
             "75148641173ddc8c23ad7b6b8744ba2678f4f74aea5c6065249c7e82c8b984bf"
-          ]
+          ],
+          "reported_value": 420
         },
         {
           "value": "480",
           "label": "480분",
           "ordered_frame_sha256s": [
             "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
-          ]
+          ],
+          "reported_value": 480
+        }
+      ]
+    },
+    {
+      "model_id": "CST_570004_WW",
+      "capability_id": "timer.sleep_remaining_min",
+      "entity_key": "local_timer_sleep_remaining_min",
+      "label_ko": "취침 예약",
+      "domain": "select",
+      "existing_owner": false,
+      "value_source": "exact-model-web-domain",
+      "values": [
+        {
+          "value": "60",
+          "label": "60분",
+          "ordered_frame_sha256s": [
+            "20af8216a15ccf08885608f4728499ba2f0a8a46ea10780f9de1477dfc53e83e"
+          ],
+          "reported_value": 60
+        },
+        {
+          "value": "90",
+          "label": "90분",
+          "ordered_frame_sha256s": [
+            "5ccb8733d486e5592ded74a4976dd962de0e89827d3c10ce6a8e53159934d5cd"
+          ],
+          "reported_value": 90
+        },
+        {
+          "value": "120",
+          "label": "120분",
+          "ordered_frame_sha256s": [
+            "34abed66a7f74d8be8b279f2756cf44802568c1e5b98fab3db1ee4d0c049f390"
+          ],
+          "reported_value": 120
+        },
+        {
+          "value": "150",
+          "label": "150분",
+          "ordered_frame_sha256s": [
+            "de78cb99bcf8e7e889b6f22a08ee163c66b6519d873e2ba7647ec2ddee3ead24"
+          ],
+          "reported_value": 150
+        },
+        {
+          "value": "180",
+          "label": "180분",
+          "ordered_frame_sha256s": [
+            "3888cc30f9728648bb69f5ab9cbeede3fe474d147e23cda8408b2e2f1eef65d1"
+          ],
+          "reported_value": 180
+        },
+        {
+          "value": "240",
+          "label": "240분",
+          "ordered_frame_sha256s": [
+            "ebdff3c3c199b6a76592c041838c8e34973c722d8eb2b9103be0b58cbb250098"
+          ],
+          "reported_value": 240
+        },
+        {
+          "value": "300",
+          "label": "300분",
+          "ordered_frame_sha256s": [
+            "0182d79cc6402c78c72a3ae754b5e961d8afe56502975b22e1a494561f253bce"
+          ],
+          "reported_value": 300
+        },
+        {
+          "value": "360",
+          "label": "360분",
+          "ordered_frame_sha256s": [
+            "5f16ef34bc5c4db578e0e15ab4ed13a941a4e3238e83d0276e050055a9997a93"
+          ],
+          "reported_value": 360
+        },
+        {
+          "value": "420",
+          "label": "420분",
+          "ordered_frame_sha256s": [
+            "75148641173ddc8c23ad7b6b8744ba2678f4f74aea5c6065249c7e82c8b984bf"
+          ],
+          "reported_value": 420
+        },
+        {
+          "value": "480",
+          "label": "480분",
+          "ordered_frame_sha256s": [
+            "3dc96913cfbc1758ff64b0318e245a42029c885952c638572db8aa2c3565b40d"
+          ],
+          "reported_value": 480
         }
       ]
     },
@@ -16361,21 +18242,24 @@
           "label": "1",
           "ordered_frame_sha256s": [
             "653a379d5d7017d62635abeab868e8bc558d4518e0cb4c81f202378ab9e82c83"
-          ]
+          ],
+          "reported_value": 1
         },
         {
           "value": "2",
           "label": "2",
           "ordered_frame_sha256s": [
             "4b0cdf3d008e018071ae891eb17565d628e61d162bdb0942c6ea056e8367a546"
-          ]
+          ],
+          "reported_value": 2
         },
         {
           "value": "3",
           "label": "3",
           "ordered_frame_sha256s": [
             "4a4838516c74487f02cbe7b1bfbfd31c9e34911207c07e5fb317e62e2537bac7"
-          ]
+          ],
+          "reported_value": 3
         }
       ]
     },
@@ -16387,6 +18271,16 @@
       "domain": "text",
       "existing_owner": false,
       "parameter_schema": "water-dnd-window-kst-v1",
+      "values": []
+    },
+    {
+      "model_id": "ST_R_ETH01Y_",
+      "capability_id": "styler.do_not_disturb.reservation",
+      "entity_key": "local_styler_do_not_disturb_reservation",
+      "label_ko": "방해 금지 시간·음소거",
+      "domain": "text",
+      "existing_owner": false,
+      "parameter_schema": "styler-do-not-disturb-reservation-v1",
       "values": []
     },
     {
@@ -16454,336 +18348,384 @@
           "label": "00:00",
           "ordered_frame_sha256s": [
             "66d708faf1f602000f88acf5bd39cd23d24eaffcae4fd9ac568d6670769b15f9"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "00:30",
           "label": "00:30",
           "ordered_frame_sha256s": [
             "3c254f347b360ac461e99a7e04e3278cd2e3e2ebc1191801dd876a41ebf8bdbd"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "01:00",
           "label": "01:00",
           "ordered_frame_sha256s": [
             "6098f8379fcb54c023fecaa4c95293fe4be970dc96e297d84734cac967a7d857"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "01:30",
           "label": "01:30",
           "ordered_frame_sha256s": [
             "0d2e78993cb957298cae4df18c03e2b364ffa2e266823d59602a843ce6cc6c0a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "02:00",
           "label": "02:00",
           "ordered_frame_sha256s": [
             "8686262fb51f8547399c01e936c47a6b9bff44fd679a0f4b7f69b24bc41c1803"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "02:30",
           "label": "02:30",
           "ordered_frame_sha256s": [
             "473373ae4b922e34bc85451e50218f6929c74a7529ecd247682d481bbedc0cf6"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "03:00",
           "label": "03:00",
           "ordered_frame_sha256s": [
             "2d4fd333e46ce2517cefa5ab446ddaab66061213708ee1874424ec058fd1e499"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "03:30",
           "label": "03:30",
           "ordered_frame_sha256s": [
             "58b725b477c1443325cfc392945f377afd92dbc72b29a2264e13204a07346185"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "04:00",
           "label": "04:00",
           "ordered_frame_sha256s": [
             "382b887e857a33bc749906846262dc97983b996a1dfa17cedef6ef2d846cac44"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "04:30",
           "label": "04:30",
           "ordered_frame_sha256s": [
             "87583754ca8b08a5c2b667b4740f354c29c4ea5044fe813ed6cf2b515c3d94af"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "05:00",
           "label": "05:00",
           "ordered_frame_sha256s": [
             "2a2f92bef93a81b8010bd9ed3119b597fae5d334d4eb5eaae8a252f0d64f7ad5"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "05:30",
           "label": "05:30",
           "ordered_frame_sha256s": [
             "50ca276c2af30651cf9dd6441c3e44942221a9aa9a79a9c7c7179e0b4e932c1f"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "06:00",
           "label": "06:00",
           "ordered_frame_sha256s": [
             "d61a3a1b872707ccf6ae9650209d67df5ae752e349c40faba0f9a41b59b64175"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "06:30",
           "label": "06:30",
           "ordered_frame_sha256s": [
             "c697275ee7f70baca463e997f7b19665043221df3393d514153ecb26cb3d6e3a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "07:00",
           "label": "07:00",
           "ordered_frame_sha256s": [
             "2a50481b352fec23c55743a11e634532cad1c35d5f595c2a3197ee76b967cf31"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "07:30",
           "label": "07:30",
           "ordered_frame_sha256s": [
             "3e7ef61c6ad9ad072c0f0189faa057a265d3e9acc3246a1327a737fcc156168e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "08:00",
           "label": "08:00",
           "ordered_frame_sha256s": [
             "19506766b25313d8292d91c217ce9e7fd7a2fbf446146bb9e47555eab27e5138"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "08:30",
           "label": "08:30",
           "ordered_frame_sha256s": [
             "3a7198c3ee2f1f6a9344df7d1ada56abe94e25bc27840e3ad08dd34eb8dc2533"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "09:00",
           "label": "09:00",
           "ordered_frame_sha256s": [
             "4072c7b2f7792456a5db29c61fb907749f4c71283c361f28d910d37ba0a6db85"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "09:30",
           "label": "09:30",
           "ordered_frame_sha256s": [
             "80dc7fdb0d1c862ee070b32625718bdaf1663b1ecf4afbed57f498b927531d6b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10:00",
           "label": "10:00",
           "ordered_frame_sha256s": [
             "43381a5a36e11d202219e7c27730962822d112678c67239bbc72e00dd8a9fd68"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10:30",
           "label": "10:30",
           "ordered_frame_sha256s": [
             "e7aa16178aa4d61c190142964a536d5c12186974dc0c240146f1ab0117139dc9"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11:00",
           "label": "11:00",
           "ordered_frame_sha256s": [
             "ff793cde7b4153b11a16fe81391f34d1188aee4ce2c53e5c7d402451c18ee241"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11:30",
           "label": "11:30",
           "ordered_frame_sha256s": [
             "889d598ba7d6bb82986eeb5a42cd8cc3840e371b73b1c48beb556d5c536ea772"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "12:00",
           "label": "12:00",
           "ordered_frame_sha256s": [
             "4143698fc04c000e763208247dee82c9d69979734436b7258203e4eefaf932b6"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "12:30",
           "label": "12:30",
           "ordered_frame_sha256s": [
             "d054488ad875db3304e2e3ca8ab865d9b2aebfcb3eaf517a1f55aa9374bca84e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "13:00",
           "label": "13:00",
           "ordered_frame_sha256s": [
             "0b86bd65fcb2ec8cfda6b9633b3d251156e2df929e50ad566605f75755535dd5"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "13:30",
           "label": "13:30",
           "ordered_frame_sha256s": [
             "72e855a712499b20cd175cdae2bb8f3d41b917f7b28c55f1d24e18a8708bda5b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "14:00",
           "label": "14:00",
           "ordered_frame_sha256s": [
             "299977309067064a89afaf7f822789a2a068ef6bed3262903826baf9b1c73dd1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "14:30",
           "label": "14:30",
           "ordered_frame_sha256s": [
             "e13d21dd1f4d160464035747898f684e21445227e906019c9b97762b8f1e98fd"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "15:00",
           "label": "15:00",
           "ordered_frame_sha256s": [
             "2557e461b3aa8361d288c05ea7b3beae0b22d2d26465819c03faecd42fd5fa58"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "15:30",
           "label": "15:30",
           "ordered_frame_sha256s": [
             "f65fd8dbda3346f76a245ec97d1ca7c4d81a3425fdca136e68464cd213c25888"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "16:00",
           "label": "16:00",
           "ordered_frame_sha256s": [
             "302fe0e9969f996387a92e35293a46187c0794f84d97a6dc1d8d586433399ab4"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "16:30",
           "label": "16:30",
           "ordered_frame_sha256s": [
             "4f3f8b0e75618fde14e8f7e645941c2926adbde68b4de80a26f1f6ad9be37468"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "17:00",
           "label": "17:00",
           "ordered_frame_sha256s": [
             "69a6a531650d5ee4f8e1af1cd9cc5256f2cd4b0cb7c2b933587e1ebb7c7889c3"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "17:30",
           "label": "17:30",
           "ordered_frame_sha256s": [
             "c81f351a0539b6e39719f747dc7187506a585876cc23632094a7e6d0747c3025"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "18:00",
           "label": "18:00",
           "ordered_frame_sha256s": [
             "0c9977358c84dfaffc8339908f15287f2820cb924c2e6c266dc516ef3beda862"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "18:30",
           "label": "18:30",
           "ordered_frame_sha256s": [
             "8f1cf2de91d266292fb03d9fdeb12688376f409517828eae46d2411961825c90"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "19:00",
           "label": "19:00",
           "ordered_frame_sha256s": [
             "262309b2d589f23b773dde81699a36500c0e14bc185895b3c007b3d634bd29b8"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "19:30",
           "label": "19:30",
           "ordered_frame_sha256s": [
             "858bc2e5c41448e014081bad6f75e4c7dedb817510dd9a7c3b930cf317f1bdf8"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "20:00",
           "label": "20:00",
           "ordered_frame_sha256s": [
             "6da09700a1998a84f632891a4efd862e8405f778bc807a6d04a82afd0c7d047c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "20:30",
           "label": "20:30",
           "ordered_frame_sha256s": [
             "cf0b169df595caba6a5c13101dc76f64abeed5e1384090b66818eafb76a66224"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "21:00",
           "label": "21:00",
           "ordered_frame_sha256s": [
             "835921c8bccc1e84d5a25fb0483abfc0b4b4c0427d23872ec966628462209159"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "21:30",
           "label": "21:30",
           "ordered_frame_sha256s": [
             "66e208fc2f8c7876e6075d4afcbd50c402670303c77adb772b12d3c5b9dd4003"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "22:00",
           "label": "22:00",
           "ordered_frame_sha256s": [
             "8b9f47efee4aebbec52285938215e6499de78624f4bff831ae84fa5e3fa9ee75"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "22:30",
           "label": "22:30",
           "ordered_frame_sha256s": [
             "364f3aa5918d1079101fa594290725b83a6a5b9bdf04bb7e7d7069a4617723de"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "23:00",
           "label": "23:00",
           "ordered_frame_sha256s": [
             "d2fd5f901f2bdb6e20e331574c7b3fb5b0c16d11cec2e5c36516cb00363e4df9"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "23:30",
           "label": "23:30",
           "ordered_frame_sha256s": [
             "2d7a1cbd0ed90a2a61755d0e8098c67969a98b3ccc4d3ba2acb22b90bce79f70"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -16800,336 +18742,384 @@
           "label": "00:00",
           "ordered_frame_sha256s": [
             "05bf29a540d59d7e8ca70b3baa9c691b550f69f87eb11b076a9ba49dcc627789"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "00:30",
           "label": "00:30",
           "ordered_frame_sha256s": [
             "7ca1f560966804147805db1188126723ebce313ba396f1e993aab6372b88fdd7"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "01:00",
           "label": "01:00",
           "ordered_frame_sha256s": [
             "32b53a795d350fcbc886863675f10924579663d7f6ad2a9085bf6c1b012bf5bf"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "01:30",
           "label": "01:30",
           "ordered_frame_sha256s": [
             "04692948f7c802c4575952e19a8ed7f2e97b946b664d386fa55934d7b72e906a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "02:00",
           "label": "02:00",
           "ordered_frame_sha256s": [
             "fa598a716840226c4fea2aab32052d4e69b03269d53aab035e6595c36e7d0a43"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "02:30",
           "label": "02:30",
           "ordered_frame_sha256s": [
             "3df27dca55dc79de5e54c6a7f3d71e8cb2d59e464741e42d99de7dc02057dade"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "03:00",
           "label": "03:00",
           "ordered_frame_sha256s": [
             "14a12e009bb708fda104fec66a9d898ea8ee87117c275aefd727c69b976c3c3e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "03:30",
           "label": "03:30",
           "ordered_frame_sha256s": [
             "77503594552a84589c72ca62ceacca16fdafe5d8a05e770d9f56f797c5d98aab"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "04:00",
           "label": "04:00",
           "ordered_frame_sha256s": [
             "3f1770c3bf32a06e7469211033283de1e9e8b4e9495e1da40a0a553734bf1dd3"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "04:30",
           "label": "04:30",
           "ordered_frame_sha256s": [
             "273ce80111184f6f625fa9c995cbe54b25f6d89068a250eabebd4573eefb9b8d"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "05:00",
           "label": "05:00",
           "ordered_frame_sha256s": [
             "6db607270ed5d71c0ac8c855033c4526f060630d1d13b401ef3774fd105496ab"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "05:30",
           "label": "05:30",
           "ordered_frame_sha256s": [
             "58ee39176ac8b1d2959012845b1dbdd753b11e078b837dbe3bf6db2e22603c33"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "06:00",
           "label": "06:00",
           "ordered_frame_sha256s": [
             "80da5d78061147e0e7b9db635b2e26e1191764f21d1ee55532a36b195885f89b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "06:30",
           "label": "06:30",
           "ordered_frame_sha256s": [
             "76eca1dc41c609ae609cf0ce0f47750c991ddb8c9320fd3a2c61a3ec95075089"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "07:00",
           "label": "07:00",
           "ordered_frame_sha256s": [
             "417ccc54d5351d909ad85731211a94af37ebfe18e72488f9f2766c8acf20fc51"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "07:30",
           "label": "07:30",
           "ordered_frame_sha256s": [
             "5828309811cbf794f09308b66306fd42bfd14eff7ae943e259bca2b7cdaac435"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "08:00",
           "label": "08:00",
           "ordered_frame_sha256s": [
             "829fc01877fd7bae937633568b6c90870868593d1183c0113296768d9c6f2f56"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "08:30",
           "label": "08:30",
           "ordered_frame_sha256s": [
             "6f1a4b7dbb4b1d155343ee74d52bedbfedd7899a8e0fa1887b1bb49ea4b95c5c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "09:00",
           "label": "09:00",
           "ordered_frame_sha256s": [
             "c08af465803c39f801eab28c9260134ff9a6acd7dc96410ad4078b527bd42603"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "09:30",
           "label": "09:30",
           "ordered_frame_sha256s": [
             "eb4a0f173cd5617d45c9ed8f25dd7f3fc241cd4588629d37d2cfccc2a238c7d1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10:00",
           "label": "10:00",
           "ordered_frame_sha256s": [
             "74d73c4e063c954a7d268ffdd671a23201171f0ddb1001dd5571fe7d37dbff32"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10:30",
           "label": "10:30",
           "ordered_frame_sha256s": [
             "065962433aeb6828309707c0e61f4bba423036dbffb8f5d983acb099edc7d65f"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11:00",
           "label": "11:00",
           "ordered_frame_sha256s": [
             "8a78ba0606c39f5f8af53c523915824e612d7a0343c7bf2f36551892bba14997"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11:30",
           "label": "11:30",
           "ordered_frame_sha256s": [
             "318a1b926e3c39d77b10b9d5305c8eaf9e6b062e187cd5468f1c88da061a4824"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "12:00",
           "label": "12:00",
           "ordered_frame_sha256s": [
             "a6618b64c02eed48c1c6f4cb19175bb3b2741a85c8f0e7c883ab92816e438db7"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "12:30",
           "label": "12:30",
           "ordered_frame_sha256s": [
             "81b6c18b3a4af609dc48ec59915e6dca8960f6610899901c076ff669d3a72002"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "13:00",
           "label": "13:00",
           "ordered_frame_sha256s": [
             "cbc2acec3197bea72a1f7fe95e7c7332fcb537e713c29886df885b9a5e000818"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "13:30",
           "label": "13:30",
           "ordered_frame_sha256s": [
             "45fba3248617485505d6967f8e8be0ef2ce4abc1b44caf8889b8c593d88e0876"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "14:00",
           "label": "14:00",
           "ordered_frame_sha256s": [
             "6233d1a97a04a66b938cfc02bb6380b6c127bdc2c114d5c9c67e5c193ec0f014"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "14:30",
           "label": "14:30",
           "ordered_frame_sha256s": [
             "e0916906c100de9f88e016322274d94437aeedd9012e66f5156613a880ff87e8"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "15:00",
           "label": "15:00",
           "ordered_frame_sha256s": [
             "47c201c7187f7ff4679bd33b38c3270fbba61520162b7f35448dfa937745df99"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "15:30",
           "label": "15:30",
           "ordered_frame_sha256s": [
             "c26bd673320a84c130f3aa548e3bc93518131130b3c26b8a920e0dda5c0d50ca"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "16:00",
           "label": "16:00",
           "ordered_frame_sha256s": [
             "52b6e2b0a1e427af0061f4d82d50290dfe944a571795e0fdac2f48af7aa9d49a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "16:30",
           "label": "16:30",
           "ordered_frame_sha256s": [
             "68be7fc18e80af9fcf5dcec807b7971c9c56846ef589803034abc79ebd9ebfb6"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "17:00",
           "label": "17:00",
           "ordered_frame_sha256s": [
             "ca19d0364650e403909efcd85ca89c9118b21df92d224c70affda97d5c909796"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "17:30",
           "label": "17:30",
           "ordered_frame_sha256s": [
             "27d201716df0c5eecf551753a7d39a11a90c2f374689e8591544441c76396706"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "18:00",
           "label": "18:00",
           "ordered_frame_sha256s": [
             "921c7b0c03c45a9fbac430d84f89476801c4ac45e532bd56c46ba37a3f8714ce"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "18:30",
           "label": "18:30",
           "ordered_frame_sha256s": [
             "90808f6cea2baa6fba4f13e2220c1fa8e693cef3452f845cceae84642005766b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "19:00",
           "label": "19:00",
           "ordered_frame_sha256s": [
             "fc20cd4669ae952fd122deea89de53cd79f01b03e0b0f9b98c3389a2fa5d28c6"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "19:30",
           "label": "19:30",
           "ordered_frame_sha256s": [
             "a2b91f17d35803515bc684121fd85eb300fd77f99601d2471d7e62f14430ef96"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "20:00",
           "label": "20:00",
           "ordered_frame_sha256s": [
             "065343c1585750443909c51527f80ec1c2db4aebbcd61cc63bb774ff6dd6670b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "20:30",
           "label": "20:30",
           "ordered_frame_sha256s": [
             "2bb1f4a196aa31b24cb4d633bda74d31fcbc92c2894951d87986eb01c3a64885"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "21:00",
           "label": "21:00",
           "ordered_frame_sha256s": [
             "2ce3ee9b6111870d7e4a84926bb60b9f043b4ce7d860e0bb131c1cd39e56ce31"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "21:30",
           "label": "21:30",
           "ordered_frame_sha256s": [
             "0ca7364ace4b2c772e38ef84d4f5da7ebdd437f906d6a775d4e5c73c4b4ab64c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "22:00",
           "label": "22:00",
           "ordered_frame_sha256s": [
             "65b042427235a35385c62f2431ba36589e927bf14199780dd28b5e278b39b229"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "22:30",
           "label": "22:30",
           "ordered_frame_sha256s": [
             "8c3713b5ac7d19d734c17ec983626d22504906ddfc75e3460e9a6aa9742d1ed5"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "23:00",
           "label": "23:00",
           "ordered_frame_sha256s": [
             "8091d6c3b9500eb7b9814e7c21811ddeb374625c918eb63c26c663c0dbdba575"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "23:30",
           "label": "23:30",
           "ordered_frame_sha256s": [
             "0ebd4a3b5ff3389d6a0d358f1a17075cb2a63b16c22c27f141fe6b4bc8b2b0c4"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17146,35 +19136,40 @@
           "label": "무음",
           "ordered_frame_sha256s": [
             "917ed17ee23b9f4983b351f382fd840250170973829be864b0a6ae9c5a042356"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "1",
           "label": "작게",
           "ordered_frame_sha256s": [
             "067e7ab3fd14b16e442a1475aaf5c348ea453d9c00d19db330a4909516d7aff4"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "2",
           "label": "보통",
           "ordered_frame_sha256s": [
             "f495898466d132de2b478ce792ade19ab2feab982fcf3e9c5d77f8a4595be9b7"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "3",
           "label": "크게",
           "ordered_frame_sha256s": [
             "5cd95ffa1fc818b6937f4df4651a7fbc3b19837120bea2d61c64fd1d0cfefd8e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "아주 크게",
           "ordered_frame_sha256s": [
             "9105b27235a137813904c3d254fb3f4cf8eaf7808def3f251bf52b868cb30dbb"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17191,119 +19186,136 @@
           "label": "기본",
           "ordered_frame_sha256s": [
             "06921e2fee7f819796789872af095c36bc74b5f391770d2be6998295cb8ce6ff"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "1",
           "label": "비발디 겨울",
           "ordered_frame_sha256s": [
             "e99aa5b0df86aee5e5c22578dbe16f360831e3466e2825752c096252c411236a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "2",
           "label": "바흐 미뉴에트",
           "ordered_frame_sha256s": [
             "da5d8b90240d29b55bff9a58461bd3270868489830e080ae51569c3ea481fe7c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "3",
           "label": "즐거운 나의 집",
           "ordered_frame_sha256s": [
             "de19ffd808a537522ecf4cd85d4eb89aaf96f74c7b3997a00d17aeee0afbdf59"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "산들바람",
           "ordered_frame_sha256s": [
             "7a292910839f888f0d4edae55aeba3591cfd034d2f576fab41608367a39e54cb"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "5",
           "label": "올드 맥도널드",
           "ordered_frame_sha256s": [
             "26c4363555e8b6ef748579e26231fd3986880a3a79830a848148a10fc5f8dcca"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "6",
           "label": "베르디 라 트라비아타",
           "ordered_frame_sha256s": [
             "20e4b73a4650bf33c041935a81a39f3e0e47bf08f5e2871ff2eb84bab08481fc"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "7",
           "label": "버블",
           "ordered_frame_sha256s": [
             "f77b9dcc6d4f6a8ad7b1010b97b16beb27a0ff5e54350a5194f428afa2c62702"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "8",
           "label": "베토벤 교향곡 5번",
           "ordered_frame_sha256s": [
             "43686caefa24c934a8b8ae27cc2bbb8928eb9578d2bacc2436a9809eb4237953"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "9",
           "label": "아리랑",
           "ordered_frame_sha256s": [
             "cca13be6c7aa8e86c17433ae82d02f4c039ad8d1f25fea91235a2ad54cfb832c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10",
           "label": "파헬벨 캐논",
           "ordered_frame_sha256s": [
             "8eb83a3c9889269b11a9367f38bb1495e9545765481ec94adbd9398c8ee40f17"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11",
           "label": "베토벤 교향곡 9번",
           "ordered_frame_sha256s": [
             "545cbd01c1f6547a5daa830e01b522f63d09ff2fd1871800ff91993b19c5c8d1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "12",
           "label": "징글벨 도입",
           "ordered_frame_sha256s": [
             "32486e010ac20649ae8331be24653f38156f74e75e9d20e784431b009e496022"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "13",
           "label": "징글벨 후렴",
           "ordered_frame_sha256s": [
             "c6133f997683759ed6e4b061452ffa459cd682061a6945eee3c19789a8e5658d"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "14",
           "label": "위 위시 유 어 메리 크리스마스",
           "ordered_frame_sha256s": [
             "804c0e97a0b679832883f951c94cfb00823f84db7f64647719db619218cca23b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "15",
           "label": "고요한 밤",
           "ordered_frame_sha256s": [
             "b5de302fd2b15970b0fc111e7f621e7441312b795181244eedc699fabe551e89"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "16",
           "label": "오 크리스마스 트리",
           "ordered_frame_sha256s": [
             "5780ff066b45bb63f821ad13dd008d357d364bd4b1b107bf946df0bff245730b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17320,84 +19332,96 @@
           "label": "기본",
           "ordered_frame_sha256s": [
             "8621fc99b47887f90c5ccad6eb1ef5d6e762d952cf6448941a0a7e90787ef1ac"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "1",
           "label": "겨울 눈사람 1",
           "ordered_frame_sha256s": [
             "4431dcdf695f26c220e101ec7a843cea4241c3eccf0ff749b4739b844ad4657a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "2",
           "label": "겨울 눈사람 2",
           "ordered_frame_sha256s": [
             "df7257fe18ed84fb967a367104146671a92ad075a0782b0700c3980fe16d4021"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "3",
           "label": "겨울 인사",
           "ordered_frame_sha256s": [
             "d7ffce0f0068ed2e74c7cdb47a6fb4f19f4ae3efa0f951712259aa92500e4bf0"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "봄 인사",
           "ordered_frame_sha256s": [
             "dac4f29458fd714b80089c6d9b56402b3acdc6fb8e49b74a97d12149388c1fd1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "5",
           "label": "봄 지구",
           "ordered_frame_sha256s": [
             "4c34443ef8cb954743b35f31976147d5cd7c703731f446a9277e81bb6a98cd23"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "6",
           "label": "여름 태양",
           "ordered_frame_sha256s": [
             "71061382520cc05843188ad69c7db36db3bf6671e6c18b2f2e3b5aefe5973f37"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "7",
           "label": "여름 파라솔",
           "ordered_frame_sha256s": [
             "57f3cab0198821e30b50375ca2c62aaa30f357d9fcafd4758ab6b00b0f8d721e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "8",
           "label": "가을 단풍",
           "ordered_frame_sha256s": [
             "ceec553f4b6438a4fbd70c61d0417c62b3822a727754295eca500e586e2868bb"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "9",
           "label": "가을 할로윈",
           "ordered_frame_sha256s": [
             "d37e3cbe9b95711b5b7e0123820ff1f721babb83ee432141ad87bdfc1a736385"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10",
           "label": "새해",
           "ordered_frame_sha256s": [
             "edc0f24ba29d1aba2d78beddecf473a275e9865c8e44b5f133fdcbf2c0197457"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11",
           "label": "크리스마스",
           "ordered_frame_sha256s": [
             "bdc2cdd51b1df62fcb73fa6940695aa9f1d702c3ffaf338412a2714d89a0b0fc"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17414,35 +19438,75 @@
           "label": "기본",
           "ordered_frame_sha256s": [
             "0ff4b6c5bd86000bd456c888f85c02ac010c5fadc6552b38cc5fa3656ce6ac5b"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "1",
           "label": "알림음 1",
           "ordered_frame_sha256s": [
             "87857d1f2a59c7564402034243f49954b955b6e11f38348d393a1521d6b480ad"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "2",
           "label": "알림음 2",
           "ordered_frame_sha256s": [
             "bca60df884277611906636f46f6853cebf5b8c234773196fc49e42d1cf103fc1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "3",
           "label": "알림음 3",
           "ordered_frame_sha256s": [
             "03d6283e232c8acca5b9e0a3b27c0d1acc9b4557fd6e411c554f2ef410868fa2"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "알림음 4",
           "ordered_frame_sha256s": [
             "7745c07b83559b065c2b959f42aea09d143e090da64ba00b38139128a03a4b26"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.default_hot_temperature_c",
+      "entity_key": "local_water_default_hot_temperature",
+      "label_ko": "기본 온수 온도",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "40",
+          "label": "40°C",
+          "ordered_frame_sha256s": [
+            "de50651badf0f5ca56da63695057415987d528a48790b9cc1895da87dce3a849"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "70",
+          "label": "70°C",
+          "ordered_frame_sha256s": [
+            "157c65c7cd518671e548dd8e7080540719f4bf9929eb1b1709f65c29908a7082"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "90",
+          "label": "90°C",
+          "ordered_frame_sha256s": [
+            "368d0c8c76ce7c42b7a29efc326f915cf2c4d77f0acabec9ef177e54687fad4d"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17459,35 +19523,40 @@
           "label": "20%",
           "ordered_frame_sha256s": [
             "e3fc4110b3305733a0703c6b98c70c3d7a10db9e0e5529a8967ed1bf75f0a227"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "40",
           "label": "40%",
           "ordered_frame_sha256s": [
             "ff6bdd663fb7cdcce6c041479ffd1a2ee2a7f0933eb8eefc6d5ac1e076040f23"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "60",
           "label": "60%",
           "ordered_frame_sha256s": [
             "9bd07665da3cb21cface5f3b9051a8d72eff26d73c9529becb5efc6c62864f17"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "80",
           "label": "80%",
           "ordered_frame_sha256s": [
             "fe38862ac532c0fdc65a0385f2608821c09ecb50a32b2c09f4f892a5cbc3bded"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "100",
           "label": "100%",
           "ordered_frame_sha256s": [
             "a098ff64e9e04e11423eeaa28aace38d47d8879617ae0e04221162869ba0f95f"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17504,35 +19573,40 @@
           "label": "20%",
           "ordered_frame_sha256s": [
             "e34b479f4c4d998566cb213b5a83918eeb107d41dafcb7485a287272863c9d7c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "40",
           "label": "40%",
           "ordered_frame_sha256s": [
             "a6c0526e1120754ed12be6f21f4c25cf8c1e05dce76df70610817ac53040de32"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "60",
           "label": "60%",
           "ordered_frame_sha256s": [
             "1f3e2c259eb866f9e4643ddfa6f57c81db7e0a5ca2c863c7bc032fb3f2092906"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "80",
           "label": "80%",
           "ordered_frame_sha256s": [
             "a2aa4b28b3f6416b7e3b20eabbfdc910bab63e45bc6f6292b8eb8dc272c5fbe0"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "100",
           "label": "100%",
           "ordered_frame_sha256s": [
             "5d01de5987a95ae9d38f850bd6e6d6af0241aea70fa62c3f9ab2189453048177"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -17556,30 +19630,6 @@
           "label": "on",
           "ordered_frame_sha256s": [
             "5e8e8885afba101b276ffb77c6f6bab0f99534bf8cccb98748bb79706a67a530"
-          ]
-        }
-      ]
-    },
-    {
-      "model_id": "ST_R_ETH01Y_",
-      "capability_id": "styler.display.time_enabled",
-      "entity_key": "local_styler_time_display",
-      "label_ko": "시간 표시",
-      "domain": "switch",
-      "existing_owner": false,
-      "values": [
-        {
-          "value": "false",
-          "label": "off",
-          "ordered_frame_sha256s": [
-            "27d56a49307e13895d2a7f5e94b8177a70495504e70f92695d6bb2d7fb7b8173"
-          ]
-        },
-        {
-          "value": "true",
-          "label": "on",
-          "ordered_frame_sha256s": [
-            "a85538b8238450975bfd78aaaeba325abcd72383450f984f61466064e7e5e75f"
           ]
         }
       ]
@@ -17652,6 +19702,78 @@
           "label": "on",
           "ordered_frame_sha256s": [
             "c0ec3cde032b911d5f554509619fe00fad7545435e65315c6393c5475a871395"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "water.cold_enabled",
+      "entity_key": "local_water_cold_enabled",
+      "label_ko": "냉수",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "e45e6c84982dabcc16300b8049a7642c3c46eeee8715ecd2e8f95f374a552c31"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "a22641ed94a56a33d85afb9e561836ec05849a302833994673579ced506e2804"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "ice.lever_enabled",
+      "entity_key": "local_water_ice_lever_enabled",
+      "label_ko": "얼음 레버",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "0b23bb7578f960d4464ad2b0af81db2c77b7c0d93aa77b1a1dc2bfc5322be5b3"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "89ef02fd080301f8cb0b72c1d95266a3fce37d4c7d085aff374c213f1460e2ad"
+          ]
+        }
+      ]
+    },
+    {
+      "model_id": "1WPD4CMIDR__3",
+      "capability_id": "ice.maker_enabled",
+      "entity_key": "local_water_ice_maker_enabled",
+      "label_ko": "제빙",
+      "domain": "switch",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "d9dd8684a6524ca46be0457ecd5b3c1f4b7c5431785d574d194085cb4f7120d2"
+          ]
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "37117222b446d86433c05e3c65bc199f8b1c4ffd34628868965446930fdb98be"
           ]
         }
       ]
@@ -18005,84 +20127,256 @@
           "label": "기본",
           "ordered_frame_sha256s": [
             "221337f0189a97c2497c02f949f081ebef7a99fbf0fbf77a2cb1ed5de7c4732a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "1",
           "label": "비발디 겨울",
           "ordered_frame_sha256s": [
             "30d799aebc71ffe978d402447a322949f45b940e4bea50ffae955ff16270e930"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "2",
           "label": "징글벨 후렴",
           "ordered_frame_sha256s": [
             "c77d23d4e66334aeddccebb9f8b666c0bb38f3400186dc1999cce58e416ff4a0"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "3",
           "label": "위 위시 유 어 메리 크리스마스",
           "ordered_frame_sha256s": [
             "b8d2146b16322aac0a8a558032903a62f8f651cc2e9a423e95d56016de2e67d3"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "4",
           "label": "베토벤 전원",
           "ordered_frame_sha256s": [
             "f1d2c2d996ff8b78a398ba055acb086b5ae04726f734f8fa2a607c7039ca6446"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "5",
           "label": "비발디 봄",
           "ordered_frame_sha256s": [
             "10cdec7961bc66c2877002dfc2cbd1f0352a2cad6983f1086a672b7f71de244e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "6",
           "label": "드보르자크 유모레스크",
           "ordered_frame_sha256s": [
             "0f98fdcc20c2db1204b28fe5df5cb0d2676f5e0a60b10eda9868a5e0d014195c"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "7",
           "label": "엘가 사랑의 인사",
           "ordered_frame_sha256s": [
             "2328bb0db87ea1389a341bcdfb8cb8044202448d9fc04fbf69728acaacc34dae"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "8",
           "label": "비발디 가을",
           "ordered_frame_sha256s": [
             "93bb757a3b5eb4a50300d50a2896468431d50cdf21e31123ed6bd5ae75b94348"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "9",
           "label": "사탕 요정의 춤",
           "ordered_frame_sha256s": [
             "e81cc44d0151a7a7945f044cd800c86d8e8475277881a2dc811d81e5bd6dfb31"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "10",
           "label": "라데츠키 행진곡",
           "ordered_frame_sha256s": [
             "f8cb72f9a86c36f388982723054637148eb0ef5c4489b0331cb791010394de7a"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "11",
           "label": "징글벨 도입",
           "ordered_frame_sha256s": [
             "510700ff20442018b175e72e288711749ee6770d4be250e7dcdd8f31ecdc2226"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.sterilization.standby_mode",
+      "entity_key": "local_hum_standby_sterilization",
+      "label_ko": "대기 중 살균 모드",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "fast",
+          "label": "빠르게",
+          "ordered_frame_sha256s": [
+            "d85ef1c1377ebb282fc3c39e0de011994252fcc4fc156bcc7f82093b9ab0e6e9"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "normal",
+          "label": "보통",
+          "ordered_frame_sha256s": [
+            "7ff3389c6e7c78a6b2a766b72d8e25a00d676839d60206c8b0f56fd61ff92e71"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "slow",
+          "label": "조용히",
+          "ordered_frame_sha256s": [
+            "9db5919c783c7ca0fc574e3f949a6092154b834db0bff65afe93354e930996ef"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "power",
+          "label": "강력",
+          "ordered_frame_sha256s": [
+            "28164fe8768cc725cebeb6dcab0cf79484cdc5d16b53a72d960396e38eeb2ca9"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.display.startup_image",
+      "entity_key": "local_hum_startup_image",
+      "label_ko": "시작 화면",
+      "domain": "select",
+      "existing_owner": false,
+      "values": [
+        {
+          "value": "default",
+          "label": "기본",
+          "ordered_frame_sha256s": [
+            "248690144a681f4d7a8285066599091caf0df4470215b0223234b2ff93e5eb8d"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "winterTheme3HelloWinter",
+          "label": "겨울 인사",
+          "ordered_frame_sha256s": [
+            "c357549943d330fd334bedd2fc68f4cc14f5d0f4557bf3fc625c089475c31e3e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme2Snowman2",
+          "label": "눈사람 2",
+          "ordered_frame_sha256s": [
+            "2c2c620d455945e381645d13c05f807ba4ed8651afcedc2977881a501658c6eb"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme1Snowman1",
+          "label": "눈사람 1",
+          "ordered_frame_sha256s": [
+            "9b925f9bf5bfeba9ba97f030771ceb6360d8024ba938f4cf5fdb7a32e1c812a7"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "springTheme2Earth",
+          "label": "봄 지구",
+          "ordered_frame_sha256s": [
+            "0b6e8d9e2e422fc700050cb920ba93190ca8aa087e399ca0d7cc968a16ec9382"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "springTheme1Hello",
+          "label": "봄 인사",
+          "ordered_frame_sha256s": [
+            "401b19f777f5b5cf76c44f41c6f2669172bd630990c0f1c16dd044486c1e666b"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "summerTheme2Parasol",
+          "label": "여름 파라솔",
+          "ordered_frame_sha256s": [
+            "7b5530f9f03d32f1b2939d878a73bd7dd92f8d16a498455993312281dc5e21b0"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "summerTheme1Sun",
+          "label": "여름 태양",
+          "ordered_frame_sha256s": [
+            "19093d42a3e368d2394f922e7f64b4f5bfcdeb9d7ab21ec6f8ef7e62955d6b5d"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "autumnTheme1MapleLeap",
+          "label": "가을 단풍",
+          "ordered_frame_sha256s": [
+            "cd4b1ea1e3dcada2fc0f84dfcdfe026bd29476427e49b4c54cf3854ad3508b5a"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "autumnTheme2Halloween",
+          "label": "할로윈",
+          "ordered_frame_sha256s": [
+            "6148045dbc5655f4becd1e922bb27e9d32f818cfdaf2df49cbea796d8608e22e"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme4HappyNewYear",
+          "label": "새해",
+          "ordered_frame_sha256s": [
+            "65788d9e1268ce8e73c1ee4e2f0a4355e56f0b419912b594db10e1634851ceec"
+          ],
+          "value_source": "exact-model-web-domain",
+          "wire_evidence": "exact-model-declared-values-no-own-golden"
+        },
+        {
+          "value": "winterTheme5Christmas",
+          "label": "크리스마스",
+          "ordered_frame_sha256s": [
+            "bdbd85095d3fb0cd6fa5a267290da7725290a8cdfdbf8f9bbef4d68f0f6f4311"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -18093,20 +20387,23 @@
       "label_ko": "버튼음",
       "domain": "switch",
       "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
       "values": [
         {
           "value": "false",
           "label": "off",
           "ordered_frame_sha256s": [
             "d3a49a7474bcf53b75c9c01289bcec1d14c8f420b578ba8336ba71fcba609ecd"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "true",
           "label": "on",
           "ordered_frame_sha256s": [
             "de2e6bd5b52067d2f336b15a541110509c60a60a4c3cbcc755614c62599b426e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -18117,20 +20414,23 @@
       "label_ko": "버튼음",
       "domain": "switch",
       "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
       "values": [
         {
           "value": "false",
           "label": "off",
           "ordered_frame_sha256s": [
             "d3a49a7474bcf53b75c9c01289bcec1d14c8f420b578ba8336ba71fcba609ecd"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "true",
           "label": "on",
           "ordered_frame_sha256s": [
             "de2e6bd5b52067d2f336b15a541110509c60a60a4c3cbcc755614c62599b426e"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -18141,20 +20441,23 @@
       "label_ko": "버튼음",
       "domain": "switch",
       "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
       "values": [
         {
           "value": "false",
           "label": "off",
           "ordered_frame_sha256s": [
             "e0a24f24596373c885f38c99f0ec93b96ef32e1e19e1edca10e9c0b30e79a2a1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "true",
           "label": "on",
           "ordered_frame_sha256s": [
             "153cea7558ec4421d4d35c20bf545731fe1d449b8f58b22f7da1f6d21a7f56f7"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -18165,20 +20468,104 @@
       "label_ko": "버튼음",
       "domain": "switch",
       "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
       "values": [
         {
           "value": "false",
           "label": "off",
           "ordered_frame_sha256s": [
             "e0a24f24596373c885f38c99f0ec93b96ef32e1e19e1edca10e9c0b30e79a2a1"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         },
         {
           "value": "true",
           "label": "on",
           "ordered_frame_sha256s": [
             "153cea7558ec4421d4d35c20bf545731fe1d449b8f58b22f7da1f6d21a7f56f7"
-          ]
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.display.glare_reduction_enabled",
+      "entity_key": "local_hum_display_glare_reduction",
+      "label_ko": "눈부심 방지",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "1a9ede19a542cde278e340d460394a65588e2f5af417bf5b44068be48fa7753f"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "eb5c2a34b533d424edeb9debcc9648b869dbe5fe0d93dfb3a5c9b014fd00cd0f"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.night_mode.enabled",
+      "entity_key": "local_hum_night_mode",
+      "label_ko": "야간 모드",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "ffc72384bf59122ef4e0522792d4b3818c36feb3dc54cc2f0abb23cd0ea92cb7"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "faf97d5d85a7cd825d59bb75ad93f78f78a75ccee3a0edc8711628ffe8c35f30"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "HUM_056905_WW",
+      "capability_id": "hum.warm_humidification_enabled",
+      "entity_key": "local_hum_warm_humidification",
+      "label_ko": "포근한 가습",
+      "domain": "switch",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "false",
+          "label": "off",
+          "ordered_frame_sha256s": [
+            "82dc868668ba34605cfaf53e2d7fdd67480648a6f487091d3f7ec9c722ccd8f7"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        },
+        {
+          "value": "true",
+          "label": "on",
+          "ordered_frame_sha256s": [
+            "93d08fe500c9790e09f1403b822f3d3606e2c23438f36848559c702eb73a29e4"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },
@@ -19148,11 +21535,87 @@
           ]
         },
         {
-          "value": "Deep Rinse|soil=표준|temp=40도|rinse=4|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
-          "label": "꼼꼼헹굼 · 40도 · 헹굼 4회 · 탈수 강",
+          "value": "Skin Care|soil=표준|temp=40도|rinse=4|spin=강|detergent=보통|softener=보통|turbo=ON|crease=OFF|delay=0m",
+          "label": "스킨케어 · 40도 · 헹굼 4회 · 탈수 강",
           "ordered_frame_sha256s": [
             "ff4524b2c2d518cf074057b94558bd24b10ed87359dd80fb8d934dab861d43a5"
           ]
+        }
+      ]
+    },
+    {
+      "model_id": "2REFO1DBN3K_U",
+      "capability_id": "night_anti_glare.turn_off_and_reset_brightness_30",
+      "entity_key": "local_night_anti_glare_off_reset_brightness_30",
+      "label_ko": "야간 눈부심 끄기 · 밝기 30% 초기화",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "OFF",
+          "label": "끄기 · 밝기 30% 초기화",
+          "ordered_frame_sha256s": [
+            "eb9d4297db45a29986cf6696a442f646c83f21e80df5f0fbc70c78c1dd3283c9"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "3REK2G03VI230D_2",
+      "capability_id": "night_anti_glare.turn_off_and_reset_brightness_30",
+      "entity_key": "local_kimchi_night_anti_glare_off_reset_brightness_30",
+      "label_ko": "야간 눈부심 끄기 · 밝기 30% 초기화",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "OFF",
+          "label": "끄기 · 밝기 30% 초기화",
+          "ordered_frame_sha256s": [
+            "cba281615f6047802b6059a1833e84d5024a307ed5daeda046ab0fad337f644e"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.download_course.school_uniform.install",
+      "entity_key": "local_washer_install_school_uniform",
+      "label_ko": "세탁 다운로드 코스 · 교복 설치",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "install",
+          "label": "설치",
+          "ordered_frame_sha256s": [
+            "0c3da63d4b71fd1b67293a356e1f6981ead10e6553b63f3d8ea9fdc3ff61e30f"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
+        }
+      ]
+    },
+    {
+      "model_id": "WTL_KPK_BDH_KR_01",
+      "capability_id": "washer.download_course.skin_care.install",
+      "entity_key": "local_washer_install_skin_care",
+      "label_ko": "세탁 다운로드 코스 · 스킨케어 설치",
+      "domain": "button",
+      "existing_owner": false,
+      "wire_evidence": "own-model-observed-command-and-state",
+      "values": [
+        {
+          "value": "install",
+          "label": "설치",
+          "ordered_frame_sha256s": [
+            "dc6f327ad3a3de60d2c4de581a2949d4ce1c886b8eb8f61f8beb68acdd6d7d51"
+          ],
+          "wire_evidence": "own-model-observed-command-and-state"
         }
       ]
     },

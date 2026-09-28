@@ -46,7 +46,7 @@ class AutoEmptyingTests(unittest.IsolatedAsyncioTestCase):
         await entity.async_update()
         self.assertIsNone(entity.is_on)
         self.assertEqual([c[1:] for c in router.calls], [(CAP,'true'),(CAP,'false')])
-        self.assertEqual(router.methods, ['set_value','set_value'])
+        self.assertEqual(router.methods, ['set_value_strict','set_value_strict'])
 
     async def test_display_client_only_gets_exact_local_boolean(self):
         from tests.test_local_command import Response

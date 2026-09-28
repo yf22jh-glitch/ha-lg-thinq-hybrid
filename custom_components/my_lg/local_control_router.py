@@ -40,6 +40,7 @@ from .local_command import (
     POWER_CAPABILITY,
     TEMPERATURE_TARGET_SEMANTIC,
     LocalCommandResult,
+    LocalCommandRetryable,
     LocalCommandUnavailable,
     climate_expected_state,
     climate_state_fields,
@@ -490,6 +491,7 @@ class LocalControlRouter:
         value: str,
         *,
         expected_state: Mapping[str, Any] | None = None,
+        propagate_retryable: bool = False,
     ) -> LocalCommandResult | None:
         if self._write_authorized is not None and not self._write_authorized(
             pat_device_id, capability, value
@@ -512,6 +514,11 @@ class LocalControlRouter:
                 value,
                 expected_state=expected_state,
             )
+        except LocalCommandRetryable as err:
+            if propagate_retryable:
+                raise
+            self._not_served(pat_device_id, capability, f"{capability}={value}: {err}")
+            return None
         except LocalCommandUnavailable as err:
             # Every one of these is raised before a frame leaves, so the caller may go to the cloud.
             self._not_served(pat_device_id, capability, f"{capability}={value}: {err}")
@@ -731,10 +738,13 @@ class LocalControlRouter:
 
     async def async_appliance_setting_state(self, pat_device_id: str, capability: str) -> bool | str | None:
         target = self._target(pat_device_id)
-        model = APPLIANCE_SETTING_MODELS.get(capability) or APPLIANCE_VALUE_MODELS.get(capability)
-        if target is None or model != target[1].model_id:
+        if target is None:
             return None
-        return await self._sender.async_appliance_setting_state(target[0], capability)
+        model = target[1].model_id
+        key = (model, capability)
+        if key not in APPLIANCE_SETTING_MODELS and key not in APPLIANCE_VALUE_MODELS:
+            return None
+        return await self._sender.async_appliance_setting_state(target[0], model, capability)
 
     async def async_air_extra_state(self, pat_device_id: str, capability: str) -> bool | None:
         target = self._target(pat_device_id)
@@ -766,6 +776,22 @@ class LocalControlRouter:
             pat_device_id, device_id, capability, value
         )
 
+    async def async_set_value_strict(
+        self, pat_device_id: str, capability: str, value: str
+    ) -> LocalCommandResult | None:
+        """Set one Local-only value while surfacing a retryable command fence."""
+        target = self._target(pat_device_id)
+        if target is None:
+            return None
+        device_id, _provider = target
+        return await self._send(
+            pat_device_id,
+            device_id,
+            capability,
+            value,
+            propagate_retryable=True,
+        )
+
     async def async_set_flag(
         self, pat_device_id: str, capability: str, enabled: bool
     ) -> LocalCommandResult | None:
@@ -783,3 +809,9 @@ class LocalControlRouter:
     ) -> LocalCommandResult | None:
         """Execute one named, parameterless capability such as an observed pause frame."""
         return await self.async_set_value(pat_device_id, capability, value)
+
+    async def async_execute_strict(
+        self, pat_device_id: str, capability: str, value: str = "true"
+    ) -> LocalCommandResult | None:
+        """Execute one Local-only action while surfacing a retryable command fence."""
+        return await self.async_set_value_strict(pat_device_id, capability, value)

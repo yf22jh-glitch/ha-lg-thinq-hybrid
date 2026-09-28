@@ -39,5 +39,5 @@ class KimchiGearTests(unittest.IsolatedAsyncioTestCase):
             for value in ('0', '1', '2', '3', '4', '5', '255', 2, True, None):
                 response = Response(200, {'schema_version': 1, 'model_id': model, 'values': {CAP: value}})
                 client = LocalCommandClient(SimpleNamespace(get=lambda *args, **kwargs: response))
-                self.assertEqual(await client.async_appliance_setting_state('test/device', CAP),
+                self.assertEqual(await client.async_appliance_setting_state('test/device', MODEL, CAP),
                                  value if model == MODEL and type(value) is str and value in ('0','1','2','3','4') else None)

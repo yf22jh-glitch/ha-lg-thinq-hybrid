@@ -205,6 +205,49 @@ class LocalCommandClientTest(unittest.TestCase):
                 )
                 self.assertIn("refused", str(err))
 
+    def test_coded_command_fence_is_retryable_busy_not_a_structural_refusal(self) -> None:
+        _session, err = send_expecting(
+            Response(
+                409,
+                {
+                    "error": "another appliance command is still being confirmed",
+                    "code": "appliance-command-busy",
+                },
+            ),
+            local_command.LocalCommandBusy,
+        )
+        self.assertIsInstance(err, local_command.LocalCommandUnavailable)
+        self.assertIsInstance(err, local_command.LocalCommandRetryable)
+
+    def test_coded_dynamic_precondition_is_retryable_not_ready(self) -> None:
+        _session, err = send_expecting(
+            Response(
+                409,
+                {
+                    "error": "fan.mode is unavailable in exact Web mode aiType2",
+                    "code": "appliance-not-ready",
+                },
+            ),
+            local_command.LocalCommandNotReady,
+        )
+        self.assertIsInstance(err, local_command.LocalCommandUnavailable)
+        self.assertIsInstance(err, local_command.LocalCommandRetryable)
+
+    def test_retryable_codes_require_exact_409_and_exact_code(self) -> None:
+        for status, code in (
+            (400, "appliance-not-ready"),
+            (409, "appliance-not-ready-extra"),
+            (409, None),
+        ):
+            with self.subTest(status=status, code=code):
+                body = {"error": "refused"}
+                if code is not None:
+                    body["code"] = code
+                _session, err = send_expecting(
+                    Response(status, body), local_command.LocalCommandUnavailable
+                )
+                self.assertNotIsInstance(err, local_command.LocalCommandRetryable)
+
     def test_a_change_the_appliance_never_reported_is_pending_not_a_fallback(self) -> None:
         # 202: the bridge sent it. Offering this to the cloud would be a second command.
         send_expecting(

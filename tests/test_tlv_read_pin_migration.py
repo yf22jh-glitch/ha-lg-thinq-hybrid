@@ -187,14 +187,14 @@ class FullReadPinMigrationTests(unittest.TestCase):
         self.assertTrue(self.provider.field_available("humidity.current_pct"))
 
     def test_current_generation_is_accepted_directly(self) -> None:
-        self.assertEqual(self.profile.semantics_revision, 33)
+        self.assertEqual(self.profile.semantics_revision, 34)
         self.assertEqual(
             self.profile.profile_sha256,
-            "b3a87ad4dde6e7ec0db0c21328744b96d4416bc1d9d028bf9b8f5182ccb1eb7f",
+            "658865e343ad49917131c0872234b0930315644558da76035b26a533e253255b",
         )
         self.assertEqual(
             self.profile.read_entity_contract_sha256,
-            "0b8bad1be19f6b4741a224d0a01d95823bee04aba4bc5a1b3bcdf985cdc53530",
+            "5bb2be2e4805e092788b786c8106cf3167c61eff916ad20df47caadc408ebd08",
         )
         self.assertTrue(self.ingest(envelope(self.profile, sequence=1)))
 

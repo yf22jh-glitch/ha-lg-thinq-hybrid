@@ -6,6 +6,7 @@ import asyncio
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import (
     async_get_clientsession,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 
 from .const import (
@@ -63,6 +65,11 @@ from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
+from .feature_database import (
+    default_database_path,
+    enabled_models,
+    feature_change_sequence,
+)
 from .local_command import LocalCommandClient
 from .local_control_contract import (
     LocalControlBindingEligibility,
@@ -492,6 +499,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # Home Assistant event loop.
     await hass.async_add_executor_job(load_catalogs)
 
+    feature_db_sequence: int | None = None
+    feature_db_path = default_database_path()
+    if feature_db_path.is_file():
+        try:
+            feature_db_sequence = await hass.async_add_executor_job(
+                feature_change_sequence, feature_db_path
+            )
+        except (OSError, ValueError):
+            _LOGGER.exception("Local feature database edit watcher is unavailable")
+
     # Rethink Local is a shadow first: it reads, and every entity's state still comes from
     # LG. It also offers a write path for the few commands the bridge has observed on the
     # wire, which entities try before the cloud and fall back from silently. Started after
@@ -505,10 +522,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         async_register_services(hass)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
+        if feature_db_sequence is not None:
+            _watch_feature_database(hass, entry, feature_db_sequence)
     except Exception:
         await _stop_local_shadows(data)
         raise
     return True
+
+
+def _watch_feature_database(
+    hass: HomeAssistant, entry: MyLgConfigEntry, initial_sequence: int
+) -> None:
+    """Adopt committed DB edits with one ordinary integration reload.
+
+    This never modifies the SQLite file, entity registry, or energy ledger.
+    The old listener is canceled on unload, and a new setup starts at the
+    sequence it actually used, so an edit during setup is not lost.
+    """
+    sequence = initial_sequence
+    checking = asyncio.Lock()
+    path = default_database_path()
+
+    async def check(_now: object) -> None:
+        nonlocal sequence
+        if checking.locked():
+            return
+        async with checking:
+            try:
+                current = await hass.async_add_executor_job(feature_change_sequence, path)
+            except (OSError, ValueError):
+                _LOGGER.exception("Local feature database edit check failed")
+                return
+            if current == sequence:
+                return
+            sequence = current
+            _LOGGER.info("Local feature database changed; reloading my_lg")
+            await hass.config_entries.async_reload(entry.entry_id)
+
+    entry.async_on_unload(async_track_time_interval(
+        hass, check, timedelta(seconds=20), name="my_lg feature database"
+    ))
 
 
 async def _setup_wideq(
@@ -628,6 +681,15 @@ async def _setup_local_shadows(
     if not configs:
         return
 
+    feature_database_models: frozenset[str] = frozenset()
+    if default_database_path().is_file():
+        try:
+            feature_database_models = await hass.async_add_executor_job(
+                enabled_models, default_database_path()
+            )
+        except (OSError, ValueError):
+            _LOGGER.exception("Local feature database is invalid; shadow setup disabled")
+            return
     try:
         read_profiles = await hass.async_add_executor_job(load_tlv_read_catalogue)
     except TlvReadCatalogueError:
@@ -639,50 +701,50 @@ async def _setup_local_shadows(
         )
         read_profiles = {}
 
-    try:
-        read_model_authorities = await hass.async_add_executor_job(
-            load_tlv_read_per_model_authorities
-        )
-    except TlvReadCatalogueError:
-        # V1 reads and entity creation do not depend on the source-only v2
-        # authority. A broken add-on artifact disables only future v2 pin
-        # staging instead of dropping an offline appliance's entities.
-        _LOGGER.exception(
-            "Per-model TLV read authority is invalid; v2 transition disabled"
-        )
+    if all(config.model_id in feature_database_models for config in configs):
+        # Existing pin state is left untouched for rollback, but it no longer
+        # decides whether an identified, type-compatible read is displayed.
         read_model_authorities = {}
+        read_consumer_states: dict[str, TlvReadConsumerBindingState] = {}
+    else:
+        try:
+            read_model_authorities = await hass.async_add_executor_job(
+                load_tlv_read_per_model_authorities
+            )
+        except TlvReadCatalogueError:
+            _LOGGER.exception(
+                "Per-model TLV read authority is invalid; v2 transition disabled"
+            )
+            read_model_authorities = {}
 
-    read_consumer_store: Store[dict[str, Any]] = Store(
-        hass,
-        TLV_READ_CONSUMER_STATE_STORE_VERSION,
-        f"{DOMAIN}.{TLV_READ_CONSUMER_STATE_STORE_KEY}.{entry.entry_id}",
-    )
-    data.local_read_consumer_state_store = read_consumer_store
-    data.local_read_consumer_state_lock = asyncio.Lock()
-    try:
-        stored_consumer_state = await read_consumer_store.async_load()
-        if stored_consumer_state is None:
-            read_consumer_states: dict[str, TlvReadConsumerBindingState] = {}
-            _LOGGER.warning(
-                "TLV read consumer pin Store is not staged; exact read entities "
-                "will remain unavailable until the installer writes binding pins"
-            )
-        else:
-            read_consumer_states = dict(
-                parse_tlv_read_consumer_state_inventory(
-                    stored_consumer_state
-                ).bindings
-            )
-    except Exception:  # noqa: BLE001 - Store failure must not omit offline entities
-        # Never reinterpret an absent or damaged durable latch as permission to
-        # accept v1. Providers are still created so powered-off appliances keep
-        # their contract-driven entities; only publications remain fail-closed.
-        _LOGGER.exception(
-            "TLV read consumer pin Store is invalid; exact read values disabled"
+        read_consumer_store: Store[dict[str, Any]] = Store(
+            hass,
+            TLV_READ_CONSUMER_STATE_STORE_VERSION,
+            f"{DOMAIN}.{TLV_READ_CONSUMER_STATE_STORE_KEY}.{entry.entry_id}",
         )
-        read_consumer_states = {}
-    data.local_read_consumer_states = read_consumer_states
-    data.local_read_consumer_persisted_states = dict(read_consumer_states)
+        data.local_read_consumer_state_store = read_consumer_store
+        data.local_read_consumer_state_lock = asyncio.Lock()
+        try:
+            stored_consumer_state = await read_consumer_store.async_load()
+            if stored_consumer_state is None:
+                read_consumer_states = {}
+                _LOGGER.warning(
+                    "TLV read consumer pin Store is not staged; exact read entities "
+                    "will remain unavailable until the installer writes binding pins"
+                )
+            else:
+                read_consumer_states = dict(
+                    parse_tlv_read_consumer_state_inventory(
+                        stored_consumer_state
+                    ).bindings
+                )
+        except Exception:  # noqa: BLE001 - Store failure must not omit offline entities
+            _LOGGER.exception(
+                "TLV read consumer pin Store is invalid; exact read values disabled"
+            )
+            read_consumer_states = {}
+        data.local_read_consumer_states = read_consumer_states
+        data.local_read_consumer_persisted_states = dict(read_consumer_states)
 
     try:
         control_entity_contract = await hass.async_add_executor_job(
@@ -783,6 +845,7 @@ async def _setup_local_shadows(
         read_provider = None
         energy_provider = None
         read_profile = read_profiles.get(config.model_id)
+        model_feature_database_active = config.model_id in feature_database_models
         if read_profile is not None:
             if not provider.control_presence_enabled:
                 _LOGGER.error(
@@ -796,24 +859,30 @@ async def _setup_local_shadows(
                         config.pat_device_id,
                         read_profile,
                         provider,
-                        model_authority=read_model_authorities.get(
-                            config.model_id
+                        model_authority=(
+                            None if model_feature_database_active
+                            else read_model_authorities.get(config.model_id)
                         ),
-                        consumer_state=read_consumer_states.get(
-                            config.binding_id
+                        consumer_state=(
+                            None if model_feature_database_active
+                            else read_consumer_states.get(config.binding_id)
+                        ),
+                        read_contract_policy=(
+                            "field-compatible"
+                            if model_feature_database_active
+                            else config.read_contract_policy
                         ),
                     )
-                    data.local_read_consumer_authorities[
-                        config.binding_id
-                    ] = read_provider.consumer_binding_authority
+                    if not model_feature_database_active and config.read_contract_policy == "pinned":
+                        data.local_read_consumer_authorities[
+                            config.binding_id
+                        ] = read_provider.consumer_binding_authority
                 except (TypeError, ValueError):
                     _LOGGER.exception(
                         "Complete TLV read provider identity is invalid; full read "
                         "binding disabled"
                     )
-        if read_provider is not None and cumulative_energy_model_supported(
-            config.model_id
-        ):
+        if cumulative_energy_model_supported(config.model_id):
             try:
                 energy_provider = CumulativeEnergyShadowProvider(
                     config.binding_id,

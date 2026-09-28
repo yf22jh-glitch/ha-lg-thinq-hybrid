@@ -6,6 +6,7 @@ No protocol bytes are interpreted here and no old catalogue/pin is replaced.
 from dataclasses import replace
 import hashlib
 import json
+import logging
 from pathlib import Path
 from types import MappingProxyType
 
@@ -20,11 +21,39 @@ from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS
 from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PROGRAM, SCHEMA as WASHER_SCHEMA
 from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
+from .local_styler_dnd import RESERVATION as STYLER_DND_RESERVATION, SCHEMA as STYLER_DND_SCHEMA
+from .feature_database import all_models_enabled, default_database_path, enabled_models, load_features
 
-CATALOGUE_SHA256 = '2b3a3d3aee1397433a85b382f51c2c92068297b7dad8a710f00d0fe3c604c76a'
+CATALOGUE_SHA256 = '7efd1f0165709a8e65332c904d464a2cb29c900b4558ecf842920a69544d2a36'
 
 
 def load_confirmed_features():
+    database = default_database_path()
+    if database.is_file():
+        selected = enabled_models(database)
+        if selected:
+            rows = load_features(database, 'confirmed-control')
+            selected_features = []
+            for row in rows:
+                if row['model_id'] not in selected:
+                    continue
+                definition = row['definition']
+                if (definition.get('model_id') != row['model_id']
+                        or definition.get('capability_id') != row['feature_id']):
+                    logging.getLogger(__name__).warning(
+                        'Local feature database skipped invalid confirmed control %s for %s',
+                        row['feature_id'], row['model_id'],
+                    )
+                    continue
+                selected_features.append(definition)
+            if all_models_enabled(database):
+                return selected_features
+            return [feature for feature in _load_bundled_confirmed_features()
+                    if feature['model_id'] not in selected] + selected_features
+    return _load_bundled_confirmed_features()
+
+
+def _load_bundled_confirmed_features():
     document = json.loads((Path(__file__).parent / 'local-control-confirmed-features.v1.json').read_text())
     encoded = json.dumps(document['features'], ensure_ascii=False, separators=(',', ':')).encode()
     if document['schema_version'] != 1 or document['catalogue_sha256'] != CATALOGUE_SHA256 or hashlib.sha256(encoded).hexdigest() != CATALOGUE_SHA256:
@@ -60,27 +89,95 @@ def augment_confirmed_climate_domain(contract):
     return replace(contract, capabilities=MappingProxyType(capabilities))
 
 
-APPLIANCE_SETTING_MODELS = MappingProxyType({
-    feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if feature['model_id'] in ('ST_R_ETH01Y_', '1WPD4CMIDR__3', '3REK2G03VI230D_2', 'CST_170004_WW', 'CST_570004_WW', 'DHUM_056905_WW', 'HUM_056905_WW') and feature['domain'] == 'switch'
-       and not feature['existing_owner']  # native TLV owners read their own shadow, not this model-specific endpoint
-})
-APPLIANCE_VALUE_MODELS = MappingProxyType({
-    feature['capability_id']: feature['model_id'] for feature in load_confirmed_features()
-    if (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == WASHER_PROGRAM)
-       or (feature['model_id'] == WASHER_MODEL and feature['capability_id'] == 'washer.sound.volume_level')
-       or (feature['model_id'] == DRYER_MODEL and feature['capability_id'] == DRYER_PROGRAM)
-       or (feature['model_id'] == WATER_MODEL and feature['capability_id'] in
-        ('water.sound.volume_percent', 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))
-       or (feature['model_id'] == '3REK2G03VI230D_2' and feature['capability_id'] == 'kimchi.sound.door_melody')
-       or (feature['model_id'] == 'ST_R_ETH01Y_' and feature['capability_id'] in
-           ('styler.sound.volume_level', 'styler.sound.melody', 'styler.display.startup_image', 'styler.smart_care.night_start_time', 'styler.smart_care.night_end_time'))
-       or (feature['model_id'] == 'HUM_056905_WW' and feature['capability_id'] == 'hum.sound.melody')
-})
-APPLIANCE_VALUE_OPTIONS = MappingProxyType({
-    feature['capability_id']: tuple(v['value'] for v in feature['values']) for feature in load_confirmed_features()
-    if feature['capability_id'] in APPLIANCE_VALUE_MODELS
-})
+_APPLIANCE_SETTING_MODEL_IDS = frozenset((
+    WASHER_MODEL,
+    'ST_R_ETH01Y_',
+    WATER_MODEL,
+    '3REK2G03VI230D_2',
+    'CST_170004_WW',
+    'CST_570004_WW',
+    'DHUM_056905_WW',
+    'HUM_056905_WW',
+))
+_WASHTOWER_SETTING_VALUE_CAPABILITIES = frozenset((
+    'washer.sound.volume_level',
+    'washtower.display.startup_image',
+    'washer.sound.melody',
+    'dryer.sound.melody',
+    'dryer.sound.volume_level',
+    'washer.detergent.dispenser_mode',
+    'washer.detergent.amount_ml',
+    'washer.softener.amount_ml',
+    'dryer.dryness.damp_level',
+    'dryer.dryness.less_level',
+    'dryer.dryness.iron_level',
+    'dryer.dryness.cupboard_level',
+    'dryer.dryness.very_level',
+))
+_AIR_SENSOR_SETTING_MODELS = frozenset((
+    'AIR_910604_WW',
+    'HUM_056905_WW',
+    'DHUM_056905_WW',
+))
+
+
+def _uses_appliance_value_endpoint(feature):
+    model = feature['model_id']
+    capability = feature['capability_id']
+    return ((model in _AIR_SENSOR_SETTING_MODELS and capability == 'air_quality.monitor_mode')
+            or (model == WASHER_MODEL and capability in
+                (WASHER_PROGRAM, DRYER_PROGRAM, *_WASHTOWER_SETTING_VALUE_CAPABILITIES))
+            or (model == WATER_MODEL and capability in
+                ('water.default_hot_temperature_c', 'water.sound.volume_percent',
+                 'water.display.brightness_percent', WINDOW, *WATER_PARAMETER_SCHEMAS))
+            or (model == '3REK2G03VI230D_2' and capability == 'kimchi.sound.door_melody')
+            or (model == 'ST_R_ETH01Y_' and capability in
+                ('styler.sound.volume_level', 'styler.sound.melody',
+                 'styler.display.startup_image', 'styler.smart_care.night_start_time',
+                 'styler.smart_care.night_end_time', STYLER_DND_RESERVATION))
+            or (model == 'HUM_056905_WW' and capability in
+                ('hum.sound.melody', 'hum.sterilization.standby_mode',
+                 'hum.display.startup_image')))
+
+
+# Keys include the exact model because several products legitimately share a
+# semantic capability while reporting different own-state vocabularies.
+_APPLIANCE_SETTING_MODELS: dict[tuple[str, str], str] = {}
+_APPLIANCE_VALUE_MODELS: dict[tuple[str, str], str] = {}
+_APPLIANCE_VALUE_OPTIONS: dict[tuple[str, str], tuple[str, ...]] = {}
+APPLIANCE_SETTING_MODELS = MappingProxyType(_APPLIANCE_SETTING_MODELS)
+APPLIANCE_VALUE_MODELS = MappingProxyType(_APPLIANCE_VALUE_MODELS)
+APPLIANCE_VALUE_OPTIONS = MappingProxyType(_APPLIANCE_VALUE_OPTIONS)
+
+
+def _refresh_appliance_feature_maps(features):
+    """Keep imported mapping references live across an HA config-entry reload."""
+    settings = {
+        (feature['model_id'], feature['capability_id']): feature['model_id']
+        for feature in features
+        if feature['model_id'] in _APPLIANCE_SETTING_MODEL_IDS
+        and feature['domain'] == 'switch'
+        and not feature['existing_owner']
+    }
+    values = {
+        (feature['model_id'], feature['capability_id']): feature['model_id']
+        for feature in features if _uses_appliance_value_endpoint(feature)
+    }
+    options = {
+        (feature['model_id'], feature['capability_id']):
+            tuple(value['value'] for value in feature['values'])
+        for feature in features
+        if (feature['model_id'], feature['capability_id']) in values
+    }
+    _APPLIANCE_SETTING_MODELS.clear()
+    _APPLIANCE_SETTING_MODELS.update(settings)
+    _APPLIANCE_VALUE_MODELS.clear()
+    _APPLIANCE_VALUE_MODELS.update(values)
+    _APPLIANCE_VALUE_OPTIONS.clear()
+    _APPLIANCE_VALUE_OPTIONS.update(options)
+
+
+_refresh_appliance_feature_maps(load_confirmed_features())
 
 
 def augment_confirmed_features(contract, eligibility, binding_models):
@@ -90,6 +187,7 @@ def augment_confirmed_features(contract, eligibility, binding_models):
     identity is independently pinned above and never persisted as a v3 proof.
     """
     features = load_confirmed_features()
+    _refresh_appliance_feature_maps(features)
     by_model = {model: tuple(rows) for model, rows in contract.descriptors_by_model.items()}
     bindings = dict(eligibility)
     additions = []
@@ -104,10 +202,11 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         # case must not weaken the required-owner check for numeric overlays.
         native_horizontal = (model == 'CST_570004_WW' and capability == 'swing.horizontal_enabled'
                              and feature['existing_owner'] is True and feature['domain'] == 'switch'
-                             and feature.get('wire_evidence') == 'exact-model-declared-values-no-own-golden'
+                             and feature.get('wire_evidence') == 'own-model-observed-command-and-state'
                              and tuple(v['value'] for v in feature['values']) == ('false', 'true')
                              and tuple(v.get('reported_value') for v in feature['values']) == (False, True))
-        if feature.get('value_source') == 'exact-model-web-domain' and not native_horizontal:
+        if (feature.get('value_source') == 'exact-model-web-domain'
+                and feature['existing_owner'] and not native_horizontal):
             matches = [d for d in by_model.get(model, ()) if d.capability_id == capability]
             if len(matches) != 1:
                 raise ValueError('Numeric extension requires exactly one existing owner')
@@ -138,7 +237,8 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                 reports = tuple(v.get('reported_value') for v in feature['values'])
                 labels = tuple(v['label'] for v in feature['values'])
                 if (old.input_kind != 'enum' or old.entity_domain != 'select' or not values
-                        or any(not isinstance(v, str) or not v for v in (*values, *labels, *reports))
+                        or any(not isinstance(v, str) or not v for v in (*values, *labels))
+                        or any(type(report) not in (str, int, bool) for report in reports)
                         or len(set(values)) != len(values) or len(set(reports)) != len(reports)
                         or set(values).intersection(old.exact_local_request_values)
                         or set(reports).intersection(old.supported_values)
@@ -199,6 +299,51 @@ def augment_confirmed_features(contract, eligibility, binding_models):
                 bindings[binding] = replace(prior, values_by_capability=MappingProxyType({
                     **prior.values_by_capability, capability: allowed}))
             continue
+        existing = [d for d in by_model.get(model, ()) if d.capability_id == capability]
+        if (model == 'HUM_056905_WW' and capability == 'operation.mode'
+                and feature['existing_owner'] is True
+                and feature.get('wire_evidence') == 'own-model-observed-command-and-state'):
+            if len(existing) != 1:
+                raise ValueError('HUM operation-mode extension requires exactly one existing owner')
+            old = existing[0]
+            rows = feature['values']
+            requests = tuple(row['value'] for row in rows)
+            reports = tuple(row.get('reported_value', row['value']) for row in rows)
+            if (old.entity_domain != 'select' or old.input_kind != 'enum'
+                    or feature['domain'] != 'select' or not requests
+                    or len(set(requests)) != len(requests)
+                    or not set(old.exact_local_request_values).issubset(requests)):
+                raise ValueError('HUM operation-mode extension does not preserve the exact owner')
+            old_reports = {
+                mapping.local_request_value: supported
+                for supported, mapping in zip(old.supported_values, old.value_mappings)
+            }
+            for request, report in zip(requests, reports):
+                if request in old_reports and old_reports[request] != report:
+                    raise ValueError('HUM operation-mode extension changes an existing report value')
+            additions_for_owner = [
+                (request, report, row['label'])
+                for request, report, row in zip(requests, reports, rows)
+                if request not in old.exact_local_request_values
+            ]
+            prior_labels = {mapping.home_assistant_value for mapping in old.value_mappings}
+            if any(label in prior_labels for _, _, label in additions_for_owner):
+                raise ValueError('HUM operation-mode extension reuses an existing option label')
+            descriptor = replace(
+                old,
+                supported_values=(*old.supported_values, *(report for _, report, _ in additions_for_owner)),
+                value_mappings=(*old.value_mappings, *(LocalControlValueMapping(label, request)
+                    for request, _, label in additions_for_owner)),
+            )
+            replacements[old.key] = descriptor
+            by_model[model] = tuple(descriptor if d.key == old.key else d for d in by_model[model])
+            for binding in selected:
+                prior = bindings[binding]
+                allowed = tuple(dict.fromkeys((*prior.values_by_capability.get(capability, ()), *requests)))
+                bindings[binding] = replace(prior, values_by_capability=MappingProxyType({
+                    **prior.values_by_capability, capability: allowed,
+                }))
+            continue
         if any(d.capability_id == capability for d in by_model.get(model, ())):
             raise ValueError('Confirmed feature would replace an existing control')
         values = feature['values']
@@ -206,23 +351,34 @@ def augment_confirmed_features(contract, eligibility, binding_models):
         valid_parameter = ((model == VACUUM_MODEL and capability == SCHEDULE and parameter_schema == SCHEMA)
                            or (model == DRYER_MODEL and capability == DRYER_PROGRAM and parameter_schema == DRYER_SCHEMA)
                            or (model == STYLER_MODEL and capability == STYLER_PROGRAM and parameter_schema == STYLER_SCHEMA)
+                           or (model == STYLER_MODEL and capability == STYLER_DND_RESERVATION and parameter_schema == STYLER_DND_SCHEMA)
                            or (model == WASHER_MODEL and capability == WASHER_PROGRAM and parameter_schema == WASHER_SCHEMA)
                            or (model == WATER_MODEL and capability == WINDOW and parameter_schema == WATER_DND_SCHEMA)
                            or (model == WATER_MODEL and capability in WATER_PARAMETER_SCHEMAS and parameter_schema == WATER_PARAMETER_SCHEMAS[capability]))
         if parameter_schema is not None and (not valid_parameter or feature['domain'] != 'text' or values):
             raise ValueError('Unsupported confirmed parameter schema')
         boolean_values = feature['domain'] == 'switch' or capability == 'washer.fresh_care_enabled'
+        has_reported_values = bool(values) and all('reported_value' in value for value in values)
         descriptor = LocalControlEntityDescriptor(
             key=model + '|' + capability, model_id=model, capability_id=capability,
             home_assistant_entity_key=feature['entity_key'], label_ko=feature['label_ko'],
             entity_domain=feature['domain'], input_kind='boolean' if feature['domain'] == 'switch' else 'enum',
-            supported_values=tuple(v['value'] == 'true' if boolean_values else v['value'] for v in values),
-            value_mappings=tuple(LocalControlValueMapping(v['label'], v['value']) for v in values),
-            exact_state_semantic=capability if boolean_values else None,
+            supported_values=tuple(
+                v['value'] == 'true' if boolean_values else v.get('reported_value', v['value'])
+                for v in values
+            ),
+            value_mappings=tuple(LocalControlValueMapping(
+                (('on' if v['value'] == 'true' else 'off')
+                 if feature['domain'] == 'switch'
+                 else 'press' if feature['domain'] == 'button'
+                 else v['label']),
+                v['value'],
+            ) for v in values),
+            exact_state_semantic=capability if boolean_values or has_reported_values else None,
             factory_eligible=not feature['existing_owner'], existing_owner=feature['existing_owner'],
             # These whole-bundle choices have producer-side state confirmation.
             # Do not guess a selected preset from an old/partial HA snapshot.
-            one_shot=feature['domain'] != 'switch',
+            one_shot=feature['domain'] == 'button',
             parameter_schema=parameter_schema,
         )
         by_model[model] = (*by_model.get(model, ()), descriptor)

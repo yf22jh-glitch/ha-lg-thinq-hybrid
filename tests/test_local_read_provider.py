@@ -10,6 +10,7 @@ import sys
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 
 MODULE_PATH = (
@@ -430,6 +431,71 @@ class TlvReadShadowProviderTests(unittest.TestCase):
             retained=retained,
         )
 
+    def set_pilot_field(
+        self,
+        semantic_id="humidity.current_pct",
+        *,
+        value=60,
+        value_type="number",
+        unit="%",
+        exposure="state",
+    ):
+        contract = SimpleNamespace(value_type=value_type, unit=unit, exposure=exposure)
+        field = SimpleNamespace(
+            value=value,
+            value_type=value_type,
+            unit=unit,
+            exposure=exposure,
+            observed_at=NOW,
+            confidence="confirmed-pilot",
+        )
+        self.primary.profile = SimpleNamespace(fields={semantic_id: contract})
+        self.primary.shadow_fields = {semantic_id: field}
+        self.primary.semantic_field_available = lambda requested: (
+            requested == semantic_id and self.primary.shadow_healthy
+        )
+
+    def test_matching_live_pilot_field_fills_only_the_read_entity_display(self) -> None:
+        self.set_pilot_field()
+        self.assertFalse(self.provider.field_available("humidity.current_pct"))
+        self.assertIsNone(self.provider.field_value("humidity.current_pct"))
+        self.assertEqual(self.provider.display_field("humidity.current_pct").value, 60)
+        self.assertTrue(self.provider.display_field_available("humidity.current_pct"))
+        self.assertEqual(self.provider.display_field_source("humidity.current_pct"), "pilot-read")
+        self.assertEqual(dict(self.provider.fields), {})
+
+    def test_pilot_display_requires_exact_metadata_and_live_primary(self) -> None:
+        self.set_pilot_field(unit="C")
+        self.assertFalse(self.provider.display_field_available("humidity.current_pct"))
+        self.set_pilot_field(value_type="string", value="60")
+        self.assertFalse(self.provider.display_field_available("humidity.current_pct"))
+        self.set_pilot_field()
+        self.primary.control_alive = False
+        self.assertFalse(self.provider.display_field_available("humidity.current_pct"))
+        self.primary.control_alive = True
+        self.primary.shadow_healthy = False
+        self.assertFalse(self.provider.display_field_available("humidity.current_pct"))
+
+    def test_explicit_read_invalidation_blocks_pilot_display(self) -> None:
+        self.set_pilot_field()
+        payload = envelope(
+            fields={"operation.power_requested": snapshot_field(True, "boolean")},
+            invalidated_fields={
+                "humidity.current_pct": {
+                    "observed_at": "2026-08-23T11:59:58.000Z",
+                    "confidence": "confirmed-test",
+                },
+            },
+        )
+        self.assertTrue(self.ingest_current(payload))
+        self.assertFalse(self.provider.display_field_available("humidity.current_pct"))
+
+    def test_live_full_read_value_takes_precedence_over_pilot_display(self) -> None:
+        self.set_pilot_field()
+        self.assertTrue(self.ingest_current())
+        self.assertEqual(self.provider.display_field("humidity.current_pct").value, 55)
+        self.assertEqual(self.provider.display_field_source("humidity.current_pct"), "full-read")
+
     def test_primary_binding_model_and_platform_must_match_exactly(self) -> None:
         for attribute, value in (
             ("binding_id", "pilot_foreign_provider_001"),
@@ -487,14 +553,28 @@ class TlvReadShadowProviderTests(unittest.TestCase):
         self.primary.notify()
         self.assertTrue(self.provider.field_available("humidity.current_pct"))
 
-        # Once semantic state advances beyond the read cursor, that cursor is
-        # unavailable until the next independently monotonic read snapshot.
+        # State-only cohorts do not invalidate a quiet read value from the
+        # same authenticated publication/physical session.
         self.primary.cohort_generation = 12
         self.primary.notify()
-        self.assertFalse(self.provider.field_available("humidity.current_pct"))
-        with self.assertRaises(read.TlvReadProviderContractError):
-            self.ingest_current(envelope(sequence=2, cohort_generation=11))
+        self.assertTrue(self.provider.field_available("humidity.current_pct"))
+        self.assertTrue(self.ingest_current(envelope(sequence=2, cohort_generation=11)))
         self.assertTrue(self.ingest_current(envelope(sequence=2, cohort_generation=12)))
+        self.assertTrue(self.provider.field_available("humidity.current_pct"))
+
+    def test_quiet_same_session_read_cursor_can_arrive_after_state_cohort_advances(self) -> None:
+        self.primary.cohort_generation = 12
+        self.assertTrue(self.ingest_current(envelope(cohort_generation=11)))
+        self.assertTrue(self.provider.field_available("humidity.current_pct"))
+
+    def test_quiet_read_before_presence_is_retained_until_matching_presence_arrives(self) -> None:
+        self.primary.cohort_generation = 12
+        self.primary.control_alive = False
+        self.assertTrue(self.ingest_current(envelope(cohort_generation=11)))
+        self.assertEqual(self.provider.field_value("humidity.current_pct"), 55)
+        self.assertFalse(self.provider.field_available("humidity.current_pct"))
+        self.primary.control_alive = True
+        self.primary.notify()
         self.assertTrue(self.provider.field_available("humidity.current_pct"))
 
     def test_live_presence_rejects_a_foreign_generation(self) -> None:
@@ -1085,6 +1165,210 @@ class TlvReadShadowProviderTests(unittest.TestCase):
                     )
 
 
+class TlvReadFieldCompatiblePolicyTests(unittest.TestCase):
+    def provider(self, *, consumer_state_value=None):
+        primary = FakePrimaryProvider()
+        provider = read.TlvReadShadowProvider(
+            BINDING_ID,
+            PAT_DEVICE_ID,
+            profile(),
+            primary,
+            model_authority=per_model_authority(),
+            consumer_state=consumer_state_value,
+            read_contract_policy="field-compatible",
+            now=lambda: NOW,
+        )
+        provider.set_transport_ready(True)
+        return provider
+
+    def ingest_current(self, provider, payload):
+        return provider.ingest(
+            provider.current_topic, payload, qos=1, retained=False
+        )
+
+    def test_changed_receipt_does_not_require_consumer_pin_adoption(self) -> None:
+        old_state = consumer_state(consumer_pin(v2_envelope(), 2))
+        provider = self.provider(consumer_state_value=old_state)
+        changed = json.loads(v2_envelope())
+        changed["model_contract_sha256"] = "f" * 64
+        changed["semantics_revision"] += 1
+        changed["publication_plan_revision"] += 1
+        try:
+            self.assertTrue(
+                self.ingest_current(
+                    provider, json.dumps(changed, separators=(",", ":")).encode()
+                )
+            )
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+            self.assertTrue(provider.field_available("humidity.current_pct"))
+            self.assertEqual(provider.consumer_state, old_state)
+        finally:
+            provider.close()
+
+    def test_quiet_prior_session_read_waits_for_live_same_binding_only(self) -> None:
+        provider = self.provider()
+        primary = provider._primary
+        primary.cohort_generation = 12
+        primary.authority_session_id = "2" * 32
+        primary.control_alive = False
+        try:
+            self.assertTrue(self.ingest_current(provider, v2_envelope(cohort_generation=11)))
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+            self.assertFalse(provider.field_available("humidity.current_pct"))
+            primary.control_alive = True
+            primary.notify()
+            self.assertTrue(provider.field_available("humidity.current_pct"))
+            primary.authority_binding_generation = 8
+            primary.notify()
+            self.assertFalse(provider.field_available("humidity.current_pct"))
+        finally:
+            provider.close()
+
+    def test_v2_read_does_not_require_a_separate_model_hash_artifact(self) -> None:
+        provider = read.TlvReadShadowProvider(
+            BINDING_ID,
+            PAT_DEVICE_ID,
+            profile(),
+            FakePrimaryProvider(),
+            read_contract_policy="field-compatible",
+            now=lambda: NOW,
+        )
+        provider.set_transport_ready(True)
+        try:
+            self.assertTrue(self.ingest_current(provider, v2_envelope()))
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+        finally:
+            provider.close()
+
+    def test_one_unknown_or_bad_field_does_not_hide_known_fields(self) -> None:
+        provider = self.provider(
+            consumer_state_value=consumer_state(consumer_pin(v2_envelope(), 2))
+        )
+        current = v2_envelope(
+            fields={
+                "humidity.current_pct": snapshot_field(55, "number", unit="%"),
+                "unknown.field": snapshot_field("new", "string"),
+                "fan.mode": snapshot_field(True, "boolean"),
+            },
+        )
+        try:
+            self.assertTrue(self.ingest_current(provider, current))
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+            self.assertIsNone(provider.field_value("fan.mode"))
+            self.assertEqual(provider.skipped_read_fields, 2)
+        finally:
+            provider.close()
+
+    def test_malformed_known_field_or_timestamp_still_rejects_current(self) -> None:
+        for bad_field in (
+            {**snapshot_field(55, "number", unit="%"), "observed_at": "not-a-time"},
+            {**snapshot_field(55, "number", unit="%"), "observed_at": "2026-08-23T12:01:00.000Z"},
+            {**snapshot_field(55, "number", unit="%"), "confidence": ""},
+            {**snapshot_field(55, "number", unit="%"), "unexpected": True},
+        ):
+            provider = self.provider()
+            try:
+                with self.subTest(bad_field=bad_field), self.assertRaises(
+                    read.TlvReadProviderContractError
+                ):
+                    self.ingest_current(
+                        provider,
+                        v2_envelope(
+                            fields={
+                                "operation.power_requested": snapshot_field(
+                                    True, "boolean"
+                                ),
+                                "humidity.current_pct": bad_field,
+                            }
+                        ),
+                    )
+                self.assertIsNone(provider.field_value("operation.power_requested"))
+            finally:
+                provider.close()
+
+    def test_binding_proof_shape_and_live_generation_remain_fenced(self) -> None:
+        for overrides in (
+            {"binding_id": "pilot_foreign_provider_001"},
+            {"model_id": "OTHER_MODEL"},
+            {"platform": "thinq1"},
+            {"pat_device_id_proof_sha256": "0" * 64},
+            {"schema_version": 999},
+            {"binding_generation": 8},
+            {"sequence": 0},
+        ):
+            provider = self.provider()
+            try:
+                with self.subTest(overrides=overrides), self.assertRaises(
+                    read.TlvReadProviderContractError
+                ):
+                    self.ingest_current(provider, v2_envelope(**overrides))
+            finally:
+                provider.close()
+
+    def test_old_v1_receipt_can_be_read_without_retiring_v2_state(self) -> None:
+        old_state = consumer_state(consumer_pin(v2_envelope(), 2))
+        provider = self.provider(consumer_state_value=old_state)
+        older = json.loads(envelope())
+        older["profile_sha256"] = "9" * 64
+        older["semantics_revision"] -= 1
+        try:
+            self.assertTrue(
+                self.ingest_current(
+                    provider, json.dumps(older, separators=(",", ":")).encode()
+                )
+            )
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+            self.assertEqual(provider.consumer_state, old_state)
+        finally:
+            provider.close()
+
+    def test_unknown_only_current_cannot_clear_a_known_value(self) -> None:
+        provider = self.provider()
+        try:
+            self.assertTrue(self.ingest_current(provider, v2_envelope()))
+            with self.assertRaises(read.TlvReadProviderContractError):
+                self.ingest_current(
+                    provider,
+                    v2_envelope(
+                        sequence=2,
+                        fields={"unknown.field": snapshot_field("new", "string")},
+                    ),
+                )
+            self.assertEqual(provider.field_value("humidity.current_pct"), 55)
+            self.assertTrue(provider.field_available("humidity.current_pct"))
+        finally:
+            provider.close()
+
+    def test_event_remains_nonretained_and_cursor_bound(self) -> None:
+        provider = self.provider()
+        events = []
+        remove = provider.async_add_event_listener(events.append)
+        try:
+            self.assertTrue(self.ingest_current(provider, v2_envelope()))
+            changed = json.loads(v2_event_envelope())
+            changed["model_contract_sha256"] = "f" * 64
+            changed["semantics_revision"] += 1
+            self.assertTrue(
+                provider.ingest(
+                    provider.event_topic,
+                    json.dumps(changed, separators=(",", ":")).encode(),
+                    qos=1,
+                    retained=False,
+                )
+            )
+            self.assertEqual(len(events), 1)
+            with self.assertRaises(read.TlvReadProviderContractError):
+                provider.ingest(
+                    provider.event_topic,
+                    json.dumps(changed, separators=(",", ":")).encode(),
+                    qos=1,
+                    retained=True,
+                )
+        finally:
+            remove()
+            provider.close()
+
+
 class TlvReadProjectionTransitionTests(unittest.TestCase):
     def provider(self, *pins, adopted_pin=None):
         primary = FakePrimaryProvider()
@@ -1233,6 +1517,89 @@ class TlvReadProjectionTransitionTests(unittest.TestCase):
         try:
             with self.assertRaises(read.TlvReadProviderContractError):
                 self.ingest_current(provider, current)
+        finally:
+            provider.close()
+
+    def test_durable_v2_predecessor_is_automatic_and_current_latches(self) -> None:
+        current_authority = per_model_authority()
+        predecessor_authority = read.TlvReadPerModelAuthority(
+            profile_id=current_authority.profile_id,
+            model_id=current_authority.model_id,
+            platform=current_authority.platform,
+            semantics_revision=current_authority.semantics_revision - 1,
+            model_contract_sha256="f" * 64,
+            feed_schema_version=current_authority.feed_schema_version,
+            publication_plan_revision=(
+                current_authority.publication_plan_revision
+            ),
+            static_contract_projection_version=(
+                current_authority.static_contract_projection_version
+            ),
+        )
+        predecessor = v2_envelope(authority=predecessor_authority)
+        predecessor_pin = consumer_pin(predecessor, 2)
+        provider = self.provider(predecessor_pin)
+        try:
+            self.assertTrue(self.ingest_current(provider, predecessor))
+            self.assertEqual(provider.consumer_state.schema_version, 1)
+
+            current = v2_envelope(sequence=2, authority=current_authority)
+            self.assertTrue(self.ingest_current(provider, current))
+            self.assertEqual(provider.consumer_state.schema_version, 2)
+            self.assertEqual(
+                provider.consumer_state.consumer_pin_set.accepted,
+                (consumer_pin(current, 2),),
+            )
+
+            with self.assertRaises(read.TlvReadProviderContractError):
+                self.ingest_current(
+                    provider,
+                    v2_envelope(
+                        sequence=3, authority=predecessor_authority
+                    ),
+                )
+        finally:
+            provider.close()
+
+    def test_durable_v2_predecessor_does_not_authorize_an_unknown_hash(
+        self,
+    ) -> None:
+        current_authority = per_model_authority()
+        predecessor_authority = read.TlvReadPerModelAuthority(
+            profile_id=current_authority.profile_id,
+            model_id=current_authority.model_id,
+            platform=current_authority.platform,
+            semantics_revision=current_authority.semantics_revision - 1,
+            model_contract_sha256="f" * 64,
+            feed_schema_version=current_authority.feed_schema_version,
+            publication_plan_revision=(
+                current_authority.publication_plan_revision
+            ),
+            static_contract_projection_version=(
+                current_authority.static_contract_projection_version
+            ),
+        )
+        predecessor = v2_envelope(authority=predecessor_authority)
+        provider = self.provider(consumer_pin(predecessor, 2))
+        unknown_authority = read.TlvReadPerModelAuthority(
+            profile_id=current_authority.profile_id,
+            model_id=current_authority.model_id,
+            platform=current_authority.platform,
+            semantics_revision=predecessor_authority.semantics_revision,
+            model_contract_sha256="9" * 64,
+            feed_schema_version=current_authority.feed_schema_version,
+            publication_plan_revision=(
+                current_authority.publication_plan_revision
+            ),
+            static_contract_projection_version=(
+                current_authority.static_contract_projection_version
+            ),
+        )
+        try:
+            with self.assertRaises(read.TlvReadProviderContractError):
+                self.ingest_current(
+                    provider, v2_envelope(authority=unknown_authority)
+                )
         finally:
             provider.close()
 
@@ -2045,11 +2412,11 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
             (directory / read.TLV_READ_PROFILE_DIGEST_FILENAME).read_bytes(),
         )
 
-    def test_bundled_contract_accounts_for_all_355_ha_descriptors(self) -> None:
+    def test_bundled_contract_accounts_for_all_370_ha_descriptors(self) -> None:
         catalogue = read.load_tlv_read_catalogue()
         fields = [field for profile in catalogue.values() for field in profile.fields]
-        self.assertEqual(len(catalogue), 15)
-        self.assertEqual(len(fields), 355)
+        self.assertEqual(len(catalogue), 16)
+        self.assertEqual(len(fields), 370)
         self.assertEqual(
             {
                 domain: sum(field.domain == domain for field in fields)
@@ -2059,7 +2426,7 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
                     "event",
                 )
             },
-            {"binary_sensor": 85, "sensor": 258, "event": 12},
+            {"binary_sensor": 85, "sensor": 273, "event": 12},
         )
         for model_id in ("CST_170004_WW", "CST_570004_WW"):
             self.assertNotIn(
@@ -2078,9 +2445,9 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
                     "event",
                 )
             },
-            {"state": 194, "diagnostic": 149, "event": 12},
+            {"state": 209, "diagnostic": 149, "event": 12},
         )
-        self.assertEqual(sum(field.enabled_by_default for field in fields), 194)
+        self.assertEqual(sum(field.enabled_by_default for field in fields), 209)
         self.assertEqual(sum(field.owner == "PAT" for field in fields), 4)
         self.assertEqual(
             {
@@ -2117,7 +2484,7 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
         reviewed_fields = [
             field for field in fields if field.model_id not in tlv_models
         ]
-        self.assertEqual(len(reviewed_fields), 67)
+        self.assertEqual(len(reviewed_fields), 80)
         self.assertTrue(
             all(field.label_ko != field.semantic_id for field in reviewed_fields)
         )
@@ -2130,14 +2497,10 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
 
     def test_compact_per_model_authority_covers_offline_appliances(self) -> None:
         authorities = read.load_tlv_read_per_model_authorities()
-        self.assertEqual(len(authorities), 15)
+        self.assertEqual(len(authorities), 16)
         self.assertEqual(
-            {
-                model_id: authority.semantics_revision
-                for model_id, authority in authorities.items()
-                if authority.semantics_revision != 32
-            },
-            {"CST_170004_WW": 33, "CST_570004_WW": 33},
+            {authority.semantics_revision for authority in authorities.values()},
+            {34},
         )
         for model_id in ("DHUM_056905_WW", "ST_R_ETH01Y_"):
             with self.subTest(model_id=model_id):
@@ -2167,7 +2530,7 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
         }
         self.assertEqual(
             read.tlv_read_publication_static_contract_sha256(static, 2),
-            "c73e4f9bc3c690d40e95d9feb4b2f9a9495ea4d21b17f52817d3b4afdf752d59",
+            "deaf3e7b28c4c03ffd36bca93161b7d5a1b67696c49a7bc00b42807895a1acdc",
         )
 
     def test_exact_cst_predecessor_state_survives_successor_package_setup(
@@ -2229,16 +2592,19 @@ class TlvReadBundledCatalogueTests(unittest.TestCase):
                     static_read_contract_sha256=old_pin.static_read_contract_sha256,
                     model_contract_sha256="f" * 64,
                 )
-                with self.assertRaises(ValueError):
-                    read.TlvReadShadowProvider(
-                        BINDING_ID,
-                        PAT_DEVICE_ID,
-                        contract,
-                        primary,
-                        model_authority=authorities[model_id],
-                        consumer_state=consumer_state(foreign_pin),
-                        now=lambda: NOW,
-                    )
+                # Setup accepts one exact durable singleton without consulting
+                # a fleet-wide predecessor table.  A publication still has to
+                # reproduce that pin's binding/model/static hash before ingest.
+                foreign_provider = read.TlvReadShadowProvider(
+                    BINDING_ID,
+                    PAT_DEVICE_ID,
+                    contract,
+                    primary,
+                    model_authority=authorities[model_id],
+                    consumer_state=consumer_state(foreign_pin),
+                    now=lambda: NOW,
+                )
+                foreign_provider.close()
 
     def test_powered_off_dehumidifier_and_styler_keep_contract_entities(
         self,

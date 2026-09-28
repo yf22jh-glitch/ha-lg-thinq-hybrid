@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "authority": "server",
   "access": "read-only",
-  "tlvEntityContractRevision": "tlv-read-entities-v1:0c30fac6ee11c160",
-  "tlvEntityContractSha256": "0c30fac6ee11c16041a42a757331e6d178090befb9188073239dc134ed288c41",
-  "catalogRevision": "tlv-knowledge-v1:145bd2bbc87cb7e6",
-  "catalogSha256": "145bd2bbc87cb7e6d14694b5d362a485e8b38d8ceef0607b8e4738daf56f4ce9",
-  "reviewedNonTlvSourceRevision": "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef",
-  "reviewedNonTlvSourceSha256": "34cd3b8f2dc9aeef830820f134c4c73262010f590d1f490112a9158ba84016b5",
+  "tlvEntityContractRevision": "tlv-read-entities-v1:81fc45c66742929d",
+  "tlvEntityContractSha256": "81fc45c66742929dd3dea120fa8d504dc531be1d845cc5f4e5575b22f1ec5eab",
+  "catalogRevision": "tlv-knowledge-v1:22ba817a3d40043f",
+  "catalogSha256": "22ba817a3d40043fc94d57162da2f121b19febe55debb2d8750218606b2ee48a",
+  "reviewedNonTlvSourceRevision": "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb",
+  "reviewedNonTlvSourceSha256": "1b8a17d9cfdeeadbebecaa7249ad2659924eaadd3e95376698bf28fbd49bbbdd",
   "entities": [
     {
       "key": "1WPD4CMIDR__3|diagnostic.water.custom_recipe_1.transaction_bundle_hash",
@@ -19,7 +19,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|diagnostic.water.custom_recipe_1.transaction_bundle_hash"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|diagnostic.water.custom_recipe_1.transaction_bundle_hash"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -38,6 +38,34 @@
       "enabledByDefault": false
     },
     {
+      "key": "1WPD4CMIDR__3|ice.amount_state",
+      "modelId": "1WPD4CMIDR__3",
+      "platform": "thinq2",
+      "semanticId": "ice.amount_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|ice.amount_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "얼음 양 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
       "key": "1WPD4CMIDR__3|outlet.auto_elevation_enabled",
       "modelId": "1WPD4CMIDR__3",
       "platform": "thinq2",
@@ -47,7 +75,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|outlet.auto_elevation_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|outlet.auto_elevation_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -75,7 +103,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|sound.button_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|sound.button_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -103,7 +131,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|sterilization.schedule.day"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|sterilization.schedule.day"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -131,7 +159,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|sterilization.schedule.hour"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|sterilization.schedule.hour"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -159,7 +187,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|sterilization.schedule.minute"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|sterilization.schedule.minute"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -187,7 +215,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|sterilization.schedule.month"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|sterilization.schedule.month"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -215,7 +243,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|temperature.unit"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|temperature.unit"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -243,7 +271,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|voice.enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|voice.enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -271,7 +299,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.amount_unit"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.amount_unit"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -299,7 +327,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.default_selection"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.default_selection"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -327,7 +355,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.last_selection"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.last_selection"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -355,7 +383,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.cold_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.cold_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -385,7 +413,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.hot_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.hot_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -415,7 +443,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.mineral_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.mineral_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -445,7 +473,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.purified_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.purified_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -475,7 +503,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.soda_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.soda_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -505,7 +533,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.sterilization_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.sterilization_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -535,7 +563,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|1WPD4CMIDR__3|water.usage_delta.total_ml"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|1WPD4CMIDR__3|water.usage_delta.total_ml"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -556,6 +584,62 @@
       "enabledByDefault": false
     },
     {
+      "key": "2REFO1DBN3K_U|compartment.freezer.temperature_status",
+      "modelId": "2REFO1DBN3K_U",
+      "platform": "thinq2",
+      "semanticId": "compartment.freezer.temperature_status",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|2REFO1DBN3K_U|compartment.freezer.temperature_status"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "냉동실 온도 유지 상태 (잠정)",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "2REFO1DBN3K_U|compartment.fridge.temperature_status",
+      "modelId": "2REFO1DBN3K_U",
+      "platform": "thinq2",
+      "semanticId": "compartment.fridge.temperature_status",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|2REFO1DBN3K_U|compartment.fridge.temperature_status"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "냉장실 온도 유지 상태 (잠정)",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
       "key": "2REFO1DBN3K_U|diagnostic.energy.sequence",
       "modelId": "2REFO1DBN3K_U",
       "platform": "thinq2",
@@ -565,7 +649,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|2REFO1DBN3K_U|diagnostic.energy.sequence"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|2REFO1DBN3K_U|diagnostic.energy.sequence"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -593,7 +677,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|2REFO1DBN3K_U|energy.interval.delta_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|2REFO1DBN3K_U|energy.interval.delta_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -623,7 +707,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|2REK1D04AR170|diagnostic.filter.fresh_air_code"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|2REK1D04AR170|diagnostic.filter.fresh_air_code"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -651,7 +735,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|3REK2G03VI230D_2|diagnostic.energy.sequence"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|3REK2G03VI230D_2|diagnostic.energy.sequence"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -679,7 +763,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|3REK2G03VI230D_2|energy.interval.delta_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|3REK2G03VI230D_2|energy.interval.delta_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -3785,6 +3869,38 @@
       "enabledByDefault": true
     },
     {
+      "key": "CST_170004_WW|auto_dry.wind_strength_level",
+      "modelId": "CST_170004_WW",
+      "platform": "thinq2",
+      "semanticId": "auto_dry.wind_strength_level",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "CST_170004_WW|fromDevice|0x01f2"
+      ],
+      "sourceTags": [
+        498
+      ],
+      "sourceTagHexes": [
+        "0x01f2"
+      ],
+      "decoderContractIds": [
+        "custom-code/cst/auto-dry-wind-strength/v1"
+      ],
+      "valueTypes": [
+        "number"
+      ],
+      "semanticKind": "state",
+      "exposure": "state",
+      "labelKo": "자동 건조 풍량",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
       "key": "CST_170004_WW|comfort_energy_saving.enabled",
       "modelId": "CST_170004_WW",
       "platform": "thinq2",
@@ -5316,6 +5432,38 @@
       "enabledByDefault": true
     },
     {
+      "key": "CST_570004_WW|auto_dry.wind_strength_level",
+      "modelId": "CST_570004_WW",
+      "platform": "thinq2",
+      "semanticId": "auto_dry.wind_strength_level",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "CST_570004_WW|fromDevice|0x01f2"
+      ],
+      "sourceTags": [
+        498
+      ],
+      "sourceTagHexes": [
+        "0x01f2"
+      ],
+      "decoderContractIds": [
+        "custom-code/cst/auto-dry-wind-strength/v1"
+      ],
+      "valueTypes": [
+        "number"
+      ],
+      "semanticKind": "state",
+      "exposure": "state",
+      "labelKo": "자동 건조 풍량",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
       "key": "CST_570004_WW|comfort_energy_saving.enabled",
       "modelId": "CST_570004_WW",
       "platform": "thinq2",
@@ -6500,7 +6648,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|cycle.smart_course"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|cycle.smart_course"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6528,7 +6676,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.auto_door_dry_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.auto_door_dry_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6556,7 +6704,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.delay_start_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.delay_start_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6584,7 +6732,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.dual_zone_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.dual_zone_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6612,7 +6760,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.extra_dry_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.extra_dry_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6640,7 +6788,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.extra_rinse_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.extra_rinse_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6668,7 +6816,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.half_load_lower_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.half_load_lower_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6696,7 +6844,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.half_load_upper_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.half_load_upper_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6724,7 +6872,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.high_temp_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.high_temp_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6752,7 +6900,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|option.steam_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|option.steam_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -6780,7 +6928,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|D121110|reminder.machine_clean_enabled"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|D121110|reminder.machine_clean_enabled"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10350,6 +10498,288 @@
       "enabledByDefault": true
     },
     {
+      "key": "HWWA9X3C_F2U|battery.percent_level",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "battery.percent_level",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|battery.percent_level"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "본체 배터리 잔량 단계",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|battery.remaining_min",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "battery.remaining_min",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|battery.remaining_min"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "number"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "unit": "min",
+      "labelKo": "배터리 남은 시간",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|battery.remaining_pct",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "battery.remaining_pct",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|battery.remaining_pct"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "number"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "unit": "%",
+      "labelKo": "배터리 잔량",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|battery.sub_level_state",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "battery.sub_level_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|battery.sub_level_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "보조 배터리 단계",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|cleaning.complete_state",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "cleaning.complete_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|cleaning.complete_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "청소 완료 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|cleaning.mode_state",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "cleaning.mode_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|cleaning.mode_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "청소 모드 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|nozzle.steam_attached",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "nozzle.steam_attached",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|nozzle.steam_attached"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "스팀 노즐 장착 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|operation.status",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "operation.status",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|operation.status"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "운전 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|station.docked_state",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "station.docked_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|station.docked_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "스테이션 도킹 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
+      "key": "HWWA9X3C_F2U|warning.passage_clogged_state",
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "semanticId": "warning.passage_clogged_state",
+      "domain": "sensor",
+      "domainAuthority": "server",
+      "access": "read-only",
+      "direction": "fromDevice",
+      "sourceKeys": [
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|HWWA9X3C_F2U|warning.passage_clogged_state"
+      ],
+      "sourceTags": [],
+      "sourceTagHexes": [],
+      "decoderContractIds": [
+        "semantic-decoder/aabb-reviewed-model-status/v1"
+      ],
+      "valueTypes": [
+        "string"
+      ],
+      "semanticKind": "reviewed-decoded-s",
+      "exposure": "state",
+      "labelKo": "흡입 통로 막힘 상태",
+      "owner": "none",
+      "isDiagnostic": false,
+      "entityCategory": null,
+      "enabledByDefault": true
+    },
+    {
       "key": "ST_R_ETH01Y_|remote.start_allowed",
       "modelId": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -10359,7 +10789,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|ST_R_ETH01Y_|remote.start_allowed"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|ST_R_ETH01Y_|remote.start_allowed"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10387,7 +10817,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.center.elapsed_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.center.elapsed_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10416,7 +10846,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.center.power_level"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.center.power_level"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10444,7 +10874,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.center.remaining_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.center.remaining_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10473,7 +10903,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.center.state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.center.state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10501,7 +10931,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.left_rear.elapsed_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.left_rear.elapsed_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10530,7 +10960,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.left_rear.power_level"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.left_rear.power_level"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10558,7 +10988,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.left_rear.remaining_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.left_rear.remaining_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10587,7 +11017,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.left_rear.state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.left_rear.state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10615,7 +11045,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_front.elapsed_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_front.elapsed_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10644,7 +11074,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_front.power_level"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_front.power_level"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10672,7 +11102,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_front.remaining_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_front.remaining_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10701,7 +11131,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_front.state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_front.state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10729,7 +11159,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_rear.elapsed_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_rear.elapsed_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10758,7 +11188,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_rear.power_level"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_rear.power_level"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10786,7 +11216,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_rear.remaining_s"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_rear.remaining_s"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10815,7 +11245,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|burner.right_rear.state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|burner.right_rear.state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10843,7 +11273,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|diagnostic.energy.sequence"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|diagnostic.energy.sequence"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10871,7 +11301,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|energy.interval.delta_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|energy.interval.delta_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10901,7 +11331,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|recipe.saved_count"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|recipe.saved_count"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10929,7 +11359,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|recipe.stage_current"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|recipe.stage_current"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10957,7 +11387,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|recipe.stage_total"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|recipe.stage_total"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -10985,7 +11415,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|remote.fota_allowed"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|remote.fota_allowed"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11013,7 +11443,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WBEF3|remote.start_allowed"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WBEF3|remote.start_allowed"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11041,7 +11471,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WMLJ32RS|diagnostic.energy.sequence"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WMLJ32RS|diagnostic.energy.sequence"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11069,7 +11499,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WMLJ32RS|energy.interval.delta_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WMLJ32RS|energy.interval.delta_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11099,7 +11529,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|dryer.cycle.energy_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|dryer.cycle.energy_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11128,7 +11558,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|dryer.cycle.previous_state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|dryer.cycle.previous_state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11156,7 +11586,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|dryer.remote.start_allowed"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|dryer.remote.start_allowed"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11184,7 +11614,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|washer.cycle.energy_wh"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|washer.cycle.energy_wh"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11213,7 +11643,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|washer.cycle.previous_state"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|washer.cycle.previous_state"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11241,7 +11671,7 @@
       "access": "read-only",
       "direction": "fromDevice",
       "sourceKeys": [
-        "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef|WTL_KPK_BDH_KR_01|washer.remote.start_allowed"
+        "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb|WTL_KPK_BDH_KR_01|washer.remote.start_allowed"
       ],
       "sourceTags": [],
       "sourceTagHexes": [],
@@ -11357,19 +11787,19 @@
     }
   ],
   "stats": {
-    "generatedEntityCount": 355,
-    "tlvEntityCount": 288,
-    "reviewedNonTlvEntityCount": 67,
+    "generatedEntityCount": 370,
+    "tlvEntityCount": 290,
+    "reviewedNonTlvEntityCount": 80,
     "binarySensorCount": 85,
-    "sensorCount": 258,
+    "sensorCount": 273,
     "eventCount": 12,
-    "stateCount": 194,
+    "stateCount": 209,
     "diagnosticCount": 149,
     "eventExposureCount": 12,
     "patOwnerCount": 4,
     "aggregateExclusionGroupCount": 7,
     "aggregateExcludedSourceEntryCount": 17
   },
-  "revision": "full-read-entities-v1:0b8bad1be19f6b47",
-  "rootSha256": "0b8bad1be19f6b4741a224d0a01d95823bee04aba4bc5a1b3bcdf985cdc53530"
+  "revision": "full-read-entities-v1:5bb2be2e4805e092",
+  "rootSha256": "5bb2be2e4805e092788b786c8106cf3167c61eff916ad20df47caadc408ebd08"
 }

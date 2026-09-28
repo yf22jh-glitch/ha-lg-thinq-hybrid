@@ -33,6 +33,8 @@ def _load(name: str):
 
 _local_command = _load("local_command")
 LocalCommandFailed = _local_command.LocalCommandFailed
+LocalCommandBusy = _local_command.LocalCommandBusy
+LocalCommandNotReady = _local_command.LocalCommandNotReady
 LocalCommandResult = _local_command.LocalCommandResult
 LocalCommandUnavailable = _local_command.LocalCommandUnavailable
 _router_module = _load("local_control_router")
@@ -156,6 +158,26 @@ def run(coro):
 
 
 class LocalControlRouterTest(unittest.TestCase):
+    def test_strict_generic_path_surfaces_retryable_while_existing_path_keeps_fallback_contract(self) -> None:
+        for retryable in (
+            LocalCommandBusy("another appliance command is still being confirmed"),
+            LocalCommandNotReady("sensor monitoring requires a current own prestate"),
+        ):
+            with self.subTest(error=type(retryable).__name__):
+                sender = Sender(retryable)
+                control = router(sender, Provider(shadow()))
+
+                self.assertIsNone(
+                    run(control.async_set_value(PAT, "display.brightness_pct", "50"))
+                )
+                with self.assertRaises(type(retryable)):
+                    run(
+                        control.async_set_value_strict(
+                            PAT, "display.brightness_pct", "50"
+                        )
+                    )
+                self.assertEqual(len(sender.sent), 2)
+
     def test_private_per_value_gate_refuses_before_wire_without_logging_identity_or_value(
         self,
     ) -> None:

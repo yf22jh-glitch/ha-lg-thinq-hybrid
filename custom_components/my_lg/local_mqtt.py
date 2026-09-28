@@ -636,14 +636,23 @@ class LocalPilotMqttSubscriber:
             self._retained_bootstrap.pop(topic, None)
         self._semantic_bootstrap_pending = False
 
-    def _record_provider_rejection(self) -> None:
+    def _record_provider_rejection(self, *, read_reason: str | None = None) -> None:
         self._rejected_messages += 1
         count = self._rejected_messages
         if count == 1 or count % 100 == 0:
-            _LOGGER.warning(
-                "Rethink Local shadow rejected an MQTT publication (count=%d)",
-                count,
-            )
+            if read_reason and read_reason.startswith("TLV read "):
+                _LOGGER.warning(
+                    "Rethink Local read rejected an MQTT publication "
+                    "(model=%s, reason=%s, count=%d)",
+                    self.read_provider.profile.model_id,
+                    read_reason,
+                    count,
+                )
+            else:
+                _LOGGER.warning(
+                    "Rethink Local shadow rejected an MQTT publication (count=%d)",
+                    count,
+                )
 
     def _apply_message(
         self, topic: str, payload: bytes, qos: int, retained: bool
@@ -666,8 +675,8 @@ class LocalPilotMqttSubscriber:
             return
         try:
             self.read_provider.ingest(topic, payload, qos=qos, retained=retained)
-        except TlvReadProviderContractError:
-            self._record_provider_rejection()
+        except TlvReadProviderContractError as error:
+            self._record_provider_rejection(read_reason=str(error))
 
     def _apply_energy_message(
         self, topic: str, payload: bytes, qos: int, retained: bool

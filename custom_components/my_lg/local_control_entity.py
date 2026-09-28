@@ -21,7 +21,12 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from .entity import MyLgEntity
-from .local_command import LocalCommandFailed, LocalCommandPending
+from .local_command import (
+    LocalCommandBusy,
+    LocalCommandFailed,
+    LocalCommandPending,
+    LocalCommandRetryable,
+)
 from .local_control_contract import (
     LocalControlEntityDescriptor,
     eligible_factory_descriptors,
@@ -31,8 +36,16 @@ from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANC
 from .local_washer_options import CAPABILITY as WASHER_PROGRAM, canonical_program
 from .local_dryer_options import CAPABILITY as DRYER_PROGRAM, canonical_program as canonical_dryer_program
 from .local_styler_options import CAPABILITY as STYLER_PROGRAM, canonical_program as canonical_styler_program
+from .local_styler_dnd import RESERVATION as STYLER_DND_RESERVATION, canonical_reservation
 from .local_water_dnd import WINDOW as WATER_DND_WINDOW, canonical_window
-from .local_water_parameters import SCHEMAS as WATER_PARAMETER_SCHEMAS, canonical_parameter
+from .local_water_parameters import (
+    CUSTOM_RECIPES as WATER_CUSTOM_RECIPES,
+    HOT_TEMPERATURE_PRESETS as WATER_HOT_TEMPERATURE_PRESETS,
+    PRESETS as WATER_AMOUNT_PRESETS,
+    SCHEMAS as WATER_PARAMETER_SCHEMAS,
+    STERILIZATION as WATER_STERILIZATION_CALENDAR,
+    canonical_parameter,
+)
 from .local_vacuum_reservation import ENABLED as RESERVATION_ENABLED, SCHEDULE as RESERVATION_SCHEDULE, canonical_schedule, display_schedule
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_provider import TlvReadShadowProvider
@@ -164,17 +177,24 @@ class _LocalContractEntity(MyLgEntity):
         async with self._command_lock:
             try:
                 if self._descriptor.one_shot:
-                    outcome = await self._router.async_execute(
+                    outcome = await self._router.async_execute_strict(
                         self.coordinator.device_id,
                         self._descriptor.capability_id,
                         local_request_value,
                     )
                 else:
-                    outcome = await self._router.async_set_value(
+                    outcome = await self._router.async_set_value_strict(
                         self.coordinator.device_id,
                         self._descriptor.capability_id,
                         local_request_value,
                     )
+            except LocalCommandRetryable as err:
+                message = (
+                    "다른 명령을 확인하고 있어요. 잠시 후 다시 시도해 주세요."
+                    if isinstance(err, LocalCommandBusy)
+                    else "현재 기기 상태에서는 실행할 수 없어요. 상태가 갱신되거나 조건이 맞은 뒤 다시 시도해 주세요."
+                )
+                raise HomeAssistantError(message) from err
             except LocalCommandPending:
                 # A frame may already be applied. Keep the service call
                 # non-optimistic and let Local readback reconcile it; surfacing
@@ -447,11 +467,33 @@ class MyLgWaterDndText(_LocalContractEntity, TextEntity):
 
 class MyLgWaterParameterText(MyLgWaterDndText):
     """Whole preset transaction or date-preserving calendar; never dispense/start."""
-    _attr_native_min = 11
-    _attr_native_max = 19
+
+    _LENGTH_LIMITS = {
+        WATER_AMOUNT_PRESETS: (15, 19),
+        WATER_STERILIZATION_CALENDAR: (11, 11),
+        WATER_HOT_TEMPERATURE_PRESETS: (8, 8),
+        **{capability: (3, 64) for capability in WATER_CUSTOM_RECIPES},
+    }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._attr_native_min, self._attr_native_max = self._LENGTH_LIMITS[
+            self._descriptor.capability_id
+        ]
 
     def _canonical(self, value: str) -> str:
         return canonical_parameter(self._descriptor.capability_id, value)
+
+
+class MyLgStylerDndText(MyLgWaterDndText):
+    """Atomic Styler DND time/mute tuple; partial writes are never sent."""
+
+    _attr_native_min = 17
+    _attr_native_max = 19
+    _attr_icon = 'mdi:bell-sleep-outline'
+
+    def _canonical(self, value: str) -> str:
+        return canonical_reservation(value)
 
 
 class MyLgWasherOptionProgramText(MyLgWaterDndText):
@@ -605,10 +647,11 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
             if descriptor.capability_id == STYLER_PROGRAM and domain == 'text':
                 entities.append(MyLgStylerOptionDraftText(coordinator, descriptor, router, primary, read))
                 continue
-            if APPLIANCE_SETTING_MODELS.get(descriptor.capability_id) == descriptor.model_id and domain == 'switch':
+            setting_key = (descriptor.model_id, descriptor.capability_id)
+            if APPLIANCE_SETTING_MODELS.get(setting_key) == descriptor.model_id and domain == 'switch':
                 entities.append(MyLgApplianceSettingSwitch(coordinator, descriptor, router, primary, read))
                 continue
-            if APPLIANCE_VALUE_MODELS.get(descriptor.capability_id) == descriptor.model_id:
+            if APPLIANCE_VALUE_MODELS.get(setting_key) == descriptor.model_id:
                 if domain == 'text' and descriptor.capability_id == DRYER_PROGRAM:
                     entities.append(MyLgDryerOptionProgramText(coordinator, descriptor, router, primary, read))
                     continue
@@ -620,6 +663,9 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                     continue
                 if domain == 'text' and descriptor.capability_id == WATER_DND_WINDOW:
                     entities.append(MyLgWaterDndText(coordinator, descriptor, router, primary, read))
+                    continue
+                if domain == 'text' and descriptor.capability_id == STYLER_DND_RESERVATION:
+                    entities.append(MyLgStylerDndText(coordinator, descriptor, router, primary, read))
                     continue
                 if domain == 'text' and descriptor.capability_id in WATER_PARAMETER_SCHEMAS:
                     entities.append(MyLgWaterParameterText(coordinator, descriptor, router, primary, read))

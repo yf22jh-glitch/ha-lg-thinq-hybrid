@@ -6,8 +6,18 @@ from homeassistant.exceptions import HomeAssistantError
 from custom_components.my_lg.local_water_dnd import MODEL, WINDOW, canonical_window, is_canonical_window
 from custom_components.my_lg.local_control_confirmed_features import augment_confirmed_features
 from custom_components.my_lg.local_control_contract import load_local_control_entity_contract, resolve_local_control_binding_eligibility, local_control_value_authorized
-from custom_components.my_lg.local_control_entity import MyLgApplianceSettingSelect, MyLgWaterDndText
+from custom_components.my_lg.local_control_entity import (
+    MyLgApplianceSettingSelect,
+    MyLgWaterDndText,
+    MyLgWaterParameterText,
+)
 from custom_components.my_lg.local_command import LocalCommandClient
+from custom_components.my_lg.local_water_parameters import (
+    CUSTOM_RECIPES,
+    HOT_TEMPERATURE_PRESETS,
+    PRESETS,
+    STERILIZATION,
+)
 from tests.test_local_control_generic_entities import Coordinator, PrimaryProvider, Router
 from tests.test_local_command import Response
 
@@ -16,6 +26,23 @@ def setup():
     return augment_confirmed_features(base,resolve_local_control_binding_eligibility({},base,models),models)
 
 class WaterGearTests(unittest.IsolatedAsyncioTestCase):
+    def test_parameter_text_lengths_cover_every_canonical_state(self):
+        contract, _ = setup()
+        limits = {
+            PRESETS: (15, 19),
+            STERILIZATION: (11, 11),
+            HOT_TEMPERATURE_PRESETS: (8, 8),
+            **{capability: (3, 64) for capability in CUSTOM_RECIPES},
+        }
+        for capability, expected in limits.items():
+            descriptor = next(
+                item for item in contract.descriptors if item.capability_id == capability
+            )
+            entity = MyLgWaterParameterText(
+                Coordinator(MODEL), descriptor, Router(), PrimaryProvider(model=MODEL), None
+            )
+            self.assertEqual((entity.native_min, entity.native_max), expected)
+
     def test_window_form_and_exact_binding_scope(self):
         self.assertEqual(canonical_window('22:10-05:20'),'22:10-05:20')
         for invalid in ['22:11-05:20','23:00-23:00','00:00-12:00','25:00-06:00','9:00-10:00','IGNORE','22:00-06:00|ON']:
@@ -57,4 +84,4 @@ class WaterGearTests(unittest.IsolatedAsyncioTestCase):
                 for value in (good,'70',40,True,None,'IGNORE','00:00-12:00'):
                     response=Response(200,{'schema_version':1,'model_id':model,'values':{cap:value}})
                     client=LocalCommandClient(SimpleNamespace(get=lambda *args,**kwargs:response))
-                    self.assertEqual(await client.async_appliance_setting_state('test/device',cap),good if model==MODEL and value==good else None)
+                    self.assertEqual(await client.async_appliance_setting_state('test/device',MODEL,cap),good if model==MODEL and value==good else None)

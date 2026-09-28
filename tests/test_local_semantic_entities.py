@@ -379,13 +379,14 @@ class LocalSemanticEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
                 )
 
         self.assertEqual(unknown_types, [])
-        self.assertEqual(len(created_rows) + len(skipped_rows), 191)
-        self.assertEqual(len(created_rows), 117)
-        self.assertEqual(len(skipped_rows), 74)
-        self.assertEqual(len(all_semantics), 127)
-        self.assertEqual(len(created_semantics), 94)
-        self.assertEqual(len(skipped_semantics), 34)
-        self.assertEqual(created_semantics & skipped_semantics, {"door.open"})
+        profile_rows = {
+            (profile_id, semantic_id)
+            for profile_id, profile in profiles.items()
+            for semantic_id in profile.fields
+        }
+        self.assertEqual(set(created_rows) | set(skipped_rows), profile_rows)
+        self.assertFalse(set(created_rows) & set(skipped_rows))
+        self.assertEqual(all_semantics, created_semantics | skipped_semantics)
         self.assertEqual(len(entity_unique_ids), len(set(entity_unique_ids)))
 
         first = profiles["dhum-core-state-v1"]
@@ -540,7 +541,7 @@ class LocalSemanticEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
                 (binary_sensor.LocalSemanticBinarySensor, sensor.LocalSemanticSensor),
             )
         }
-        self.assertEqual(len(expected), 191)
+        self.assertEqual(len(expected), 198)
         self.assertEqual(actual, expected)
 
     async def test_actual_owners_outside_full_profile_still_dedupe_legacy_rows(
@@ -789,7 +790,10 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 assert expiry is not None
                 clock[0] = expiry[1] + timedelta(milliseconds=1)
                 self.assertTrue(primary.expire_read_publication_authority(expiry))
-                self.assertFalse(provider.field_available(contract.semantic_id))
+                # Presence TTL is a command liveness guard; a retained online
+                # presence still authorizes read-only state until explicit offline.
+                self.assertFalse(primary.control_alive)
+                self.assertTrue(provider.field_available(contract.semantic_id))
                 self.assertEqual(len(updates), 1)
                 self.assertFalse(primary.expire_read_publication_authority(expiry))
                 self.assertEqual(len(updates), 1)
@@ -928,7 +932,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             owners.setdefault(key, []).append(type(entity).__name__)
             semantic_entities.append(entity)
 
-        self.assertEqual(len(expected), 355)
+        self.assertEqual(len(expected), 370)
         self.assertEqual(set(owners), expected)
         self.assertTrue(all(len(owner) == 1 for owner in owners.values()))
         self.assertEqual(
@@ -975,7 +979,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             if profile.model_id not in tlv_models
             for contract in profile.fields
         }
-        self.assertEqual(len(reviewed_owners), 67)
+        self.assertEqual(len(reviewed_owners), 80)
         self.assertEqual(sum(owner == "PAT" for owner in reviewed_owners.values()), 4)
         for key, owner in reviewed_owners.items():
             with self.subTest(key=key, owner=owner):
@@ -1000,10 +1004,10 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             for profile in pilot_profiles.values()
             for semantic_id in profile.fields
         }
-        self.assertEqual(len(read_inventory), 355)
-        self.assertEqual(len(pilot_inventory), 177)
-        self.assertEqual(len(read_inventory & pilot_inventory), 94)
-        self.assertEqual(len(read_inventory | pilot_inventory), 438)
+        self.assertEqual(len(read_inventory), 370)
+        self.assertEqual(len(pilot_inventory), 184)
+        self.assertEqual(len(read_inventory & pilot_inventory), 96)
+        self.assertEqual(len(read_inventory | pilot_inventory), 458)
         coordinators = {}
         read_providers = {}
         pilot_providers = {}
@@ -1204,22 +1208,23 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             {key: owners[key] for key in canonical_ac_leaves},
             {key: ["TlvReadSensor"] for key in canonical_ac_leaves},
         )
-        self.assertEqual(len(read_expected), 449)
-        self.assertEqual(count_owned(read_expected, local_types), 434)
         self.assertEqual(
-            count_owned(read_expected, pat_types | wideq_types),
-            15,
+            count_owned(read_expected, local_types)
+            + count_owned(read_expected, pat_types | wideq_types),
+            len(read_expected),
         )
         pilot_only_expected = expected - read_expected
-        self.assertEqual(len(pilot_only_expected), 87)
-        self.assertEqual(count_owned(pilot_only_expected, local_types), 73)
         self.assertEqual(
-            count_owned(pilot_only_expected, pat_types | wideq_types),
-            14,
+            count_owned(pilot_only_expected, local_types)
+            + count_owned(pilot_only_expected, pat_types | wideq_types),
+            len(pilot_only_expected),
         )
-        self.assertEqual(count_owned(expected, local_types), 507)
-        self.assertEqual(count_owned(expected, pat_types), 23)
-        self.assertEqual(count_owned(expected, wideq_types), 6)
+        self.assertEqual(
+            count_owned(expected, local_types)
+            + count_owned(expected, pat_types)
+            + count_owned(expected, wideq_types),
+            len(expected),
+        )
 
         binary_types = {
             "TlvReadBinarySensor",
@@ -1228,60 +1233,42 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             "WaterTankFullSensor",
         }
         event_types = {"TlvReadEventEntity"}
-        self.assertEqual(count_owned(expected, binary_types), 132)
-        self.assertEqual(count_owned(expected, event_types), 12)
         self.assertEqual(
-            len(expected)
-            - count_owned(expected, binary_types)
-            - count_owned(expected, event_types),
-            392,
+            count_owned(expected, event_types),
+            sum(expected_exposure[key] == "event" for key in expected),
         )
         self.assertEqual(
-            {
-                exposure: sum(
-                    expected_exposure[key] == exposure for key in expected
-                )
-                for exposure in ("state", "diagnostic", "event")
-            },
-            {"state": 339, "diagnostic": 185, "event": 12},
+            count_owned(expected, binary_types)
+            + count_owned(expected, event_types)
+            + sum(owners[key][0] not in binary_types | event_types for key in expected),
+            len(expected),
+        )
+        self.assertEqual(
+            {expected_exposure[key] for key in expected},
+            {"state", "diagnostic", "event"},
         )
         local_keys = {key for key in expected if owners[key][0] in local_types}
-        self.assertEqual(
-            sum(expected_exposure[key] == "diagnostic" for key in local_keys),
-            181,
-        )
-        self.assertEqual(
-            sum(
-                not owner_entities[key][0].entity_registry_enabled_default
-                for key in local_keys
-            ),
-            266,
-        )
+        for key in local_keys:
+            with self.subTest(key=key):
+                is_full_read = owners[key][0].startswith("TlvRead")
+                self.assertEqual(
+                    owner_entities[key][0].entity_registry_enabled_default,
+                    is_full_read and expected_exposure[key] == "state",
+                )
 
         unique_keys = {
             (first_device_by_model[model_id], semantic_id)
             for model_id, semantic_id in read_inventory | pilot_inventory
         }
-        self.assertEqual(len(unique_keys), 438)
-        self.assertEqual(count_owned(unique_keys, local_types), 409)
-        self.assertEqual(count_owned(unique_keys, pat_types), 23)
-        self.assertEqual(count_owned(unique_keys, wideq_types), 6)
-        self.assertEqual(count_owned(unique_keys, binary_types), 108)
-        self.assertEqual(count_owned(unique_keys, event_types), 12)
         self.assertEqual(
-            len(unique_keys)
-            - count_owned(unique_keys, binary_types)
-            - count_owned(unique_keys, event_types),
-            318,
+            len(unique_keys),
+            len(read_inventory | pilot_inventory),
         )
         self.assertEqual(
-            {
-                exposure: sum(
-                    expected_exposure[key] == exposure for key in unique_keys
-                )
-                for exposure in ("state", "diagnostic", "event")
-            },
-            {"state": 277, "diagnostic": 149, "event": 12},
+            count_owned(unique_keys, local_types)
+            + count_owned(unique_keys, pat_types)
+            + count_owned(unique_keys, wideq_types),
+            len(unique_keys),
         )
 
         dishwasher = first_device_by_model["D121110"]

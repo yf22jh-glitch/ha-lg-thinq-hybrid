@@ -41,5 +41,5 @@ class StylerGearValuesTests(unittest.IsolatedAsyncioTestCase):
                 for value in ('0', str(count - 1), str(count), '255', 0, True, None):
                     response = Response(200, {'schema_version': 1, 'model_id': model, 'values': {cap: value}})
                     client = LocalCommandClient(SimpleNamespace(get=lambda *args, **kwargs: response))
-                    self.assertEqual(await client.async_appliance_setting_state('test/device', cap),
+                    self.assertEqual(await client.async_appliance_setting_state('test/device', MODEL, cap),
                                      value if model == MODEL and type(value) is str and value in tuple(str(i) for i in range(count)) else None)

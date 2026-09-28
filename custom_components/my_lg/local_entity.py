@@ -194,11 +194,10 @@ def iter_tlv_read_contracts(
     """Yield full-feed descriptors not owned by an actually created HA entity."""
     for contract in provider.profile.fields:
         established = contract.semantic_id in established_semantics
-        authorized_overlay = (
-            overlay_duplicates
-            and contract.owner == "none"
-            and contract.enabled_by_default
-        )
+        # Explicit Local overlay also preserves existing Local IDs
+        # for PAT-owned fields. Entity defaults/user disables still
+        # decide activation; the exact model catalogue is unchanged.
+        authorized_overlay = overlay_duplicates
         if (
             contract.domain == domain
             and contract.semantic_id not in excluded_semantics
@@ -355,11 +354,11 @@ class TlvReadEntityMixin:
 
     @property
     def _read_field(self) -> TlvReadValue | None:
-        return self._provider.fields.get(self._semantic_id)
+        return self._provider.display_field(self._semantic_id)
 
     @property
     def available(self) -> bool:
-        return self._provider.field_available(self._semantic_id)
+        return self._provider.display_field_available(self._semantic_id)
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
@@ -370,6 +369,9 @@ class TlvReadEntityMixin:
             "profile_id": self._provider.profile.profile_id,
             "value_types": list(self._contract.value_types),
         }
+        source = self._provider.display_field_source(self._semantic_id)
+        if source is not None:
+            attributes["value_source"] = source
         if field is not None:
             attributes.update(
                 {

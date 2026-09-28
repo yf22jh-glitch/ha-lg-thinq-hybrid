@@ -12,6 +12,7 @@ import asyncio
 import calendar
 import logging
 import math
+import re
 from collections.abc import Awaitable, Callable, Iterator
 from datetime import date
 from typing import Any
@@ -343,9 +344,41 @@ class WideqClient:
                         alias=str(alias),
                         model=str(model),
                         snapshot=snap if isinstance(snap, dict) else {},
+                        online=raw.get("online") if type(raw.get("online")) is bool else None,
+                        platform=raw.get("platformType") if isinstance(raw.get("platformType"), str) else None,
                     )
                 )
         return out
+
+    @staticmethod
+    def _night_mode_path(wideq_device_id: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{4,128}", wideq_device_id):
+            raise ValueError("exact night-mode device identity is invalid")
+        return f"service/fridge/{wideq_device_id}/night-mode"
+
+    async def async_get_night_mode(self, wideq_device_id: str) -> dict[str, Any]:
+        """Read the saved ThinQ Web state, not an appliance ACK or cached snapshot."""
+        if self._client is None:
+            await self.async_connect()
+        await self._client.refresh_auth()
+        result = await self._client.session.get2(self._night_mode_path(wideq_device_id))
+        if not isinstance(result, dict):
+            raise ValueError("ThinQ Web night-mode response is not an object")
+        return result
+
+    async def async_put_night_mode(
+        self, wideq_device_id: str, body: dict[str, str]
+    ) -> None:
+        """Save one reviewed night-mode tuple; the caller must requery it."""
+        if set(body) != {"saveType", "nightMode", "brightness", "startTime", "endTime"}:
+            raise ValueError("night-mode SAVE shape is invalid")
+        if self._client is None:
+            await self.async_connect()
+        await self._client.refresh_auth()
+        await self._client.session.put2(
+            self._night_mode_path(wideq_device_id),
+            {**body, "deviceId": wideq_device_id},
+        )
 
     async def async_get_energy_usage(
         self,

@@ -33,6 +33,7 @@ def load_isolated_provider(directory: Path):
     """Import local_provider from a directory with controlled artifacts."""
     module_path = directory / "local_provider.py"
     shutil.copyfile(BUNDLED_DIRECTORY / "local_provider.py", module_path)
+    shutil.copyfile(BUNDLED_DIRECTORY / "feature_database.py", directory / "feature_database.py")
     name = f"my_lg_local_provider_isolated_{uuid.uuid4().hex}"
     spec = importlib.util.spec_from_file_location(name, module_path)
     assert spec is not None and spec.loader is not None
@@ -127,7 +128,7 @@ class LocalProfileCatalogueTests(unittest.TestCase):
         # Pinned deliberately: the catalogue is a published contract, so growth
         # should be a decision someone made, not something that drifts in.
         self.assertEqual(len(profiles), 19)
-        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 191)
+        self.assertEqual(sum(len(profile.fields) for profile in profiles.values()), 198)
         for profile_id in ("cst170-core-state-v1", "cst570-core-state-v1"):
             comfort = profiles[profile_id].fields["comfort.preference_step"]
             self.assertEqual(comfort.value_type, "number")

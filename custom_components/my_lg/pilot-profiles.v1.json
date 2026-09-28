@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "semantics_revision": 33,
+  "semantics_revision": 34,
   "profiles": [
     {
       "profile_id": "dhum-water-tank-v1",
@@ -13,7 +13,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -39,7 +40,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -135,7 +137,8 @@
       "supported_semantics_revisions": [
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "DHUM_056905_WW",
       "platform": "thinq2",
@@ -244,7 +247,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -271,7 +275,7 @@
           "value_type": "boolean",
           "exposure": "state",
           "confidence": [
-            "confirmed-exact-local-wideq-transition-correlation"
+            "confirmed-exact-thinq-web-one-variable-local-cloud-readback-20260918"
           ]
         }
       ]
@@ -285,7 +289,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "ST_R_ETH01Y_",
       "platform": "thinq2",
@@ -312,7 +317,7 @@
           "value_type": "boolean",
           "exposure": "state",
           "confidence": [
-            "confirmed-exact-local-wideq-transition-correlation"
+            "confirmed-exact-thinq-web-one-variable-local-cloud-readback-20260918"
           ]
         },
         {
@@ -336,7 +341,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "D121110",
       "platform": "thinq2",
@@ -462,7 +468,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "3REK2G03VI230D_2",
       "platform": "thinq2",
@@ -521,7 +528,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "2REK1D04AR170",
       "platform": "thinq1",
@@ -597,7 +605,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "2REFO1DBN3K_U",
       "platform": "thinq2",
@@ -681,7 +690,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "WMLJ32RS",
       "platform": "thinq2",
@@ -760,7 +770,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "AIR_910604_WW",
       "platform": "thinq2",
@@ -932,7 +943,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "AIR_2C0001_WW",
       "platform": "thinq2",
@@ -959,7 +971,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "HUM_056905_WW",
       "platform": "thinq2",
@@ -1222,7 +1235,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "CST_170004_WW",
       "platform": "thinq2",
@@ -1275,7 +1289,6 @@
           "value_type": "number",
           "exposure": "state",
           "confidence": [
-            "confirmed-exact-model-live-sweep",
             "confirmed-exact-device-five-step-auto-comfort-preference-sweep"
           ]
         },
@@ -1370,6 +1383,14 @@
           ]
         },
         {
+          "semantic_id": "auto_dry.wind_strength_level",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-web-write+own-state-tag-20260922"
+          ]
+        },
+        {
           "semantic_id": "filter.remaining_h",
           "value_type": "number",
           "exposure": "state",
@@ -1403,8 +1424,7 @@
             "confirmed-exact-model-live-sweep"
           ]
         }
-      ],
-      "authoritative_invalidations": true
+      ]
     },
     {
       "profile_id": "cst570-core-state-v1",
@@ -1417,7 +1437,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "CST_570004_WW",
       "platform": "thinq2",
@@ -1470,7 +1491,6 @@
           "value_type": "number",
           "exposure": "state",
           "confidence": [
-            "confirmed",
             "confirmed-exact-device-five-step-auto-comfort-preference-sweep"
           ]
         },
@@ -1565,6 +1585,14 @@
           ]
         },
         {
+          "semantic_id": "auto_dry.wind_strength_level",
+          "value_type": "number",
+          "exposure": "state",
+          "confidence": [
+            "confirmed-exact-device-web-write+own-state-tag-20260922"
+          ]
+        },
+        {
           "semantic_id": "filter.remaining_h",
           "value_type": "number",
           "exposure": "state",
@@ -1590,8 +1618,7 @@
             "confirmed"
           ]
         }
-      ],
-      "authoritative_invalidations": true
+      ]
     },
     {
       "profile_id": "washtower-core-state-v1",
@@ -1604,7 +1631,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "WTL_KPK_BDH_KR_01",
       "platform": "thinq2",
@@ -1685,7 +1713,23 @@
           "value_type": "number",
           "exposure": "state",
           "confidence": [
-            "strong-related-official-codec+exact-target-modeljson+observed-layout"
+            "confirmed-exact-own-state+3514-quiescent-pairs+TCLCount-identity-purity-1.0-20260917"
+          ]
+        },
+        {
+          "semantic_id": "washer.lock.child_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+exact-layout+exact-target-off-observed;on-domain-unobserved"
+          ]
+        },
+        {
+          "semantic_id": "dryer.lock.child_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "strong-related-official-codec+exact-target-modeljson+exact-layout+exact-target-off-observed;on-domain-unobserved"
           ]
         }
       ]
@@ -1701,7 +1745,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "1WPD4CMIDR__3",
       "platform": "thinq2",
@@ -1770,6 +1815,14 @@
           "confidence": [
             "confirmed-common-family-prefix+exact-target-modeljson+local-value-domain"
           ]
+        },
+        {
+          "semantic_id": "lock.child_enabled",
+          "value_type": "boolean",
+          "exposure": "state",
+          "confidence": [
+            "exact-modeljson-contiguous-layout+iceLock-through-iceAmount-offset-anchors+observed-off-20260923"
+          ]
         }
       ]
     },
@@ -1784,7 +1837,8 @@
         30,
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "WBEF3",
       "platform": "thinq2",
@@ -1832,7 +1886,8 @@
       "supported_semantics_revisions": [
         31,
         32,
-        33
+        33,
+        34
       ],
       "model_id": "HWWA9X3C_F2U",
       "platform": "thinq2",
@@ -1869,6 +1924,22 @@
           "exposure": "state",
           "confidence": [
             "confirmed-exact-device-6-writes+6-acks+6-immediate-readbacks-per-setting"
+          ]
+        },
+        {
+          "semantic_id": "operation.product_state",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "exact-monStatus+stopAndGoStatus+current-thinq-web-productState-formula"
+          ]
+        },
+        {
+          "semantic_id": "warning.status",
+          "value_type": "string",
+          "exposure": "state",
+          "confidence": [
+            "exact-passage+filter+battery-error+current-thinq-web-warningStatus-priority"
           ]
         },
         {

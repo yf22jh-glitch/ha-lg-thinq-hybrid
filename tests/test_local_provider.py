@@ -221,7 +221,7 @@ class LocalShadowProviderTests(unittest.TestCase):
         self.assertFalse(provider.ingest_bootstrap_final_current(publications))
         self.assertEqual(updates, [(1, False)])
 
-    def test_field_availability_applies_profile_freshness_sla(self) -> None:
+    def test_device_report_retains_field_until_offline(self) -> None:
         clock = [NOW]
         profile = local.load_local_semantic_profile_catalogue()[1][
             "kimchi-thinq1-core-state-v1"
@@ -269,13 +269,17 @@ class LocalShadowProviderTests(unittest.TestCase):
 
         self.assertTrue(provider.semantic_field_fresh("lock.enabled"))
         self.assertTrue(provider.semantic_field_available("lock.enabled"))
-        self.assertEqual(
-            provider.semantic_field_fresh_until("lock.enabled"),
-            datetime(2026, 8, 13, 1, 44, 58, tzinfo=timezone.utc),
-        )
+        self.assertIsNone(provider.semantic_field_fresh_until("lock.enabled"))
 
         clock[0] = datetime(2026, 8, 13, 1, 44, 58, 1_000, tzinfo=timezone.utc)
-        self.assertFalse(provider.semantic_field_fresh("lock.enabled"))
+        self.assertTrue(provider.semantic_field_fresh("lock.enabled"))
+        self.assertTrue(provider.semantic_field_available("lock.enabled"))
+        provider.ingest(
+            provider.availability_topic,
+            availability_payload("offline", observed_at="2026-08-13T01:44:58.001Z"),
+            qos=1,
+            retained=True,
+        )
         self.assertFalse(provider.semantic_field_available("lock.enabled"))
         self.assertFalse(provider.semantic_field_available("unknown.field"))
 
@@ -953,6 +957,48 @@ class LocalShadowConfigurationTests(unittest.TestCase):
         self.assertTrue(
             local.local_shadow_configurations(merged)[0].require_identity
         )
+
+    def test_read_contract_policy_is_one_binding_opt_in(self) -> None:
+        binding = {
+            "schema_version": 1,
+            "mode": "shadow",
+            "profile_id": "dhum-water-tank-v1",
+            "model_id": "DHUM_056905_WW",
+            "platform": "thinq2",
+            "pat_device_id": "pat-device-read-policy",
+            "binding_id": "pilot_read_policy_binding_001",
+            "mqtt_password": "private-test-password",
+            "read_contract_policy": "field-compatible",
+        }
+        options = {local.OPT_LOCAL_BINDINGS: [binding]}
+        self.assertEqual(
+            local.local_shadow_configurations(options)[0].read_contract_policy,
+            "field-compatible",
+        )
+        migrated = local.migrate_local_shadow_options(options)
+        self.assertEqual(
+            migrated[local.OPT_LOCAL_BINDINGS][0]["read_contract_policy"],
+            "field-compatible",
+        )
+        rendered = local.local_bindings_for_form(migrated)
+        merged = local.merge_local_shadow_options(
+            {local.OPT_LOCAL_BINDINGS: rendered}, migrated
+        )
+        self.assertEqual(
+            local.local_shadow_configurations(merged)[0].read_contract_policy,
+            "field-compatible",
+        )
+        for invalid in (True, "all", "", 1):
+            with self.subTest(invalid=invalid), self.assertRaises(
+                local.LocalProviderConfigurationError
+            ):
+                local.local_shadow_configurations(
+                    {
+                        local.OPT_LOCAL_BINDINGS: [
+                            {**binding, "read_contract_policy": invalid}
+                        ]
+                    }
+                )
 
     def test_invalid_existing_bindings_can_be_repaired_without_reusing_secrets(
         self,
@@ -2596,7 +2642,11 @@ class ControlPresenceTests(unittest.TestCase):
             provider.control_alive,
             "a retained marker alone does not prove a publisher on this MQTT connection",
         )
-        self.assertIsNone(provider.read_publication_authority)
+        self.assertEqual(
+            provider.read_publication_authority,
+            (1, SERVICE_ONE),
+            "retained online presence authorizes read-only values, not controls",
+        )
         self.assertTrue(
             provider.ingest(
                 provider.presence_topic,
@@ -3839,14 +3889,15 @@ class ControlPresenceTests(unittest.TestCase):
 
 
 class CstLiveDecoderContractTests(unittest.TestCase):
-    def test_auto_comfort_and_temperature_retraction_are_accepted_together(self):
+    def test_auto_comfort_remains_accepted_but_obsolete_retraction_is_rejected(self):
         profiles = local.load_local_semantic_profile_catalogue()[1]
         for name in ('cst170-core-state-v1', 'cst570-core-state-v1'):
             with self.subTest(profile=name):
                 profile = profiles[name]
                 provider = local.LocalSemanticShadowProvider(BINDING_ID, profile, now=lambda: NOW)
                 payload = {
-                    'schema_version': 1, 'semantics_revision': 33,
+                    'schema_version': 1,
+                    'semantics_revision': profile.semantics_revision,
                     'binding_id': BINDING_ID, 'model_id': profile.model_id,
                     'platform': 'thinq2', 'session_id': SESSION_ONE,
                     'sequence': 1, 'published_at': '2026-08-13T00:59:59.000Z',
@@ -3855,16 +3906,30 @@ class CstLiveDecoderContractTests(unittest.TestCase):
                         'confidence': 'confirmed-exact-device-five-step-auto-comfort-preference-sweep',
                         'observed_at': '2026-08-13T00:59:58.000Z',
                     }},
-                    'invalidated_fields': {'temperature.target_c': {
-                        'observed_at': '2026-08-13T00:59:58.000Z',
-                        'confidence': profile.fields['temperature.target_c'].confidence[0],
-                    }},
                     'diagnostics': {'rejected_frames': 0,
                                     'unresolved_fields': 0, 'invalid_values': 0, 'unsupported_frames': 0},
                 }
                 provider.ingest(provider.state_topic, json.dumps(payload).encode(), qos=1, retained=False)
                 self.assertEqual(provider.shadow_fields['comfort.preference_step'].value, 0)
                 self.assertNotIn('temperature.target_c', provider.shadow_fields)
+                # The deployed sem34 CST profile no longer authorizes the old
+                # carrier retraction. Keep the valid field and reject that map.
+                payload['sequence'] = 2
+                payload['invalidated_fields'] = {'temperature.target_c': {
+                    'observed_at': '2026-08-13T00:59:58.000Z',
+                    'confidence': profile.fields['temperature.target_c'].confidence[0],
+                }}
+                with self.assertRaisesRegex(
+                    local.LocalProviderContractError,
+                    'field invalidations are not authorized',
+                ):
+                    provider.ingest(
+                        provider.state_topic,
+                        json.dumps(payload).encode(),
+                        qos=1,
+                        retained=False,
+                    )
+                self.assertEqual(provider.shadow_fields['comfort.preference_step'].value, 0)
 
 
 class AuthoritativeInvalidationTests(unittest.TestCase):

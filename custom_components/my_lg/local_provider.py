@@ -8,6 +8,7 @@ remain independently testable.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import logging
 import math
@@ -19,6 +20,22 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal
+
+try:
+    from .feature_database import all_models_enabled, default_database_path, enabled_models, load_features
+except ImportError:
+    # Pure contract tests load this module without importing the HA package.
+    _database_spec = importlib.util.spec_from_file_location(
+        "my_lg_feature_database_test", Path(__file__).with_name("feature_database.py")
+    )
+    if _database_spec is None or _database_spec.loader is None:
+        raise
+    _database_module = importlib.util.module_from_spec(_database_spec)
+    _database_spec.loader.exec_module(_database_module)
+    default_database_path = _database_module.default_database_path
+    enabled_models = _database_module.enabled_models
+    all_models_enabled = _database_module.all_models_enabled
+    load_features = _database_module.load_features
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -214,6 +231,7 @@ class LocalSemanticProfile:
     availability_policy: str | None = None
     authoritative_invalidations: bool = False
     freshness_max_age_ms: int | None = None
+    revision_independent: bool = False
 
     def __post_init__(self) -> None:
         if not _OPAQUE_ID.fullmatch(self.profile_id):
@@ -234,6 +252,21 @@ class LocalSemanticProfile:
             or self.contract_revision > MAX_JSON_SAFE_INTEGER
         ):
             raise ValueError("Local semantic contract revision is invalid")
+        if type(self.revision_independent) is not bool:
+            raise ValueError("Local semantic revision policy is invalid")
+        if self.availability_policy is not None and self.availability_policy not in _AVAILABILITY_POLICIES:
+            raise ValueError("Local semantic availability policy is invalid")
+        if type(self.authoritative_invalidations) is not bool:
+            raise ValueError("Local semantic invalidation policy is invalid")
+        if self.freshness_max_age_ms is not None and (
+            type(self.freshness_max_age_ms) is not int
+            or self.freshness_max_age_ms < 1
+            or self.freshness_max_age_ms > MAX_JSON_SAFE_INTEGER
+            or self.availability_policy not in (None, _AVAILABILITY_POLICY_DEVICE_REPORT)
+        ):
+            raise ValueError("Local semantic freshness policy is invalid")
+        if self.availability_policy == _AVAILABILITY_POLICY_DEVICE_REPORT and self.freshness_max_age_ms is None:
+            raise ValueError("Local semantic device-report freshness policy is missing")
         supported = self.supported_semantics_revisions or (self.semantics_revision,)
         if (
             not isinstance(supported, tuple)
@@ -250,7 +283,7 @@ class LocalSemanticProfile:
         ):
             raise ValueError("Local semantic supported revisions are invalid")
         owned = dict(self.fields)
-        if not owned or len(owned) > 256:
+        if (not owned and not self.revision_independent) or len(owned) > 256:
             raise ValueError("Local semantic profile fields are invalid")
         for semantic_id, contract in owned.items():
             if (
@@ -516,6 +549,95 @@ def _load_bundled_local_semantic_profiles() -> tuple[
         ) from err
 
 
+def _load_database_local_semantic_profiles(path: Path | None = None) -> tuple[
+    int, Mapping[str, LocalSemanticProfile], str
+]:
+    """Load editable pilot fields without making the fleet share a revision gate."""
+    database = default_database_path() if path is None else path
+    try:
+        profile_rows = load_features(database, "pilot-profile")
+        field_rows = load_features(database, "pilot-read")
+    except (OSError, ValueError) as err:
+        raise LocalProviderConfigurationError(
+            "Local feature database pilot catalogue is unavailable"
+        ) from err
+
+    fields_by_profile: dict[tuple[str, str], dict[str, LocalSemanticFieldContract]] = {}
+    for row in field_rows:
+        model_id = row["model_id"]
+        profile_id = row["profile_id"]
+        semantic_id = row["feature_id"]
+        definition = row["definition"]
+        try:
+            if (
+                definition.get("semantic_id") != semantic_id
+                or row["platform"] not in ("thinq1", "thinq2")
+                or definition.get("exposure") != "state"
+                or not isinstance(definition.get("confidence"), list)
+                or not definition["confidence"]
+                or len(definition["confidence"]) > 32
+                or len(set(definition["confidence"])) != len(definition["confidence"])
+            ):
+                raise ValueError("pilot field identity is invalid")
+            allowed = definition.get("allowed_values")
+            if allowed is not None and not isinstance(allowed, list):
+                raise ValueError("pilot field values are invalid")
+            field = LocalSemanticFieldContract(
+                value_type=definition["value_type"],
+                exposure=definition["exposure"],
+                confidence=tuple(definition["confidence"]),
+                unit=definition.get("unit"),
+                allowed_values=None if allowed is None else tuple(allowed),
+            )
+            if not _SEMANTIC_ID.fullmatch(semantic_id):
+                raise ValueError("pilot semantic id is invalid")
+        except (KeyError, TypeError, ValueError):
+            _LOGGER.warning(
+                "Local feature database skipped invalid pilot field %s for %s",
+                semantic_id, model_id,
+            )
+            continue
+        fields_by_profile.setdefault((model_id, profile_id), {})[semantic_id] = field
+
+    profiles: dict[str, LocalSemanticProfile] = {}
+    for row in profile_rows:
+        model_id = row["model_id"]
+        profile_id = row["profile_id"]
+        definition = row["definition"]
+        try:
+            if (
+                row["feature_id"] != "profile"
+                or definition.get("profile_id") != profile_id
+                or definition.get("model_id") != model_id
+                or definition.get("platform") != row["platform"]
+                or profile_id in profiles
+            ):
+                raise ValueError("pilot profile identity is invalid")
+            fields = fields_by_profile.get((model_id, profile_id), {})
+            profiles[profile_id] = LocalSemanticProfile(
+                profile_id=profile_id,
+                model_id=model_id,
+                platform=row["platform"],
+                semantics_revision=1,
+                fields=fields,
+                contract_revision=definition["contract_revision"],
+                supported_semantics_revisions=(1,),
+                availability_policy=definition.get("availability_policy"),
+                authoritative_invalidations=definition.get(
+                    "authoritative_invalidations", False
+                ),
+                freshness_max_age_ms=definition.get("freshness_max_age_ms"),
+                revision_independent=True,
+            )
+        except (KeyError, TypeError, ValueError):
+            _LOGGER.warning(
+                "Local feature database skipped invalid pilot profile %s for %s",
+                profile_id, model_id,
+            )
+            continue
+    return 1, MappingProxyType(profiles), "feature-db"
+
+
 _PROFILE_CATALOGUE_LOCK = threading.Lock()
 _PROFILE_CATALOGUE_CACHE: tuple[int, Mapping[str, LocalSemanticProfile], str] | None = (
     None
@@ -543,7 +665,7 @@ def _validate_compatibility_profile(
         _catalogue_error()
 
 
-def load_local_semantic_profile_catalogue() -> tuple[
+def load_local_semantic_profile_catalogue(path: Path | None = None) -> tuple[
     int, Mapping[str, LocalSemanticProfile], str
 ]:
     """Load and validate the optional Local catalogue once, thread-safely.
@@ -555,6 +677,31 @@ def load_local_semantic_profile_catalogue() -> tuple[
     can be adopted by a later config-entry reload.
     """
     global _PROFILE_CATALOGUE_CACHE
+
+    database = default_database_path() if path is None else path
+    if database.is_file():
+        try:
+            selected = enabled_models(database)
+        except (OSError, ValueError) as err:
+            raise LocalProviderConfigurationError(
+                "Local feature database rollout is unavailable"
+            ) from err
+        if selected:
+            database_profiles = _load_database_local_semantic_profiles(database)[1]
+            if all_models_enabled(database):
+                return 1, database_profiles, "feature-db"
+            # Only selected models use DB definitions. The other bindings keep
+            # their current publication contract throughout the pilot.
+            bundled = _load_bundled_local_semantic_profiles()
+            # A malformed profile row cannot remove the binding's presence or
+            # energy path. Retain that one released profile until corrected.
+            merged = dict(bundled[1])
+            merged.update({
+                profile_id: profile
+                for profile_id, profile in database_profiles.items()
+                if profile.model_id in selected
+            })
+            return bundled[0], MappingProxyType(merged), "feature-db"
 
     cached = _PROFILE_CATALOGUE_CACHE
     if cached is not None:
@@ -597,6 +744,7 @@ class LocalShadowConfiguration:
     platform: Literal["thinq1", "thinq2"]
     _profile: LocalSemanticProfile
     require_identity: bool = False
+    read_contract_policy: Literal["pinned", "field-compatible"] = "pinned"
 
     @property
     def profile(self) -> LocalSemanticProfile:
@@ -619,7 +767,10 @@ _LOCAL_BINDING_REQUIRED_KEYS = frozenset(
 # manifest. It is opt-in and flipped in the same window as the manifests: a
 # publisher still on the legacy contract emits no proof at all, and demanding one
 # from it would reject every message instead of merely leaving it unverified.
-_LOCAL_BINDING_ALLOWED_KEYS = _LOCAL_BINDING_REQUIRED_KEYS | {"require_identity"}
+_LOCAL_BINDING_ALLOWED_KEYS = _LOCAL_BINDING_REQUIRED_KEYS | {
+    "require_identity",
+    "read_contract_policy",
+}
 _LEGACY_LOCAL_OPTION_KEYS = frozenset(
     {
         OPT_LOCAL_PROVIDER_MODE,
@@ -647,6 +798,7 @@ def _configuration_from_values(
     model_id: object,
     platform: object,
     require_identity: bool = False,
+    read_contract_policy: Literal["pinned", "field-compatible"] = "pinned",
 ) -> LocalShadowConfiguration:
     if not isinstance(pat_device_id, str) or not _OPAQUE_ID.fullmatch(pat_device_id):
         _configuration_error("Local provider PAT device id is invalid")
@@ -671,6 +823,7 @@ def _configuration_from_values(
         platform=profile.platform,
         _profile=profile,
         require_identity=require_identity,
+        read_contract_policy=read_contract_policy,
     )
 
 
@@ -727,6 +880,12 @@ def _configuration_from_binding(value: object) -> LocalShadowConfiguration:
     require_identity = value.get("require_identity", False)
     if require_identity is not True and require_identity is not False:
         _configuration_error("Local provider binding identity requirement is invalid")
+    read_contract_policy = value.get("read_contract_policy", "pinned")
+    if not isinstance(read_contract_policy, str) or read_contract_policy not in (
+        "pinned",
+        "field-compatible",
+    ):
+        _configuration_error("Local provider read contract policy is invalid")
     if (
         type(value["schema_version"]) is not int
         or value["schema_version"] != LOCAL_BINDING_SCHEMA_VERSION
@@ -742,6 +901,7 @@ def _configuration_from_binding(value: object) -> LocalShadowConfiguration:
         model_id=value["model_id"],
         platform=value["platform"],
         require_identity=require_identity,
+        read_contract_policy=read_contract_policy,
     )
 
 
@@ -785,6 +945,8 @@ def _configuration_dict(
     }
     if config.require_identity:
         value["require_identity"] = True
+    if config.read_contract_policy != "pinned":
+        value["read_contract_policy"] = config.read_contract_policy
     return value
 
 
@@ -1068,7 +1230,12 @@ def _parse_state(
     # keep working.
     if (
         type(snapshot["semantics_revision"]) is not int
-        or snapshot["semantics_revision"] not in profile.supported_semantics_revisions
+        or snapshot["semantics_revision"] < 1
+        or snapshot["semantics_revision"] > MAX_JSON_SAFE_INTEGER
+        or (
+            not profile.revision_independent
+            and snapshot["semantics_revision"] not in profile.supported_semantics_revisions
+        )
     ):
         _contract_error("Local provider semantics revision is unsupported")
     if snapshot["binding_id"] != expected_binding_id:
@@ -1102,6 +1269,8 @@ def _parse_state(
     for semantic_id, raw_field in fields.items():
         contract = profile.fields.get(semantic_id)
         if contract is None:
+            if profile.revision_independent:
+                continue
             _contract_error("Local provider semantic field is not authorized")
         field = _field_object(raw_field, f"semantic field {semantic_id}")
         value_type = field["value_type"]
@@ -1157,6 +1326,8 @@ def _parse_state(
         for semantic_id, raw_invalidation in invalidated.items():
             contract = profile.fields.get(semantic_id)
             if contract is None:
+                if profile.revision_independent:
+                    continue
                 _contract_error("Local provider semantic invalidation is not authorized")
             if semantic_id in shadow_fields:
                 _contract_error("Local provider retracted a field it also published")
@@ -1620,6 +1791,10 @@ class LocalSemanticShadowProvider:
 
     def semantic_field_fresh_until(self, semantic_id: str) -> datetime | None:
         """Return this profile's exact freshness deadline for one retained field."""
+        # Device-report expiry belongs to liveness, not unchanged settings.
+        # semantic_field_available still requires a live exact device.
+        if self.profile.availability_policy == _AVAILABILITY_POLICY_DEVICE_REPORT:
+            return None
         field = self._shadow_fields.get(semantic_id)
         max_age_ms = self.profile.freshness_max_age_ms
         if field is None or max_age_ms is None:
@@ -1635,7 +1810,16 @@ class LocalSemanticShadowProvider:
 
     def semantic_field_available(self, semantic_id: str) -> bool:
         """Return HA-safe availability for one exact semantic field."""
-        return self.shadow_healthy and self.semantic_field_fresh(semantic_id)
+        # A completed capture marks its bundle offline, not the
+        # physical appliance. Retained read fields can use the same
+        # independently live device authority as the full-read feed.
+        # Command authorization/control_alive remains unchanged.
+        read_available = self.shadow_healthy or (
+            self._semantic_transport_current
+            and self._session_id is not None
+            and self.read_publication_authority is not None
+        )
+        return read_available and self.semantic_field_fresh(semantic_id)
 
     @property
     def rejected_messages(self) -> int:
@@ -1671,10 +1855,19 @@ class LocalSemanticShadowProvider:
         authority is the independently authenticated presence generation and
         runtime service instance; the read feed owns its cohort/source cursor.
         """
+        # Retained online presence is enough for read-only values.
+        # Fresh live-delivery TTL remains a control_alive write guard.
+        # Offline, disconnected transport, foreign service and expired
+        # device-report leases still make every read unavailable.
         if (
-            not self.control_alive
+            not self._transport_ready
+            or self._presence_status != 'online'
+            or self._runtime_status != 'online'
             or self._presence_binding_generation is None
             or self._presence_service_instance_id is None
+            or self._presence_service_instance_id != self._service_instance_id
+            or (self._presence_valid_until is not None
+                and _utc_now(self._now) > self._presence_valid_until)
         ):
             return None
         return (

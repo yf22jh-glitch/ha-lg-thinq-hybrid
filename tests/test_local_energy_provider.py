@@ -97,6 +97,10 @@ class CumulativeEnergyProviderTests(unittest.TestCase):
             energy._feed_contract_sha256("WTL_KPK_BDH_KR_01"),
             "eda28553c0199dffad48b85e2cfb4a4abe175685f6165aacf22d25285fd1a09c",
         )
+        self.assertEqual(
+            energy._feed_contract_sha256("ST_R_ETH01Y_"),
+            "2dd6f3956cdb4a9ea67ee4da28ed4f0b26cf344629885a11f989ff3a33171bf5",
+        )
 
     def test_accepts_exact_monotonic_level(self) -> None:
         provider = self.provider()
@@ -152,6 +156,13 @@ class CumulativeEnergyProviderTests(unittest.TestCase):
         self.ingest(provider, value)
         self.assertEqual(provider.total_wh("washer.energy.total_wh"), 87)
         self.assertEqual(provider.total_wh("dryer.energy.total_wh"), 87)
+
+    def test_accepts_styler_local_total(self) -> None:
+        provider = self.provider("ST_R_ETH01Y_")
+        provider.set_transport_ready(True)
+        self.ingest(provider, envelope(model="ST_R_ETH01Y_", total=27))
+        self.assertTrue(provider.field_available("energy.total_wh"))
+        self.assertEqual(provider.total_wh("energy.total_wh"), 27)
 
 
 if __name__ == "__main__":

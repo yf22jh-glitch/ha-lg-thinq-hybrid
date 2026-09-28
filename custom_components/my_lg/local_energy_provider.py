@@ -31,6 +31,10 @@ _MODEL_FIELDS: Mapping[str, tuple[str, ...]] = MappingProxyType(
         "3REK2G03VI230D_2": ("energy.total_wh",),
         "WBEF3": ("energy.total_wh",),
         "WMLJ32RS": ("energy.total_wh",),
+        "1WPD4CMIDR__3": ("energy.total_wh",),
+        "AIR_2C0001_WW": ("energy.total_wh",),
+        "DHUM_056905_WW": ("energy.total_wh",),
+        "ST_R_ETH01Y_": ("energy.total_wh",),
         "WTL_KPK_BDH_KR_01": (
             "dryer.energy.total_wh",
             "washer.energy.total_wh",

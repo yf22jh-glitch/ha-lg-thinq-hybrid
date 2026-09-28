@@ -1047,6 +1047,30 @@ class Session:
             self._auth.user_number,
         )
 
+    async def put2(self, path: str, data: dict) -> dict:
+        """Make one APIv2 PUT; never retry an appliance-setting write."""
+        url = urljoin(self._auth.gateway.thinq2_uri, path)
+        core = self._auth.gateway.core
+        async with core._get_session().put(
+            url=url,
+            json=data,
+            headers=core._thinq2_headers(
+                client_id=core._get_client_id(self._auth.user_number),
+                access_token=self._auth.access_token,
+                user_number=self._auth.user_number,
+                country=core._country,
+                language=core._language,
+            ),
+            timeout=core._timeout,
+            raise_for_status=False,
+        ) as resp:
+            if resp.status >= 400:
+                raise exc.APIError("ThinQ APIv2 PUT failed", str(resp.status))
+            result = await core._get_json_resp(resp)
+        if not isinstance(result, dict) or result.get("resultCode") != "0000":
+            raise exc.APIError("ThinQ APIv2 PUT was not acknowledged", str(result.get("resultCode") if isinstance(result, dict) else "invalid"))
+        return core._manage_lge_result(result, True, self._auth.user_number)
+
     def _nscreen_headers(self, extra_headers: dict | None = None) -> dict:
         """Return headers used by ThinQ Web NScreen monitoring APIs."""
         headers = self._auth.gateway.core._thinq2_headers(

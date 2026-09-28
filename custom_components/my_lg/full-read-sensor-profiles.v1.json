@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "authority": "server",
   "access": "read-only",
-  "semanticsRevision": 33,
-  "readEntityContractRevision": "full-read-entities-v1:0b8bad1be19f6b47",
-  "readEntityContractSha256": "0b8bad1be19f6b4741a224d0a01d95823bee04aba4bc5a1b3bcdf985cdc53530",
-  "catalogRevision": "tlv-knowledge-v1:145bd2bbc87cb7e6",
-  "catalogSha256": "145bd2bbc87cb7e6d14694b5d362a485e8b38d8ceef0607b8e4738daf56f4ce9",
-  "reviewedNonTlvSourceRevision": "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef",
-  "reviewedNonTlvSourceSha256": "34cd3b8f2dc9aeef830820f134c4c73262010f590d1f490112a9158ba84016b5",
+  "semanticsRevision": 34,
+  "readEntityContractRevision": "full-read-entities-v1:5bb2be2e4805e092",
+  "readEntityContractSha256": "5bb2be2e4805e092788b786c8106cf3167c61eff916ad20df47caadc408ebd08",
+  "catalogRevision": "tlv-knowledge-v1:22ba817a3d40043f",
+  "catalogSha256": "22ba817a3d40043fc94d57162da2f121b19febe55debb2d8750218606b2ee48a",
+  "reviewedNonTlvSourceRevision": "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb",
+  "reviewedNonTlvSourceSha256": "1b8a17d9cfdeeadbebecaa7249ad2659924eaadd3e95376698bf28fbd49bbbdd",
   "profiles": [
     {
       "profileId": "1WPD4CMIDR__3:read-sensors-v1",
@@ -30,6 +30,20 @@
           "owner": "none",
           "entityCategory": "diagnostic",
           "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|ice.amount_state",
+          "semanticId": "ice.amount_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "얼음 양 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
           "publicationMode": "retained-current"
         },
         {
@@ -300,13 +314,13 @@
         }
       ],
       "stats": {
-        "descriptorCount": 19,
-        "retainedCurrentDescriptorCount": 12,
+        "descriptorCount": 20,
+        "retainedCurrentDescriptorCount": 13,
         "transientEventDescriptorCount": 7,
         "binarySensorDescriptorCount": 3,
-        "sensorDescriptorCount": 9,
+        "sensorDescriptorCount": 10,
         "eventDomainDescriptorCount": 7,
-        "stateDescriptorCount": 11,
+        "stateDescriptorCount": 12,
         "diagnosticDescriptorCount": 1,
         "eventDescriptorCount": 7,
         "patOwnerDescriptorCount": 0
@@ -320,6 +334,34 @@
       "authority": "server",
       "access": "read-only",
       "fields": [
+        {
+          "descriptorKey": "2REFO1DBN3K_U|compartment.freezer.temperature_status",
+          "semanticId": "compartment.freezer.temperature_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "냉동실 온도 유지 상태 (잠정)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "2REFO1DBN3K_U|compartment.fridge.temperature_status",
+          "semanticId": "compartment.fridge.temperature_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "냉장실 온도 유지 상태 (잠정)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
         {
           "descriptorKey": "2REFO1DBN3K_U|diagnostic.energy.sequence",
           "semanticId": "diagnostic.energy.sequence",
@@ -352,13 +394,13 @@
         }
       ],
       "stats": {
-        "descriptorCount": 2,
-        "retainedCurrentDescriptorCount": 1,
+        "descriptorCount": 4,
+        "retainedCurrentDescriptorCount": 3,
         "transientEventDescriptorCount": 1,
         "binarySensorDescriptorCount": 0,
-        "sensorDescriptorCount": 1,
+        "sensorDescriptorCount": 3,
         "eventDomainDescriptorCount": 1,
-        "stateDescriptorCount": 0,
+        "stateDescriptorCount": 2,
         "diagnosticDescriptorCount": 1,
         "eventDescriptorCount": 1,
         "patOwnerDescriptorCount": 0
@@ -1856,6 +1898,20 @@
           "publicationMode": "retained-current"
         },
         {
+          "descriptorKey": "CST_170004_WW|auto_dry.wind_strength_level",
+          "semanticId": "auto_dry.wind_strength_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 풍량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
           "descriptorKey": "CST_170004_WW|comfort_energy_saving.enabled",
           "semanticId": "comfort_energy_saving.enabled",
           "domain": "binary_sensor",
@@ -2372,13 +2428,13 @@
         }
       ],
       "stats": {
-        "descriptorCount": 47,
-        "retainedCurrentDescriptorCount": 47,
+        "descriptorCount": 48,
+        "retainedCurrentDescriptorCount": 48,
         "transientEventDescriptorCount": 0,
         "binarySensorDescriptorCount": 12,
-        "sensorDescriptorCount": 35,
+        "sensorDescriptorCount": 36,
         "eventDomainDescriptorCount": 0,
-        "stateDescriptorCount": 29,
+        "stateDescriptorCount": 30,
         "diagnosticDescriptorCount": 18,
         "eventDescriptorCount": 0,
         "patOwnerDescriptorCount": 0
@@ -2545,6 +2601,20 @@
           "exposure": "state",
           "unit": "min",
           "labelKo": "자동 건조 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|auto_dry.wind_strength_level",
+          "semanticId": "auto_dry.wind_strength_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 풍량",
           "owner": "none",
           "entityCategory": null,
           "enabledByDefault": true,
@@ -3067,13 +3137,13 @@
         }
       ],
       "stats": {
-        "descriptorCount": 47,
-        "retainedCurrentDescriptorCount": 47,
+        "descriptorCount": 48,
+        "retainedCurrentDescriptorCount": 48,
         "transientEventDescriptorCount": 0,
         "binarySensorDescriptorCount": 12,
-        "sensorDescriptorCount": 35,
+        "sensorDescriptorCount": 36,
         "eventDomainDescriptorCount": 0,
-        "stateDescriptorCount": 29,
+        "stateDescriptorCount": 30,
         "diagnosticDescriptorCount": 18,
         "eventDescriptorCount": 0,
         "patOwnerDescriptorCount": 0
@@ -4859,6 +4929,170 @@
       }
     },
     {
+      "profileId": "HWWA9X3C_F2U:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.percent_level",
+          "semanticId": "battery.percent_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "본체 배터리 잔량 단계",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.remaining_min",
+          "semanticId": "battery.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "배터리 남은 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.remaining_pct",
+          "semanticId": "battery.remaining_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "배터리 잔량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.sub_level_state",
+          "semanticId": "battery.sub_level_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "보조 배터리 단계",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|cleaning.complete_state",
+          "semanticId": "cleaning.complete_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "청소 완료 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|cleaning.mode_state",
+          "semanticId": "cleaning.mode_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "청소 모드 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|nozzle.steam_attached",
+          "semanticId": "nozzle.steam_attached",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "스팀 노즐 장착 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|operation.status",
+          "semanticId": "operation.status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|station.docked_state",
+          "semanticId": "station.docked_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "스테이션 도킹 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|warning.passage_clogged_state",
+          "semanticId": "warning.passage_clogged_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "흡입 통로 막힘 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 10,
+        "retainedCurrentDescriptorCount": 10,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 10,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 10,
+        "diagnosticDescriptorCount": 0,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
       "profileId": "ST_R_ETH01Y_:read-sensors-v1",
       "contractRevision": 1,
       "modelId": "ST_R_ETH01Y_",
@@ -5507,26 +5741,26 @@
     }
   ],
   "stats": {
-    "generatedDescriptorCount": 355,
-    "liveDescriptorCount": 355,
+    "generatedDescriptorCount": 370,
+    "liveDescriptorCount": 370,
     "descriptorOnlyCount": 0,
-    "retainedCurrentDescriptorCount": 343,
+    "retainedCurrentDescriptorCount": 358,
     "transientEventDescriptorCount": 12,
     "binarySensorDescriptorCount": 85,
-    "sensorDescriptorCount": 258,
+    "sensorDescriptorCount": 273,
     "eventDomainDescriptorCount": 12,
-    "stateDescriptorCount": 194,
+    "stateDescriptorCount": 209,
     "diagnosticDescriptorCount": 149,
     "eventDescriptorCount": 12,
     "patOwnerDescriptorCount": 4,
-    "profileCount": 15,
+    "profileCount": 16,
     "aggregateExclusionGroupCount": 7,
     "aggregateExcludedSourceEntryCount": 17,
-    "pilotDescriptorCount": 177,
-    "fullReadPilotOverlapCount": 94,
-    "pilotOnlyDescriptorCount": 83,
-    "overallOwnerInventoryCount": 438
+    "pilotDescriptorCount": 184,
+    "fullReadPilotOverlapCount": 96,
+    "pilotOnlyDescriptorCount": 88,
+    "overallOwnerInventoryCount": 458
   },
-  "revision": "full-read-sensor-profiles-v1:b3a87ad4dde6e7ec",
-  "rootSha256": "b3a87ad4dde6e7ec0db0c21328744b96d4416bc1d9d028bf9b8f5182ccb1eb7f"
+  "revision": "full-read-sensor-profiles-v1:658865e343ad4991",
+  "rootSha256": "658865e343ad49917131c0872234b0930315644558da76035b26a533e253255b"
 }

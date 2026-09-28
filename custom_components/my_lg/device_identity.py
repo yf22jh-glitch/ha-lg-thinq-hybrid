@@ -29,6 +29,8 @@ class WideqDeviceData:
     alias: str
     model: str
     snapshot: dict[str, Any]
+    online: bool | None = None
+    platform: str | None = None
 
 
 @dataclass(frozen=True)

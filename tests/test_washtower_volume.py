@@ -18,7 +18,7 @@ class WasherVolumeTests(unittest.IsolatedAsyncioTestCase):
         models={BINDING_ID:MODEL}
         contract,scope=augment_confirmed_features(base,resolve_local_control_binding_eligibility({},base,models),models)
         feature=next(f for f in load_confirmed_features() if f['capability_id']==CAP)
-        self.assertEqual(feature['wire_evidence'],'own-model-observed-command-not-accepted')
+        self.assertEqual(feature['wire_evidence'],'own-model-observed-command-and-state')
         self.assertEqual(contract.root_sha256,base.root_sha256)
         coordinator=Coordinator(MODEL)
         primary=PrimaryProvider(model=MODEL)
@@ -42,7 +42,7 @@ class WasherVolumeTests(unittest.IsolatedAsyncioTestCase):
         for value in ('0','1','2','3','4','5','03'):
             self.assertEqual(local_control_value_authorized(contract,scope,binding_id=BINDING_ID,
                 model_id=MODEL,capability_id=CAP,local_request_value=value),value in ('0','1','2','3','4'))
-        self.assertFalse(any(d.capability_id=='dryer.sound.volume_level' for d in contract.descriptors))
+        self.assertTrue(any(d.capability_id=='dryer.sound.volume_level' for d in contract.descriptors))
         router.async_appliance_setting_state.side_effect=TimeoutError()
         await entity.async_update()
         self.assertIsNone(entity.current_option)
@@ -52,5 +52,5 @@ class WasherVolumeTests(unittest.IsolatedAsyncioTestCase):
             for value in ('0','4','5','04',4,True,None):
                 response=Response(200,{'schema_version':1,'model_id':model,'values':{CAP:value}})
                 client=LocalCommandClient(SimpleNamespace(get=lambda *a,**k:response))
-                self.assertEqual(await client.async_appliance_setting_state('test-device',CAP),
+                self.assertEqual(await client.async_appliance_setting_state('test-device',MODEL,CAP),
                     value if model==MODEL and value in ('0','4') else None)

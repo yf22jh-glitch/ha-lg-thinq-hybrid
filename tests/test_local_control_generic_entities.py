@@ -9,7 +9,12 @@ from typing import Any
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
-from custom_components.my_lg.local_command import LocalCommandFailed, LocalCommandResult
+from custom_components.my_lg.local_command import (
+    LocalCommandBusy,
+    LocalCommandFailed,
+    LocalCommandNotReady,
+    LocalCommandResult,
+)
 from custom_components.my_lg.local_control_contract import (
     EXPECTED_LOCAL_CONTROL_CHECKPOINT_REVISION,
     EXPECTED_LOCAL_CONTROL_CHECKPOINT_SHA256,
@@ -127,8 +132,22 @@ class Router:
             raise self.outcome
         return self.outcome
 
+    async def async_set_value_strict(self, device_id: str, capability: str, value: str):
+        self.methods.append("set_value_strict")
+        self.calls.append((device_id, capability, value))
+        if isinstance(self.outcome, Exception):
+            raise self.outcome
+        return self.outcome
+
     async def async_execute(self, device_id: str, capability: str, value: str):
         self.methods.append("execute")
+        self.calls.append((device_id, capability, value))
+        if isinstance(self.outcome, Exception):
+            raise self.outcome
+        return self.outcome
+
+    async def async_execute_strict(self, device_id: str, capability: str, value: str):
+        self.methods.append("execute_strict")
         self.calls.append((device_id, capability, value))
         if isinstance(self.outcome, Exception):
             raise self.outcome
@@ -457,7 +476,7 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
         await entity.async_turn_off()
         await entity.async_turn_on()
 
-        self.assertEqual(router.methods, ["set_value", "set_value"])
+        self.assertEqual(router.methods, ["set_value_strict", "set_value_strict"])
         self.assertEqual(
             router.calls,
             [
@@ -481,7 +500,7 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
 
         await entity.async_press()
 
-        self.assertEqual(router.methods, ["execute"])
+        self.assertEqual(router.methods, ["execute_strict"])
         self.assertEqual(
             router.calls,
             [
@@ -507,7 +526,7 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
             router.calls,
             [(DEVICE_ID, desc.capability_id, "true")],
         )
-        self.assertEqual(router.methods, ["set_value"])
+        self.assertEqual(router.methods, ["set_value_strict"])
         self.assertFalse(entity.is_on)
         self.assertFalse(primary.values[desc.exact_state_semantic])
 
@@ -527,6 +546,38 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(HomeAssistantError):
             await entity.async_turn_on()
         self.assertEqual(len(router.calls), 1)
+
+    async def test_transient_busy_errors_without_latching_and_later_succeeds(
+        self,
+    ) -> None:
+        router = Router(LocalCommandBusy("another appliance command is still being confirmed"))
+        entity, _primary, _read, _router = entity_for("switch", router=router)
+
+        with self.assertRaises(HomeAssistantError):
+            await entity.async_turn_on()
+
+        self.assertTrue(entity.available)
+        self.assertFalse(entity._prewire_refused)
+        router.outcome = LocalCommandResult("confirmed", {})
+        await entity.async_turn_on()
+        self.assertEqual(len(router.calls), 2)
+        self.assertTrue(entity.available)
+
+    async def test_dynamic_precondition_errors_without_latching_and_later_succeeds(
+        self,
+    ) -> None:
+        router = Router(LocalCommandNotReady("sensor monitoring requires a current own prestate"))
+        entity, _primary, _read, _router = entity_for("select", router=router)
+
+        with self.assertRaises(HomeAssistantError):
+            await entity.async_select_option(entity.options[0])
+
+        self.assertTrue(entity.available)
+        self.assertFalse(entity._prewire_refused)
+        router.outcome = LocalCommandResult("confirmed", {})
+        await entity.async_select_option(entity.options[0])
+        self.assertEqual(len(router.calls), 2)
+        self.assertTrue(entity.available)
 
     async def test_postwire_failure_errors_without_retry_or_guess(self) -> None:
         router = Router(LocalCommandFailed("synthetic postwire uncertainty"))

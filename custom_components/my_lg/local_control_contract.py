@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import re
+import sqlite3
 import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -830,8 +832,68 @@ _CONTRACT_CACHE: LocalControlEntityContract | None = None
 _CONTRACT_LOCK = threading.Lock()
 
 
-def load_local_control_entity_contract() -> LocalControlEntityContract:
-    """Load the one pinned public contract without speculative compatibility."""
+def load_local_control_entity_contract(path: Path | None = None) -> LocalControlEntityContract:
+    """Use DB controls only for explicitly piloted models."""
+    feature_database = (
+        Path(__file__).resolve().parents[2] / "my_lg_features.sqlite3"
+        if path is None else path
+    )
+    if not feature_database.is_file():
+        return _load_bundled_local_control_entity_contract()
+    try:
+        connection = sqlite3.connect(f"{feature_database.as_uri()}?mode=ro", uri=True)
+        try:
+            if (
+                connection.execute("PRAGMA application_id").fetchone()[0] != 0x4C474646
+                or connection.execute("PRAGMA user_version").fetchone()[0] != 2
+            ):
+                _contract_error("Local feature database layout is invalid")
+            rollout = connection.execute(
+                "SELECT model_id, enabled FROM model_rollout"
+            ).fetchall()
+            selected = frozenset(row[0] for row in rollout if row[1])
+        finally:
+            connection.close()
+    except sqlite3.Error as error:
+        raise LocalControlEntityContractError(
+            "Local feature database rollout is unavailable"
+        ) from error
+    if not selected:
+        return _load_bundled_local_control_entity_contract()
+    dynamic = load_local_control_entity_contract_from_database(feature_database)
+    if len(selected) == len(rollout):
+        return dynamic
+    baseline = _load_bundled_local_control_entity_contract()
+    descriptors = tuple(
+        descriptor for descriptor in baseline.descriptors
+        if descriptor.model_id not in selected
+    ) + tuple(
+        descriptor for descriptor in dynamic.descriptors
+        if descriptor.model_id in selected
+    )
+    by_model = MappingProxyType({
+        model_id: tuple(descriptor for descriptor in descriptors if descriptor.model_id == model_id)
+        for model_id in sorted(set(baseline.descriptors_by_model) | selected)
+    })
+    digest = hashlib.sha256(json.dumps(
+        [descriptor.key for descriptor in descriptors], separators=(",", ":")
+    ).encode("utf-8")).hexdigest()
+    return LocalControlEntityContract(
+        root_sha256=digest,
+        revision=f"feature-db:{digest[:16]}",
+        descriptors=descriptors,
+        descriptors_by_model=by_model,
+        model_fleet_counts=MappingProxyType({
+            **{model_id: count for model_id, count in baseline.model_fleet_counts.items()
+               if model_id not in selected},
+            **{model_id: 1 for model_id in by_model if model_id in selected},
+        }),
+        stats=MappingProxyType({"entityCount": len(descriptors)}),
+    )
+
+
+def _load_bundled_local_control_entity_contract() -> LocalControlEntityContract:
+    """Cache the old control surface for models not yet on the database."""
     global _CONTRACT_CACHE
     cached = _CONTRACT_CACHE
     if cached is not None:
@@ -856,6 +918,74 @@ def load_local_control_entity_contract() -> LocalControlEntityContract:
         return loaded
 
 
+def load_local_control_entity_contract_from_database(
+    path: Path,
+) -> LocalControlEntityContract:
+    """Read model/control declarations without a fleet-wide release hash gate.
+
+    The command router remains the only sender. A database entry describes an
+    existing codec's HA surface; it does not contain executable wire payloads.
+    """
+    if not path.is_file() or path.is_symlink():
+        raise LocalControlEntityContractError("Local feature database is unavailable")
+    try:
+        connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        try:
+            if (
+                connection.execute("PRAGMA application_id").fetchone()[0]
+                != 0x4C474646
+                or connection.execute("PRAGMA user_version").fetchone()[0] != 2
+            ):
+                _contract_error("Local feature database layout is invalid")
+            rows = connection.execute(
+                "SELECT model_id, feature_id, definition_json FROM features "
+                "WHERE channel = 'control-entity' AND enabled = 1 "
+                "ORDER BY model_id, feature_id"
+            ).fetchall()
+        finally:
+            connection.close()
+    except sqlite3.Error as error:
+        raise LocalControlEntityContractError(
+            "Local feature database could not be read"
+        ) from error
+    descriptors: list[LocalControlEntityDescriptor] = []
+    for row in rows:
+        try:
+            definition = json.loads(row["definition_json"])
+            if (
+                not isinstance(definition, dict)
+                or definition.get("modelId") != row["model_id"]
+                or definition.get("capabilityId") != row["feature_id"]
+            ):
+                raise ValueError("Control feature identity is invalid")
+            descriptors.append(_descriptor(definition))
+        except (LocalControlEntityContractError, TypeError, ValueError, KeyError):
+            # A bad row cannot remove another model's already working controls.
+            logging.getLogger(__name__).warning(
+                "Local feature database skipped invalid control %s for model %s",
+                row["feature_id"], row["model_id"],
+            )
+            continue
+    by_model = MappingProxyType({
+        model_id: tuple(item for item in descriptors if item.model_id == model_id)
+        for model_id in sorted({item.model_id for item in descriptors})
+    })
+    digest = hashlib.sha256(
+        json.dumps(
+            [item.key for item in descriptors], separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    return LocalControlEntityContract(
+        root_sha256=digest,  # Diagnostic receipt only in database mode.
+        revision=f"feature-db:{digest[:16]}",
+        descriptors=tuple(descriptors),
+        descriptors_by_model=by_model,
+        model_fleet_counts=MappingProxyType({model_id: 1 for model_id in by_model}),
+        stats=MappingProxyType({"entityCount": len(descriptors)}),
+    )
+
+
 def resolve_local_control_binding_eligibility(
     options: Mapping[str, object],
     contract: LocalControlEntityContract,
@@ -870,6 +1000,53 @@ def resolve_local_control_binding_eligibility(
     acknowledgement remain unchanged, as do disabled-by-default policies.
     """
     value = options.get(LOCAL_CONTROL_ELIGIBILITY_OPTION)
+    if contract.revision.startswith("feature-db:") and value is not None:
+        # Legacy private scopes remain restrictive, but their old release hash
+        # no longer disables an unrelated model when one DB row changes.
+        if not isinstance(value, dict) or not isinstance(value.get("bindings"), list):
+            _eligibility_error()
+        scoped: dict[str, LocalControlBindingEligibility] = {}
+        for raw_binding in value["bindings"]:
+            if not isinstance(raw_binding, dict):
+                _eligibility_error()
+            binding_id = raw_binding.get("binding_id")
+            if (
+                not isinstance(binding_id, str)
+                or binding_id not in binding_models
+                or binding_id in scoped
+                or not isinstance(raw_binding.get("entries"), list)
+            ):
+                _eligibility_error()
+            descriptors = {
+                item.capability_id: item
+                for item in contract.descriptors_by_model.get(binding_models[binding_id], ())
+            }
+            allowed: dict[str, tuple[str, ...]] = {}
+            for entry in raw_binding["entries"]:
+                if not isinstance(entry, dict):
+                    _eligibility_error()
+                capability_id = entry.get("capability_id")
+                exact_values = entry.get("exact_values")
+                descriptor = descriptors.get(capability_id)
+                if descriptor is None:
+                    continue
+                if (
+                    not isinstance(exact_values, list)
+                    or not exact_values
+                    or any(not isinstance(item, str) for item in exact_values)
+                ):
+                    _eligibility_error()
+                intersection = tuple(
+                    item for item in descriptor.exact_local_request_values
+                    if item in exact_values
+                )
+                if intersection:
+                    allowed[capability_id] = intersection
+            scoped[binding_id] = LocalControlBindingEligibility(
+                binding_id=binding_id,
+                values_by_capability=MappingProxyType(allowed),
+            )
+        return MappingProxyType(scoped)
     if LOCAL_CONTROL_ELIGIBILITY_OPTION not in options:
         automatic: dict[str, LocalControlBindingEligibility] = {}
         for binding_id, model_id in binding_models.items():
@@ -1044,6 +1221,10 @@ def local_control_value_authorized(
         if model_id == STYLER_MODEL and capability_id == STYLER_PROGRAM and descriptor.parameter_schema == STYLER_SCHEMA:
             return (allowed == descriptor.exact_local_request_values and allowed is not None
                     and is_styler_program(local_request_value))
+        from .local_styler_dnd import RESERVATION as STYLER_DND_RESERVATION, SCHEMA as STYLER_DND_SCHEMA, is_canonical_reservation
+        if model_id == STYLER_MODEL and capability_id == STYLER_DND_RESERVATION and descriptor.parameter_schema == STYLER_DND_SCHEMA:
+            return (allowed == descriptor.exact_local_request_values and allowed is not None
+                    and is_canonical_reservation(local_request_value))
         if model_id == WASHER_MODEL and capability_id == WASHER_PROGRAM and descriptor.parameter_schema == WASHER_SCHEMA:
             return (allowed == descriptor.exact_local_request_values and allowed is not None
                     and is_canonical_program(local_request_value))

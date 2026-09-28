@@ -13,6 +13,7 @@ import json
 import logging
 import math
 import re
+import sqlite3
 import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -27,7 +28,7 @@ TLV_READ_SCHEMA_VERSION = 2
 TLV_READ_PUBLICATION_PLAN_REVISION = 2
 PER_MODEL_TLV_READ_SCHEMA_VERSION = 3
 READ_STATIC_CONTRACT_PROJECTION_VERSION = 2
-EXPECTED_TLV_READ_SEMANTICS_REVISION = 33
+EXPECTED_TLV_READ_SEMANTICS_REVISION = 34
 TLV_READ_TOPIC_PREFIX = "lg_rethink_local/v1/read"
 MAX_TLV_READ_PAYLOAD_BYTES = 64 * 1024
 MAX_TLV_READ_EVENT_PAYLOAD_BYTES = 16 * 1024
@@ -56,33 +57,32 @@ TLV_READ_CONSUMER_MUTATIONS = (
     "restore-predecessor-v2",
     "retire-predecessor-v2",
 )
-EXPECTED_TLV_READ_DESCRIPTOR_COUNT = 355
+EXPECTED_TLV_READ_DESCRIPTOR_COUNT = 370
 EXPECTED_TLV_READ_ENTITY_ROOT_SHA256 = (
-    "0b8bad1be19f6b4741a224d0a01d95823bee04aba4bc5a1b3bcdf985cdc53530"
+    "5bb2be2e4805e092788b786c8106cf3167c61eff916ad20df47caadc408ebd08"
 )
 EXPECTED_TLV_READ_PROFILE_ROOT_SHA256 = (
-    "b3a87ad4dde6e7ec0db0c21328744b96d4416bc1d9d028bf9b8f5182ccb1eb7f"
+    "658865e343ad49917131c0872234b0930315644558da76035b26a533e253255b"
 )
-EXPECTED_TLV_SOURCE_ENTITY_REVISION = "tlv-read-entities-v1:0c30fac6ee11c160"
+EXPECTED_TLV_SOURCE_ENTITY_REVISION = "tlv-read-entities-v1:81fc45c66742929d"
 EXPECTED_TLV_SOURCE_ENTITY_ROOT_SHA256 = (
-    "0c30fac6ee11c16041a42a757331e6d178090befb9188073239dc134ed288c41"
+    "81fc45c66742929dd3dea120fa8d504dc531be1d845cc5f4e5575b22f1ec5eab"
 )
-EXPECTED_TLV_CATALOG_REVISION = "tlv-knowledge-v1:145bd2bbc87cb7e6"
+EXPECTED_TLV_CATALOG_REVISION = "tlv-knowledge-v1:22ba817a3d40043f"
 EXPECTED_TLV_CATALOG_SHA256 = (
-    "145bd2bbc87cb7e6d14694b5d362a485e8b38d8ceef0607b8e4738daf56f4ce9"
+    "22ba817a3d40043fc94d57162da2f121b19febe55debb2d8750218606b2ee48a"
 )
-EXPECTED_REVIEWED_NON_TLV_REVISION = "reviewed-non-tlv-read-v1:34cd3b8f2dc9aeef"
+EXPECTED_REVIEWED_NON_TLV_REVISION = "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb"
 EXPECTED_REVIEWED_NON_TLV_SHA256 = (
-    "34cd3b8f2dc9aeef830820f134c4c73262010f590d1f490112a9158ba84016b5"
+    "1b8a17d9cfdeeadbebecaa7249ad2659924eaadd3e95376698bf28fbd49bbbdd"
 )
 
-# Retained-message compatibility for the sem31 -> final sem32 rollout.  The
-# first complete generation is the currently deployed fleet runtime; the
-# second is the reviewed D121110 successor.  Listing both lets the component
-# move first without making all local-read bindings unavailable during the
-# single-unit runtime handoff.  Every candidate below is still matched as one
-# complete six-pin generation: mixed roots and all unlisted generations remain
-# unauthorized.
+# Retained-message compatibility across the reviewed sem31, sem32, sem33 and
+# prior sem34 rollout.  Listing complete predecessor generations lets the
+# component move first without making local-read bindings unavailable while
+# appliance runtimes move independently.  Every candidate below is still
+# matched as one complete six-pin generation: mixed roots and all unlisted
+# generations remain unauthorized.
 _RETAINED_TLV_READ_PUBLICATION_PIN_GENERATIONS = (
     MappingProxyType(
         {
@@ -134,37 +134,259 @@ _RETAINED_TLV_READ_PUBLICATION_PIN_GENERATIONS = (
             "semantics_revision": 32,
         }
     ),
+    # Keep the immediately preceding sem33 generation exact while the
+    # appliance runtimes move independently to the sem34 catalogue.
+    MappingProxyType(
+        {
+            "profile_revision": "full-read-sensor-profiles-v1:b3a87ad4dde6e7ec",
+            "profile_sha256": (
+                "b3a87ad4dde6e7ec0db0c21328744b96d4416bc1d9d028bf9b8f5182ccb1eb7f"
+            ),
+            "read_entity_contract_revision": "full-read-entities-v1:0b8bad1be19f6b47",
+            "read_entity_contract_sha256": (
+                "0b8bad1be19f6b4741a224d0a01d95823bee04aba4bc5a1b3bcdf985cdc53530"
+            ),
+            "catalog_sha256": (
+                "145bd2bbc87cb7e6d14694b5d362a485e8b38d8ceef0607b8e4738daf56f4ce9"
+            ),
+            "semantics_revision": 33,
+        }
+    ),
+    # The immediately preceding sem34 generation remains exact while only the
+    # two CST model contracts add the reviewed auto-dry wind readback.
+    MappingProxyType(
+        {
+            "profile_revision": "full-read-sensor-profiles-v1:3f993fff50fbdeed",
+            "profile_sha256": (
+                "3f993fff50fbdeed338aa83082bb43d969ff93970924627fe86cf132804d5985"
+            ),
+            "read_entity_contract_revision": "full-read-entities-v1:7bc022c12410bb75",
+            "read_entity_contract_sha256": (
+                "7bc022c12410bb75c143b54e9fd93537ae8cad44c8b664f010af811f51f7b8b6"
+            ),
+            "catalog_sha256": (
+                "6a9c918ef5d6f9c07b8fdb4d556d8d0c8f58867dcb1eefebf504d85a5c7fe4f7"
+            ),
+            "semantics_revision": 34,
+        }
+    ),
+    # The current sem34 generation remains exact while the reviewed fridge
+    # adds two read-only compartment status fields. Other model pins are unchanged.
+    MappingProxyType(
+        {
+            "profile_revision": "full-read-sensor-profiles-v1:3f738b7b24ce327a",
+            "profile_sha256": (
+                "3f738b7b24ce327a94cf873bbdc31e0db4076785402807f69380e27583d3237f"
+            ),
+            "read_entity_contract_revision": "full-read-entities-v1:b970f1e6c9877653",
+            "read_entity_contract_sha256": (
+                "b970f1e6c9877653475aeab2a0b6a96618053748163c4bc34f8c557bf915bbff"
+            ),
+            "catalog_sha256": (
+                "22ba817a3d40043fc94d57162da2f121b19febe55debb2d8750218606b2ee48a"
+            ),
+            "semantics_revision": 34,
+        }
+    ),
 )
 
-# Exact setup-only predecessors for the reviewed CST sem32 -> sem33
-# per-model transition.  These values never authorize an old publication
-# under the new authority: they only let HA construct the provider from its
-# already-durable predecessor state so the admin transition API can advance
-# that binding live.  Each model has one current successor and one retained
-# predecessor; every other model/hash remains fail-closed.
+# Exact predecessors for reviewed per-model transitions into the current
+# sem34 authority.  A predecessor publication is accepted only while that exact
+# predecessor remains the binding's durable adopted singleton.  The explicit
+# admin transition replaces the accepted singleton with the successor, after
+# which predecessor publications fail closed.  Each model has one current
+# successor and one predecessor; every other model/hash remains unauthorized.
 _REVIEWED_TLV_READ_V2_SUCCESSOR_PREDECESSORS = MappingProxyType(
     {
-        "CST_170004_WW": MappingProxyType(
+        "1WPD4CMIDR__3": MappingProxyType(
             {
-                "successor_semantics_revision": 33,
+                "successor_semantics_revision": 34,
                 "successor_model_contract_sha256": (
-                    "e884ed3646d166638187a8de3b218853977870b422a8243957e5cd0dc36e0095"
+                    "8233e4fae4f422a96de959275363f33062475018955cc5e569bba43274478ca8"
                 ),
                 "predecessor_semantics_revision": 32,
                 "predecessor_model_contract_sha256": (
-                    "b6042e904492d2a378186de4fdf2c964aab96d26acb3418703af02816c400912"
+                    "3a42032b5dac2e6064b33ba879e11a12c086d179f01542c3d38a05071ab239fa"
+                ),
+            }
+        ),
+        "2REFO1DBN3K_U": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "da1e2060781d2d3a55a805ea0e1739372f5de0a50b4d9070678b407d63c55849"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "d26de953c793792552c5c65572f0b16bd3e519a055d2c7fae320609101bdf916"
+                ),
+            }
+        ),
+        "2REK1D04AR170": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "f40bb3cd566f260130a1d4af9cee9288fd9761a7fbb6f2ba7c74becc0690b1d4"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "a09ae9b7349c33b2d2e5b96e053895b981f607db4564fbf1dc6045e92a39e208"
+                ),
+            }
+        ),
+        "3REK2G03VI230D_2": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "9bb2b8f4fd78c3e775156e76037397da8da5f226484d5266067851beb0456973"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "a97d5e5d0866a1d113ed81dcd7e3146986a5224a1f08ca2fab2158d4b3019511"
+                ),
+            }
+        ),
+        "AIR_2C0001_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "714d4f061424d973b5db608ba8aa5f8d7de7f592c555228f3510391ff75a1df2"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "50714ceb5962b9d5b7ea9c9a143eb82c209d1e6151631e83494a43448b3dc86f"
+                ),
+            }
+        ),
+        "AIR_910604_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "497dd3f8ea1150b094bb825c32e2c8105725ba983913c48ec55f7fe0ef934d36"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "789884a6ccb89fbb679d521a8baee6653fe12ade857c0edc433b3eb22ab39e8b"
+                ),
+            }
+        ),
+        "CST_170004_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "0f6dc6bb1746b04cc932faf9bcfb66c7f60771a502e218c1a950e5935245c5ef"
+                ),
+                "predecessor_semantics_revision": 34,
+                "predecessor_model_contract_sha256": (
+                    "7a4da8a96e73d7c927899bf64b5cf491dd721233e535c7bacfa9139e5654cb7f"
                 ),
             }
         ),
         "CST_570004_WW": MappingProxyType(
             {
-                "successor_semantics_revision": 33,
+                "successor_semantics_revision": 34,
                 "successor_model_contract_sha256": (
-                    "5fee1131795408a685be0d3871a4f83df72411ccef4423055a9ae25cf0fc3c58"
+                    "80f61837676426bb1b99eb8d8aa283bcc0a45d084d7a3e665bc579a310c972d5"
+                ),
+                "predecessor_semantics_revision": 34,
+                "predecessor_model_contract_sha256": (
+                    "f9f5e2e5e401c6af0ab653f65ae95e5b215979182e07af37e3fd483165ad93a6"
+                ),
+            }
+        ),
+        "D121110": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "3b4cafdcf10b9a49d0277ed45e2b644505538a2a6b4bc1b2443e90f927b97a76"
                 ),
                 "predecessor_semantics_revision": 32,
                 "predecessor_model_contract_sha256": (
-                    "7b3d28cc729641d852ee9c5ebe768532e5afc3582d486d4ae4cf5c4192202421"
+                    "72802dacbebd37aef5f686f0c0f2b3da232c420a0656f1a029af86fd65b73eef"
+                ),
+            }
+        ),
+        "DHUM_056905_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "d041c74a071fa77db557bc8398a3da2f2aa5f26d49e77b4eba047217022e83d7"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "875450af69ddbea6ae1d1d800010a0d42cb7c846a9af9f7f6d55672af42caf08"
+                ),
+            }
+        ),
+        "HUM_056905_WW": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "d0b1955778c5cee97a2b2c73d286bfadaea288702470f006d762d7114775ad3a"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "f4e03100a36ed3164ba0d6eb963c68eff54711c01bc33cdd6fbec39fbe80bd19"
+                ),
+            }
+        ),
+        "HWWA9X3C_F2U": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "fbc50fbb17ddec2046efc77f6bfd13c1a12f5cef8e58a13f76d9d7b8e3184677"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "e0d755979da2ce1876d1b797943e82d854a684af05e1aba5bf3bf819022e2530"
+                ),
+            }
+        ),
+        "ST_R_ETH01Y_": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "cb92288782510894b516ba062b21402dec3c0abefbbab74bd922895e80238d7e"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "0daae56bb51b50216179f0630c7368084498bf5f7a4f62cb91d1ab5ccbfa3410"
+                ),
+            }
+        ),
+        "WBEF3": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "f827fa3bd89a1a25523ac1147a7db67d60809f175f5e837056e012980acf07d2"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "72e3fa192e9c246bc9258126e76042a3583a6fbc03958d7407220948d4746e45"
+                ),
+            }
+        ),
+        "WMLJ32RS": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "9661ffb37b5dde4b6754f35997856b10276f9ddef01075772990e85d6f8a2ca5"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "9867af144446c0fd5ddcb82c960baf0167dacefc3b248895ae77e0ab9814b7f2"
+                ),
+            }
+        ),
+        "WTL_KPK_BDH_KR_01": MappingProxyType(
+            {
+                "successor_semantics_revision": 34,
+                "successor_model_contract_sha256": (
+                    "822a51a8fd1b11a96437fe741b617993024c4b167eb065a646fe6297fea2660b"
+                ),
+                "predecessor_semantics_revision": 32,
+                "predecessor_model_contract_sha256": (
+                    "d6ed11f00a73b87dcb19f1b614e6719587a92592a5215f61c50d361b720ccc2a"
                 ),
             }
         ),
@@ -739,12 +961,12 @@ def _load_tlv_read_catalogue(
     entity_stats = entity_artifact["stats"]
     expected_entity_stats = {
         "generatedEntityCount": expected_count,
-        "tlvEntityCount": 288,
-        "reviewedNonTlvEntityCount": 67,
+        "tlvEntityCount": 290,
+        "reviewedNonTlvEntityCount": 80,
         "binarySensorCount": 85,
-        "sensorCount": 258,
+        "sensorCount": 273,
         "eventCount": 12,
-        "stateCount": 194,
+        "stateCount": 209,
         "diagnosticCount": 149,
         "eventExposureCount": 12,
         "patOwnerCount": 4,
@@ -840,22 +1062,22 @@ def _load_tlv_read_catalogue(
         "generatedDescriptorCount": expected_count,
         "liveDescriptorCount": expected_count,
         "descriptorOnlyCount": 0,
-        "retainedCurrentDescriptorCount": 343,
+        "retainedCurrentDescriptorCount": 358,
         "transientEventDescriptorCount": 12,
         "binarySensorDescriptorCount": 85,
-        "sensorDescriptorCount": 258,
+        "sensorDescriptorCount": 273,
         "eventDomainDescriptorCount": 12,
-        "stateDescriptorCount": 194,
+        "stateDescriptorCount": 209,
         "diagnosticDescriptorCount": 149,
         "eventDescriptorCount": 12,
         "patOwnerDescriptorCount": 4,
-        "profileCount": 15,
+        "profileCount": 16,
         "aggregateExclusionGroupCount": 7,
         "aggregateExcludedSourceEntryCount": 17,
-        "pilotDescriptorCount": 177,
-        "fullReadPilotOverlapCount": 94,
-        "pilotOnlyDescriptorCount": 83,
-        "overallOwnerInventoryCount": 438,
+        "pilotDescriptorCount": 184,
+        "fullReadPilotOverlapCount": 96,
+        "pilotOnlyDescriptorCount": 88,
+        "overallOwnerInventoryCount": 458,
     }
     if (
         not isinstance(stats, dict)
@@ -863,7 +1085,7 @@ def _load_tlv_read_catalogue(
         or any(type(value) is not int or value < 0 for value in stats.values())
         or stats != expected_publication_stats
         or not isinstance(raw_profiles, list)
-        or len(raw_profiles) != 15
+        or len(raw_profiles) != 16
         or stats["profileCount"] != len(raw_profiles)
         or profile_artifact["descriptorOnly"] != []
     ):
@@ -1045,7 +1267,7 @@ def _load_tlv_read_catalogue(
         or sum(field.enabled_by_default for field in all_fields)
         != stats["stateDescriptorCount"]
         or sum(field.domain == "binary_sensor" for field in all_fields) != 85
-        or sum(field.domain == "sensor" for field in all_fields) != 258
+        or sum(field.domain == "sensor" for field in all_fields) != 273
         or len(event_fields) != 12
         or {
             field.descriptor_key
@@ -1079,8 +1301,55 @@ _CATALOGUE_CACHE: Mapping[str, TlvReadProfile] | None = None
 _CATALOGUE_LOCK = threading.Lock()
 
 
-def load_tlv_read_catalogue() -> Mapping[str, TlvReadProfile]:
-    """Load and cache the bundled, digest-pinned 355-descriptor contract."""
+def load_tlv_read_catalogue(path: Path | None = None) -> Mapping[str, TlvReadProfile]:
+    """Pilot selected models; every other model keeps its released profile."""
+    feature_database = (
+        Path(__file__).resolve().parents[2] / "my_lg_features.sqlite3"
+        if path is None else path
+    )
+    if not feature_database.is_file():
+        return _load_bundled_tlv_read_catalogue()
+    selected, complete = _database_rollout_models(feature_database)
+    if not selected:
+        return _load_bundled_tlv_read_catalogue()
+    dynamic = load_tlv_read_catalogue_from_database(feature_database)
+    if complete:
+        return dynamic
+    baseline = _load_bundled_tlv_read_catalogue()
+    merged = dict(baseline)
+    for model_id in selected:
+        if model_id in dynamic:
+            merged[model_id] = dynamic[model_id]
+        else:
+            merged.pop(model_id, None)
+    return MappingProxyType(merged)
+
+
+def _database_rollout_models(path: Path) -> tuple[frozenset[str], bool]:
+    try:
+        connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+        try:
+            if (
+                connection.execute("PRAGMA application_id").fetchone()[0] != 0x4C474646
+                or connection.execute("PRAGMA user_version").fetchone()[0] != 2
+            ):
+                raise TlvReadCatalogueError("Local feature database layout is invalid")
+            rows = connection.execute(
+                "SELECT model_id FROM model_rollout WHERE enabled = 1"
+            ).fetchall()
+            total = connection.execute(
+                "SELECT COUNT(*) FROM model_rollout"
+            ).fetchone()[0]
+        finally:
+            connection.close()
+    except sqlite3.Error as error:
+        raise TlvReadCatalogueError("Local feature database rollout is unavailable") from error
+    selected = frozenset(row[0] for row in rows)
+    return selected, total > 0 and len(selected) == total
+
+
+def _load_bundled_tlv_read_catalogue() -> Mapping[str, TlvReadProfile]:
+    """Legacy cache stays intact for models not yet moved to the database."""
     global _CATALOGUE_CACHE
     cached = _CATALOGUE_CACHE
     if cached is not None:
@@ -1103,6 +1372,106 @@ def load_tlv_read_catalogue() -> Mapping[str, TlvReadProfile]:
             ) from err
         _CATALOGUE_CACHE = loaded
         return loaded
+
+
+def load_tlv_read_catalogue_from_database(
+    path: Path,
+) -> Mapping[str, TlvReadProfile]:
+    """One model's row edit changes only that model's visible read features.
+
+    Receipt fields on ``TlvReadProfile`` are legacy metadata, never acceptance
+    pins in field-compatible mode. No fixed descriptor count or global revision
+    is used to decide whether a field can be displayed.
+    """
+    if not path.is_file() or path.is_symlink():
+        raise TlvReadCatalogueError("Local feature database is unavailable")
+    try:
+        connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        try:
+            if (
+                connection.execute("PRAGMA application_id").fetchone()[0]
+                != 0x4C474646
+                or connection.execute("PRAGMA user_version").fetchone()[0] != 2
+            ):
+                raise TlvReadCatalogueError("Local feature database layout is invalid")
+            rows = connection.execute(
+                "SELECT model_id, profile_id, feature_id, platform, definition_json "
+                "FROM features WHERE channel = 'full-read' AND enabled = 1 "
+                "ORDER BY model_id, feature_id"
+            ).fetchall()
+        finally:
+            connection.close()
+    except sqlite3.Error as error:
+        raise TlvReadCatalogueError("Local feature database could not be read") from error
+    grouped: dict[str, list[TlvReadFieldContract]] = {}
+    platforms: dict[str, str] = {}
+    for row in rows:
+        model_id = row["model_id"]
+        platform = row["platform"]
+        try:
+            field = json.loads(row["definition_json"])
+            if (
+                not isinstance(field, dict)
+                or row["profile_id"] != f"{model_id}:read-sensors-v1"
+                or row["feature_id"] != field["semanticId"]
+                or field["descriptorKey"] != f"{model_id}|{row['feature_id']}"
+                or platform not in ("thinq1", "thinq2")
+                or (model_id in platforms and platforms[model_id] != platform)
+            ):
+                raise ValueError("feature identity is invalid")
+            contract = TlvReadFieldContract(
+                descriptor_key=field["descriptorKey"],
+                semantic_id=field["semanticId"],
+                domain=field["domain"],
+                value_types=tuple(field["valueTypes"]),
+                exposure=field["exposure"],
+                label_ko=field["labelKo"],
+                entity_category=field["entityCategory"],
+                enabled_by_default=field["enabledByDefault"],
+                owner=field["owner"],
+                publication_mode=field["publicationMode"],
+                unit=field.get("unit"),
+                event_type=field.get("eventType"),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            _LOGGER.warning(
+                "Local feature database skipped an invalid read definition for model %s",
+                model_id,
+            )
+            continue
+        platforms[model_id] = platform
+        grouped.setdefault(model_id, []).append(contract)
+    profiles: dict[str, TlvReadProfile] = {}
+    for model_id, fields in grouped.items():
+        # This digest helps compare a model's effective menu; it is not a gate.
+        digest = hashlib.sha256(
+            json.dumps(
+                [field.descriptor_key for field in fields],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        try:
+            profiles[model_id] = TlvReadProfile(
+                profile_id=f"{model_id}:read-sensors-v1",
+                contract_revision=1,
+                profile_revision=f"feature-db:{digest[:16]}",
+                profile_sha256=digest,
+                read_entity_contract_revision="feature-db",
+                read_entity_contract_sha256=digest,
+                catalog_sha256=digest,
+                semantics_revision=1,
+                model_id=model_id,
+                platform=platforms[model_id],
+                fields=tuple(fields),
+            )
+        except (TypeError, ValueError):
+            _LOGGER.warning(
+                "Local feature database skipped an invalid read menu for model %s",
+                model_id,
+            )
+    return MappingProxyType(profiles)
 
 
 def _valid_positive_integer(value: object) -> bool:
@@ -2273,11 +2642,43 @@ def validate_tlv_read_consumer_state_replacement(
     return after
 
 
+def _durable_tlv_read_v2_predecessor_pin(
+    state: TlvReadConsumerBindingState,
+    authority: TlvReadPerModelAuthority | None,
+) -> TlvReadConsumerPin | None:
+    """Return one previously trusted v2 singleton during model rollout.
+
+    The durable consumer row is already scoped to the exact binding and proof.
+    Treating its adopted singleton as the sole predecessor avoids a fleet-wide
+    hand-maintained generation map while every other model/hash still fails
+    closed.
+    """
+    v2_pins = tuple(
+        pin
+        for pin in state.consumer_pin_set.accepted
+        if pin.projection_version == 2
+    )
+    if authority is None:
+        return None
+    adopted_pin = _consumer_state_adopted_pin(state)
+    if not (
+        state.schema_version == 1
+        and state.adopted_projection_version == 2
+        and len(v2_pins) == 1
+        and state.consumer_pin_set.accepted == v2_pins
+        and adopted_pin == v2_pins[0]
+        and adopted_pin.model_contract_sha256
+        != authority.model_contract_sha256
+    ):
+        return None
+    return adopted_pin
+
+
 def _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
     state: TlvReadConsumerBindingState,
     authority: TlvReadPerModelAuthority | None,
 ) -> bool:
-    """Permit an old CST pin only as the exact adopted singleton setup state."""
+    """Accept current v2 pins or one exact durable predecessor singleton."""
     v2_pins = tuple(
         pin
         for pin in state.consumer_pin_set.accepted
@@ -2292,17 +2693,42 @@ def _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
         for pin in v2_pins
     ):
         return True
-    predecessor = _reviewed_tlv_read_v2_predecessor_authority(authority)
-    adopted_pin = _consumer_state_adopted_pin(state)
-    return (
-        predecessor is not None
-        and state.schema_version == 1
-        and state.adopted_projection_version == 2
-        and len(v2_pins) == 1
-        and state.consumer_pin_set.accepted == v2_pins
-        and adopted_pin == v2_pins[0]
-        and adopted_pin.model_contract_sha256
-        == predecessor.model_contract_sha256
+    return _durable_tlv_read_v2_predecessor_pin(state, authority) is not None
+
+
+def _durable_tlv_read_v2_message_authority(
+    state: TlvReadConsumerBindingState | None,
+    successor: TlvReadPerModelAuthority | None,
+    reported_model_contract_sha256: object,
+    reported_semantics_revision: object,
+) -> TlvReadPerModelAuthority | None:
+    """Resolve current authority or the exact durable predecessor singleton."""
+    if successor is None:
+        return None
+    if reported_model_contract_sha256 == successor.model_contract_sha256:
+        return successor
+    if (
+        state is None
+        or not _valid_positive_integer(reported_semantics_revision)
+        or reported_semantics_revision > successor.semantics_revision
+    ):
+        return None
+    adopted_pin = _durable_tlv_read_v2_predecessor_pin(state, successor)
+    if adopted_pin is None:
+        return None
+    if reported_model_contract_sha256 != adopted_pin.model_contract_sha256:
+        return None
+    return TlvReadPerModelAuthority(
+        profile_id=successor.profile_id,
+        model_id=successor.model_id,
+        platform=successor.platform,
+        semantics_revision=reported_semantics_revision,
+        model_contract_sha256=reported_model_contract_sha256,
+        feed_schema_version=successor.feed_schema_version,
+        publication_plan_revision=successor.publication_plan_revision,
+        static_contract_projection_version=(
+            successor.static_contract_projection_version
+        ),
     )
 
 
@@ -2603,6 +3029,7 @@ class _CurrentCandidate:
     sequence: int
     published_at: datetime
     fields: Mapping[str, TlvReadValue]
+    invalidated_semantics: frozenset[str]
     diagnostics: Mapping[str, int]
 
     @property
@@ -2885,7 +3312,7 @@ def _primary_live(primary: object) -> bool:
 
 
 class TlvReadShadowProvider:
-    """Validate and retain one exact model's complete read-only feed."""
+    """Validate one model's read-only feed under the selected binding policy."""
 
     def __init__(
         self,
@@ -2897,6 +3324,7 @@ class TlvReadShadowProvider:
         model_authority: TlvReadPerModelAuthority | None = None,
         consumer_state: TlvReadConsumerBindingState | Mapping[str, Any] | None = None,
         allow_legacy_v1_fallback: bool = False,
+        read_contract_policy: Literal["pinned", "field-compatible"] = "pinned",
         now: Callable[[], datetime] | None = None,
     ) -> None:
         if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
@@ -2933,6 +3361,8 @@ class TlvReadShadowProvider:
             raise ValueError("TLV read per-model authority does not match the profile")
         if type(allow_legacy_v1_fallback) is not bool:
             raise TypeError("TLV read legacy fallback policy is invalid")
+        if read_contract_policy not in ("pinned", "field-compatible"):
+            raise ValueError("TLV read contract policy is invalid")
         parsed_consumer_state = (
             None
             if consumer_state is None
@@ -2947,8 +3377,11 @@ class TlvReadShadowProvider:
                 raise ValueError(
                     "TLV read consumer state does not match the exact binding"
                 )
-            if not _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
-                parsed_consumer_state, model_authority
+            if (
+                read_contract_policy == "pinned"
+                and not _consumer_state_v2_pins_match_authority_or_reviewed_predecessor(
+                    parsed_consumer_state, model_authority
+                )
             ):
                 raise ValueError(
                     "TLV read v2 consumer pin does not match per-model authority"
@@ -2956,6 +3389,7 @@ class TlvReadShadowProvider:
 
         self.binding_id = binding_id
         self.profile = profile
+        self._read_contract_policy = read_contract_policy
         self._model_authority = model_authority
         self._consumer_state = parsed_consumer_state
         self._consumer_pin_set = (
@@ -2985,6 +3419,7 @@ class TlvReadShadowProvider:
         self._transport_ready = False
         self._current_transport_current = False
         self._fields: Mapping[str, TlvReadValue] = MappingProxyType({})
+        self._current_invalidated_semantics: frozenset[str] = frozenset()
         self._current_diagnostics: Mapping[str, int] = MappingProxyType({})
         self._binding_generation: int | None = None
         self._cohort_generation: int | None = None
@@ -3015,6 +3450,7 @@ class TlvReadShadowProvider:
         self._listeners: list[Callable[[], None]] = []
         self._event_listeners: list[Callable[[TlvReadEvent], None]] = []
         self._rejected_messages = 0
+        self._skipped_read_fields = 0
         self._closed = False
         self._remove_primary_listener = add_listener(self._primary_updated)
 
@@ -3052,6 +3488,10 @@ class TlvReadShadowProvider:
         return self._rejected_messages
 
     @property
+    def skipped_read_fields(self) -> int:
+        return self._skipped_read_fields
+
+    @property
     def adopted_projection_version(self) -> int:
         """Return the process-local monotonic projection latch."""
         return self._adopted_projection_version
@@ -3072,6 +3512,10 @@ class TlvReadShadowProvider:
         current primary coordinate prevents an old retained publication from
         proving that the newly started producer converged.
         """
+        if self._read_contract_policy == "field-compatible":
+            # A field-compatible message is not evidence that a durable pin
+            # migration converged. Keep the old installer fail-closed.
+            return None
         pin = self._current_consumer_pin
         if (
             not self._current_transport_current
@@ -3143,6 +3587,8 @@ class TlvReadShadowProvider:
         return parsed
 
     def _adopt_consumer_pin(self, pin: TlvReadConsumerPin) -> None:
+        if self._read_contract_policy == "field-compatible":
+            return
         if pin.projection_version < self._adopted_projection_version:
             _contract_error("TLV read publication projection regressed")
         if pin.projection_version == self._adopted_projection_version:
@@ -3153,7 +3599,22 @@ class TlvReadShadowProvider:
                 or pin.model_contract_sha256
                 != state.adopted_model_contract_sha256
             ):
-                _contract_error("TLV read adopted static contract changed")
+                authority = self._model_authority
+                if (
+                    pin.projection_version != 2
+                    or authority is None
+                    or pin.model_contract_sha256
+                    != authority.model_contract_sha256
+                    or _durable_tlv_read_v2_predecessor_pin(state, authority)
+                    is None
+                ):
+                    _contract_error("TLV read adopted static contract changed")
+                # Latch the successor in this process.  The durable row remains
+                # the restart-safe predecessor anchor until the adapter elects
+                # to persist the already validated transition.
+                adopted = adopt_tlv_read_consumer_successor_v2(state, pin)
+                self._consumer_state = adopted
+                self._consumer_pin_set = adopted.consumer_pin_set
             return
         state = self._consumer_state
         if state is None:
@@ -3170,19 +3631,84 @@ class TlvReadShadowProvider:
         field = self._fields.get(semantic_id)
         return None if field is None else field.value
 
+    def _pilot_display_field(self, semantic_id: str) -> TlvReadValue | None:
+        """Reuse only a matching, live Local pilot value for a read-only entity.
+
+        This is a presentation fallback, never a full-read publication or an
+        input to cumulative-energy integration and control routing.
+        """
+        if (
+            not self._transport_ready
+            or not _primary_live(self._primary)
+            or semantic_id in self._current_invalidated_semantics
+        ):
+            return None
+        read_contract = self.profile.fields_by_semantic_id.get(semantic_id)
+        if (
+            read_contract is None
+            or read_contract.owner != "none"
+            or read_contract.domain not in ("sensor", "binary_sensor")
+            or read_contract.publication_mode != "retained-current"
+        ):
+            return None
+        primary_profile = getattr(self._primary, "profile", None)
+        pilot_contracts = getattr(primary_profile, "fields", None)
+        pilot_fields = getattr(self._primary, "shadow_fields", None)
+        pilot_available = getattr(self._primary, "semantic_field_available", None)
+        if (
+            not isinstance(pilot_contracts, Mapping)
+            or not isinstance(pilot_fields, Mapping)
+            or not callable(pilot_available)
+        ):
+            return None
+        pilot_contract = pilot_contracts.get(semantic_id)
+        pilot_field = pilot_fields.get(semantic_id)
+        if (
+            pilot_contract is None
+            or pilot_field is None
+            or pilot_contract.value_type not in read_contract.value_types
+            or pilot_contract.unit != read_contract.unit
+            or pilot_contract.exposure != read_contract.exposure
+            or pilot_field.value_type != pilot_contract.value_type
+            or pilot_field.unit != pilot_contract.unit
+            or pilot_field.exposure != pilot_contract.exposure
+            or not pilot_available(semantic_id)
+        ):
+            return None
+        return TlvReadValue(
+            value=pilot_field.value,
+            value_type=pilot_field.value_type,
+            observed_at=pilot_field.observed_at,
+            confidence=pilot_field.confidence,
+            exposure=pilot_field.exposure,
+            unit=pilot_field.unit,
+        )
+
+    def display_field(self, semantic_id: str) -> TlvReadValue | None:
+        """Select a live full-read value, else a byte-compatible Local pilot."""
+        if self.field_available(semantic_id):
+            return self._fields[semantic_id]
+        return self._pilot_display_field(semantic_id)
+
+    def display_field_available(self, semantic_id: str) -> bool:
+        return self.display_field(semantic_id) is not None
+
+    def display_field_source(self, semantic_id: str) -> str | None:
+        if self.field_available(semantic_id):
+            return "full-read"
+        return "pilot-read" if self._pilot_display_field(semantic_id) is not None else None
+
     def _current_matches_primary(self) -> bool:
         authority = _primary_authority(self._primary)
-        if authority != (
+        return authority == (
             self._binding_generation,
             self._publication_session_id,
-        ):
-            return False
-        primary_state = _primary_state_coordinate(self._primary, authority)
-        return (
-            primary_state is None
-            or self._cohort_generation is not None
-            and self._cohort_generation >= primary_state[1]
         )
+
+    def _read_value_matches_live_device(self) -> bool:
+        """A read-only last value needs the same binding, not a state cohort."""
+        authority = _primary_authority(self._primary)
+        return authority is not None and authority[0] == self._binding_generation
 
     def field_available(self, semantic_id: str) -> bool:
         return (
@@ -3190,7 +3716,11 @@ class TlvReadShadowProvider:
             and self._transport_ready
             and self._current_transport_current
             and _primary_live(self._primary)
-            and self._current_matches_primary()
+            and (
+                self._read_value_matches_live_device()
+                if self._read_contract_policy == "field-compatible"
+                else self._current_matches_primary()
+            )
         )
 
     @property
@@ -3271,12 +3801,91 @@ class TlvReadShadowProvider:
         self._listeners.clear()
         self._event_listeners.clear()
 
+    def _validate_read_coordinate(
+        self, value: Mapping[str, Any], now: datetime
+    ) -> None:
+        for key in ("binding_generation", "cohort_generation", "sequence"):
+            if not _valid_positive_integer(value.get(key)):
+                _contract_error(f"TLV read {key} is invalid")
+        if value["cohort_generation"] > MAX_COHORT_GENERATION:
+            _contract_error("TLV read cohort_generation is invalid")
+        if (
+            not isinstance(value.get("publication_session_id"), str)
+            or _PUBLICATION_SESSION_ID.fullmatch(value["publication_session_id"])
+            is None
+        ):
+            _contract_error("TLV read publication_session_id is invalid")
+        if (
+            not isinstance(value.get("source_session_id"), str)
+            or _SOURCE_SESSION_ID.fullmatch(value["source_session_id"]) is None
+        ):
+            _contract_error("TLV read source_session_id is invalid")
+        _timestamp(value.get("published_at"), now, "publication")
+
+    def _field_compatible_read_pin(
+        self, value: Mapping[str, Any], projection_version: Literal[1, 2]
+    ) -> TlvReadConsumerPin:
+        """Keep receipt fields diagnostic while checking exact device identity."""
+        expected = {
+            "profile_id": self.profile.profile_id,
+            "binding_id": self.binding_id,
+            "model_id": self.profile.model_id,
+            "platform": self.profile.platform,
+            "pat_device_id_proof_sha256": self._expected_proof,
+        }
+        if projection_version == 1:
+            expected["schema_version"] = TLV_READ_SCHEMA_VERSION
+            if not _valid_positive_integer(value.get("profile_contract_revision")):
+                _contract_error("TLV read profile revision is invalid")
+            for key in (
+                "profile_revision",
+                "read_entity_contract_revision",
+            ):
+                if not isinstance(value.get(key), str) or not value[key]:
+                    _contract_error(f"TLV read {key} is invalid")
+            for key in (
+                "profile_sha256",
+                "read_entity_contract_sha256",
+                "catalog_sha256",
+            ):
+                if not _valid_sha256(value.get(key)):
+                    _contract_error(f"TLV read {key} is invalid")
+            model_contract_sha256 = None
+        else:
+            expected["schema_version"] = PER_MODEL_TLV_READ_SCHEMA_VERSION
+            expected["static_contract_projection_version"] = (
+                READ_STATIC_CONTRACT_PROJECTION_VERSION
+            )
+            model_contract_sha256 = value.get("model_contract_sha256")
+            if not _valid_sha256(model_contract_sha256):
+                _contract_error("TLV read model contract receipt is invalid")
+        if not _valid_positive_integer(value.get("publication_plan_revision")):
+            _contract_error("TLV read publication plan revision is invalid")
+        if not _valid_positive_integer(value.get("semantics_revision")):
+            _contract_error("TLV read semantics revision is invalid")
+        if any(
+            value.get(key) != expected_value
+            for key, expected_value in expected.items()
+        ):
+            _contract_error("TLV read publication identity does not match")
+        return TlvReadConsumerPin(
+            projection_version=projection_version,
+            static_read_contract_sha256=tlv_read_publication_static_contract_sha256(
+                value, projection_version
+            ),
+            model_contract_sha256=model_contract_sha256,
+        )
+
     def _validate_pins(
         self,
         value: Mapping[str, Any],
         now: datetime,
         projection_version: Literal[1, 2],
     ) -> TlvReadConsumerPin:
+        if self._read_contract_policy == "field-compatible":
+            matched_pin = self._field_compatible_read_pin(value, projection_version)
+            self._validate_read_coordinate(value, now)
+            return matched_pin
         if projection_version < self._adopted_projection_version:
             _contract_error("TLV read publication projection regressed")
         matched_pin: TlvReadConsumerPin
@@ -3357,7 +3966,12 @@ class TlvReadShadowProvider:
                 }
                 expected_model_contract = None
             else:
-                authority = self._model_authority
+                authority = _durable_tlv_read_v2_message_authority(
+                    self._consumer_state,
+                    self._model_authority,
+                    value.get("model_contract_sha256"),
+                    value.get("semantics_revision"),
+                )
                 if authority is None:
                     _contract_error(
                         "TLV read per-model authority is unavailable"
@@ -3390,28 +4004,31 @@ class TlvReadShadowProvider:
                 and pin.static_read_contract_sha256 == static_sha256
                 and pin.model_contract_sha256 == expected_model_contract
             )
+            if (
+                not matching_pins
+                and projection_version == 2
+                and authority is self._model_authority
+                and self._consumer_state is not None
+                and _durable_tlv_read_v2_predecessor_pin(
+                    self._consumer_state, self._model_authority
+                )
+                is not None
+            ):
+                # The current exact model authority may replace the sole
+                # durable predecessor without a fleet-wide admin transition.
+                matching_pins = (
+                    TlvReadConsumerPin(
+                        projection_version=2,
+                        static_read_contract_sha256=static_sha256,
+                        model_contract_sha256=expected_model_contract,
+                    ),
+                )
             if len(matching_pins) != 1:
                 _contract_error(
                     "TLV read static contract is not staged for this binding"
                 )
             matched_pin = matching_pins[0]
-        for key in ("binding_generation", "cohort_generation", "sequence"):
-            if not _valid_positive_integer(value.get(key)):
-                _contract_error(f"TLV read {key} is invalid")
-        if value["cohort_generation"] > MAX_COHORT_GENERATION:
-            _contract_error("TLV read cohort_generation is invalid")
-        if (
-            not isinstance(value.get("publication_session_id"), str)
-            or _PUBLICATION_SESSION_ID.fullmatch(value["publication_session_id"])
-            is None
-        ):
-            _contract_error("TLV read publication_session_id is invalid")
-        if (
-            not isinstance(value.get("source_session_id"), str)
-            or _SOURCE_SESSION_ID.fullmatch(value["source_session_id"]) is None
-        ):
-            _contract_error("TLV read source_session_id is invalid")
-        _timestamp(value.get("published_at"), now, "publication")
+        self._validate_read_coordinate(value, now)
         return matched_pin
 
     def _parse_current(self, payload: bytes) -> _CurrentCandidate:
@@ -3431,11 +4048,34 @@ class TlvReadShadowProvider:
             _contract_error("TLV read current fields are invalid")
         contracts = self.profile.fields_by_semantic_id
         fields: dict[str, TlvReadValue] = {}
+        skipped_fields = 0
         for semantic_id, raw_field in raw_fields.items():
             contract = contracts.get(semantic_id)
+            if contract is None and self._read_contract_policy == "field-compatible":
+                skipped_fields += 1
+                continue
             if contract is None or contract.publication_mode != "retained-current":
                 _contract_error("TLV read current contains an unauthorized semantic")
-            fields[semantic_id] = _parse_field(raw_field, contract, now, published_at)
+            if self._read_contract_policy == "field-compatible":
+                if (
+                    not isinstance(raw_field, dict)
+                    or not _FIELD_REQUIRED_KEYS.issubset(raw_field)
+                    or not set(raw_field).issubset(_FIELD_ALLOWED_KEYS)
+                ):
+                    _contract_error("TLV read field keys are invalid")
+                if (
+                    raw_field["value_type"] not in contract.value_types
+                    or _actual_value_type(raw_field["value"])
+                    != raw_field["value_type"]
+                    or raw_field["exposure"] != contract.exposure
+                    or raw_field.get("unit") != contract.unit
+                    or ("unit" in raw_field) is not (contract.unit is not None)
+                ):
+                    skipped_fields += 1
+                    continue
+            fields[semantic_id] = _parse_field(
+                raw_field, contract, now, published_at
+            )
 
         invalidated = value.get("invalidated_fields", {})
         if (
@@ -3447,10 +4087,14 @@ class TlvReadShadowProvider:
             and not invalidated
         ):
             _contract_error("TLV read invalidations are invalid")
-        if set(invalidated).intersection(fields):
+        if set(invalidated).intersection(raw_fields):
             _contract_error("TLV read fields and invalidations overlap")
+        accepted_invalidations: set[str] = set()
         for semantic_id, raw_invalidation in invalidated.items():
             contract = contracts.get(semantic_id)
+            if contract is None and self._read_contract_policy == "field-compatible":
+                skipped_fields += 1
+                continue
             if (
                 contract is None
                 or contract.publication_mode != "retained-current"
@@ -3470,6 +4114,14 @@ class TlvReadShadowProvider:
                 or _js_string_length(confidence) > 128
             ):
                 _contract_error("TLV read invalidation confidence is invalid")
+            accepted_invalidations.add(semantic_id)
+
+        if (
+            self._read_contract_policy == "field-compatible"
+            and not fields
+            and not accepted_invalidations
+        ):
+            _contract_error("TLV read current has no compatible fields")
 
         diagnostics = value["diagnostics"]
         if not isinstance(diagnostics, dict) or set(diagnostics) != _DIAGNOSTIC_KEYS:
@@ -3479,6 +4131,14 @@ class TlvReadShadowProvider:
             for item in diagnostics.values()
         ):
             _contract_error("TLV read diagnostic counter is invalid")
+
+        if skipped_fields:
+            self._skipped_read_fields += skipped_fields
+            _LOGGER.debug(
+                "TLV read skipped %d unrecognized or incompatible fields for binding %s",
+                skipped_fields,
+                self.binding_id,
+            )
 
         return _CurrentCandidate(
             canonical=_canonical(value),
@@ -3490,27 +4150,33 @@ class TlvReadShadowProvider:
             sequence=value["sequence"],
             published_at=published_at,
             fields=MappingProxyType(fields),
+            invalidated_semantics=frozenset(accepted_invalidations),
             diagnostics=MappingProxyType(dict(diagnostics)),
         )
 
     def _candidate_primary_relation(self, candidate: _CurrentCandidate) -> int:
-        """Return -1 stale or 0 statically authorized.
+        """Return -1 for a prior-session stale cursor, else 0.
 
         Per-model publishers deliberately preserve their one retained-current
         slot across a process restart so an offline appliance keeps its last
         exact value.  The publication session is therefore a liveness signal,
         not part of the durable consumer pin.  Commit an exactly pinned prior-
         session current, while ``field_available`` continues to require the
-        current live presence session independently.
+        current live presence session independently. A state-only cohort may
+        advance without a new read observation in that same physical session.
         """
         authority = _primary_authority(self._primary)
         if authority is not None and candidate.binding_generation != authority[0]:
             _contract_error("TLV read publication authority is foreign")
+        if self._read_contract_policy == "field-compatible":
+            return 0
         primary_state = _primary_state_coordinate(self._primary, authority)
         if primary_state is not None:
             if (
                 candidate.binding_generation == primary_state[0]
                 and candidate.cohort_generation < primary_state[1]
+                and authority is not None
+                and candidate.publication_session_id != authority[1]
             ):
                 return -1
         return 0
@@ -3646,6 +4312,7 @@ class TlvReadShadowProvider:
         self._current_canonical = candidate.canonical
         self._current_published_at = candidate.published_at
         self._fields = candidate.fields
+        self._current_invalidated_semantics = candidate.invalidated_semantics
         self._current_diagnostics = candidate.diagnostics
         self._current_transport_current = True
         self._publication_sources[publication_coordinate] = candidate.source_session_id
@@ -3906,6 +4573,7 @@ class TlvReadShadowProvider:
                                 if (coordinate[0], coordinate[2]) == authority:
                                     self._publication_sources.pop(coordinate, None)
                     self._fields = MappingProxyType({})
+                    self._current_invalidated_semantics = frozenset()
                     self._current_diagnostics = MappingProxyType({})
                     self._binding_generation = None
                     self._cohort_generation = None
