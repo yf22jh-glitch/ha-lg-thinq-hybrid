@@ -60,6 +60,65 @@ def _same_primitive(left: object, right: object) -> bool:
     return type(left) is type(right) and left == right
 
 
+_EXACT_SELECT_READBACK_NAMES = {
+    # Exact 1WPD4CMIDR__3 modelJSON defaultWaterSet indexes 1/2/3 and
+    # scripts/lib/aabb-water-state.mjs render the same indexes as these labels.
+    ("1WPD4CMIDR__3", "water.default_selection"): {
+        "last used": "RECENT_WATER",
+        "purified water": "NORMAL_WATER",
+        "cold water": "COLD_WATER",
+    },
+}
+
+
+def _exact_select_readback(
+    value: object, supported_values: tuple[object, ...], model_id: str, capability_id: str
+) -> object:
+    """Match only lossless, exact-model state representations to select options.
+
+    AABB readers emit booleans for modelJSON OFF/ON and integers for sparse
+    numeric controls, while the observed outbound command catalogue stores
+    those options as strings.  This is a readback conversion only: it neither
+    adds an outbound value nor makes an unobserved command available.
+    """
+    if type(value) is bool and len(supported_values) == 2 and set(supported_values) == {"OFF", "ON"}:
+        return "ON" if value else "OFF"
+    if type(value) is int and supported_values and all(
+        isinstance(option, str)
+        and option.lstrip("-").isdigit()
+        and str(int(option)) == option
+        for option in supported_values
+    ):
+        return str(value)
+    if isinstance(value, str):
+        return _EXACT_SELECT_READBACK_NAMES.get((model_id, capability_id), {}).get(value, value)
+    return value
+
+
+_EXACT_CYCLE_POWER_READBACK = {
+    # Local AABB state-confirmation tests pair the exact power writes with
+    # power_off/power off and initial. Other cycle states remain unclassified.
+    ("ST_R_ETH01Y_", "operation.power_requested"): {
+        "power_off": False,
+        "initial": True,
+    },
+    ("WTL_KPK_BDH_KR_01", "washer.power_requested"): {
+        "power off": False,
+        "initial": True,
+    },
+    ("WTL_KPK_BDH_KR_01", "dryer.power_requested"): {
+        "power off": False,
+        "initial": True,
+    },
+}
+
+
+def _exact_switch_readback(value: object, model_id: str, capability_id: str) -> object:
+    if isinstance(value, str):
+        return _EXACT_CYCLE_POWER_READBACK.get((model_id, capability_id), {}).get(value, value)
+    return value
+
+
 def local_control_unique_id(pat_device_id: str, entity_key: str) -> str:
     """Return a stable Local-control unique id bounded to 128 characters."""
     candidate = f"{pat_device_id}_{entity_key}"
@@ -235,6 +294,9 @@ class MyLgLocalContractSwitch(_LocalContractEntity, SwitchEntity):
         value = self._state_value()
         if value is None:
             return None
+        value = _exact_switch_readback(
+            value, self._descriptor.model_id, self._descriptor.capability_id
+        )
         for supported, mapping in zip(
             self._descriptor.supported_values, self._descriptor.value_mappings
         ):
@@ -399,6 +461,10 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
         value = self._state_value()
         if value is None:
             return None
+        value = _exact_select_readback(
+            value, self._descriptor.supported_values,
+            self._descriptor.model_id, self._descriptor.capability_id,
+        )
         for supported, mapping in zip(
             self._descriptor.supported_values, self._descriptor.value_mappings
         ):
