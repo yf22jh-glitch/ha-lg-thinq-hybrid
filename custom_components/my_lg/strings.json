@@ -22,17 +22,22 @@
   "options": {
     "step": {
       "init": {
-        "title": "Polling intervals",
-        "description": "wideq polling intervals (seconds). Minimums are enforced to avoid triggering LG's rate limit.",
+        "title": "Polling and Local shadow",
+        "description": "Configure guarded wideq polling and the optional read-only Rethink Local pilot. Local shadow never changes the existing entity state.",
         "data": {
           "ac_active_interval": "Air conditioner active interval (min 60s)",
           "appliance_active_interval": "Appliance active interval (min 300s)",
           "idle_interval": "Idle baseline interval (min 600s)",
           "allow_hazardous_controls": "Enable hazardous cooking controls",
           "allow_experimental_controls": "Enable experimental model controls",
-          "rethink_event_token": "Rethink lifecycle relay token (optional)"
+          "local_read_duplicate_overlay": "Expose parallel Local read-only entities for existing PAT/WideQ sensors",
+          "rethink_event_token": "Rethink lifecycle relay token (optional)",
+          "local_bindings": "Versioned read-only Local bindings JSON (use [] to disable; an empty saved password preserves that binding's secret)"
         }
       }
+    },
+    "error": {
+      "local_shadow_invalid": "The Local shadow bindings are invalid, duplicated, or outside an exact published profile."
     }
   },
   "entity": {
@@ -63,6 +68,9 @@
       },
       "styler_energy": {
         "name": "Cycle energy"
+      },
+      "dishwasher_tub_clean_count": {
+        "name": "Washes since machine clean"
       },
       "pm1": {
         "name": "PM1"
@@ -250,6 +258,16 @@
       },
       "wind_strength": {
         "name": "Wind strength"
+      },
+      "auto_comfort_preference": {
+        "name": "AUTO comfort",
+        "state": {
+          "warmer": "Warmer",
+          "slightly_warmer": "Slightly warmer",
+          "comfortable": "Comfortable",
+          "slightly_cooler": "Slightly cooler",
+          "cooler": "Cooler"
+        }
       }
     },
     "number": {

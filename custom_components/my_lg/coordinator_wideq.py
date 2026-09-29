@@ -36,12 +36,20 @@ from .device_identity import (
     WideqDeviceData,
     resolve_wideq_devices,
 )
+from .night_mode import (
+    DEVICE_TIME_ZONE,
+    MODES_BY_MODEL,
+    NightModeSaved,
+    parse_night_mode,
+    set_night_mode_brightness,
+)
 from .power_save import ac_power_save_cache
 from .rate_limiter import GlobalRateLimiter
 from .wideq_client import WideqClient, is_server_unavailable
 
 _LOGGER = logging.getLogger(__name__)
 _ENERGY_KEYS = ("today", "month")
+_NIGHT_MODE_REFRESH_INTERVAL = timedelta(minutes=30)
 
 
 class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -87,8 +95,12 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._unmatched_pat_ids: set[str] = set(self._pat_devices)
         self._power_save_store = power_save_store
         self._power_save_cache: dict[str, dict[str, bool]] = {}
+        self._power_save_pending: dict[str, dict[str, bool]] = {}
         self._power_save_restored_fields: set[tuple[str, str]] = set()
         self._power_save_cache_saved_at: str | None = None
+        self._night_mode_cache: dict[str, NightModeSaved] = {}
+        self._night_mode_last_attempt: dict[str, datetime] = {}
+        self._night_mode_online_wideq_ids: set[str] = set()
 
         # Initial interval reflects current state (PAT already seeded), but we do
         # NOT force an immediate poll — first refresh happens one interval later.
@@ -109,6 +121,12 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             async with self._io_lock:
                 await self.rate_limiter.acquire()
                 devices = await self.client.async_get_snapshots()
+                self._night_mode_online_wideq_ids = {
+                    device.device_id for device in devices
+                    if device.online is True
+                    and isinstance(device.platform, str)
+                    and device.platform.lower() == "thinq2"
+                }
                 snapshots = self._resolve_devices(devices)
                 # Optional per-device history reads are deliberately independent
                 # from the snapshot circuit. Their errors retain cached energy
@@ -118,6 +136,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 # the single probe request.
                 if self._fail_count == 0:
                     await self._async_refresh_energy_history()
+                    await self._async_refresh_night_modes(snapshots)
         except Exception as err:  # noqa: BLE001
             self._fail_count += 1
             if self._failure_started_at is None:
@@ -175,6 +194,15 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def _device_map_payload(self) -> dict[str, Any]:
         """Serialize stable PAT-to-WideQ identifiers only."""
         return {"pat_to_wideq": dict(self._pat_to_wideq)}
+
+    def wideq_device_id(self, pat_device_id: str) -> str | None:
+        """The id LG's own device list gives this appliance, or None while unresolved.
+
+        The local bridge sits on the appliance's connection to LG and knows it by this id,
+        not by the ThinQ Connect one Home Assistant uses; this is the same pairing the
+        energy history already relies on, exposed rather than reached into.
+        """
+        return self._pat_to_wideq.get(pat_device_id)
 
     def _schedule_device_map_save(self) -> None:
         if self._device_map_store is None:
@@ -283,12 +311,17 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             if not safe_fields:
                 continue
             current = dict(self._power_save_cache.get(device_id, {}))
+            pending = self._power_save_pending.get(device_id)
             for path, value in safe_fields.items():
                 if current.get(path) != value:
                     changed = True
                 current[path] = value
+                if pending is not None:
+                    pending.pop(path, None)
                 self._power_save_restored_fields.discard((device_id, path))
             self._power_save_cache[device_id] = current
+            if pending is not None and not pending:
+                self._power_save_pending.pop(device_id, None)
         if changed:
             self._power_save_cache_saved_at = datetime.now(timezone.utc).isoformat()
             self._schedule_power_save_save()
@@ -324,9 +357,10 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             await self._power_save_store.async_save(self._power_save_payload())
 
     def power_save_snapshot_for(self, device_id: str) -> dict[str, Any]:
-        """Return live flags overlaid on the safe restart cache."""
+        """Return live/cache flags with acknowledged commands shown pending poll."""
         merged: dict[str, Any] = dict(self._power_save_cache.get(device_id, {}))
         merged.update(ac_power_save_cache(self.snapshot_for(device_id)))
+        merged.update(self._power_save_pending.get(device_id, {}))
         return merged
 
     def power_save_field_available(self, device_id: str, path: str) -> bool:
@@ -361,6 +395,9 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         current = dict(self._power_save_cache.get(device_id, {}))
         current[path] = safe[path]
         self._power_save_cache[device_id] = current
+        pending = dict(self._power_save_pending.get(device_id, {}))
+        pending[path] = safe[path]
+        self._power_save_pending[device_id] = pending
         self._power_save_restored_fields.discard((device_id, path))
         self.async_update_listeners()
 
@@ -418,6 +455,110 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def snapshot_for(self, device_id: str) -> dict[str, Any]:
         """Return the retained WideQ snapshot keyed by stable PAT id."""
         return (self.data or {}).get(device_id, {})
+
+    def night_mode_for(self, device_id: str) -> NightModeSaved | None:
+        """Return the last confirmed saved tuple, never an optimistic PUT value."""
+        wideq_id = self._pat_to_wideq.get(device_id)
+        if wideq_id not in self._night_mode_online_wideq_ids:
+            return None
+        return self._night_mode_cache.get(device_id)
+
+    async def _async_refresh_night_modes(
+        self, snapshots: dict[str, dict[str, Any]]
+    ) -> None:
+        """Refresh exact-model saved settings at most once per 30 minutes."""
+        now = datetime.now(timezone.utc)
+        for pat_id, identity in self._pat_devices.items():
+            if identity.model not in MODES_BY_MODEL or pat_id not in snapshots:
+                continue
+            last = self._night_mode_last_attempt.get(pat_id)
+            if last is not None and now - last < _NIGHT_MODE_REFRESH_INTERVAL:
+                continue
+            wideq_id = self._pat_to_wideq.get(pat_id)
+            if wideq_id is None or wideq_id not in self._night_mode_online_wideq_ids:
+                continue
+            self._night_mode_last_attempt[pat_id] = now
+            try:
+                await self.rate_limiter.acquire()
+                saved = parse_night_mode(
+                    await self.client.async_get_night_mode(wideq_id),
+                    time_zone=DEVICE_TIME_ZONE,
+                )
+            except Exception:  # noqa: BLE001 - optional feature, never fail fleet poll
+                self._night_mode_cache.pop(pat_id, None)
+                _LOGGER.warning("ThinQ Web night-mode saved state is unavailable for an exact refrigerator")
+            else:
+                self._night_mode_cache[pat_id] = saved
+
+    async def async_set_night_mode_brightness(
+        self,
+        pat_id: str,
+        *,
+        expected_mode: str,
+        expected_brightness_pct: int,
+        desired_brightness_pct: int,
+    ) -> None:
+        """Serialize one exact-target Web SAVE and fresh-GET confirmation."""
+        identity = self._pat_devices.get(pat_id)
+        if identity is None or expected_mode not in MODES_BY_MODEL.get(identity.model, ()):
+            raise HomeAssistantError("night-mode brightness is not reviewed for this exact model")
+        if self.circuit_open:
+            raise HomeAssistantError("LG ThinQ wideq service is unavailable")
+        lock = self._control_locks.setdefault(pat_id, asyncio.Lock())
+        async with lock:
+            async with self._io_lock:
+                wideq_id = self._pat_to_wideq.get(pat_id)
+                if wideq_id is None:
+                    await self.rate_limiter.acquire()
+                    devices = await self.client.async_get_snapshots()
+                    self._night_mode_online_wideq_ids = {
+                        device.device_id for device in devices
+                        if device.online is True
+                        and isinstance(device.platform, str)
+                        and device.platform.lower() == "thinq2"
+                    }
+                    snapshots = self._resolve_devices(devices)
+                    if snapshots:
+                        current = dict(self.data or {})
+                        current.update(snapshots)
+                        self.async_set_updated_data(current)
+                    wideq_id = self._pat_to_wideq.get(pat_id)
+                if (
+                    wideq_id is None
+                    or wideq_id not in self._night_mode_online_wideq_ids
+                    or pat_id not in (self.data or {})
+                ):
+                    raise HomeAssistantError("exact online ThinQ Web night-mode target is unavailable")
+
+                async def read() -> dict[str, Any]:
+                    await self.rate_limiter.acquire()
+                    return await self.client.async_get_night_mode(wideq_id)
+
+                async def write(body: dict[str, str]) -> None:
+                    await self.rate_limiter.acquire()
+                    await self.client.async_put_night_mode(wideq_id, body)
+
+                try:
+                    saved = await set_night_mode_brightness(
+                        expected_mode=expected_mode,
+                        expected_brightness_pct=expected_brightness_pct,
+                        desired_brightness_pct=desired_brightness_pct,
+                        read=read,
+                        write=write,
+                    )
+                except ValueError as err:
+                    self._night_mode_cache.pop(pat_id, None)
+                    self.async_update_listeners()
+                    raise HomeAssistantError(str(err)) from err
+                except Exception as err:  # noqa: BLE001 - never leak private API URL
+                    self._night_mode_cache.pop(pat_id, None)
+                    self.async_update_listeners()
+                    raise HomeAssistantError(
+                        "ThinQ Web night-mode write was not confirmed; inspect the saved setting"
+                    ) from err
+                self._night_mode_cache[pat_id] = saved
+                self._night_mode_last_attempt[pat_id] = datetime.now(timezone.utc)
+                self.async_update_listeners()
 
     async def async_restore_energy_history(self) -> None:
         """Restore v3 period fields, then safely migrate v2/v1 caches.

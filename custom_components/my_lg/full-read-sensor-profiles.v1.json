@@ -1,0 +1,5766 @@
+{
+  "schemaVersion": 1,
+  "authority": "server",
+  "access": "read-only",
+  "semanticsRevision": 34,
+  "readEntityContractRevision": "full-read-entities-v1:5bb2be2e4805e092",
+  "readEntityContractSha256": "5bb2be2e4805e092788b786c8106cf3167c61eff916ad20df47caadc408ebd08",
+  "catalogRevision": "tlv-knowledge-v1:22ba817a3d40043f",
+  "catalogSha256": "22ba817a3d40043fc94d57162da2f121b19febe55debb2d8750218606b2ee48a",
+  "reviewedNonTlvSourceRevision": "reviewed-non-tlv-read-v1:1b8a17d9cfdeeadb",
+  "reviewedNonTlvSourceSha256": "1b8a17d9cfdeeadbebecaa7249ad2659924eaadd3e95376698bf28fbd49bbbdd",
+  "profiles": [
+    {
+      "profileId": "1WPD4CMIDR__3:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "1WPD4CMIDR__3",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "1WPD4CMIDR__3|diagnostic.water.custom_recipe_1.transaction_bundle_hash",
+          "semanticId": "diagnostic.water.custom_recipe_1.transaction_bundle_hash",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "맞춤 레시피 1 트랜잭션 묶음 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|ice.amount_state",
+          "semanticId": "ice.amount_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "얼음 양 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|outlet.auto_elevation_enabled",
+          "semanticId": "outlet.auto_elevation_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "출수구 자동 높이 조절",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|sound.button_enabled",
+          "semanticId": "sound.button_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "버튼음",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|sterilization.schedule.day",
+          "semanticId": "sterilization.schedule.day",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "살균 예약 일",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|sterilization.schedule.hour",
+          "semanticId": "sterilization.schedule.hour",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "살균 예약 시",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|sterilization.schedule.minute",
+          "semanticId": "sterilization.schedule.minute",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "살균 예약 분",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|sterilization.schedule.month",
+          "semanticId": "sterilization.schedule.month",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "살균 예약 월",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|temperature.unit",
+          "semanticId": "temperature.unit",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "온도 단위",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|voice.enabled",
+          "semanticId": "voice.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "음성 안내",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.amount_unit",
+          "semanticId": "water.amount_unit",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "출수량 단위",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.default_selection",
+          "semanticId": "water.default_selection",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "기본 출수 종류",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.last_selection",
+          "semanticId": "water.last_selection",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "마지막 출수 종류",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.cold_ml",
+          "semanticId": "water.usage_delta.cold_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "냉수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.hot_ml",
+          "semanticId": "water.usage_delta.hot_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "온수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.mineral_ml",
+          "semanticId": "water.usage_delta.mineral_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "미네랄수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.purified_ml",
+          "semanticId": "water.usage_delta.purified_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "정수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.soda_ml",
+          "semanticId": "water.usage_delta.soda_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "탄산수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.sterilization_ml",
+          "semanticId": "water.usage_delta.sterilization_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "살균수 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "1WPD4CMIDR__3|water.usage_delta.total_ml",
+          "semanticId": "water.usage_delta.total_ml",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "mL",
+          "eventType": "observed",
+          "labelKo": "전체 물 사용량 변화",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 20,
+        "retainedCurrentDescriptorCount": 13,
+        "transientEventDescriptorCount": 7,
+        "binarySensorDescriptorCount": 3,
+        "sensorDescriptorCount": 10,
+        "eventDomainDescriptorCount": 7,
+        "stateDescriptorCount": 12,
+        "diagnosticDescriptorCount": 1,
+        "eventDescriptorCount": 7,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "2REFO1DBN3K_U:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "2REFO1DBN3K_U",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "2REFO1DBN3K_U|compartment.freezer.temperature_status",
+          "semanticId": "compartment.freezer.temperature_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "냉동실 온도 유지 상태 (잠정)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "2REFO1DBN3K_U|compartment.fridge.temperature_status",
+          "semanticId": "compartment.fridge.temperature_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "냉장실 온도 유지 상태 (잠정)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "2REFO1DBN3K_U|diagnostic.energy.sequence",
+          "semanticId": "diagnostic.energy.sequence",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "에너지 보고 순번",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "2REFO1DBN3K_U|energy.interval.delta_wh",
+          "semanticId": "energy.interval.delta_wh",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "Wh",
+          "eventType": "observed",
+          "labelKo": "구간 에너지 사용량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 4,
+        "retainedCurrentDescriptorCount": 3,
+        "transientEventDescriptorCount": 1,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 3,
+        "eventDomainDescriptorCount": 1,
+        "stateDescriptorCount": 2,
+        "diagnosticDescriptorCount": 1,
+        "eventDescriptorCount": 1,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "2REK1D04AR170:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "2REK1D04AR170",
+      "platform": "thinq1",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "2REK1D04AR170|diagnostic.filter.fresh_air_code",
+          "semanticId": "diagnostic.filter.fresh_air_code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "신선 공기 필터 코드",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 1,
+        "retainedCurrentDescriptorCount": 1,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 1,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 0,
+        "diagnosticDescriptorCount": 1,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "3REK2G03VI230D_2:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "3REK2G03VI230D_2",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "3REK2G03VI230D_2|diagnostic.energy.sequence",
+          "semanticId": "diagnostic.energy.sequence",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "에너지 보고 순번",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "3REK2G03VI230D_2|energy.interval.delta_wh",
+          "semanticId": "energy.interval.delta_wh",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "Wh",
+          "eventType": "observed",
+          "labelKo": "구간 에너지 사용량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 2,
+        "retainedCurrentDescriptorCount": 1,
+        "transientEventDescriptorCount": 1,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 1,
+        "eventDomainDescriptorCount": 1,
+        "stateDescriptorCount": 0,
+        "diagnosticDescriptorCount": 1,
+        "eventDescriptorCount": 1,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "AIR_2C0001_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "AIR_2C0001_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "AIR_2C0001_WW|air_quality.monitor_mode",
+          "semanticId": "air_quality.monitor_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "공기질 센서 표시",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|booster.rotation_enabled",
+          "semanticId": "booster.rotation_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "부스터 회전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|booster.strength",
+          "semanticId": "booster.strength",
+          "domain": "sensor",
+          "valueTypes": [
+            "number",
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "부스터 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.break_time_raw",
+          "semanticId": "cat_tower.break_time_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 휴식시간 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.heating",
+          "semanticId": "cat_tower.heating",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 발열",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.heating_temp_raw",
+          "semanticId": "cat_tower.heating_temp_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 발열온도 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.mode_enabled",
+          "semanticId": "cat_tower.mode_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.recent_weight_raw",
+          "semanticId": "cat_tower.recent_weight_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 최근 무게 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|cat_tower.weight_raw",
+          "semanticId": "cat_tower.weight_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "캣타워 무게 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|diagnostic.capability.mode_memory.record_count",
+          "semanticId": "diagnostic.capability.mode_memory.record_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|diagnostic.capability.mode_memory.records_sha256",
+          "semanticId": "diagnostic.capability.mode_memory.records_sha256",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|discharge_clean.enabled",
+          "semanticId": "discharge_clean.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "배출 청정",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|display.anti_glare_enabled",
+          "semanticId": "display.anti_glare_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "눈부심 방지",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|display.brightness_pct",
+          "semanticId": "display.brightness_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "화면 밝기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|energy_saving.ai_enabled",
+          "semanticId": "energy_saving.ai_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "AI 절전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|energy_saving.basic_enabled",
+          "semanticId": "energy_saving.basic_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "절전(basic)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "number",
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|filter.water_remaining_raw",
+          "semanticId": "filter.water_remaining_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "정수 필터 잔량 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|form_factor.info_enabled",
+          "semanticId": "form_factor.info_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "폼팩터 정보",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "현재 습도 %",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|indicator.clean_enabled",
+          "semanticId": "indicator.clean_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "청정 표시등",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|night_mode.enabled",
+          "semanticId": "night_mode.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "야간 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|notification.interval_raw",
+          "semanticId": "notification.interval_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "알림 간격 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "number",
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|operation.product_status",
+          "semanticId": "operation.product_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "제품 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|reservation.power_off_at",
+          "semanticId": "reservation.power_off_at",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "예약 끄기 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|reservation.power_on_at",
+          "semanticId": "reservation.power_on_at",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "예약 켜기 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|reservation.stop_time_raw",
+          "semanticId": "reservation.stop_time_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "예약 정지시간 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|sterilization.standby_mode",
+          "semanticId": "sterilization.standby_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "대기 살균 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|sterilization.uvnano_enabled",
+          "semanticId": "sterilization.uvnano_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "살균(UVnano)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|swing.step",
+          "semanticId": "swing.step",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "풍향 스윙",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|timer.sleep_remaining_min",
+          "semanticId": "timer.sleep_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "취침 예약 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|voice.guide_enabled",
+          "semanticId": "voice.guide_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "제품 음성 안내 및 소리(음성 안내 on/off)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|voice.selection",
+          "semanticId": "voice.selection",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "음성 선택(여성/남성)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|voice.volume_pct",
+          "semanticId": "voice.volume_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "소리 크기(음성 안내 볼륨)",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|water_tank.light_raw",
+          "semanticId": "water_tank.light_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "물탱크 조명 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_2C0001_WW|water_tank.remaining_raw",
+          "semanticId": "water_tank.remaining_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "물탱크 잔량 raw",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 39,
+        "retainedCurrentDescriptorCount": 39,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 12,
+        "sensorDescriptorCount": 27,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 36,
+        "diagnosticDescriptorCount": 3,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "AIR_910604_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "AIR_910604_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.index_raw",
+          "semanticId": "air_quality.index_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "통합 공기질",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.monitor_mode",
+          "semanticId": "air_quality.monitor_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "공기질 센서 모니터링",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.odor_index_raw",
+          "semanticId": "air_quality.odor_index_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "냄새 지수",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.pm10_ug_m3",
+          "semanticId": "air_quality.pm10_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM10",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.pm1_ug_m3",
+          "semanticId": "air_quality.pm1_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM1.0",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|air_quality.pm2_5_ug_m3",
+          "semanticId": "air_quality.pm2_5_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM2.5",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.fan_modes_raw",
+          "semanticId": "diagnostic.capability.fan_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "풍량 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.humidity.adjustment_unit_raw",
+          "semanticId": "diagnostic.capability.humidity.adjustment_unit_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "습도 조절 단위 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.humidity.target_max_raw",
+          "semanticId": "diagnostic.capability.humidity.target_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "목표 습도 최고 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.humidity.target_min_raw",
+          "semanticId": "diagnostic.capability.humidity.target_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "목표 습도 최저 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.lighting_features_raw",
+          "semanticId": "diagnostic.capability.lighting_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조명 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.mode_memory.record_count",
+          "semanticId": "diagnostic.capability.mode_memory.record_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.mode_memory.records_sha256",
+          "semanticId": "diagnostic.capability.mode_memory.records_sha256",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.operation_modes_raw",
+          "semanticId": "diagnostic.capability.operation_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.smart_features_raw",
+          "semanticId": "diagnostic.capability.smart_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "스마트 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.capability.timer_features_raw",
+          "semanticId": "diagnostic.capability.timer_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.circulator.fan_raw",
+          "semanticId": "diagnostic.circulator.fan_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "서큘레이터 풍량 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.circulator.rotation_raw",
+          "semanticId": "diagnostic.circulator.rotation_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "서큘레이터 회전 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.clean_dry_raw",
+          "semanticId": "diagnostic.clean_dry_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "클린 건조 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.mosquito_mode_raw",
+          "semanticId": "diagnostic.mosquito_mode_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모기 퇴치 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.notification.ext_raw",
+          "semanticId": "diagnostic.notification.ext_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "확장 알림 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.rapid_operation_raw",
+          "semanticId": "diagnostic.rapid_operation_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "쾌속 운전 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.temperature.target_unsupported_raw",
+          "semanticId": "diagnostic.temperature.target_unsupported_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "목표 온도 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.temperature.unit_reported",
+          "semanticId": "diagnostic.temperature.unit_reported",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "온도 단위 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.timer.off_target_raw",
+          "semanticId": "diagnostic.timer.off_target_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "꺼짐 목표시간 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.timer.on_target_raw",
+          "semanticId": "diagnostic.timer.on_target_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "켜짐 목표시간 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|diagnostic.water_tank.light_brightness_raw",
+          "semanticId": "diagnostic.water_tank.light_brightness_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "물통 조명 밝기 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|error.code",
+          "semanticId": "error.code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "오류 코드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|filter.cover_status",
+          "semanticId": "filter.cover_status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "필터/커버 탈착 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|filter.main.rated_life_h",
+          "semanticId": "filter.main.rated_life_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 정격 수명",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|filter.main.remaining_h",
+          "semanticId": "filter.main.remaining_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|filter.upper.rated_life_h",
+          "semanticId": "filter.upper.rated_life_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "상단 필터 정격 수명",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|filter.upper.remaining_h",
+          "semanticId": "filter.upper.remaining_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "상단 필터 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|humidification.enabled",
+          "semanticId": "humidification.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "가습 운전 보고값",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "현재 습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|humidity.target_raw",
+          "semanticId": "humidity.target_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "목표 습도 보고값",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|indicator.clean_enabled",
+          "semanticId": "indicator.clean_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "청정 표시등",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|sterilization.air_enabled",
+          "semanticId": "sterilization.air_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "공기 제균",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|sterilization.uv_enabled",
+          "semanticId": "sterilization.uv_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "UV 공기 살균 보고값",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|temperature.current_c",
+          "semanticId": "temperature.current_c",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "°C",
+          "labelKo": "현재 온도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "AIR_910604_WW|timer.sleep_remaining_min",
+          "semanticId": "timer.sleep_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "취침 예약 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 45,
+        "retainedCurrentDescriptorCount": 45,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 9,
+        "sensorDescriptorCount": 36,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 23,
+        "diagnosticDescriptorCount": 22,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "CST_170004_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "CST_170004_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "CST_170004_WW|air_clean.enabled",
+          "semanticId": "air_clean.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "공기청정",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|air_quality.pm10_ug_m3",
+          "semanticId": "air_quality.pm10_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM10",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|air_quality.pm1_ug_m3",
+          "semanticId": "air_quality.pm1_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM1.0",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|air_quality.pm2_5_ug_m3",
+          "semanticId": "air_quality.pm2_5_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM2.5",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|airflow.auto_temperature_enabled",
+          "semanticId": "airflow.auto_temperature_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 온도 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|airflow.forest_enabled",
+          "semanticId": "airflow.forest_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "숲속바람",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|airflow.long_distance_enabled",
+          "semanticId": "airflow.long_distance_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "원거리 강풍 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|airflow.quiet_enabled",
+          "semanticId": "airflow.quiet_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "저소음 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|airflow.study_enabled",
+          "semanticId": "airflow.study_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "공부 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|auto_dry.mode",
+          "semanticId": "auto_dry.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 설정",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|auto_dry.remaining_min",
+          "semanticId": "auto_dry.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "자동 건조 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|auto_dry.wind_strength_level",
+          "semanticId": "auto_dry.wind_strength_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 풍량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|comfort_energy_saving.enabled",
+          "semanticId": "comfort_energy_saving.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "편안 절전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.fan_modes_raw",
+          "semanticId": "diagnostic.capability.fan_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "풍량 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.features_raw",
+          "semanticId": "diagnostic.capability.features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.hardware_raw",
+          "semanticId": "diagnostic.capability.hardware_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "CST 하드웨어 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.lighting_features_raw",
+          "semanticId": "diagnostic.capability.lighting_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조명 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.marker_raw",
+          "semanticId": "diagnostic.capability.marker_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "AC capability/EEPROM marker",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.mode_memory.record_count",
+          "semanticId": "diagnostic.capability.mode_memory.record_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.mode_memory.records_sha256",
+          "semanticId": "diagnostic.capability.mode_memory.records_sha256",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.operation_modes_raw",
+          "semanticId": "diagnostic.capability.operation_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.sac_submodes_raw",
+          "semanticId": "diagnostic.capability.sac_submodes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "SAC 서브모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.smart_features_raw",
+          "semanticId": "diagnostic.capability.smart_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "스마트 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.temperature.cooling_max_raw",
+          "semanticId": "diagnostic.capability.temperature.cooling_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "냉방 최고 설정온도 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.temperature.cooling_min_raw",
+          "semanticId": "diagnostic.capability.temperature.cooling_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "냉방 최저 설정온도 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.temperature.secondary_max_raw",
+          "semanticId": "diagnostic.capability.temperature.secondary_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "두 번째 설정온도 범위: 최고",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.temperature.secondary_min_raw",
+          "semanticId": "diagnostic.capability.temperature.secondary_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "두 번째 설정온도 범위: 최저",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.capability.timer_features_raw",
+          "semanticId": "diagnostic.capability.timer_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "타이머 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.timer.off_raw",
+          "semanticId": "diagnostic.timer.off_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "꺼짐 타이머",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|diagnostic.timer.on_raw",
+          "semanticId": "diagnostic.timer.on_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "켜짐 타이머",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|display.brightness_level",
+          "semanticId": "display.brightness_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "화면 밝기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|energy_saving.enabled",
+          "semanticId": "energy_saving.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "절전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|error.code",
+          "semanticId": "error.code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "오류 코드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|filter.rated_life_h",
+          "semanticId": "filter.rated_life_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 교체 주기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|filter.remaining_h",
+          "semanticId": "filter.remaining_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|power.indoor_compressor_share_w",
+          "semanticId": "power.indoor_compressor_share_w",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "W",
+          "labelKo": "실내기 컴프레서 분담 전력",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|power.outdoor_unit_total_w",
+          "semanticId": "power.outdoor_unit_total_w",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "W",
+          "labelKo": "공유 실외기 총 전력",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|sterilization.uvnano_enabled",
+          "semanticId": "sterilization.uvnano_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "UVnano",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|swing.horizontal_enabled",
+          "semanticId": "swing.horizontal_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "좌우 스윙",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|swing.vertical_enabled",
+          "semanticId": "swing.vertical_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "상하 스윙",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|temperature.current_c",
+          "semanticId": "temperature.current_c",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "°C",
+          "labelKo": "현재 온도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|timer.sleep_remaining_min",
+          "semanticId": "timer.sleep_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "취침 예약 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_170004_WW|vane.vertical_position",
+          "semanticId": "vane.vertical_position",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "상하 베인 위치",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 48,
+        "retainedCurrentDescriptorCount": 48,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 12,
+        "sensorDescriptorCount": 36,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 30,
+        "diagnosticDescriptorCount": 18,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "CST_570004_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "CST_570004_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "CST_570004_WW|air_clean.enabled",
+          "semanticId": "air_clean.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "공기청정",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|air_quality.pm10_ug_m3",
+          "semanticId": "air_quality.pm10_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM10",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|air_quality.pm1_ug_m3",
+          "semanticId": "air_quality.pm1_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM1.0",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|air_quality.pm2_5_ug_m3",
+          "semanticId": "air_quality.pm2_5_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM2.5",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|airflow.auto_temperature_enabled",
+          "semanticId": "airflow.auto_temperature_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 온도 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|airflow.forest_enabled",
+          "semanticId": "airflow.forest_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "숲속바람",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|airflow.long_distance_enabled",
+          "semanticId": "airflow.long_distance_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "원거리 강풍 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|airflow.quiet_enabled",
+          "semanticId": "airflow.quiet_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "저소음 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|airflow.study_enabled",
+          "semanticId": "airflow.study_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "공부 바람 flag",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|auto_dry.mode",
+          "semanticId": "auto_dry.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 설정",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|auto_dry.remaining_min",
+          "semanticId": "auto_dry.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "자동 건조 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|auto_dry.wind_strength_level",
+          "semanticId": "auto_dry.wind_strength_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 풍량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|comfort_energy_saving.enabled",
+          "semanticId": "comfort_energy_saving.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "편안 절전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.fan_modes_raw",
+          "semanticId": "diagnostic.capability.fan_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "풍량 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.features_raw",
+          "semanticId": "diagnostic.capability.features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.hardware_raw",
+          "semanticId": "diagnostic.capability.hardware_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "CST 하드웨어 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.lighting_features_raw",
+          "semanticId": "diagnostic.capability.lighting_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조명 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.marker_raw",
+          "semanticId": "diagnostic.capability.marker_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "AC capability/EEPROM marker",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.mode_memory.record_count",
+          "semanticId": "diagnostic.capability.mode_memory.record_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.mode_memory.records_sha256",
+          "semanticId": "diagnostic.capability.mode_memory.records_sha256",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.operation_modes_raw",
+          "semanticId": "diagnostic.capability.operation_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.sac_submodes_raw",
+          "semanticId": "diagnostic.capability.sac_submodes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "SAC 서브모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.smart_features_raw",
+          "semanticId": "diagnostic.capability.smart_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "스마트 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.temperature.cooling_max_raw",
+          "semanticId": "diagnostic.capability.temperature.cooling_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "냉방 최고 설정온도 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.temperature.cooling_min_raw",
+          "semanticId": "diagnostic.capability.temperature.cooling_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "냉방 최저 설정온도 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.temperature.secondary_max_raw",
+          "semanticId": "diagnostic.capability.temperature.secondary_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "두 번째 설정온도 범위: 최고",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.temperature.secondary_min_raw",
+          "semanticId": "diagnostic.capability.temperature.secondary_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "두 번째 설정온도 범위: 최저",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.capability.timer_features_raw",
+          "semanticId": "diagnostic.capability.timer_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "타이머 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.timer.off_raw",
+          "semanticId": "diagnostic.timer.off_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "꺼짐 타이머",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|diagnostic.timer.on_raw",
+          "semanticId": "diagnostic.timer.on_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "켜짐 타이머",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|display.brightness_level",
+          "semanticId": "display.brightness_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "화면 밝기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|energy_saving.enabled",
+          "semanticId": "energy_saving.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "절전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|error.code",
+          "semanticId": "error.code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "오류 코드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|filter.rated_life_h",
+          "semanticId": "filter.rated_life_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 교체 주기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|filter.remaining_h",
+          "semanticId": "filter.remaining_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|power.indoor_compressor_share_w",
+          "semanticId": "power.indoor_compressor_share_w",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "W",
+          "labelKo": "실내기 컴프레서 분담 전력",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|power.outdoor_unit_total_w",
+          "semanticId": "power.outdoor_unit_total_w",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "W",
+          "labelKo": "공유 실외기 총 전력",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|sterilization.uvnano_enabled",
+          "semanticId": "sterilization.uvnano_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "UVnano",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|swing.horizontal_enabled",
+          "semanticId": "swing.horizontal_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "좌우 스윙",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|swing.vertical_enabled",
+          "semanticId": "swing.vertical_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "상하 스윙",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|temperature.current_c",
+          "semanticId": "temperature.current_c",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "°C",
+          "labelKo": "현재 온도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|timer.sleep_remaining_min",
+          "semanticId": "timer.sleep_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "취침 예약 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "CST_570004_WW|vane.vertical_position",
+          "semanticId": "vane.vertical_position",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "legacy 상하 풍향 값",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 48,
+        "retainedCurrentDescriptorCount": 48,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 12,
+        "sensorDescriptorCount": 36,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 30,
+        "diagnosticDescriptorCount": 18,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "D121110:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "D121110",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "D121110|cycle.smart_course",
+          "semanticId": "cycle.smart_course",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "다운로드 코스",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.auto_door_dry_enabled",
+          "semanticId": "option.auto_door_dry_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 문열림 건조",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.delay_start_enabled",
+          "semanticId": "option.delay_start_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "예약",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.dual_zone_enabled",
+          "semanticId": "option.dual_zone_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "듀얼존",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.extra_dry_enabled",
+          "semanticId": "option.extra_dry_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "고온건조",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.extra_rinse_enabled",
+          "semanticId": "option.extra_rinse_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "안심헹굼",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.half_load_lower_enabled",
+          "semanticId": "option.half_load_lower_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "부분세척 아래",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.half_load_upper_enabled",
+          "semanticId": "option.half_load_upper_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "부분세척 위",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.high_temp_enabled",
+          "semanticId": "option.high_temp_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "고온살균",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|option.steam_enabled",
+          "semanticId": "option.steam_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "스팀",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "D121110|reminder.machine_clean_enabled",
+          "semanticId": "reminder.machine_clean_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "통살균 알림",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 11,
+        "retainedCurrentDescriptorCount": 11,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 10,
+        "sensorDescriptorCount": 1,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 11,
+        "diagnosticDescriptorCount": 0,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "DHUM_056905_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "DHUM_056905_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "DHUM_056905_WW|air_quality.monitor_mode",
+          "semanticId": "air_quality.monitor_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "공기 센서 모니터링",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|airflow.direction",
+          "semanticId": "airflow.direction",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "풍향",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|auto_dry.mode",
+          "semanticId": "auto_dry.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.auto_dry.remaining_raw",
+          "semanticId": "diagnostic.auto_dry.remaining_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "자동 건조 잔여",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.accumulated_modes_raw",
+          "semanticId": "diagnostic.capability.accumulated_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "누적 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.air_quality_sensor_raw",
+          "semanticId": "diagnostic.capability.air_quality_sensor_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "공기질 센서 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.detailed_notifications_raw",
+          "semanticId": "diagnostic.capability.detailed_notifications_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "상세 알림 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.fan_modes_raw",
+          "semanticId": "diagnostic.capability.fan_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "풍량 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.filter_attachment_raw",
+          "semanticId": "diagnostic.capability.filter_attachment_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "필터 탈착 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.group_type_raw",
+          "semanticId": "diagnostic.capability.group_type_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "그룹 종류 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.humidity.adjustment_unit_raw",
+          "semanticId": "diagnostic.capability.humidity.adjustment_unit_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "습도 조절 단위 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.humidity.target_max_raw",
+          "semanticId": "diagnostic.capability.humidity.target_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "%",
+          "labelKo": "설정 습도 최댓값 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.humidity.target_min_raw",
+          "semanticId": "diagnostic.capability.humidity.target_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "%",
+          "labelKo": "설정 습도 최솟값 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.lighting_features_raw",
+          "semanticId": "diagnostic.capability.lighting_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조명 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.m_filter_raw",
+          "semanticId": "diagnostic.capability.m_filter_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "M필터 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.marker_raw",
+          "semanticId": "diagnostic.capability.marker_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "DHUM capability marker",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.mode_memory.record_count",
+          "semanticId": "diagnostic.capability.mode_memory.record_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.mode_memory.records_sha256",
+          "semanticId": "diagnostic.capability.mode_memory.records_sha256",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "모드별 기억 레코드 해시",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.operation_modes_raw",
+          "semanticId": "diagnostic.capability.operation_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.pac_extended_modes_raw",
+          "semanticId": "diagnostic.capability.pac_extended_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "PAC 확장 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.rac_modes_raw",
+          "semanticId": "diagnostic.capability.rac_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "RAC 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.sac_submodes_raw",
+          "semanticId": "diagnostic.capability.sac_submodes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "SAC 서브모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.smart_features_raw",
+          "semanticId": "diagnostic.capability.smart_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "스마트 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.capability.timer_features_raw",
+          "semanticId": "diagnostic.capability.timer_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.humidification.reported_raw",
+          "semanticId": "diagnostic.humidification.reported_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "가습 기능 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.ionizer.reported_raw",
+          "semanticId": "diagnostic.ionizer.reported_raw",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "이온나이저 보고값",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.safe_operation.remaining_raw",
+          "semanticId": "diagnostic.safe_operation.remaining_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "안전 운전 잔여",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|diagnostic.timer.start_time_raw",
+          "semanticId": "diagnostic.timer.start_time_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 시작시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|display.enabled",
+          "semanticId": "display.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "상태 표시부",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|error.code",
+          "semanticId": "error.code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "오류 코드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|event.water_tank.changed",
+          "semanticId": "event.water_tank.changed",
+          "domain": "event",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "event",
+          "eventType": "water-tank state changed",
+          "labelKo": "물통 상태변경 이벤트",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|exhaust_clean.enabled",
+          "semanticId": "exhaust_clean.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "배기구 클린",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "현재 습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|humidity.target_pct",
+          "semanticId": "humidity.target_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "목표 습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|mood_light.color_raw",
+          "semanticId": "mood_light.color_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "무드 조명 색상",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|quiet_hours.no_interrupt_enabled",
+          "semanticId": "quiet_hours.no_interrupt_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "취침 중 방해금지",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|sound.enabled",
+          "semanticId": "sound.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "알림음",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|sound.melody_raw",
+          "semanticId": "sound.melody_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "멜로디",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|sterilization.uvnano_enabled",
+          "semanticId": "sterilization.uvnano_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "UVnano",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|temperature.current_c",
+          "semanticId": "temperature.current_c",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "°C",
+          "labelKo": "현재 온도",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|timer.off_remaining_min",
+          "semanticId": "timer.off_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "꺼짐 타이머",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|water_tank.full",
+          "semanticId": "water_tank.full",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "물통 만수 인터록",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|water_tank.full_fan_enabled",
+          "semanticId": "water_tank.full_fan_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "물통 만수 시 팬",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|water_tank.light_brightness_raw",
+          "semanticId": "water_tank.light_brightness_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "물통 조명 밝기",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|water_tank.light_enabled",
+          "semanticId": "water_tank.light_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "물통 조명",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "DHUM_056905_WW|water_tank.reported_state",
+          "semanticId": "water_tank.reported_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "물통 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 50,
+        "retainedCurrentDescriptorCount": 49,
+        "transientEventDescriptorCount": 1,
+        "binarySensorDescriptorCount": 11,
+        "sensorDescriptorCount": 38,
+        "eventDomainDescriptorCount": 1,
+        "stateDescriptorCount": 18,
+        "diagnosticDescriptorCount": 31,
+        "eventDescriptorCount": 1,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "HUM_056905_WW:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "HUM_056905_WW",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "HUM_056905_WW|air_quality.index_raw",
+          "semanticId": "air_quality.index_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "통합 공기질",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|air_quality.monitor_mode",
+          "semanticId": "air_quality.monitor_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "공기질 센서 모니터링",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|air_quality.pm10_ug_m3",
+          "semanticId": "air_quality.pm10_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM10",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|air_quality.pm1_ug_m3",
+          "semanticId": "air_quality.pm1_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM1.0",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|air_quality.pm2_5_ug_m3",
+          "semanticId": "air_quality.pm2_5_ug_m3",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "µg/m³",
+          "labelKo": "PM2.5",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|auto_dry.enabled",
+          "semanticId": "auto_dry.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|auto_dry.remaining_min",
+          "semanticId": "auto_dry.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "자동 건조 잔여",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|auto_dry.state",
+          "semanticId": "auto_dry.state",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 건조 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|auto_operation.enabled",
+          "semanticId": "auto_operation.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "자동 운전",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.common_features_raw",
+          "semanticId": "diagnostic.capability.common_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "공통 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.fan_modes_raw",
+          "semanticId": "diagnostic.capability.fan_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "풍량 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidification_features_raw",
+          "semanticId": "diagnostic.capability.humidification_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "가습 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidification_modes_raw",
+          "semanticId": "diagnostic.capability.humidification_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "가습 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidity.adjustment_unit_raw",
+          "semanticId": "diagnostic.capability.humidity.adjustment_unit_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "습도 조절 단위 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidity.sensor_max_raw",
+          "semanticId": "diagnostic.capability.humidity.sensor_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "습도 센서 최고 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidity.sensor_min_raw",
+          "semanticId": "diagnostic.capability.humidity.sensor_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "습도 센서 최저 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidity.target_max_raw",
+          "semanticId": "diagnostic.capability.humidity.target_max_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "목표 습도 최고 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.humidity.target_min_raw",
+          "semanticId": "diagnostic.capability.humidity.target_min_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "목표 습도 최저 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.hygienic_dry_modes_raw",
+          "semanticId": "diagnostic.capability.hygienic_dry_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "위생 건조 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.lighting_features_raw",
+          "semanticId": "diagnostic.capability.lighting_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조명 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.marker_raw",
+          "semanticId": "diagnostic.capability.marker_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "HUM capability marker",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.mood_light.colors_raw",
+          "semanticId": "diagnostic.capability.mood_light.colors_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "무드 조명 색상 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.mood_light.extended_colors_raw",
+          "semanticId": "diagnostic.capability.mood_light.extended_colors_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "무드 조명 확장 색상 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.operation_modes.extension_1_raw",
+          "semanticId": "diagnostic.capability.operation_modes.extension_1_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "확장 운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.operation_modes.extension_2_raw",
+          "semanticId": "diagnostic.capability.operation_modes.extension_2_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "두 번째 확장 운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.operation_modes.extension_3_raw",
+          "semanticId": "diagnostic.capability.operation_modes.extension_3_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "세 번째 확장 운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.operation_modes_raw",
+          "semanticId": "diagnostic.capability.operation_modes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "운전 모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.sac_submodes_raw",
+          "semanticId": "diagnostic.capability.sac_submodes_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "SAC 서브모드 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.smart_features_raw",
+          "semanticId": "diagnostic.capability.smart_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "스마트 기능 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.capability.timer_features_raw",
+          "semanticId": "diagnostic.capability.timer_features_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 capability",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.filter.period_raw",
+          "semanticId": "diagnostic.filter.period_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "필터 교체 주기",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.protocol.query_selector",
+          "semanticId": "diagnostic.protocol.query_selector",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "조회 종류",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.schedule.off_hhmm_raw",
+          "semanticId": "diagnostic.schedule.off_hhmm_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 꺼짐",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.schedule.on_hhmm_raw",
+          "semanticId": "diagnostic.schedule.on_hhmm_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 켜짐",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|diagnostic.timer.start_time_raw",
+          "semanticId": "diagnostic.timer.start_time_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "예약 시작시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|display.brightness_level",
+          "semanticId": "display.brightness_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "화면 밝기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|display.glare_reduction_enabled",
+          "semanticId": "display.glare_reduction_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "눈부심 방지",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|error.code",
+          "semanticId": "error.code",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "오류 코드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|fan.mode",
+          "semanticId": "fan.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "바람 세기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|filter.usage_h",
+          "semanticId": "filter.usage_h",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "h",
+          "labelKo": "필터 사용 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|humidification.enabled",
+          "semanticId": "humidification.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "가습 기능",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|humidification.reported_enabled",
+          "semanticId": "humidification.reported_enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "가습 기능 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|humidity.current_pct",
+          "semanticId": "humidity.current_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "현재 습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|humidity.target_pct",
+          "semanticId": "humidity.target_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "목표 습도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|hygienic_dry.mode",
+          "semanticId": "hygienic_dry.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "위생 건조 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|mood_light.color_raw",
+          "semanticId": "mood_light.color_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "무드 조명 색상",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|mood_light.enabled",
+          "semanticId": "mood_light.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "무드 조명",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|night_mode.enabled",
+          "semanticId": "night_mode.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "야간 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|operation.mode",
+          "semanticId": "operation.mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|operation.power_requested",
+          "semanticId": "operation.power_requested",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "전원 요청",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|operation.product_state",
+          "semanticId": "operation.product_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "제품 운전 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|sleep_mode.enabled",
+          "semanticId": "sleep_mode.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "취침 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|sound.enabled",
+          "semanticId": "sound.enabled",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "알림음",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|sterilization.standby_mode",
+          "semanticId": "sterilization.standby_mode",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "대기 중 살균 모드",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|temperature.current_c",
+          "semanticId": "temperature.current_c",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "°C",
+          "labelKo": "현재 온도",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|timer.off_remaining_min",
+          "semanticId": "timer.off_remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "꺼짐 타이머",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|water_filter.remaining_pct",
+          "semanticId": "water_filter.remaining_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "물 필터 잔량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|water_tank.level_pct",
+          "semanticId": "water_tank.level_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "물통 수위",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|water_tank.light_brightness_raw",
+          "semanticId": "water_tank.light_brightness_raw",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "labelKo": "물통 조명 밝기",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HUM_056905_WW|water_tank.remaining_min",
+          "semanticId": "water_tank.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "물통 잔여 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 60,
+        "retainedCurrentDescriptorCount": 60,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 11,
+        "sensorDescriptorCount": 49,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 34,
+        "diagnosticDescriptorCount": 26,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "HWWA9X3C_F2U:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "HWWA9X3C_F2U",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.percent_level",
+          "semanticId": "battery.percent_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "본체 배터리 잔량 단계",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.remaining_min",
+          "semanticId": "battery.remaining_min",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "min",
+          "labelKo": "배터리 남은 시간",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.remaining_pct",
+          "semanticId": "battery.remaining_pct",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "state",
+          "unit": "%",
+          "labelKo": "배터리 잔량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|battery.sub_level_state",
+          "semanticId": "battery.sub_level_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "보조 배터리 단계",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|cleaning.complete_state",
+          "semanticId": "cleaning.complete_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "청소 완료 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|cleaning.mode_state",
+          "semanticId": "cleaning.mode_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "청소 모드 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|nozzle.steam_attached",
+          "semanticId": "nozzle.steam_attached",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "스팀 노즐 장착 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|operation.status",
+          "semanticId": "operation.status",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "운전 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|station.docked_state",
+          "semanticId": "station.docked_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "스테이션 도킹 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "HWWA9X3C_F2U|warning.passage_clogged_state",
+          "semanticId": "warning.passage_clogged_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "state",
+          "labelKo": "흡입 통로 막힘 상태",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 10,
+        "retainedCurrentDescriptorCount": 10,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 10,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 10,
+        "diagnosticDescriptorCount": 0,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "ST_R_ETH01Y_:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "ST_R_ETH01Y_",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "ST_R_ETH01Y_|remote.start_allowed",
+          "semanticId": "remote.start_allowed",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "원격 시작 허용",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 1,
+        "retainedCurrentDescriptorCount": 1,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 1,
+        "sensorDescriptorCount": 0,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 1,
+        "diagnosticDescriptorCount": 0,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "WBEF3:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "WBEF3",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "WBEF3|burner.center.elapsed_s",
+          "semanticId": "burner.center.elapsed_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "중앙 화구 경과 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.center.power_level",
+          "semanticId": "burner.center.power_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "중앙 화구 출력 단계",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.center.remaining_s",
+          "semanticId": "burner.center.remaining_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "중앙 화구 남은 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.center.state",
+          "semanticId": "burner.center.state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "중앙 화구 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.left_rear.elapsed_s",
+          "semanticId": "burner.left_rear.elapsed_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "왼쪽 뒤 화구 경과 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.left_rear.power_level",
+          "semanticId": "burner.left_rear.power_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "왼쪽 뒤 화구 출력 단계",
+          "owner": "PAT",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.left_rear.remaining_s",
+          "semanticId": "burner.left_rear.remaining_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "왼쪽 뒤 화구 남은 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.left_rear.state",
+          "semanticId": "burner.left_rear.state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "왼쪽 뒤 화구 상태",
+          "owner": "PAT",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_front.elapsed_s",
+          "semanticId": "burner.right_front.elapsed_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "오른쪽 앞 화구 경과 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_front.power_level",
+          "semanticId": "burner.right_front.power_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "오른쪽 앞 화구 출력 단계",
+          "owner": "PAT",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_front.remaining_s",
+          "semanticId": "burner.right_front.remaining_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "오른쪽 앞 화구 남은 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_front.state",
+          "semanticId": "burner.right_front.state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "오른쪽 앞 화구 상태",
+          "owner": "PAT",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_rear.elapsed_s",
+          "semanticId": "burner.right_rear.elapsed_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "오른쪽 뒤 화구 경과 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_rear.power_level",
+          "semanticId": "burner.right_rear.power_level",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "오른쪽 뒤 화구 출력 단계",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_rear.remaining_s",
+          "semanticId": "burner.right_rear.remaining_s",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "s",
+          "labelKo": "오른쪽 뒤 화구 남은 시간",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|burner.right_rear.state",
+          "semanticId": "burner.right_rear.state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "오른쪽 뒤 화구 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|diagnostic.energy.sequence",
+          "semanticId": "diagnostic.energy.sequence",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "에너지 보고 순번",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|energy.interval.delta_wh",
+          "semanticId": "energy.interval.delta_wh",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "Wh",
+          "eventType": "observed",
+          "labelKo": "구간 에너지 사용량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        },
+        {
+          "descriptorKey": "WBEF3|recipe.saved_count",
+          "semanticId": "recipe.saved_count",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "저장 레시피 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|recipe.stage_current",
+          "semanticId": "recipe.stage_current",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "현재 레시피 단계",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|recipe.stage_total",
+          "semanticId": "recipe.stage_total",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "전체 레시피 단계 수",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|remote.fota_allowed",
+          "semanticId": "remote.fota_allowed",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "원격 펌웨어 업데이트 허용",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WBEF3|remote.start_allowed",
+          "semanticId": "remote.start_allowed",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "원격 시작 허용",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 23,
+        "retainedCurrentDescriptorCount": 22,
+        "transientEventDescriptorCount": 1,
+        "binarySensorDescriptorCount": 2,
+        "sensorDescriptorCount": 20,
+        "eventDomainDescriptorCount": 1,
+        "stateDescriptorCount": 0,
+        "diagnosticDescriptorCount": 22,
+        "eventDescriptorCount": 1,
+        "patOwnerDescriptorCount": 4
+      }
+    },
+    {
+      "profileId": "WMLJ32RS:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "WMLJ32RS",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "WMLJ32RS|diagnostic.energy.sequence",
+          "semanticId": "diagnostic.energy.sequence",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "에너지 보고 순번",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WMLJ32RS|energy.interval.delta_wh",
+          "semanticId": "energy.interval.delta_wh",
+          "domain": "event",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "event",
+          "unit": "Wh",
+          "eventType": "observed",
+          "labelKo": "구간 에너지 사용량",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": false,
+          "publicationMode": "transient-event"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 2,
+        "retainedCurrentDescriptorCount": 1,
+        "transientEventDescriptorCount": 1,
+        "binarySensorDescriptorCount": 0,
+        "sensorDescriptorCount": 1,
+        "eventDomainDescriptorCount": 1,
+        "stateDescriptorCount": 0,
+        "diagnosticDescriptorCount": 1,
+        "eventDescriptorCount": 1,
+        "patOwnerDescriptorCount": 0
+      }
+    },
+    {
+      "profileId": "WTL_KPK_BDH_KR_01:read-sensors-v1",
+      "contractRevision": 1,
+      "modelId": "WTL_KPK_BDH_KR_01",
+      "platform": "thinq2",
+      "authority": "server",
+      "access": "read-only",
+      "fields": [
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|dryer.cycle.energy_wh",
+          "semanticId": "dryer.cycle.energy_wh",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "Wh",
+          "labelKo": "건조기 코스 사용 전력량",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|dryer.cycle.previous_state",
+          "semanticId": "dryer.cycle.previous_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "건조기 이전 코스 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|dryer.remote.start_allowed",
+          "semanticId": "dryer.remote.start_allowed",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "건조기 원격 시작 허용",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|washer.cycle.energy_wh",
+          "semanticId": "washer.cycle.energy_wh",
+          "domain": "sensor",
+          "valueTypes": [
+            "number"
+          ],
+          "exposure": "diagnostic",
+          "unit": "Wh",
+          "labelKo": "세탁기 코스 사용 전력량",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|washer.cycle.previous_state",
+          "semanticId": "washer.cycle.previous_state",
+          "domain": "sensor",
+          "valueTypes": [
+            "string"
+          ],
+          "exposure": "diagnostic",
+          "labelKo": "세탁기 이전 코스 상태",
+          "owner": "none",
+          "entityCategory": "diagnostic",
+          "enabledByDefault": false,
+          "publicationMode": "retained-current"
+        },
+        {
+          "descriptorKey": "WTL_KPK_BDH_KR_01|washer.remote.start_allowed",
+          "semanticId": "washer.remote.start_allowed",
+          "domain": "binary_sensor",
+          "valueTypes": [
+            "boolean"
+          ],
+          "exposure": "state",
+          "labelKo": "세탁기 원격 시작 허용",
+          "owner": "none",
+          "entityCategory": null,
+          "enabledByDefault": true,
+          "publicationMode": "retained-current"
+        }
+      ],
+      "stats": {
+        "descriptorCount": 6,
+        "retainedCurrentDescriptorCount": 6,
+        "transientEventDescriptorCount": 0,
+        "binarySensorDescriptorCount": 2,
+        "sensorDescriptorCount": 4,
+        "eventDomainDescriptorCount": 0,
+        "stateDescriptorCount": 2,
+        "diagnosticDescriptorCount": 4,
+        "eventDescriptorCount": 0,
+        "patOwnerDescriptorCount": 0
+      }
+    }
+  ],
+  "descriptorOnly": [],
+  "aggregateExclusions": [
+    {
+      "key": "AIR_2C0001_WW|diagnostic.capability.mode_memory.aggregate",
+      "modelId": "AIR_2C0001_WW",
+      "semanticId": "diagnostic.capability.mode_memory.aggregate",
+      "sourceKeys": [
+        "AIR_2C0001_WW|fromDevice|0x02d7",
+        "AIR_2C0001_WW|fromDevice|0x02d8",
+        "AIR_2C0001_WW|fromDevice|0x02d9"
+      ],
+      "sourceEntryCount": 3,
+      "reasons": [
+        "aggregate-only"
+      ]
+    },
+    {
+      "key": "AIR_910604_WW|diagnostic.capability.mode_memory.aggregate",
+      "modelId": "AIR_910604_WW",
+      "semanticId": "diagnostic.capability.mode_memory.aggregate",
+      "sourceKeys": [
+        "AIR_910604_WW|fromDevice|0x02d7",
+        "AIR_910604_WW|fromDevice|0x02d8",
+        "AIR_910604_WW|fromDevice|0x02d9"
+      ],
+      "sourceEntryCount": 3,
+      "reasons": [
+        "aggregate-only"
+      ]
+    },
+    {
+      "key": "CST_170004_WW|diagnostic.capability.mode_memory.aggregate",
+      "modelId": "CST_170004_WW",
+      "semanticId": "diagnostic.capability.mode_memory.aggregate",
+      "sourceKeys": [
+        "CST_170004_WW|fromDevice|0x02d7",
+        "CST_170004_WW|fromDevice|0x02d8",
+        "CST_170004_WW|fromDevice|0x02d9"
+      ],
+      "sourceEntryCount": 3,
+      "reasons": [
+        "aggregate-only"
+      ]
+    },
+    {
+      "key": "CST_170004_WW|temperature.target_c",
+      "modelId": "CST_170004_WW",
+      "semanticId": "temperature.target_c",
+      "sourceKeys": [
+        "CST_170004_WW|fromDevice|0x01fe"
+      ],
+      "sourceEntryCount": 1,
+      "reasons": [
+        "context-dependent-semantic"
+      ]
+    },
+    {
+      "key": "CST_570004_WW|diagnostic.capability.mode_memory.aggregate",
+      "modelId": "CST_570004_WW",
+      "semanticId": "diagnostic.capability.mode_memory.aggregate",
+      "sourceKeys": [
+        "CST_570004_WW|fromDevice|0x02d7",
+        "CST_570004_WW|fromDevice|0x02d8",
+        "CST_570004_WW|fromDevice|0x02d9"
+      ],
+      "sourceEntryCount": 3,
+      "reasons": [
+        "aggregate-only"
+      ]
+    },
+    {
+      "key": "CST_570004_WW|temperature.target_c",
+      "modelId": "CST_570004_WW",
+      "semanticId": "temperature.target_c",
+      "sourceKeys": [
+        "CST_570004_WW|fromDevice|0x01fe"
+      ],
+      "sourceEntryCount": 1,
+      "reasons": [
+        "context-dependent-semantic"
+      ]
+    },
+    {
+      "key": "DHUM_056905_WW|diagnostic.capability.mode_memory.aggregate",
+      "modelId": "DHUM_056905_WW",
+      "semanticId": "diagnostic.capability.mode_memory.aggregate",
+      "sourceKeys": [
+        "DHUM_056905_WW|fromDevice|0x02d7",
+        "DHUM_056905_WW|fromDevice|0x02d8",
+        "DHUM_056905_WW|fromDevice|0x02d9"
+      ],
+      "sourceEntryCount": 3,
+      "reasons": [
+        "aggregate-only"
+      ]
+    }
+  ],
+  "stats": {
+    "generatedDescriptorCount": 370,
+    "liveDescriptorCount": 370,
+    "descriptorOnlyCount": 0,
+    "retainedCurrentDescriptorCount": 358,
+    "transientEventDescriptorCount": 12,
+    "binarySensorDescriptorCount": 85,
+    "sensorDescriptorCount": 273,
+    "eventDomainDescriptorCount": 12,
+    "stateDescriptorCount": 209,
+    "diagnosticDescriptorCount": 149,
+    "eventDescriptorCount": 12,
+    "patOwnerDescriptorCount": 4,
+    "profileCount": 16,
+    "aggregateExclusionGroupCount": 7,
+    "aggregateExcludedSourceEntryCount": 17,
+    "pilotDescriptorCount": 184,
+    "fullReadPilotOverlapCount": 96,
+    "pilotOnlyDescriptorCount": 88,
+    "overallOwnerInventoryCount": 458
+  },
+  "revision": "full-read-sensor-profiles-v1:658865e343ad4991",
+  "rootSha256": "658865e343ad49917131c0872234b0930315644558da76035b26a533e253255b"
+}

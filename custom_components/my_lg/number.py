@@ -10,9 +10,8 @@ Write payload mirrors the thinqconnect SDK: the value goes to the
 
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -31,17 +30,18 @@ from .const import (
     DEVICE_TYPE_REFRIGERATOR,
     DEVICE_TYPE_STYLER,
     DEVICE_TYPE_WASHTOWER,
-    OPT_ALLOW_HAZARDOUS_CONTROLS,
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
+    OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature import FeatureAccess
 from .feature_catalog import discover_pat_features
+from .local_control_entity import local_control_entities_for_domain
+from .night_mode import MODES_BY_MODEL
 from .value_access import is_meaningful
-from .wideq_control import iter_wideq_field_controls
-from .wideq_control import control_risk_allowed
+from .wideq_control import control_risk_allowed, iter_wideq_field_controls
 
 # Fallback °C ranges when the profile doesn't pin them per compartment.
 _FALLBACK_RANGE: dict[str, tuple[int, int]] = {
@@ -126,6 +126,8 @@ async def async_setup_entry(
             entry.options.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False)
         )
         for coord in entry.runtime_data.coordinators.values():
+            for mode in MODES_BY_MODEL.get(coord.model, ()):
+                entities.append(MyLgNightModeBrightness(wideq, coord, mode))
             for wdesc in WIDEQ_NUMBERS_BY_TYPE.get(coord.device_type, ()):
                 entities.append(MyLgWideqNumber(wideq, coord, wdesc))
             for control in iter_wideq_field_controls(coord.model):
@@ -140,6 +142,7 @@ async def async_setup_entry(
                         )
                     )
 
+    entities.extend(local_control_entities_for_domain(entry, "number"))
     async_add_entities(entities)
 
 
@@ -205,6 +208,54 @@ class MyLgWideqNumber(MyLgWideqEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         d = self.entity_description
         await self._wideq_set(d.ctrl_key, d.data_key, int(value), use_dataset=False)
+
+
+class MyLgNightModeBrightness(MyLgWideqEntity, NumberEntity):
+    """Cloud-confirmed brightness for the currently active saved Web mode."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_min_value = 10
+    _attr_native_max_value = 90
+    _attr_native_step = 10
+
+    def __init__(
+        self,
+        wideq_coordinator: WideqCoordinator,
+        pat_coordinator: PatDeviceCoordinator,
+        mode: str,
+    ) -> None:
+        super().__init__(
+            wideq_coordinator,
+            pat_coordinator,
+            f"night_anti_glare_{mode.lower()}_brightness",
+        )
+        self._mode = mode
+        self._attr_name = (
+            "야간 눈부심 사용자 밝기"
+            if mode == "CUSTOM" else "야간 눈부심 일몰 밝기"
+        )
+
+    @property
+    def available(self) -> bool:
+        saved = self.coordinator.night_mode_for(self._device_id)
+        return saved is not None and saved.mode == self._mode and not self.coordinator.circuit_open
+
+    @property
+    def native_value(self) -> float | None:
+        saved = self.coordinator.night_mode_for(self._device_id)
+        return saved.brightness_pct if saved is not None and saved.mode == self._mode else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        saved = self.coordinator.night_mode_for(self._device_id)
+        if saved is None or saved.mode != self._mode:
+            raise ValueError("the selected night mode is not the active saved mode")
+        await self.coordinator.async_set_night_mode_brightness(
+            self._device_id,
+            expected_mode=self._mode,
+            expected_brightness_pct=saved.brightness_pct,
+            desired_brightness_pct=value,
+        )
 
 
 class MyLgPatRangeNumber(MyLgEntity, NumberEntity):

@@ -11,4 +11,15 @@ except ImportError:  # Home Assistant 2024.11
         AddEntitiesCallback as AddConfigEntryEntitiesCallback,
     )
 
-__all__ = ["AddConfigEntryEntitiesCallback"]
+try:
+    from homeassistant.const import UnitOfDensity
+except ImportError:  # Home Assistant 2024.11
+    from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+
+    class UnitOfDensity:
+        """Backport the density member used by reviewed particulate sensors."""
+
+        MICROGRAMS_PER_CUBIC_METER = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+
+
+__all__ = ["AddConfigEntryEntitiesCallback", "UnitOfDensity"]

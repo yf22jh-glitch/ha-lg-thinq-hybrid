@@ -16,12 +16,14 @@ from typing import Any
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
 
 from . import MyLgConfigEntry
 from .compat import AddConfigEntryEntitiesCallback
-from .const import DEVICE_TYPE_STYLER, DEVICE_TYPE_WASHTOWER
 from .const import (
+    DEVICE_TYPE_STYLER,
+    DEVICE_TYPE_WASHTOWER,
     OPT_ALLOW_EXPERIMENTAL_CONTROLS,
     OPT_ALLOW_HAZARDOUS_CONTROLS,
 )
@@ -30,6 +32,10 @@ from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity, MyLgWideqEntity
 from .feature_catalog import get_wideq_control
+from .local_command import LocalCommandFailed
+from .local_control_entity import local_control_entities_for_domain
+from .local_control_router import LocalControlRouter
+from .local_control_native import native_local_available
 from .value_access import stable_feature_key
 
 
@@ -38,10 +44,23 @@ class MyLgButtonDescription(ButtonEntityDescription):
     """Button that posts a fixed control payload on press."""
 
     payload: dict[str, Any]
+    local_capability: str | None = None
+    local_value: str = "true"
 
 
-def _op(key: str, payload: dict[str, Any]) -> MyLgButtonDescription:
-    return MyLgButtonDescription(key=key, translation_key=key, payload=payload)
+def _op(
+    key: str,
+    payload: dict[str, Any],
+    local_capability: str | None = None,
+    local_value: str = "true",
+) -> MyLgButtonDescription:
+    return MyLgButtonDescription(
+        key=key,
+        translation_key=key,
+        payload=payload,
+        local_capability=local_capability,
+        local_value=local_value,
+    )
 
 
 def _washer(mode: str) -> dict[str, Any]:
@@ -53,22 +72,34 @@ def _dryer(mode: str) -> dict[str, Any]:
 
 
 WASHTOWER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
-    _op("washer_start", _washer("START")),
-    _op("washer_stop", _washer("STOP")),
-    _op("washer_power_off", _washer("POWER_OFF")),
-    _op("dryer_start", _dryer("START")),
-    _op("dryer_stop", _dryer("STOP")),
-    _op("dryer_power_off", _dryer("POWER_OFF")),
+    # These reuse the existing owners. Routing does not promote a capability:
+    # the router still requires the exact per-binding producer authority.
+    _op("washer_start", _washer("START"), "washer.operation.start_or_resume"),
+    _op("washer_stop", _washer("STOP"), "washer.operation.pause"),
+    _op("washer_power_off", _washer("POWER_OFF"), "washer.power_requested", "false"),
+    _op("dryer_start", _dryer("START"), "dryer.operation.start_or_resume"),
+    _op("dryer_stop", _dryer("STOP"), "dryer.operation.pause"),
+    _op("dryer_power_off", _dryer("POWER_OFF"), "dryer.power_requested", "false"),
 )
 
 STYLER_BUTTONS: tuple[MyLgButtonDescription, ...] = (
     _op("styler_start", {"operation": {"stylerOperationMode": "START"}}),
-    _op("styler_stop", {"operation": {"stylerOperationMode": "STOP"}}),
-    _op("styler_power_off", {"operation": {"stylerOperationMode": "POWER_OFF"}}),
+    _op(
+        "styler_stop",
+        {"operation": {"stylerOperationMode": "STOP"}},
+        "styler.operation.pause",
+    ),
+    _op(
+        "styler_power_off",
+        {"operation": {"stylerOperationMode": "POWER_OFF"}},
+        "operation.power_requested",
+        "false",
+    ),
     MyLgButtonDescription(
         key="styler_power_on",
         translation_key="styler_power_on",
         payload={"operation": {"stylerOperationMode": "POWER_ON"}},
+        local_capability="operation.power_requested",
         entity_category=EntityCategory.CONFIG,
         entity_registry_enabled_default=False,
     ),
@@ -119,7 +150,9 @@ async def async_setup_entry(
     entities: list[ButtonEntity] = []
     for coordinator in entry.runtime_data.coordinators.values():
         for desc in BUTTONS_BY_TYPE.get(coordinator.device_type, ()):
-            entities.append(MyLgButton(coordinator, desc))
+            entities.append(
+                MyLgButton(coordinator, desc, entry.runtime_data.local_control)
+            )
         for group, field, key in _TIMER_CLEAR_FIELDS:
             if coordinator.supports_field(group, field):
                 entities.append(
@@ -162,6 +195,7 @@ async def async_setup_entry(
                             allow_experimental,
                         )
                     )
+    entities.extend(local_control_entities_for_domain(entry, "button"))
     async_add_entities(entities)
 
 
@@ -171,12 +205,51 @@ class MyLgButton(MyLgEntity, ButtonEntity):
     entity_description: MyLgButtonDescription
 
     def __init__(
-        self, coordinator: PatDeviceCoordinator, description: MyLgButtonDescription
+        self,
+        coordinator: PatDeviceCoordinator,
+        description: MyLgButtonDescription,
+        local_control: LocalControlRouter | None = None,
     ) -> None:
         super().__init__(coordinator, description.key)
         self.entity_description = description
+        self._local_control = local_control
+
+    @property
+    def available(self) -> bool:
+        capability = ('styler.operation.start_or_resume'
+                      if self.entity_description.key == 'styler_start'
+                      else self.entity_description.local_capability)
+        return native_local_available(self._local_control, self.coordinator.device_id, capability) or super().available
 
     async def async_press(self) -> None:
+        if self.entity_description.key == "styler_start" and self._local_control is not None:
+            selected = self._local_control.take_styler_start(self.coordinator.device_id)
+            if selected is None:
+                raise HomeAssistantError("먼저 실행할 코스 또는 코스·옵션 입력을 선택해 주세요. 선택만으로는 가동되지 않아요.")
+            capability, value = selected
+            try:
+                outcome = await self._local_control.async_execute(self.coordinator.device_id, capability, value)
+            except LocalCommandFailed as err:
+                raise HomeAssistantError("스타일러 실행 결과를 확인할 수 없어요. 상태를 확인한 뒤 다시 선택해 주세요.") from err
+            if outcome is None:
+                raise HomeAssistantError("로컬 실행이 전송 전에 거부됐어요. 원격제어 허용과 연결을 확인해 주세요.")
+            return  # Never duplicate a course/start through cloud fallback.
+        capability = self.entity_description.local_capability
+        if capability is not None and self._local_control is not None:
+            try:
+                outcome = await self._local_control.async_execute(
+                    self.coordinator.device_id,
+                    capability,
+                    self.entity_description.local_value,
+                )
+            except LocalCommandFailed as err:
+                # The frame may already be on the wire. Retrying the same press through LG would
+                # be a duplicate command, so surface the uncertainty instead.
+                raise HomeAssistantError(f"{self.coordinator.alias}: {err}") from err
+            if outcome is not None:
+                # Confirmed/already and unverifiable all mean a frame left the bridge. Only a
+                # pre-wire refusal returns None and is safe to offer to the cloud.
+                return
         await self.coordinator.async_control(self.entity_description.payload)
 
 

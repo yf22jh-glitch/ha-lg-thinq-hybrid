@@ -297,6 +297,94 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertNotIn("energy_today", store.data["items"]["device"])
 
+    async def test_power_save_optimistic_value_wins_until_field_is_polled(
+        self,
+    ) -> None:
+        self.coordinator.data = {
+            "device": {
+                "airState.powerSave.basic": 1,
+                "airState.powerSave.hum": 0,
+                "airState.energy.onCurrent": 1234,
+            }
+        }
+        self.coordinator._update_power_save_cache(self.coordinator.data)
+
+        self.coordinator.apply_power_save_optimistic(
+            "device", "airState.powerSave.hum", 1
+        )
+
+        # The acknowledged command must win over the retained pre-command
+        # snapshot, without copying unrelated WideQ readings into this cache.
+        self.assertEqual(
+            self.coordinator.power_save_snapshot_for("device"),
+            {
+                "airState.powerSave.basic": True,
+                "airState.powerSave.hum": True,
+            },
+        )
+        self.assertEqual(
+            self.coordinator.snapshot_for("device")["airState.powerSave.hum"],
+            0,
+        )
+        self.assertNotIn(
+            "airState.energy.onCurrent",
+            self.coordinator.power_save_snapshot_for("device"),
+        )
+
+        # A successful poll that omits the commanded field cannot confirm or
+        # reject it, so the optimistic value remains pending.
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.basic": 0}}
+        )
+        self.assertTrue(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+
+        # Once that exact field is observed, the poll is authoritative and may
+        # correct the optimistic value.
+        self.coordinator._update_power_save_cache(
+            {"device": {"airState.powerSave.hum": 0}}
+        )
+        self.assertFalse(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+
+    async def test_power_save_optimistic_off_notifies_before_stale_poll(
+        self,
+    ) -> None:
+        self.coordinator.data = {
+            "device": {"airState.powerSave.hum": 1}
+        }
+        self.coordinator._update_power_save_cache(self.coordinator.data)
+        listener_calls = 0
+
+        def listener() -> None:
+            nonlocal listener_calls
+            listener_calls += 1
+
+        remove_listener = self.coordinator.async_add_listener(listener)
+        try:
+            self.coordinator.apply_power_save_optimistic(
+                "device", "airState.powerSave.hum", 0
+            )
+        finally:
+            remove_listener()
+
+        self.assertEqual(listener_calls, 1)
+        self.assertFalse(
+            self.coordinator.power_save_snapshot_for("device")[
+                "airState.powerSave.hum"
+            ]
+        )
+        self.assertEqual(
+            self.coordinator.snapshot_for("device")["airState.powerSave.hum"],
+            1,
+        )
+
     async def test_energy_history_uses_separate_cache(self) -> None:
         coordinator = WideqCoordinator(
             self.hass,

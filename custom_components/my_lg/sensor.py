@@ -2,35 +2,41 @@
 
 from __future__ import annotations
 
+import logging
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     PERCENTAGE,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
+    UnitOfTime,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyLgConfigEntry
-from .compat import AddConfigEntryEntitiesCallback
+from .compat import AddConfigEntryEntitiesCallback, UnitOfDensity
 from .const import (
+    AIR_PURIFIER_ENERGY_HISTORY_MODELS,
     DEVICE_TYPE_AIR_CONDITIONER,
     DEVICE_TYPE_AIR_PURIFIER,
     DEVICE_TYPE_COOKTOP,
-    DEVICE_TYPE_DISH_WASHER,
     DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_DISH_WASHER,
     DEVICE_TYPE_HUMIDIFIER,
     DEVICE_TYPE_KIMCHI_REFRIGERATOR,
     DEVICE_TYPE_OVEN,
@@ -39,12 +45,33 @@ from .const import (
     DEVICE_TYPE_WASHTOWER,
     DEVICE_TYPE_WATER_PURIFIER,
     DOMAIN,
+    OPT_LOCAL_READ_DUPLICATE_OVERLAY,
 )
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgEntity
+from .local_entity import (
+    LocalSemanticEntityMixin,
+    TlvReadEntityMixin,
+    iter_local_semantic_contracts,
+    iter_tlv_read_contracts,
+    local_semantic_unique_id,
+)
+from .local_energy_provider import CumulativeEnergyShadowProvider
+from .local_provider import (
+    LocalSemanticFieldContract,
+    LocalSemanticShadowProvider,
+)
+from .local_read_owner import local_climate_promoted_semantics
+from .local_read_provider import (
+    TLV_READ_DIAGNOSTIC_KEYS,
+    TlvReadFieldContract,
+    TlvReadShadowProvider,
+)
 from .power_save import ac_power_save_attributes, ac_power_save_mode
 from .raw_sensor import RawSensorManager
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -92,7 +119,7 @@ def _pm(key: str, tkey: str, field: str, dclass: SensorDeviceClass) -> MyLgSenso
         key=key,
         translation_key=tkey,
         device_class=dclass,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
         state_class=SensorStateClass.MEASUREMENT,
         profile_group="airQualitySensor",
         value_fn=lambda c, f=field: c.get("airQualitySensor", f),
@@ -452,6 +479,39 @@ def _wminutes(key: str, name: str, path: tuple[str, ...]) -> WideqSensorDescript
     )
 
 
+def _wnonnegative_count(*path: str):
+    """Read one resettable non-negative count from a WideQ snapshot."""
+
+    getter = _wq(*path)
+
+    def read(snap: dict) -> int | None:
+        value = getter(snap)
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value if value >= 0 else None
+        if isinstance(value, str) and value.isascii() and value.isdecimal():
+            return int(value)
+        return None
+
+    return read
+
+
+# D121110 does not carry tclCount in its local AABB frames.  ThinQ's retained
+# account snapshot does: the exact path changed 52 -> 0 at the 2026-09-06
+# MACHINE_CLEAN completion boundary.  Keep this cloud-owned read separate from
+# the local read contract instead of inventing a local byte mapping.
+DISHWASHER_WIDEQ_SENSORS: tuple[WideqSensorDescription, ...] = (
+    WideqSensorDescription(
+        key="dishwasher_tub_clean_count",
+        translation_key="dishwasher_tub_clean_count",
+        icon="mdi:dishwasher-alert",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=_wnonnegative_count("dishwasher", "tclCount"),
+    ),
+)
+
+
 # All wideq-only (PAT cannot provide these). Snapshot is nested under
 # washer/dryer/styler dicts (unlike AC's flat dotted keys).
 WASHTOWER_SENSORS: tuple[WideqSensorDescription, ...] = (
@@ -492,9 +552,205 @@ WIDEQ_SENSORS_BY_TYPE: dict[str, tuple[WideqSensorDescription, ...]] = {
     DEVICE_TYPE_COOKTOP: WIDEQ_ENERGY_HISTORY_SENSORS,
     DEVICE_TYPE_OVEN: WIDEQ_ENERGY_HISTORY_SENSORS,
     DEVICE_TYPE_WATER_PURIFIER: WIDEQ_ENERGY_HISTORY_SENSORS,
+    DEVICE_TYPE_DISH_WASHER: DISHWASHER_WIDEQ_SENSORS,
     DEVICE_TYPE_WASHTOWER: WASHTOWER_SENSORS,
     DEVICE_TYPE_STYLER: STYLER_SENSORS + WIDEQ_ENERGY_HISTORY_SENSORS,
 }
+
+# Energy history is model-gated rather than device-type-gated.  The tower
+# purifier has a verified non-zero ``periodicEnergyData`` feed; the ordinary
+# purifier shares the same device type but returns only placeholder zeroes.
+WIDEQ_SENSORS_BY_MODEL: dict[str, tuple[WideqSensorDescription, ...]] = {
+    model: WIDEQ_ENERGY_HISTORY_SENSORS
+    for model in AIR_PURIFIER_ENERGY_HISTORY_MODELS
+}
+
+
+# Only exact same-domain/unit representations belong here.  A climate
+# attribute, a boolean rendered as an ON/OFF text sensor, or seconds rendered
+# as minutes deliberately remains a complete-feed entity.
+_PAT_SENSOR_SEMANTICS: dict[str, dict[str, str]] = {
+    DEVICE_TYPE_AIR_CONDITIONER: {
+        "humidity": "humidity.current_pct",
+        "current_temperature": "temperature.current_c",
+    },
+    DEVICE_TYPE_AIR_PURIFIER: {
+        "pm1": "air_quality.pm1_ug_m3",
+        "pm2_5": "air_quality.pm2_5_ug_m3",
+        "pm10": "air_quality.pm10_ug_m3",
+        "humidity": "humidity.current_pct",
+    },
+    DEVICE_TYPE_HUMIDIFIER: {
+        "pm1": "air_quality.pm1_ug_m3",
+        "pm2_5": "air_quality.pm2_5_ug_m3",
+        "pm10": "air_quality.pm10_ug_m3",
+        "humidity": "humidity.current_pct",
+        "current_temperature": "temperature.current_c",
+    },
+    DEVICE_TYPE_DISH_WASHER: {
+        "current_status": "cycle.state",
+        "current_course": "cycle.course",
+        "remaining": "cycle.remaining_min",
+        "total_time": "cycle.total_min",
+    },
+    DEVICE_TYPE_OVEN: {"oven_status": "oven.upper.state"},
+    DEVICE_TYPE_COOKTOP: {
+        "left_front_state": "burner.left_front.state",
+        "left_front_power": "burner.left_front.power_level",
+        "left_rear_state": "burner.left_rear.state",
+        "left_rear_power": "burner.left_rear.power_level",
+        "right_front_state": "burner.right_front.state",
+        "right_front_power": "burner.right_front.power_level",
+    },
+    DEVICE_TYPE_WASHTOWER: {
+        "washer_status": "washer.cycle.state",
+        "washer_remaining": "washer.cycle.remaining_min",
+        "dryer_status": "dryer.cycle.state",
+        "dryer_remaining": "dryer.cycle.remaining_min",
+    },
+    DEVICE_TYPE_STYLER: {"styler_status": "cycle.state"},
+}
+_WIDEQ_SENSOR_SEMANTICS = {
+    "styler_course": "cycle.course",
+    "washer_state": "washer.cycle.state",
+    "washer_remain": "washer.cycle.remaining_min",
+    "dryer_state": "dryer.cycle.state",
+    "dryer_remain": "dryer.cycle.remaining_min",
+}
+
+# These are the only retained-current W measurements in the complete audited
+# 14-profile catalogue.  Both are instantaneous and therefore physically
+# integrable.  Wh interval events and washer/dryer cycle Wh values are already
+# energy quantities and must never be integrated a second time.
+AC_POWER_SEMANTICS = frozenset(
+    {
+        "power.indoor_compressor_share_w",
+        "power.outdoor_unit_total_w",
+    }
+)
+
+# The bridge refreshes an active AC at roughly 28 seconds and falls back to a
+# 15-minute status query while quiescent.  Twenty minutes admits that documented
+# idle cadence plus jitter, while refusing to estimate over a lost publication
+# epoch or an extended bridge/device outage.
+MAX_TLV_POWER_INTEGRATION_GAP = timedelta(minutes=20)
+
+_POWER_SCOPE_ATTRIBUTES: dict[str, dict[str, object]] = {
+    "power.indoor_compressor_share_w": {
+        "power_scope": "indoor_compressor_share",
+        "measurement_scope": "one_indoor_binding",
+        "may_duplicate_across_indoor_bindings": False,
+        "scope_warning": (
+            "indoor compressor share only; this is not whole-system energy"
+        ),
+    },
+    "power.outdoor_unit_total_w": {
+        "power_scope": "shared_outdoor_unit_total",
+        "measurement_scope": "shared_outdoor_unit",
+        "may_duplicate_across_indoor_bindings": True,
+        "scope_warning": (
+            "shared outdoor total may duplicate across indoor bindings; "
+            "do not sum those bindings"
+        ),
+    },
+}
+
+_PM_DEVICE_CLASSES = {
+    "air_quality.pm1_ug_m3": SensorDeviceClass.PM1,
+    "air_quality.pm2_5_ug_m3": SensorDeviceClass.PM25,
+    "air_quality.pm10_ug_m3": SensorDeviceClass.PM10,
+}
+
+def _same_unit(
+    description: SensorEntityDescription, contract: TlvReadFieldContract | None
+) -> bool:
+    description_unit = description.native_unit_of_measurement
+    exact_or_known_equivalent = contract is not None and _units_match(
+        contract.unit, description_unit
+    )
+    return (
+        contract is not None
+        and contract.domain == "sensor"
+        and exact_or_known_equivalent
+    )
+
+
+def _ac_pat_sensor_replaced_by_local_leaf(
+    coordinator: PatDeviceCoordinator,
+    description: MyLgSensorDescription,
+    semantic_id: str | None,
+    contract: TlvReadFieldContract | None,
+) -> bool:
+    """Require exact domain/type/unit equivalence before removing a PAT leaf."""
+    return (
+        coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
+        and semantic_id
+        in {"temperature.current_c", "humidity.current_pct"}
+        and contract is not None
+        and contract.semantic_id == semantic_id
+        and contract.domain == "sensor"
+        and contract.value_types == ("number",)
+        and _units_match(contract.unit, description.native_unit_of_measurement)
+    )
+
+
+def _integrable_ac_power_contract(
+    coordinator: PatDeviceCoordinator,
+    semantic_id: str,
+    contract: TlvReadFieldContract,
+) -> bool:
+    """Return whether a field is one exact instantaneous AC W source."""
+    return (
+        coordinator.device_type == DEVICE_TYPE_AIR_CONDITIONER
+        and semantic_id in AC_POWER_SEMANTICS
+        and contract.semantic_id == semantic_id
+        and contract.domain == "sensor"
+        and contract.value_types == ("number",)
+        and contract.unit == UnitOfPower.WATT
+        and contract.publication_mode == "retained-current"
+    )
+
+
+def _tlv_sensor_metadata(
+    contract: TlvReadFieldContract,
+) -> tuple[SensorDeviceClass | None, SensorStateClass | None]:
+    """Map only exact unit/semantic combinations to HA statistics metadata."""
+    if contract.value_types != ("number",):
+        return None, None
+    semantic_id = contract.semantic_id
+    unit = contract.unit
+    if semantic_id in AC_POWER_SEMANTICS and unit == UnitOfPower.WATT:
+        return SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT
+    if semantic_id.endswith(".energy_wh") and unit == UnitOfEnergy.WATT_HOUR:
+        # These retained values reset per appliance cycle. They are useful
+        # energy readings, but are deliberately not monotonic long-term meters.
+        return SensorDeviceClass.ENERGY, None
+    if unit == UnitOfTemperature.CELSIUS:
+        return SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT
+    if semantic_id.startswith("humidity.") and unit == PERCENTAGE:
+        return SensorDeviceClass.HUMIDITY, SensorStateClass.MEASUREMENT
+    if semantic_id in _PM_DEVICE_CLASSES and _units_match(
+        unit, UnitOfDensity.MICROGRAMS_PER_CUBIC_METER
+    ):
+        return _PM_DEVICE_CLASSES[semantic_id], SensorStateClass.MEASUREMENT
+    if unit in {UnitOfTime.SECONDS, UnitOfTime.MINUTES, UnitOfTime.HOURS}:
+        return SensorDeviceClass.DURATION, SensorStateClass.MEASUREMENT
+    return None, None
+
+
+def _units_match(left: str | None, right: object) -> bool:
+    return left == right or {left, str(right)} == {"µg/m³", "μg/m³"}
+
+
+def _same_pilot_contract(
+    description: SensorEntityDescription,
+    contract: LocalSemanticFieldContract | None,
+) -> bool:
+    return (
+        contract is not None
+        and contract.value_type in ("number", "string")
+        and _units_match(contract.unit, description.native_unit_of_measurement)
+    )
 
 
 async def async_setup_entry(
@@ -503,8 +759,24 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     data = entry.runtime_data
+    overlay_duplicates = (
+        getattr(entry, "options", {}).get(OPT_LOCAL_READ_DUPLICATE_OVERLAY) is True
+    )
     entities: list[SensorEntity] = []
     for coordinator in data.coordinators.values():
+        established_semantics: set[str] = set()
+        local_provider = data.local_providers.get(coordinator.device_id)
+        read_provider = getattr(data, "local_read_providers", {}).get(
+            coordinator.device_id
+        )
+        energy_provider = getattr(data, "local_energy_providers", {}).get(
+            coordinator.device_id
+        )
+        read_contracts = (
+            read_provider.profile.fields_by_semantic_id
+            if read_provider is not None
+            else {}
+        )
         descs = PAT_SENSORS_BY_TYPE.get(coordinator.device_type, ())
         builder = DYNAMIC_PAT_SENSORS.get(coordinator.device_type)
         if builder is not None:
@@ -513,17 +785,123 @@ async def async_setup_entry(
         # profile advertises the capability (so offline-at-startup devices keep
         # their entities instead of losing them until the next reload).
         for desc in descs:
-            if desc.value_fn(coordinator) is not None or (
+            semantic_id = _PAT_SENSOR_SEMANTICS.get(
+                coordinator.device_type, {}
+            ).get(desc.key)
+            replaced_by_local_leaf = _ac_pat_sensor_replaced_by_local_leaf(
+                coordinator,
+                desc,
+                semantic_id,
+                read_contracts.get(semantic_id) if semantic_id is not None else None,
+            )
+            if replaced_by_local_leaf:
+                # The canonical exact Local leaf is materialized by the TLV
+                # iterator below. Do not create an overlapping PAT entity or
+                # mark the semantic established, even when comparison-overlay
+                # mode is enabled.
+                continue
+            if (
+                desc.value_fn(coordinator) is not None
+                or (
                 desc.profile_group is not None
                 and coordinator.supports(desc.profile_group)
+                )
             ):
                 entities.append(MyLgSensor(coordinator, desc))
+                if semantic_id is not None and (
+                    read_provider is None
+                    or (
+                        semantic_id not in read_contracts
+                        and _same_pilot_contract(
+                            desc,
+                            local_provider.profile.fields.get(semantic_id)
+                            if local_provider is not None
+                            else None,
+                        )
+                    )
+                    or _same_unit(desc, read_contracts.get(semantic_id))
+                ):
+                    established_semantics.add(semantic_id)
         # wideq-backed sensors (only if wideq is configured).
         if data.wideq_coordinator is not None:
-            for wdesc in WIDEQ_SENSORS_BY_TYPE.get(coordinator.device_type, ()):
+            wideq_descriptions = WIDEQ_SENSORS_BY_TYPE.get(
+                coordinator.device_type, ()
+            ) + WIDEQ_SENSORS_BY_MODEL.get(coordinator.model, ())
+            for wdesc in wideq_descriptions:
                 entities.append(
                     WideqDeviceSensor(data.wideq_coordinator, coordinator, wdesc)
                 )
+                semantic_id = _WIDEQ_SENSOR_SEMANTICS.get(wdesc.key)
+                if semantic_id is not None and (
+                    read_provider is None
+                    or (
+                        semantic_id not in read_contracts
+                        and _same_pilot_contract(
+                            wdesc,
+                            local_provider.profile.fields.get(semantic_id)
+                            if local_provider is not None
+                            else None,
+                        )
+                    )
+                    or _same_unit(wdesc, read_contracts.get(semantic_id))
+                ):
+                    established_semantics.add(semantic_id)
+        if read_provider is not None:
+            for semantic_id, contract in iter_tlv_read_contracts(
+                read_provider,
+                "sensor",
+                established_semantics=established_semantics,
+                overlay_duplicates=overlay_duplicates,
+            ):
+                entities.append(
+                    TlvReadSensor(
+                        read_provider, coordinator, semantic_id, contract
+                    )
+                )
+                if _integrable_ac_power_contract(
+                    coordinator, semantic_id, contract
+                ):
+                    entities.append(
+                        TlvIntegratedEnergySensor(
+                            read_provider, coordinator, semantic_id, contract
+                        )
+                    )
+            entities.extend(
+                TlvReadDiagnosticSensor(read_provider, coordinator, diagnostic_key)
+                for diagnostic_key in TLV_READ_DIAGNOSTIC_KEYS
+            )
+        if energy_provider is not None:
+            entities.extend(
+                LocalCumulativeEnergySensor(
+                    energy_provider, coordinator, semantic_id
+                )
+                for semantic_id in energy_provider.semantic_ids
+            )
+        if local_provider is not None:
+            full_semantics = (
+                set(read_contracts) if read_provider is not None else set()
+            )
+            promoted_semantics = set(
+                local_climate_promoted_semantics(
+                    local_provider,
+                    coordinator.model,
+                    getattr(data, "local_control_composite_domain_contract", None),
+                )
+            )
+            for value_type in ("number", "string"):
+                for semantic_id, contract in iter_local_semantic_contracts(
+                    local_provider,
+                    value_type,
+                    wideq_configured=data.wideq_coordinator is not None,
+                    established_semantics=established_semantics,
+                    excluded_semantics=full_semantics | promoted_semantics,
+                    overlay_duplicates=overlay_duplicates,
+                ):
+                    entities.append(
+                        LocalSemanticSensor(
+                            local_provider, coordinator, semantic_id, contract
+                        )
+                    )
     async_add_entities(entities)
 
     # The complete audited RAW inventory is registered disabled by default.
@@ -546,7 +924,9 @@ class MyLgSensor(MyLgEntity, SensorEntity):
     entity_description: MyLgSensorDescription
 
     def __init__(
-        self, coordinator: PatDeviceCoordinator, description: MyLgSensorDescription
+        self,
+        coordinator: PatDeviceCoordinator,
+        description: MyLgSensorDescription,
     ) -> None:
         super().__init__(coordinator, description.key)
         self.entity_description = description
@@ -554,6 +934,452 @@ class MyLgSensor(MyLgEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return self.entity_description.value_fn(self.coordinator)
+
+
+class LocalSemanticSensor(LocalSemanticEntityMixin, SensorEntity):
+    """One exact number or string from the read-only Local profile."""
+
+    def __init__(
+        self,
+        provider: LocalSemanticShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        semantic_id: str,
+        contract: LocalSemanticFieldContract,
+    ) -> None:
+        if contract.value_type not in ("number", "string"):
+            raise ValueError("Local sensor requires a number or string contract")
+        super().__init__(provider, pat_coordinator, semantic_id, contract)
+        self._attr_native_unit_of_measurement = contract.unit
+        if contract.value_type == "string" and contract.allowed_values is not None:
+            self._attr_device_class = SensorDeviceClass.ENUM
+            self._attr_options = list(contract.allowed_values)
+
+    @property
+    def native_value(self) -> int | float | str | None:
+        field = self._shadow_field
+        if field is None:
+            return None
+        value = field.value
+        if self._contract.value_type == "number":
+            return (
+                value
+                if not isinstance(value, bool) and isinstance(value, (int, float))
+                else None
+            )
+        return value if isinstance(value, str) else None
+
+
+class TlvReadSensor(TlvReadEntityMixin, SensorEntity):
+    """One exact number/string/union value from the complete TLV read feed."""
+
+    def __init__(
+        self,
+        provider: TlvReadShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        semantic_id: str,
+        contract: TlvReadFieldContract,
+    ) -> None:
+        if contract.domain != "sensor":
+            raise ValueError("Complete TLV sensor requires a sensor contract")
+        super().__init__(provider, pat_coordinator, semantic_id, contract)
+        self._attr_native_unit_of_measurement = contract.unit
+        device_class, state_class = _tlv_sensor_metadata(contract)
+        self._attr_device_class = device_class
+        self._attr_state_class = state_class
+
+    @property
+    def native_value(self) -> int | float | str | None:
+        field = self._read_field
+        if field is None:
+            return None
+        value = field.value
+        if field.value_type == "number":
+            return (
+                value
+                if not isinstance(value, bool) and isinstance(value, (int, float))
+                else None
+            )
+        return value if field.value_type == "string" and isinstance(value, str) else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        attributes = dict(super().extra_state_attributes)
+        if self._semantic_id in _POWER_SCOPE_ATTRIBUTES:
+            attributes.update(_POWER_SCOPE_ATTRIBUTES[self._semantic_id])
+        if (
+            self._contract.value_types == ("number",)
+            and self._contract.unit == UnitOfEnergy.WATT_HOUR
+            and self._semantic_id.endswith(".energy_wh")
+        ):
+            attributes.update(
+                {
+                    "energy_scope": "current_or_last_appliance_cycle",
+                    "monotonic_meter": False,
+                    "statistics_exclusion_reason": "value resets per appliance cycle",
+                }
+            )
+        return attributes
+
+
+class LocalCumulativeEnergySensor(SensorEntity):
+    """One producer-owned durable monotonic energy total."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_should_poll = False
+    _attr_suggested_display_precision = 3
+
+    def __init__(
+        self,
+        provider: CumulativeEnergyShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        semantic_id: str,
+    ) -> None:
+        super().__init__()
+        if semantic_id not in provider.semantic_ids:
+            raise ValueError("Cumulative-energy semantic is not authorized")
+        self._provider = provider
+        self._semantic_id = semantic_id
+        label = {
+            "energy.total_wh": "Local cumulative energy",
+            "washer.energy.total_wh": "Washer local cumulative energy",
+            "dryer.energy.total_wh": "Dryer local cumulative energy",
+        }[semantic_id]
+        self._attr_name = label
+        self._attr_unique_id = local_semantic_unique_id(
+            pat_coordinator.device_id, f"cumulative.{semantic_id}"
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pat_coordinator.device_id)},
+            name=pat_coordinator.alias,
+            manufacturer="LG",
+            model=pat_coordinator.model or pat_coordinator.device_type,
+        )
+        self._remove_provider_listener = None
+
+    @property
+    def available(self) -> bool:
+        return self._provider.field_available(self._semantic_id)
+
+    @property
+    def native_value(self) -> float | None:
+        total_wh = self._provider.total_wh(self._semantic_id)
+        return None if total_wh is None else total_wh / 1000
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return {
+            "source_unit": "Wh",
+            "source_semantic_id": self._semantic_id,
+            "baseline_generation": self._provider.baseline_generation,
+            "last_counted_generation": self._provider.last_counted_generation,
+            "published_at": self._provider.published_at,
+            "durability": "producer_fsynced_monotonic_ledger",
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._remove_provider_listener = self._provider.async_add_listener(
+            self._handle_provider_update
+        )
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._remove_provider_listener is not None:
+            self._remove_provider_listener()
+            self._remove_provider_listener = None
+        await super().async_will_remove_from_hass()
+
+    @callback
+    def _handle_provider_update(self) -> None:
+        self.async_write_ha_state()
+
+
+class TlvReadDiagnosticSensor(SensorEntity):
+    """One non-sensitive counter from the latest accepted full-read current."""
+
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        provider: TlvReadShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        diagnostic_key: str,
+    ) -> None:
+        super().__init__()
+        if diagnostic_key not in TLV_READ_DIAGNOSTIC_KEYS:
+            raise ValueError("TLV read diagnostic key is not authorized")
+        self._provider = provider
+        self._diagnostic_key = diagnostic_key
+        self._attr_name = f"Local · Feed {diagnostic_key.replace('_', ' ')}"
+        self._attr_unique_id = local_semantic_unique_id(
+            pat_coordinator.device_id, f"feed_diagnostic.{diagnostic_key}"
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pat_coordinator.device_id)},
+            name=pat_coordinator.alias,
+            manufacturer="LG",
+            model=pat_coordinator.model or pat_coordinator.device_type,
+        )
+        self._remove_provider_listener = None
+
+    @property
+    def diagnostic_key(self) -> str:
+        return self._diagnostic_key
+
+    @property
+    def available(self) -> bool:
+        return (
+            self._provider.diagnostics_available
+            and self._diagnostic_key in self._provider.current_diagnostics
+        )
+
+    @property
+    def native_value(self) -> int | None:
+        value = self._provider.current_diagnostics.get(self._diagnostic_key)
+        return value if type(value) is int and value >= 0 else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        # Deliberately expose only the counter identity and public profile pin;
+        # binding/device proofs, frames, payloads and private diagnostics stay
+        # inside the provider.
+        return {
+            "diagnostic_counter": self._diagnostic_key,
+            "profile_id": self._provider.profile.profile_id,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._remove_provider_listener = self._provider.async_add_listener(
+            self._handle_provider_update
+        )
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._remove_provider_listener is not None:
+            self._remove_provider_listener()
+            self._remove_provider_listener = None
+        await super().async_will_remove_from_hass()
+
+    @callback
+    def _handle_provider_update(self) -> None:
+        self.async_write_ha_state()
+
+
+class TlvIntegratedEnergySensor(RestoreSensor):
+    """A fail-closed kWh integral of one exact retained-current AC W source."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_should_poll = False
+    _attr_suggested_display_precision = 3
+
+    def __init__(
+        self,
+        provider: TlvReadShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        source_semantic_id: str,
+        contract: TlvReadFieldContract,
+    ) -> None:
+        super().__init__()
+        if (
+            provider.profile.fields_by_semantic_id.get(source_semantic_id)
+            is not contract
+            or not _integrable_ac_power_contract(
+                pat_coordinator, source_semantic_id, contract
+            )
+        ):
+            raise ValueError("Integrated energy source contract is not exact")
+        self._provider = provider
+        self._source_semantic_id = source_semantic_id
+        self._contract = contract
+        self._derived_semantic_id = (
+            "energy.integrated."
+            f"{source_semantic_id.removeprefix('power.').removesuffix('_w')}_kwh"
+        )
+        duplicate_prone = bool(
+            _POWER_SCOPE_ATTRIBUTES[source_semantic_id][
+                "may_duplicate_across_indoor_bindings"
+            ]
+        )
+        warning_suffix = " · 공유값 중복 합산 금지" if duplicate_prone else ""
+        self._attr_name = (
+            f"Local · {contract.label_ko} 누적 에너지{warning_suffix}"
+        )
+        self._attr_unique_id = local_semantic_unique_id(
+            pat_coordinator.device_id, self._derived_semantic_id
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pat_coordinator.device_id)},
+            name=pat_coordinator.alias,
+            manufacturer="LG",
+            model=pat_coordinator.model or pat_coordinator.device_type,
+        )
+        # Register every source, but make a shared outdoor total opt-in. Multiple
+        # indoor bindings can report the same physical meter, so enabling all of
+        # them by default would make accidental fleet summation unsafe.
+        self._attr_entity_registry_enabled_default = (
+            contract.enabled_by_default and not duplicate_prone
+        )
+        self._energy_kwh = 0.0
+        self._total_valid = False
+        self._last_boundary: datetime | None = None
+        self._last_power_w: float | None = None
+        self._integration_status = "awaiting_first_boundary"
+        self._skipped_intervals = 0
+        self._remove_provider_listener = None
+
+    @property
+    def source_semantic_id(self) -> str:
+        return self._source_semantic_id
+
+    @property
+    def native_value(self) -> float:
+        return self._energy_kwh
+
+    def _current_sample(self) -> tuple[datetime, float] | None:
+        if not self._provider.field_available(self._source_semantic_id):
+            return None
+        published_at = self._provider.current_published_at
+        field = self._provider.fields.get(self._source_semantic_id)
+        if published_at is None or field is None or field.value_type != "number":
+            return None
+        field_age = published_at - field.observed_at
+        if field_age < timedelta(0) or field_age > MAX_TLV_POWER_INTEGRATION_GAP:
+            # A current envelope can legitimately carry an older retained
+            # field. It remains displayable, but is not fresh enough to extend
+            # an energy interval.
+            return None
+        value = field.value
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            return None
+        return field.observed_at, float(value)
+
+    @property
+    def available(self) -> bool:
+        # Source freshness controls whether another interval may be integrated,
+        # not whether an already restored monotonic total remains valid.
+        return self._total_valid
+
+    def _break_continuity(self, status: str) -> None:
+        self._last_boundary = None
+        self._last_power_w = None
+        self._integration_status = status
+
+    def _consume_current_publication(self) -> None:
+        sample = self._current_sample()
+        if sample is None:
+            self._break_continuity(
+                "source_unavailable_or_invalid"
+                if self._total_valid
+                else "restore_rejected"
+            )
+            return
+        published_at, power_w = sample
+        if self._last_boundary is None or self._last_power_w is None:
+            self._last_boundary = published_at
+            self._last_power_w = power_w
+            self._integration_status = "anchored"
+            self._total_valid = True
+            return
+        elapsed = published_at - self._last_boundary
+        if elapsed < timedelta(0):
+            # Do not let a clock-regressed boundary become the next anchor: a
+            # later sample could otherwise overlap an already counted interval.
+            self._skipped_intervals += 1
+            self._break_continuity("non_monotonic_boundary")
+            return
+        if elapsed == timedelta(0):
+            # Same authenticated boundary can be replayed after an availability
+            # change. A changed value at the same observation time is a source
+            # collision, not another instantaneous sample.
+            if power_w != self._last_power_w:
+                self._skipped_intervals += 1
+                self._break_continuity("observation_boundary_collision")
+                return
+            self._integration_status = "duplicate_boundary"
+            return
+        if elapsed > MAX_TLV_POWER_INTEGRATION_GAP:
+            self._skipped_intervals += 1
+            self._last_boundary = published_at
+            self._last_power_w = power_w
+            self._integration_status = "excessive_gap_skipped"
+            return
+        mean_power_w = (self._last_power_w + power_w) / 2
+        self._energy_kwh += mean_power_w * elapsed.total_seconds() / 3_600_000
+        self._last_boundary = published_at
+        self._last_power_w = power_w
+        self._integration_status = "integrated"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        restored = await self.async_get_last_sensor_data()
+        if restored is None:
+            # A newly created meter deliberately adopts a zero baseline. This
+            # differs from a corrupt restore, which must not expose a false
+            # reset until a fresh authenticated source sample is observed.
+            self._total_valid = True
+        elif (
+            restored is not None
+            and restored.native_unit_of_measurement
+            == UnitOfEnergy.KILO_WATT_HOUR
+            and isinstance(restored.native_value, (int, float))
+            and not isinstance(restored.native_value, bool)
+            and math.isfinite(restored.native_value)
+            and restored.native_value >= 0
+        ):
+            self._energy_kwh = float(restored.native_value)
+            self._total_valid = True
+        else:
+            self._integration_status = "restore_rejected"
+        self._remove_provider_listener = self._provider.async_add_listener(
+            self._handle_provider_update
+        )
+        # Restoring the total never restores or estimates a power/time anchor.
+        self._consume_current_publication()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._remove_provider_listener is not None:
+            self._remove_provider_listener()
+            self._remove_provider_listener = None
+        await super().async_will_remove_from_hass()
+
+    @callback
+    def _handle_provider_update(self) -> None:
+        self._consume_current_publication()
+        self.async_write_ha_state()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        attributes: dict[str, object] = {
+            "derived_semantic_id": self._derived_semantic_id,
+            "source_semantic_id": self._source_semantic_id,
+            "source_descriptor_key": self._contract.descriptor_key,
+            "source_profile_id": self._provider.profile.profile_id,
+            "integration_method": "trapezoidal",
+            "integration_clock": "source_field_observed_at",
+            "integration_max_gap_s": int(
+                MAX_TLV_POWER_INTEGRATION_GAP.total_seconds()
+            ),
+            "source_freshness_max_age_s": int(
+                MAX_TLV_POWER_INTEGRATION_GAP.total_seconds()
+            ),
+            "integration_status": self._integration_status,
+            "skipped_intervals": self._skipped_intervals,
+        }
+        attributes.update(_POWER_SCOPE_ATTRIBUTES[self._source_semantic_id])
+        return attributes
 
 
 class WideqDeviceSensor(CoordinatorEntity[WideqCoordinator], SensorEntity):

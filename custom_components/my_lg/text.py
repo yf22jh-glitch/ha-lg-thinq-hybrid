@@ -14,6 +14,7 @@ from .coordinator_wideq import WideqCoordinator
 from .entity import MyLgWideqEntity
 from .value_access import is_meaningful
 from .wideq_control import control_risk_allowed, iter_wideq_field_controls
+from .local_control_entity import local_control_entities_for_domain
 
 
 async def async_setup_entry(
@@ -21,6 +22,8 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    # Local reservation is independent of WideQ configuration.
+    async_add_entities(local_control_entities_for_domain(entry, 'text'))
     wideq = entry.runtime_data.wideq_coordinator
     if wideq is None:
         return
