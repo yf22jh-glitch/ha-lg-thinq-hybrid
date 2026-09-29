@@ -500,8 +500,20 @@ class MyLgApplianceSettingSelect(MyLgLocalContractSelect):
 
     @property
     def current_option(self) -> str | None:
-        return next((option for option,mapping in self._mapping_by_option.items()
-                     if mapping.local_request_value == self._reported_value),None)
+        semantic_id = self._descriptor.exact_state_semantic
+        if semantic_id is not None and (
+            (self._read_provider is not None and self._read_provider.field_available(semantic_id))
+            or self._primary_provider.semantic_field_available(semantic_id)
+        ):
+            # The own-state read is authoritative when present.  In particular,
+            # do not fall back to a cached endpoint value if two Local sources
+            # disagree or the read is outside the reviewed select domain.
+            return super().current_option
+        return next(
+            (option for option, mapping in self._mapping_by_option.items()
+             if mapping.local_request_value == self._reported_value),
+            None,
+        )
 
     async def async_update(self) -> None:
         try:

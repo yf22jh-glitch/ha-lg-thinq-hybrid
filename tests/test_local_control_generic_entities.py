@@ -28,6 +28,7 @@ from custom_components.my_lg.local_control_contract import (
     resolve_local_control_binding_eligibility,
 )
 from custom_components.my_lg.local_control_entity import (
+    MyLgApplianceSettingSelect,
     MyLgLocalContractButton,
     MyLgLocalContractNumber,
     MyLgLocalContractSelect,
@@ -473,6 +474,31 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
                 )
                 self.assertEqual(entity.current_option, expected)
                 self.assertIn(entity.current_option, entity.options)
+
+    def test_appliance_value_owner_uses_own_state_before_endpoint_cache(self) -> None:
+        model = "2REFO1DBN3K_U"
+        semantic = "compartment.fridge.setpoint_raw"
+        desc = next(
+            item for item in load_local_control_entity_contract().descriptors_by_model[model]
+            if item.capability_id == semantic
+        )
+        primary = PrimaryProvider(model=model)
+        read = ReadProvider({semantic: 5})
+        entity = MyLgApplianceSettingSelect(
+            Coordinator(model=model), desc, Router(), primary, read,
+        )
+        entity._reported_value = "4"
+        self.assertEqual(entity.current_option, "5")
+
+        # A conflicting exact source must not be masked by the old endpoint.
+        primary.values[semantic] = 4
+        primary.available.add(semantic)
+        with self.assertLogs("custom_components.my_lg.local_control_entity", level="WARNING"):
+            self.assertIsNone(entity.current_option)
+
+        primary.available.clear()
+        read.available.clear()
+        self.assertEqual(entity.current_option, "4")
 
     def test_inconsistent_or_unknown_state_logs_semantic_once_without_private_data(
         self,
