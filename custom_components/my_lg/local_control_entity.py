@@ -347,6 +347,39 @@ class MyLgAirExtraSwitch(MyLgBridgeCachedSwitch):
         return await self._router.async_air_extra_state(self.coordinator.device_id, self._descriptor.capability_id)
 
 
+class MyLgAirExtraLegacyJetSwitch(MyLgAirExtraSwitch):
+    """Use the reviewed local rapid operation under the established jet ID."""
+
+    def __init__(self, coordinator, descriptor, router, primary_provider, read_provider) -> None:
+        if descriptor.model_id != 'AIR_910604_WW' or descriptor.capability_id != 'rapid_operation.enabled':
+            raise ValueError('Legacy jet identity is limited to the exact AIR_910604_WW rapid setting')
+        super().__init__(coordinator, descriptor, router, primary_provider, read_provider)
+        self._attr_unique_id = f'{coordinator.device_id}_jet_mode'
+        self._attr_name = 'Jet mode'
+
+
+class MyLgAirExtraLegacyUvSwitch(MyLgAirExtraSwitch):
+    """Keep the old UV switch identity for Web's confirmed hygienic-dry toggle."""
+
+    def __init__(self, coordinator, descriptor, router, primary_provider, read_provider) -> None:
+        if descriptor.model_id != 'AIR_910604_WW' or descriptor.capability_id != 'clean_dry.enabled':
+            raise ValueError('Legacy UV identity is limited to the exact AIR_910604_WW hygienic-dry setting')
+        super().__init__(coordinator, descriptor, router, primary_provider, read_provider)
+        self._attr_unique_id = f'{coordinator.device_id}_uv_disinfection'
+        self._attr_name = '위생 건조'
+
+
+class MyLgTowerLegacyUvSwitch(MyLgLocalContractSwitch):
+    """Expose the exact tower UVnano control under its pre-existing UV ID."""
+
+    def __init__(self, coordinator, descriptor, router, primary_provider, read_provider) -> None:
+        if descriptor.model_id != 'AIR_2C0001_WW' or descriptor.capability_id != 'sterilization.uvnano_enabled':
+            raise ValueError('Legacy UV identity is limited to the exact AIR_2C0001_WW UVnano setting')
+        super().__init__(coordinator, descriptor, router, primary_provider, read_provider)
+        self._attr_unique_id = f'{coordinator.device_id}_uv_disinfection'
+        self._attr_name = 'UVnano 공기살균'
+
+
 class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
     """Exact enum or sparse numeric control."""
 
@@ -670,8 +703,14 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 if domain == 'text' and descriptor.capability_id in WATER_PARAMETER_SCHEMAS:
                     entities.append(MyLgWaterParameterText(coordinator, descriptor, router, primary, read))
                     continue
-            if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id in ('clean_dry.enabled', 'rapid_operation.enabled') and domain == 'switch':
-                entities.append(MyLgAirExtraSwitch(coordinator, descriptor, router, primary, read))
+            if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id == 'rapid_operation.enabled' and domain == 'switch':
+                entities.append(MyLgAirExtraLegacyJetSwitch(coordinator, descriptor, router, primary, read))
+                continue
+            if descriptor.model_id == 'AIR_910604_WW' and descriptor.capability_id == 'clean_dry.enabled' and domain == 'switch':
+                entities.append(MyLgAirExtraLegacyUvSwitch(coordinator, descriptor, router, primary, read))
+                continue
+            if descriptor.model_id == 'AIR_2C0001_WW' and descriptor.capability_id == 'sterilization.uvnano_enabled' and domain == 'switch':
+                entities.append(MyLgTowerLegacyUvSwitch(coordinator, descriptor, router, primary, read))
                 continue
             if descriptor.capability_id == "vacuum.auto_dust_emptying_enabled" and domain == "switch":
                 entities.append(MyLgVacuumAutoEmptyingSwitch(coordinator, descriptor, router, primary, read))

@@ -31,6 +31,10 @@ database = load_module(
 manager = load_module(
     "my_lg_feature_manager_test", ROOT / "scripts" / "manage_local_features.py"
 )
+legacy_reads = load_module(
+    "my_lg_legacy_read_registration_test",
+    ROOT / "scripts" / "register_local_legacy_reads.py",
+)
 read = load_module(
     "my_lg_read_feature_database_test",
     ROOT / "custom_components" / "my_lg" / "local_read_provider.py",
@@ -51,6 +55,53 @@ class FeatureDatabaseTest(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.path = Path(self.directory.name) / "features.sqlite3"
         self.counts = database.create_database(self.path, manager.current_definitions())
+
+    def test_legacy_read_registration_is_exact_and_model_scoped(self) -> None:
+        self.assertFalse(legacy_reads.checked_existing(self.path))
+        counts = {model: len([row for row in legacy_reads.READS if row[0] == model])
+                  for model in (legacy_reads.STYLER, legacy_reads.WTL)}
+        self.assertEqual(counts, {legacy_reads.STYLER: 3, legacy_reads.WTL: 10})
+        for row in legacy_reads.READS:
+            model, semantic = row[:2]
+            database.upsert_feature(
+                self.path, "full-read", model, f"{model}:read-sensors-v1",
+                semantic, "thinq2", legacy_reads.feature_definition(row),
+                register_producer=True,
+            )
+        self.assertEqual(
+            legacy_reads.checked_existing(self.path),
+            {(row[0], row[1]) for row in legacy_reads.READS},
+        )
+        with sqlite3.connect(self.path) as connection:
+            rows = connection.execute(
+                "SELECT feature_id, producer_registered FROM features "
+                "WHERE channel = 'full-read' AND model_id = ? "
+                "AND feature_id IN ('cycle.remaining_min', 'lock.door_enabled', 'option.night_dry_enabled') "
+                "ORDER BY feature_id",
+                (legacy_reads.STYLER,),
+            ).fetchall()
+        self.assertEqual(rows, [("cycle.remaining_min", 1), ("lock.door_enabled", 1), ("option.night_dry_enabled", 1)])
+
+    def test_legacy_read_producer_only_does_not_enable_entities(self) -> None:
+        for row in legacy_reads.READS:
+            model, semantic = row[:2]
+            database.upsert_feature(
+                self.path, "full-read", model, f"{model}:read-sensors-v1",
+                semantic, "thinq2", legacy_reads.feature_definition(row),
+                enabled=model != legacy_reads.WTL, register_producer=True,
+            )
+        self.assertEqual(
+            len(legacy_reads.checked_existing(
+                self.path, model=legacy_reads.WTL, expected_enabled=False
+            )), 10,
+        )
+        self.assertEqual(
+            len(legacy_reads.checked_existing(
+                self.path, model=legacy_reads.STYLER
+            )), 3,
+        )
+        with self.assertRaisesRegex(ValueError, "Existing feature differs"):
+            legacy_reads.checked_existing(self.path, model=legacy_reads.WTL)
 
     def test_rollout_is_explicit_and_model_scoped(self) -> None:
         self.assertEqual(database.feature_change_sequence(self.path), 0)
