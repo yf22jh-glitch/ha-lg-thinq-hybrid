@@ -5,13 +5,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import sqlite3
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+from homeassistant.core import Event, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import (
     async_create_clientsession,
@@ -526,6 +527,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # inside the shadow setup made that function require a fully built Home Assistant.
     _start_local_control(hass, data)
     entry.runtime_data = data
+    remove_stop_listener = _register_local_shutdown(hass, entry, data)
     if feature_db_sequence is not None:
         data.feature_runtime = FeatureEntityRuntime(hass, entry, feature_db_path)
         entry.async_on_unload(data.feature_runtime.close)
@@ -536,6 +538,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         if feature_db_sequence is not None:
             _watch_feature_database(hass, entry, feature_db_sequence)
     except Exception:
+        remove_stop_listener()
         await _stop_local_shadows(data)
         raise
     return True
@@ -1044,6 +1047,21 @@ def _start_local_control(hass: HomeAssistant, data: MyLgData) -> None:
     )
 
 
+def _register_local_shutdown(
+    hass: HomeAssistant, entry: MyLgConfigEntry, data: MyLgData
+) -> Callable[[], None]:
+    """Drain Local MQTT while HA's loop is alive, including whole-core restarts."""
+
+    async def _async_stop(_event: Event) -> None:
+        await _stop_local_shadows(data)
+
+    # HA shutdown does not call async_unload_entry.  Entry unload must also
+    # remove this listener so an old entry cannot stop a later runtime.
+    remove = hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop)
+    entry.async_on_unload(remove)
+    return remove
+
+
 async def _stop_local_shadows(data: MyLgData) -> None:
     """Detach all Local shadows, isolating every subscriber shutdown."""
     subscribers = tuple(data.local_mqtt_subscribers.values())
@@ -1055,11 +1073,16 @@ async def _stop_local_shadows(data: MyLgData) -> None:
     data.local_read_consumer_authorities.clear()
     data.local_energy_providers.clear()
     data.local_control_binding_eligibility = {}
-    for subscriber in subscribers:
+
+    async def _async_stop_subscriber(subscriber: LocalPilotMqttSubscriber) -> None:
         try:
             await subscriber.async_stop()
         except Exception:
             _LOGGER.exception("Rethink Local shadow transport shutdown failed")
+
+    # Stop every connection before HA closes its loop, rather than accumulating
+    # one Paho network-loop join per appliance.  Each failure remains isolated.
+    await asyncio.gather(*(_async_stop_subscriber(item) for item in subscribers))
     for provider in read_providers:
         provider.close()
     for provider in energy_providers:
