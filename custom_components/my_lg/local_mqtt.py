@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import importlib
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -238,6 +239,18 @@ class LocalPilotMqttSubscriber:
         except Exception:  # noqa: BLE001 - never block config-entry unload
             _LOGGER.warning("Rethink Local shadow MQTT loop shutdown failed")
 
+    def _schedule_callback(self, callback: Callable[..., None], *args: Any) -> None:
+        """Discard late network callbacks after HA has started closing its loop."""
+        if self._stopping or self._loop.is_closed():
+            return
+        try:
+            self._loop.call_soon_threadsafe(callback, *args)
+        except RuntimeError:
+            # The loop can close between the check and the thread-safe handoff.
+            # Only that shutdown race is benign; other failures still surface.
+            if not self._loop.is_closed():
+                raise
+
     def _on_connect(
         self,
         client: Any,
@@ -252,11 +265,11 @@ class LocalPilotMqttSubscriber:
         generation = self._callback_connection_generation
         mqtt = self._mqtt()
         if _result_code(result_code) != mqtt.MQTT_ERR_SUCCESS:
-            self._loop.call_soon_threadsafe(
+            self._schedule_callback(
                 self._connection_lost, client, generation
             )
             return
-        self._loop.call_soon_threadsafe(
+        self._schedule_callback(
             self._begin_connection, client, generation
         )
 
@@ -271,11 +284,11 @@ class LocalPilotMqttSubscriber:
             )
         except Exception:  # noqa: BLE001 - isolate third-party callback failures
             self._subscription_mid = None
-            self._loop.call_soon_threadsafe(self._subscription_failed, client)
+            self._schedule_callback(self._subscription_failed, client)
             return
         if _result_code(result) != mqtt.MQTT_ERR_SUCCESS or type(mid) is not int:
             self._subscription_mid = None
-            self._loop.call_soon_threadsafe(self._subscription_failed, client)
+            self._schedule_callback(self._subscription_failed, client)
             return
         self._subscription_mid = mid
         self._schedule_subscription_retry(client)
@@ -283,7 +296,7 @@ class LocalPilotMqttSubscriber:
     def _on_connect_fail(self, client: Any, _userdata: object) -> None:
         if not self._stopping:
             self._callback_connection_generation += 1
-            self._loop.call_soon_threadsafe(
+            self._schedule_callback(
                 self._connection_lost,
                 client,
                 self._callback_connection_generation,
@@ -297,7 +310,7 @@ class LocalPilotMqttSubscriber:
     ) -> None:
         if not self._stopping:
             self._callback_connection_generation += 1
-            self._loop.call_soon_threadsafe(
+            self._schedule_callback(
                 self._connection_lost,
                 client,
                 self._callback_connection_generation,
@@ -320,7 +333,7 @@ class LocalPilotMqttSubscriber:
         ready = len(grants) == len(self.subscription_topics) and all(
             _result_code(value) == 1 for value in grants
         )
-        self._loop.call_soon_threadsafe(
+        self._schedule_callback(
             self._handle_suback,
             client,
             mid,
@@ -337,7 +350,7 @@ class LocalPilotMqttSubscriber:
             qos = message.qos  # type: ignore[attr-defined]
             retained = message.retain  # type: ignore[attr-defined]
         except AttributeError:
-            self._loop.call_soon_threadsafe(
+            self._schedule_callback(
                 self._note_transport_rejection,
                 client,
                 self._callback_connection_generation,
@@ -349,13 +362,13 @@ class LocalPilotMqttSubscriber:
             or type(qos) is not int
             or type(retained) is not bool
         ):
-            self._loop.call_soon_threadsafe(
+            self._schedule_callback(
                 self._note_transport_rejection,
                 client,
                 self._callback_connection_generation,
             )
             return
-        self._loop.call_soon_threadsafe(
+        self._schedule_callback(
             self._dispatch_message,
             client,
             topic,

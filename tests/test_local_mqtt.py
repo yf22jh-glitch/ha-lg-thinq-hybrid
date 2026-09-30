@@ -768,6 +768,84 @@ class LocalMqttSubscriberTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(provider.transport_ready)
 
+    async def test_all_network_callbacks_after_loop_close_are_ignored(self) -> None:
+        loop = asyncio.new_event_loop()
+        self.addCleanup(loop.close)
+        provider = FourTopicProvider()
+        mqtt_module = FakeMqttV1()
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            loop, provider, host="127.0.0.1", port=18883,
+            username=f"shadow-{BINDING_ID}", password="private-test-password",
+            mqtt_module=mqtt_module,
+        )
+        await subscriber.async_start()
+        self.addAsyncCleanup(subscriber.async_stop)
+        client = mqtt_module.clients[0]
+        loop.close()
+        callbacks = (
+            (client.on_connect, (client, None, {}, 0)),
+            (client.on_connect, (client, None, {}, 7)),
+            (client.on_connect_fail, (client, None)),
+            (client.on_disconnect, (client, None)),
+            (client.on_subscribe, (client, None, 41, [1, 1, 1, 1])),
+            (client.on_message, (client, None, SimpleNamespace(
+                topic=provider.state_topic, payload=b"{}", qos=1, retain=True,
+            ))),
+            (client.on_message, (client, None, object())),
+            (client.on_message, (client, None, SimpleNamespace(
+                topic=provider.state_topic, payload="not-bytes", qos=1, retain=True,
+            ))),
+        )
+        for callback, args in callbacks:
+            with self.subTest(callback=callback.__name__, args=args[2:]):
+                callback(*args)
+        self.assertFalse(provider.transport_ready)
+        self.assertEqual(provider.ingest_calls, [])
+
+    async def test_loop_closing_during_message_handoff_is_ignored(self) -> None:
+        loop = asyncio.new_event_loop()
+        self.addCleanup(loop.close)
+
+        class ClosingLoop:
+            def is_closed(self):
+                return loop.is_closed()
+
+            def call_soon_threadsafe(self, callback, *args):
+                loop.close()
+                return loop.call_soon_threadsafe(callback, *args)
+
+        provider = FourTopicProvider()
+        mqtt_module = FakeMqttV1()
+        subscriber = local_mqtt.LocalPilotMqttSubscriber(
+            ClosingLoop(), provider, host="127.0.0.1", port=18883,
+            username=f"shadow-{BINDING_ID}", password="private-test-password",
+            mqtt_module=mqtt_module,
+        )
+        await subscriber.async_start()
+        self.addAsyncCleanup(subscriber.async_stop)
+        client = mqtt_module.clients[0]
+        client.on_message(client, None, SimpleNamespace(
+            topic=provider.state_topic, payload=b"{}", qos=1, retain=True,
+        ))
+        self.assertTrue(loop.is_closed())
+        self.assertEqual(provider.ingest_calls, [])
+
+    async def test_open_loop_callback_errors_are_not_suppressed(self) -> None:
+        mqtt_module = FakeMqttV1()
+        provider = FourTopicProvider()
+        subscriber = self.subscriber(mqtt_module, provider)
+        await subscriber.async_start()
+        self.addAsyncCleanup(subscriber.async_stop)
+        client = mqtt_module.clients[0]
+        with patch.object(
+            asyncio.get_running_loop(), "call_soon_threadsafe",
+            side_effect=RuntimeError("synthetic callback failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "synthetic callback failure"):
+                client.on_message(client, None, SimpleNamespace(
+                    topic=provider.state_topic, payload=b"{}", qos=1, retain=True,
+                ))
+
     async def test_previous_client_message_after_restart_is_ignored(self) -> None:
         mqtt_module = FakeMqttV1()
         provider = self.provider()
