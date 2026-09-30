@@ -22,18 +22,23 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "text", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[TextEntity]:
     # Local reservation is independent of WideQ configuration.
-    async_add_entities(local_control_entities_for_domain(entry, 'text'))
+    entities: list[TextEntity] = local_control_entities_for_domain(entry, 'text')
     wideq = entry.runtime_data.wideq_coordinator
     if wideq is None:
-        return
+        return entities
     allow_experimental = bool(
         entry.options.get(OPT_ALLOW_EXPERIMENTAL_CONTROLS, False)
     )
     allow_hazardous = bool(
         entry.options.get(OPT_ALLOW_HAZARDOUS_CONTROLS, False)
     )
-    entities: list[TextEntity] = []
     for coordinator in entry.runtime_data.coordinators.values():
         for control in iter_wideq_field_controls(coordinator.model):
             if control.value_type not in {"enum", "range"}:
@@ -46,7 +51,7 @@ async def async_setup_entry(
                         allow_experimental,
                     )
                 )
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgWideqCatalogText(MyLgWideqEntity, TextEntity):

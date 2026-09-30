@@ -22,20 +22,25 @@ from .local_washer_options import MODEL as WASHER_MODEL, CAPABILITY as WASHER_PR
 from .local_dryer_options import MODEL as DRYER_MODEL, CAPABILITY as DRYER_PROGRAM, SCHEMA as DRYER_SCHEMA
 from .local_styler_options import MODEL as STYLER_MODEL, CAPABILITY as STYLER_PROGRAM, SCHEMA as STYLER_SCHEMA
 from .local_styler_dnd import RESERVATION as STYLER_DND_RESERVATION, SCHEMA as STYLER_DND_SCHEMA
-from .feature_database import all_models_enabled, default_database_path, enabled_models, load_features
+from .feature_database import (
+    all_models_enabled, default_database_path, disabled_control_capabilities,
+    enabled_models, load_features,
+)
 
 CATALOGUE_SHA256 = '7efd1f0165709a8e65332c904d464a2cb29c900b4558ecf842920a69544d2a36'
 
 
-def load_confirmed_features():
-    database = default_database_path()
+def load_confirmed_features(path: Path | None = None):
+    database = default_database_path() if path is None else path
     if database.is_file():
         selected = enabled_models(database)
         if selected:
             rows = load_features(database, 'confirmed-control')
+            disabled = disabled_control_capabilities(database)
             selected_features = []
             for row in rows:
-                if row['model_id'] not in selected:
+                if (row['model_id'] not in selected
+                        or (row['model_id'], row['feature_id']) in disabled):
                     continue
                 definition = row['definition']
                 if (definition.get('model_id') != row['model_id']
@@ -61,14 +66,14 @@ def _load_bundled_confirmed_features():
     return document['features']
 
 
-def augment_confirmed_climate_domain(contract):
+def augment_confirmed_climate_domain(contract, *, features=None):
     """Overlay release-declared preserved-target modes without altering base pins.
 
     This exposes the existing native climate owner. Per-value admission and
     fresh target preservation remain checked by the producer at wire time.
     """
     capabilities = dict(contract.capabilities)
-    for feature in load_confirmed_features():
+    for feature in load_confirmed_features() if features is None else features:
         modes = feature.get('preserve_setpoint_modes')
         if modes is None:
             continue
@@ -180,14 +185,17 @@ def _refresh_appliance_feature_maps(features):
 _refresh_appliance_feature_maps(load_confirmed_features())
 
 
-def augment_confirmed_features(contract, eligibility, binding_models):
+def augment_confirmed_features(
+    contract, eligibility, binding_models, *, features=None, refresh_maps=True
+):
     """Extend only existing selected bindings; excluded/malformed scopes stay out.
 
     The base digest still identifies the unmodified base contract. Extension
     identity is independently pinned above and never persisted as a v3 proof.
     """
-    features = load_confirmed_features()
-    _refresh_appliance_feature_maps(features)
+    features = load_confirmed_features() if features is None else features
+    if refresh_maps:
+        _refresh_appliance_feature_maps(features)
     by_model = {model: tuple(rows) for model, rows in contract.descriptors_by_model.items()}
     bindings = dict(eligibility)
     additions = []

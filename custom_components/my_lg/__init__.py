@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -67,9 +68,12 @@ from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .feature_database import (
     default_database_path,
+    disabled_control_capabilities,
+    disabled_read_semantics,
     enabled_models,
-    feature_change_sequence,
+    feature_database_token,
 )
+from .feature_runtime import FeatureEntityRuntime
 from .local_command import LocalCommandClient
 from .local_control_contract import (
     LocalControlBindingEligibility,
@@ -244,6 +248,10 @@ class MyLgData:
         str, LocalControlBindingEligibility
     ] = field(default_factory=dict)
     local_control: LocalControlRouter | None = None
+    feature_runtime: FeatureEntityRuntime | None = None
+    local_disabled_controls: frozenset[tuple[str, str]] = field(default_factory=frozenset)
+    local_disabled_reads: frozenset[tuple[str, str]] = field(default_factory=frozenset)
+    local_confirmed_features: list[dict[str, Any]] = field(default_factory=list)
     startup_metrics: StartupMetrics | None = None
 
     async def async_transition_local_read_consumer_state(
@@ -499,14 +507,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # Home Assistant event loop.
     await hass.async_add_executor_job(load_catalogs)
 
-    feature_db_sequence: int | None = None
+    feature_db_sequence: str | None = None
     feature_db_path = default_database_path()
     if feature_db_path.is_file():
         try:
             feature_db_sequence = await hass.async_add_executor_job(
-                feature_change_sequence, feature_db_path
+                feature_database_token, feature_db_path
             )
-        except (OSError, ValueError):
+        except (OSError, ValueError, sqlite3.Error):
             _LOGGER.exception("Local feature database edit watcher is unavailable")
 
     # Rethink Local is a shadow first: it reads, and every entity's state still comes from
@@ -518,6 +526,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # inside the shadow setup made that function require a fully built Home Assistant.
     _start_local_control(hass, data)
     entry.runtime_data = data
+    if feature_db_sequence is not None:
+        data.feature_runtime = FeatureEntityRuntime(hass, entry, feature_db_path)
+        entry.async_on_unload(data.feature_runtime.close)
     try:
         async_register_services(hass)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -531,14 +542,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
 
 
 def _watch_feature_database(
-    hass: HomeAssistant, entry: MyLgConfigEntry, initial_sequence: int
+    hass: HomeAssistant, entry: MyLgConfigEntry, initial_sequence: str
 ) -> None:
-    """Adopt committed DB edits with one ordinary integration reload.
-
-    This never modifies the SQLite file, entity registry, or energy ledger.
-    The old listener is canceled on unload, and a new setup starts at the
-    sequence it actually used, so an edit during setup is not lost.
-    """
+    """Apply committed feature edits live, without reloading the integration."""
     sequence = initial_sequence
     checking = asyncio.Lock()
     path = default_database_path()
@@ -549,18 +555,24 @@ def _watch_feature_database(
             return
         async with checking:
             try:
-                current = await hass.async_add_executor_job(feature_change_sequence, path)
-            except (OSError, ValueError):
+                current = await hass.async_add_executor_job(feature_database_token, path)
+            except (OSError, ValueError, sqlite3.Error):
                 _LOGGER.exception("Local feature database edit check failed")
                 return
             if current == sequence:
                 return
-            sequence = current
-            _LOGGER.info("Local feature database changed; reloading my_lg")
-            await hass.config_entries.async_reload(entry.entry_id)
+            runtime = entry.runtime_data.feature_runtime
+            if runtime is None:
+                return
+            try:
+                # Advance only after successful application. A failed edit is
+                # retried, and an edit during application is seen next time.
+                sequence = await runtime.async_refresh()
+            except (OSError, ValueError, RuntimeError, sqlite3.Error):
+                _LOGGER.exception("Local feature database live update failed; retrying")
 
     entry.async_on_unload(async_track_time_interval(
-        hass, check, timedelta(seconds=20), name="my_lg feature database"
+        hass, check, timedelta(seconds=2), name="my_lg feature database"
     ))
 
 
@@ -687,6 +699,12 @@ async def _setup_local_shadows(
             feature_database_models = await hass.async_add_executor_job(
                 enabled_models, default_database_path()
             )
+            data.local_disabled_controls = await hass.async_add_executor_job(
+                disabled_control_capabilities, default_database_path()
+            )
+            data.local_disabled_reads = await hass.async_add_executor_job(
+                disabled_read_semantics, default_database_path()
+            )
         except (OSError, ValueError):
             _LOGGER.exception("Local feature database is invalid; shadow setup disabled")
             return
@@ -778,7 +796,9 @@ async def _setup_local_shadows(
         else:
             data.local_control_binding_eligibility = eligibility
             from .local_control_confirmed_features import augment_confirmed_features
+            from .local_control_confirmed_features import load_confirmed_features
             try:
+                data.local_confirmed_features = await hass.async_add_executor_job(load_confirmed_features)
                 extended_contract, extended_eligibility = await hass.async_add_executor_job(
                     augment_confirmed_features, control_entity_contract, eligibility, binding_models
                 )
@@ -1017,6 +1037,10 @@ def _start_local_control(hass: HomeAssistant, data: MyLgData) -> None:
         _write_authorized,
         _authorized_values,
         _capability_authorized,
+        capability_disabled=lambda device_id, capability: (
+            (data.coordinators[device_id].model, capability) in data.local_disabled_controls
+            if device_id in data.coordinators else False
+        ),
     )
 
 
@@ -1044,10 +1068,15 @@ async def _stop_local_shadows(data: MyLgData) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    data: MyLgData | None = getattr(entry, "runtime_data", None)
+    if data and (runtime := getattr(data, "feature_runtime", None)):
+        unload_ok = await runtime.async_unload(
+            lambda: hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        )
+    else:
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if not unload_ok:
         return False
-    data: MyLgData | None = getattr(entry, "runtime_data", None)
     if data:
         await _stop_local_shadows(data)
     if data and data.mqtt:

@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from datetime import datetime, timezone
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -31,6 +32,10 @@ database = load_module(
 manager = load_module(
     "my_lg_feature_manager_test", ROOT / "scripts" / "manage_local_features.py"
 )
+legacy_reads = load_module(
+    "my_lg_legacy_read_registration_test",
+    ROOT / "scripts" / "register_local_legacy_reads.py",
+)
 read = load_module(
     "my_lg_read_feature_database_test",
     ROOT / "custom_components" / "my_lg" / "local_read_provider.py",
@@ -52,6 +57,59 @@ class FeatureDatabaseTest(unittest.TestCase):
         self.path = Path(self.directory.name) / "features.sqlite3"
         self.counts = database.create_database(self.path, manager.current_definitions())
 
+    def test_legacy_read_registration_is_exact_and_model_scoped(self) -> None:
+        self.assertFalse(legacy_reads.checked_existing(self.path))
+        counts = {model: len([row for row in legacy_reads.READS if row[0] == model])
+                  for model in (legacy_reads.STYLER, legacy_reads.WTL)}
+        self.assertEqual(counts, {legacy_reads.STYLER: 4, legacy_reads.WTL: 10})
+        for row in legacy_reads.READS:
+            model, semantic = row[:2]
+            database.upsert_feature(
+                self.path, "full-read", model, f"{model}:read-sensors-v1",
+                semantic, "thinq2", legacy_reads.feature_definition(row),
+                register_producer=True,
+            )
+        self.assertEqual(
+            legacy_reads.checked_existing(self.path),
+            {(row[0], row[1]) for row in legacy_reads.READS},
+        )
+        with sqlite3.connect(self.path) as connection:
+            rows = connection.execute(
+                "SELECT feature_id, producer_registered FROM features "
+                "WHERE channel = 'full-read' AND model_id = ? "
+                "AND feature_id IN ('cycle.remaining_min', 'lock.door_enabled', "
+                "'option.night_dry_enabled', 'diagnostic.cycle.course_spend_power_raw') "
+                "ORDER BY feature_id",
+                (legacy_reads.STYLER,),
+            ).fetchall()
+        self.assertEqual(rows, [
+            ("cycle.remaining_min", 1),
+            ("diagnostic.cycle.course_spend_power_raw", 1),
+            ("lock.door_enabled", 1),
+            ("option.night_dry_enabled", 1),
+        ])
+
+    def test_legacy_read_producer_only_does_not_enable_entities(self) -> None:
+        for row in legacy_reads.READS:
+            model, semantic = row[:2]
+            database.upsert_feature(
+                self.path, "full-read", model, f"{model}:read-sensors-v1",
+                semantic, "thinq2", legacy_reads.feature_definition(row),
+                enabled=model != legacy_reads.WTL, register_producer=True,
+            )
+        self.assertEqual(
+            len(legacy_reads.checked_existing(
+                self.path, model=legacy_reads.WTL, expected_enabled=False
+            )), 10,
+        )
+        self.assertEqual(
+            len(legacy_reads.checked_existing(
+                self.path, model=legacy_reads.STYLER
+            )), 4,
+        )
+        with self.assertRaisesRegex(ValueError, "Existing feature differs"):
+            legacy_reads.checked_existing(self.path, model=legacy_reads.WTL)
+
     def test_rollout_is_explicit_and_model_scoped(self) -> None:
         self.assertEqual(database.feature_change_sequence(self.path), 0)
         self.assertEqual(database.enabled_models(self.path), frozenset())
@@ -61,6 +119,21 @@ class FeatureDatabaseTest(unittest.TestCase):
         database.set_model_rollout(self.path, "AIR_2C0001_WW", False)
         self.assertEqual(database.enabled_models(self.path), frozenset())
         self.assertEqual(database.feature_change_sequence(self.path), 2)
+
+    def test_control_handler_binding_is_bridge_metadata_not_an_entity_pin(self) -> None:
+        model = "AIR_910604_WW"
+        rows = [row for row in database.load_features(self.path, "control-entity")
+                if row["model_id"] == model]
+        self.assertTrue(rows)
+        source = rows[0]
+        definition = dict(source["definition"], runtimeHandler="air-purifier.mjs")
+        database.upsert_feature(self.path, "control-entity", model,
+                                source["profile_id"], source["feature_id"],
+                                source["platform"], definition)
+        database.set_model_rollout(self.path, model, True)
+        loaded = control.load_local_control_entity_contract(self.path)
+        self.assertTrue(any(item.capability_id == source["feature_id"]
+                            for item in loaded.descriptors_by_model[model]))
 
     def test_seed_keeps_disabled_read_entities_disabled_without_copying_identity(self) -> None:
         field = database.load_features(self.path, "full-read")[0]
@@ -221,6 +294,48 @@ class FeatureDatabaseTest(unittest.TestCase):
             self.assertEqual(profile.authoritative_invalidations, bundled[profile_id].authoritative_invalidations)
             self.assertEqual(profile.freshness_max_age_ms, bundled[profile_id].freshness_max_age_ms)
             self.assertTrue(profile.revision_independent)
+
+    def test_editable_decoder_evidence_is_metadata_not_a_state_acceptance_gate(self) -> None:
+        profile = pilot._load_database_local_semantic_profiles(self.path)[1]["air-core-state-v1"]
+        semantic = "indicator.clean_enabled"
+        now = datetime(2026, 8, 13, 1, 0, tzinfo=timezone.utc)
+        payload = {
+            "schema_version": 1, "semantics_revision": 34,
+            "binding_id": "pilot_air_metadata_fixture", "model_id": profile.model_id,
+            "platform": profile.platform, "session_id": "air_metadata_session",
+            "sequence": 1, "published_at": "2026-08-13T00:59:59.000Z",
+            "fields": {semantic: {
+                "value": True, "value_type": "boolean", "exposure": "state",
+                "observed_at": "2026-08-13T00:59:59.000Z",
+                "confidence": "confirmed-local-indicator-replaced-file",
+            }},
+            "diagnostics": {"rejected_frames": 0, "unresolved_fields": 0,
+                            "invalid_values": 0, "unsupported_frames": 0},
+        }
+        parse = lambda candidate, selected=profile: pilot._parse_state(
+            json.dumps(candidate).encode(), payload["binding_id"], selected, now,
+        )
+        self.assertEqual(parse(payload)[3][semantic].confidence,
+                         "confirmed-local-indicator-replaced-file")
+        bundled = pilot.load_local_semantic_profile_catalogue()[1][profile.profile_id]
+        with self.assertRaisesRegex(pilot.LocalProviderContractError, "confidence is unsupported"):
+            parse(payload, bundled)
+        for confidence in ("", 1, "x" * 129):
+            candidate = json.loads(json.dumps(payload))
+            candidate["fields"][semantic]["confidence"] = confidence
+            with self.assertRaisesRegex(pilot.LocalProviderContractError, "confidence is invalid"):
+                parse(candidate)
+        candidate = json.loads(json.dumps(payload))
+        candidate["fields"][semantic]["value"] = "true"
+        with self.assertRaisesRegex(pilot.LocalProviderContractError, "value is invalid"):
+            parse(candidate)
+        candidate = dict(payload, fields={}, invalidated_fields={semantic: {
+            "confidence": "new-file-unknown-raw", "observed_at": "2026-08-13T00:59:59.000Z",
+        }})
+        parse(candidate, replace(profile, authoritative_invalidations=True))
+        candidate["invalidated_fields"][semantic]["confidence"] = ""
+        with self.assertRaisesRegex(pilot.LocalProviderContractError, "confidence is invalid"):
+            parse(candidate, replace(profile, authoritative_invalidations=True))
 
     def test_pilot_db_ignores_disabled_field_in_an_older_publication(self) -> None:
         profile_id = "dhum-core-state-v1"

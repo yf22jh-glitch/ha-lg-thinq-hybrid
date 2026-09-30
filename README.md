@@ -57,6 +57,28 @@ WideQ 호출은 각각 0개/0회였다.
 
 ## 설치 (HACS 커스텀 레포)
 
+로컬 기능 DB의 활성화·비활성화·문구 변경은 통합 재시작 없이 적용된다.
+관리 범위와 사용 방법은 [기능 DB 실시간 적용](docs/FEATURE_DATABASE_LIVE_UPDATES_KO.md)을 참고한다.
+
+### 업데이트
+
+- 배포 정본은 이 저장소의 `main`과 GitHub Releases다. 미커밋 파일이나 운영 사본을
+  업데이트 원본으로 사용하지 않는다.
+- 새 통합 릴리스를 게시하면 HACS의 **LG ThinQ Hybrid (my_lg)**에서 업데이트한다.
+  통합 Python 코드 업데이트 후에는 HA를 재시작해야 한다. Git push만으로 운영 파일이
+  자동 교체되지는 않는다.
+- 기능 DB의 활성화·이름·선택지 변경과 교체형 `.mjs` 기능 파일 변경은 별개다.
+  해당 실행부가 설치된 이후에는 코드 릴리스나 HA 재시작 없이 적용된다.
+- 기능 DB, 기능 파일, 인증정보, 기기 연결 설정, 에너지 누적 상태는 `my_lg` 코드 폴더
+  밖에 유지하므로 HACS가 통합 파일을 교체해도 그대로 보존된다.
+- 로컬 브리지와 읽기 서비스는 별도 저장소
+  [lg-rethink-local](https://github.com/yf22jh-glitch/lg-rethink-local)에서 관리한다.
+  HACS는 HA 통합만 업데이트하며 브리지 서비스까지 업데이트하지 않는다.
+
+HACS가 LG 통합만 선택하도록 `custom_components/`에는 `my_lg`만 둔다.
+함께 보관하던 코콤 소스는 `extras/kocom_energy/custom_components/kocom_energy/`로
+옮겼으며 내용은 보존했다. 이 위치 변경은 운영 중인 코콤 통합을 수정하거나 제거하지 않는다.
+
 1. HACS → Integrations → 우측 상단 ⋮ → **Custom repositories**
 2. URL: `https://github.com/yf22jh-glitch/ha-lg-thinq-hybrid`, Category: **Integration**
 3. `LG ThinQ Hybrid (my_lg)` 설치 → HA 재시작

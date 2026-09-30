@@ -154,6 +154,10 @@ class _Shadow(Protocol):
     def control_fields_ready(self, semantic_ids: tuple[str, ...]) -> bool: ...
 
 
+class LocalFeatureDisabled(ValueError):
+    """The operator disabled this function; neither Local nor cloud may run it."""
+
+
 class LocalControlRouter:
     """One appliance's local control path, or nothing."""
 
@@ -165,6 +169,8 @@ class LocalControlRouter:
         write_authorized: Callable[[str, str, str], bool] | None = None,
         authorized_values: Callable[[str, str], tuple[str, ...]] | None = None,
         capability_authorized: Callable[[str, str], bool] | None = None,
+        *,
+        capability_disabled: Callable[[str, str], bool] | None = None,
     ) -> None:
         self._sender = sender
         self._providers = providers
@@ -172,6 +178,7 @@ class LocalControlRouter:
         self._write_authorized = write_authorized
         self._authorized_values = authorized_values
         self._capability_authorized = capability_authorized
+        self._capability_disabled = capability_disabled
         # So that "the local path never serves anything" is discoverable without anyone having
         # first suspected it and raised the log level for this component.
         self._reported_refusal: set[tuple[str, str]] = set()
@@ -277,6 +284,8 @@ class LocalControlRouter:
         self, pat_device_id: str, capability_id: str
     ) -> tuple[str, ...]:
         """Return the exact reviewed values this private binding may send."""
+        if self.feature_disabled(pat_device_id, capability_id):
+            return ()
         if self._authorized_values is not None:
             return self._authorized_values(pat_device_id, capability_id)
         return ()
@@ -285,6 +294,8 @@ class LocalControlRouter:
         self, pat_device_id: str, capability_id: str, value: str
     ) -> bool:
         """Check one value without sending or requiring current liveness."""
+        if self.feature_disabled(pat_device_id, capability_id):
+            return False
         if self._write_authorized is not None:
             return self._write_authorized(pat_device_id, capability_id, value)
         return value in self.authorized_values(pat_device_id, capability_id)
@@ -293,9 +304,20 @@ class LocalControlRouter:
         self, pat_device_id: str, capability_id: str
     ) -> bool:
         """Check exact binding/model capability evidence without choosing a value."""
+        if self.feature_disabled(pat_device_id, capability_id):
+            return False
         if self._capability_authorized is not None:
             return self._capability_authorized(pat_device_id, capability_id)
         return bool(self.authorized_values(pat_device_id, capability_id))
+
+    def feature_disabled(self, pat_device_id: str, capability_id: str) -> bool:
+        return self._capability_disabled is not None and self._capability_disabled(
+            pat_device_id, capability_id
+        )
+
+    def ensure_feature_enabled(self, pat_device_id: str, capability_id: str) -> None:
+        if self.feature_disabled(pat_device_id, capability_id):
+            raise LocalFeatureDisabled("이 기능은 기능 DB에서 비활성화되어 있어요.")
 
     def _remember_mode_argument(
         self, pat_device_id: str, shadow: Mapping[str, Any], now: datetime
@@ -493,6 +515,7 @@ class LocalControlRouter:
         expected_state: Mapping[str, Any] | None = None,
         propagate_retryable: bool = False,
     ) -> LocalCommandResult | None:
+        self.ensure_feature_enabled(pat_device_id, capability)
         if self._write_authorized is not None and not self._write_authorized(
             pat_device_id, capability, value
         ):
@@ -606,6 +629,7 @@ class LocalControlRouter:
         now: datetime | None,
         cloud_fallback: bool,
     ) -> LocalCommandResult | None:
+        self.ensure_feature_enabled(pat_device_id, capability)
         async with self._tuple_lock(pat_device_id):
             target = self._target(pat_device_id)
             if target is None:
@@ -730,6 +754,7 @@ class LocalControlRouter:
 
     async def async_turn_off(self, pat_device_id: str) -> LocalCommandResult | None:
         """Power off, which unlike powering on is a write to the power field alone."""
+        self.ensure_feature_enabled(pat_device_id, POWER_CAPABILITY)
         target = self._target(pat_device_id)
         if target is None:
             return None
@@ -768,6 +793,7 @@ class LocalControlRouter:
         self, pat_device_id: str, capability: str, value: str
     ) -> LocalCommandResult | None:
         """Set one exact scalar semantic without composing unrelated state."""
+        self.ensure_feature_enabled(pat_device_id, capability)
         target = self._target(pat_device_id)
         if target is None:
             return None
@@ -780,6 +806,7 @@ class LocalControlRouter:
         self, pat_device_id: str, capability: str, value: str
     ) -> LocalCommandResult | None:
         """Set one Local-only value while surfacing a retryable command fence."""
+        self.ensure_feature_enabled(pat_device_id, capability)
         target = self._target(pat_device_id)
         if target is None:
             return None

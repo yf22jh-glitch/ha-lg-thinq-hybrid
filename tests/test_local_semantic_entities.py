@@ -127,6 +127,147 @@ def healthy_dishwasher_provider() -> LocalSemanticShadowProvider:
 
 
 class LocalSemanticEntityContractTests(unittest.TestCase):
+    def test_legacy_complete_read_uses_exact_raw_mapping_and_existing_identity(self) -> None:
+        semantic_id = "diagnostic.washer.spin_setting_raw"
+        contract = TlvReadFieldContract(
+            descriptor_key=f"WTL_KPK_BDH_KR_01|{semantic_id}",
+            semantic_id=semantic_id,
+            domain="sensor",
+            value_types=("number",),
+            exposure="diagnostic",
+            label_ko="세탁 탈수 설정 raw",
+            entity_category="diagnostic",
+            enabled_by_default=False,
+            publication_mode="retained-current",
+        )
+        field = SimpleNamespace(value=6)
+        provider = SimpleNamespace(
+            profile=SimpleNamespace(fields_by_semantic_id={semantic_id: contract}),
+            display_field=lambda _id: field,
+            display_field_available=lambda _id: True,
+        )
+        coordinator = SimpleNamespace(
+            device_id="pilot-washtower-001",
+            alias="Washtower",
+            model="WTL_KPK_BDH_KR_01",
+            device_type=DEVICE_TYPE_WASHTOWER,
+        )
+        description = next(item for item in sensor.WASHTOWER_SENSORS if item.key == "washer_spin")
+        entity = sensor.LocalLegacyReadSensor(
+            provider, coordinator, semantic_id, contract, description
+        )
+        self.assertEqual(entity.unique_id, f"{coordinator.device_id}_washer_spin")
+        self.assertEqual(entity.native_value, "SPIN_1000")
+        self.assertTrue(entity.available)
+        field.value = 7
+        self.assertIsNone(entity.native_value)
+        self.assertFalse(entity.available)
+
+    def test_legacy_read_mappings_preserve_only_evidenced_values(self) -> None:
+        self.assertEqual(sensor._legacy_read_value("washer_course", 114), "AI_COURSE")
+        self.assertEqual(sensor._legacy_read_value("washer_course", 46), "NORMAL")
+        self.assertEqual(sensor._legacy_read_value("washer_water_temp", 3), "TEMP_40")
+        self.assertEqual(sensor._legacy_read_value("washer_door_lock", 1), "DOORLOCK_ON")
+        self.assertEqual(sensor._legacy_read_value("dryer_state", 2), "RUNNING")
+        self.assertEqual(sensor._legacy_read_value("dryer_state", 7), "DRYING")
+        self.assertEqual(sensor._legacy_read_value("styler_door_lock", True), "DOOR_LOCK_ON")
+        self.assertEqual(sensor._legacy_read_value("styler_night_dry", True), "NIGHTDRY_ON")
+        self.assertEqual(sensor._legacy_read_value("styler_night_dry", False), "NIGHTDRY_OFF")
+        for key in ("washer_energy", "dryer_energy", "styler_energy"):
+            self.assertEqual(sensor._legacy_read_value(key, 0), 0)
+            self.assertEqual(sensor._legacy_read_value(key, 219), 219)
+            self.assertIsNone(sensor._legacy_read_value(key, -1))
+            self.assertIsNone(sensor._legacy_read_value(key, True))
+            self.assertIsNone(sensor._legacy_read_value(key, 65536))
+        self.assertIsNone(sensor._legacy_read_value("dryer_error", 99))
+
+    def test_all_sixteen_legacy_read_aliases_keep_their_established_ids(self) -> None:
+        examples = {
+            "washer_course": (114, "AI_COURSE"),
+            "washer_spin": (6, "SPIN_1000"),
+            "washer_water_temp": (8, "TEMP_COLD"),
+            "washer_water_level": (0, "WATERLEVEL_1"),
+            "washer_error": (0, "ERROR_NO"),
+            "washer_door_lock": (1, "DOORLOCK_ON"),
+            "dryer_state": (7, "DRYING"),
+            "dryer_dry_level": (0, "NO_DRYLEVEL"),
+            "dryer_duct_clogging": (0, "DUCT_CLOGGING_LEVEL_0"),
+            "dryer_error": (0, "ERROR_NO"),
+            "styler_remain": (37, 37),
+            "styler_door_lock": (True, "DOOR_LOCK_ON"),
+            "styler_night_dry": (True, "NIGHTDRY_ON"),
+            "washer_energy": (219, 219),
+            "dryer_energy": (219, 219),
+            "styler_energy": (219, 219),
+        }
+        self.assertEqual(len(sensor._LOCAL_LEGACY_READ_SEMANTICS), len(examples))
+        for (model, key), semantic_id in sensor._LOCAL_LEGACY_READ_SEMANTICS.items():
+            with self.subTest(model=model, key=key):
+                value, expected = examples[key]
+                description = next(
+                    item for item in (
+                        sensor.WASHTOWER_SENSORS if model == "WTL_KPK_BDH_KR_01"
+                        else sensor.STYLER_SENSORS
+                    ) if item.key == key
+                )
+                contract = TlvReadFieldContract(
+                    descriptor_key=f"{model}|{semantic_id}",
+                    semantic_id=semantic_id,
+                    domain="binary_sensor" if type(value) is bool else "sensor",
+                    value_types=("boolean",) if type(value) is bool else ("number",),
+                    exposure=("diagnostic" if model == "WTL_KPK_BDH_KR_01"
+                              or key == "styler_energy" else "state"),
+                    label_ko=key,
+                    entity_category=("diagnostic" if model == "WTL_KPK_BDH_KR_01"
+                                     or key == "styler_energy" else None),
+                    enabled_by_default=model == "ST_R_ETH01Y_" and key != "styler_energy",
+                    publication_mode="retained-current",
+                    unit=description.native_unit_of_measurement,
+                )
+                field = SimpleNamespace(value=value)
+                provider = SimpleNamespace(
+                    profile=SimpleNamespace(fields_by_semantic_id={semantic_id: contract}),
+                    display_field=lambda _id: field,
+                    display_field_available=lambda _id: True,
+                )
+                coordinator = SimpleNamespace(
+                    device_id="pilot-legacy-001", alias="Pilot", model=model,
+                    device_type=(DEVICE_TYPE_WASHTOWER if model == "WTL_KPK_BDH_KR_01"
+                                 else DEVICE_TYPE_STYLER),
+                )
+                entity = sensor.LocalLegacyReadSensor(
+                    provider, coordinator, semantic_id, contract, description
+                )
+                self.assertEqual(entity.unique_id, f"{coordinator.device_id}_{key}")
+                self.assertEqual(entity.native_value, expected)
+                if key.endswith("_energy"):
+                    self.assertEqual(entity.native_unit_of_measurement, "Wh")
+                    self.assertIsNone(entity.entity_description.state_class)
+
+    def test_legacy_local_sensor_keeps_entity_identity_and_rejects_unknown_state(self) -> None:
+        profiles = load_local_semantic_profile_catalogue()[1]
+        profile = profiles["washtower-core-state-v1"]
+        provider = LocalSemanticShadowProvider(BINDING_ID, profile, now=lambda: NOW)
+        coordinator = SimpleNamespace(
+            device_id="pilot-washtower-001",
+            alias="Washtower",
+            model="WTL_KPK_BDH_KR_01",
+            device_type=DEVICE_TYPE_WASHTOWER,
+        )
+        description = next(
+            item for item in sensor.WASHTOWER_SENSORS if item.key == "washer_state"
+        )
+        entity = sensor.LocalLegacySensor(
+            provider,
+            coordinator,
+            "washer.cycle.state",
+            profile.fields["washer.cycle.state"],
+            description,
+        )
+        self.assertEqual(entity.unique_id, f"{coordinator.device_id}_washer_state")
+        self.assertEqual(entity._display_value("washing"), "RUNNING")
+        self.assertIsNone(entity._display_value("unmapped"))
+
     def test_unique_id_is_bounded_and_collision_resistant_for_long_inputs(self) -> None:
         first = local_semantic_unique_id("p" * 300, "semantic." + "x" * 300)
         second = local_semantic_unique_id("p" * 300, "semantic." + "x" * 299 + "y")
@@ -310,6 +451,139 @@ class LocalSemanticEntityContractTests(unittest.TestCase):
 
 
 class LocalSemanticEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
+    async def test_legacy_complete_read_is_created_without_wideq(self) -> None:
+        semantic_id = "diagnostic.washer.spin_setting_raw"
+        contract = TlvReadFieldContract(
+            descriptor_key=f"WTL_KPK_BDH_KR_01|{semantic_id}",
+            semantic_id=semantic_id,
+            domain="sensor",
+            value_types=("number",),
+            exposure="diagnostic",
+            label_ko="세탁 탈수 원시 코드",
+            entity_category="diagnostic",
+            enabled_by_default=False,
+            publication_mode="retained-current",
+        )
+        coordinator = SimpleNamespace(
+            device_id="pilot-washtower-001",
+            alias="Washtower",
+            model="WTL_KPK_BDH_KR_01",
+            device_type=DEVICE_TYPE_WASHTOWER,
+            get=lambda *_path: None,
+            supports=lambda _group: False,
+            async_add_listener=lambda _listener: lambda: None,
+        )
+        read = SimpleNamespace(
+            profile=SimpleNamespace(
+                model_id=coordinator.model,
+                fields_by_semantic_id={semantic_id: contract},
+            ),
+        )
+        data = SimpleNamespace(
+            wideq_coordinator=None,
+            coordinators={coordinator.device_id: coordinator},
+            local_providers={},
+            local_read_providers={coordinator.device_id: read},
+        )
+        entry = SimpleNamespace(runtime_data=data, async_on_unload=lambda _remove: None)
+        entities = []
+        with (
+            patch.object(sensor, "RawSensorManager") as manager,
+            patch.object(sensor, "iter_tlv_read_contracts", return_value=[]),
+            patch.object(sensor, "TLV_READ_DIAGNOSTIC_KEYS", ()),
+        ):
+            manager.return_value.add_new.return_value = None
+            await sensor.async_setup_entry(None, entry, entities.extend)
+        legacy = [item for item in entities if isinstance(item, sensor.LocalLegacyReadSensor)]
+        self.assertEqual([item.entity_description.key for item in legacy], ["washer_spin"])
+
+    async def test_course_energy_uses_local_wh_under_existing_ids(self) -> None:
+        for model, device_type, semantic_id, key in (
+            ("WTL_KPK_BDH_KR_01", DEVICE_TYPE_WASHTOWER, "washer.cycle.energy_wh", "washer_energy"),
+            ("WTL_KPK_BDH_KR_01", DEVICE_TYPE_WASHTOWER, "dryer.cycle.energy_wh", "dryer_energy"),
+            ("ST_R_ETH01Y_", DEVICE_TYPE_STYLER, "diagnostic.cycle.course_spend_power_raw", "styler_energy"),
+        ):
+            with self.subTest(key=key):
+                contract = TlvReadFieldContract(
+                    descriptor_key=f"{model}|{semantic_id}",
+                    semantic_id=semantic_id,
+                    domain="sensor",
+                    value_types=("number",),
+                    exposure="diagnostic",
+                    label_ko=key,
+                    entity_category="diagnostic",
+                    enabled_by_default=False,
+                    publication_mode="retained-current",
+                    unit="Wh",
+                )
+                coordinator = SimpleNamespace(
+                    device_id=f"pilot-{key}", alias="Pilot", model=model,
+                    device_type=device_type, get=lambda *_path: None,
+                    supports=lambda _group: False,
+                    async_add_listener=lambda _listener: lambda: None,
+                )
+                provider = SimpleNamespace(
+                    profile=SimpleNamespace(model_id=model, fields_by_semantic_id={semantic_id: contract}),
+                    display_field=lambda _id: SimpleNamespace(value=219),
+                    display_field_available=lambda _id: True,
+                )
+                data = SimpleNamespace(
+                    wideq_coordinator=None,
+                    coordinators={coordinator.device_id: coordinator},
+                    local_providers={},
+                    local_read_providers={coordinator.device_id: provider},
+                )
+                entry = SimpleNamespace(runtime_data=data, async_on_unload=lambda _remove: None)
+                entities = []
+                with (
+                    patch.object(sensor, "RawSensorManager") as manager,
+                    patch.object(sensor, "iter_tlv_read_contracts", return_value=[]),
+                    patch.object(sensor, "TLV_READ_DIAGNOSTIC_KEYS", ()),
+                ):
+                    manager.return_value.add_new.return_value = None
+                    await sensor.async_setup_entry(None, entry, entities.extend)
+                aliases = [item for item in entities if isinstance(item, sensor.LocalLegacyReadSensor)]
+                self.assertEqual([item.entity_description.key for item in aliases], [key])
+                self.assertEqual(aliases[0].unique_id, f"{coordinator.device_id}_{key}")
+                self.assertEqual(aliases[0].native_value, 219)
+                self.assertTrue(aliases[0].available)
+                self.assertEqual(aliases[0].native_unit_of_measurement, "Wh")
+                self.assertIsNone(aliases[0].entity_description.state_class)
+
+    async def test_legacy_local_sensors_survive_without_wideq(self) -> None:
+        profile = load_local_semantic_profile_catalogue()[1][
+            "washtower-core-state-v1"
+        ]
+        provider = LocalSemanticShadowProvider(BINDING_ID, profile, now=lambda: NOW)
+        coordinator = SimpleNamespace(
+            device_id="pilot-washtower-001",
+            alias="Washtower",
+            model=profile.model_id,
+            device_type=DEVICE_TYPE_WASHTOWER,
+            get=lambda *_path: None,
+            supports=lambda _group: False,
+            async_add_listener=lambda _listener: lambda: None,
+        )
+        data = SimpleNamespace(
+            wideq_coordinator=None,
+            coordinators={coordinator.device_id: coordinator},
+            local_providers={coordinator.device_id: provider},
+            local_read_providers={},
+        )
+        entry = SimpleNamespace(runtime_data=data, async_on_unload=lambda _remove: None)
+        entities = []
+        with patch.object(sensor, "RawSensorManager") as manager:
+            manager.return_value.add_new.return_value = None
+            await sensor.async_setup_entry(None, entry, entities.extend)
+        legacy = [item for item in entities if isinstance(item, sensor.LocalLegacySensor)]
+        self.assertEqual(
+            {item.entity_description.key for item in legacy},
+            {"washer_state", "washer_remain", "washer_child_lock", "dryer_remain"},
+        )
+        self.assertTrue(
+            all(item.unique_id.endswith("_" + item.entity_description.key) for item in legacy)
+        )
+
     def test_every_bundled_profile_field_is_duplicate_or_one_typed_entity(
         self,
     ) -> None:
@@ -595,7 +869,7 @@ class LocalSemanticEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(
             any(
-                isinstance(entity, sensor.WideqDeviceSensor)
+                isinstance(entity, sensor.LocalLegacySensor)
                 and entity.entity_description.key == "styler_course"
                 for entity in entities
             )
@@ -907,6 +1181,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 (
                     binary_sensor.TlvReadBinarySensor,
                     sensor.TlvReadSensor,
+                    sensor.LocalLegacyReadSensor,
                     event_platform.TlvReadEventEntity,
                 ),
             ):
@@ -985,6 +1260,8 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(key=key, owner=owner):
                 if owner == "PAT":
                     self.assertEqual(owners[key], ["MyLgSensor"])
+                elif key[1] in {"washer.cycle.energy_wh", "dryer.cycle.energy_wh"}:
+                    self.assertEqual(owners[key], ["LocalLegacyReadSensor"])
                 else:
                     self.assertEqual(len(owners[key]), 1)
                     self.assertTrue(owners[key][0].startswith("TlvRead"))
@@ -1143,11 +1420,20 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 (
                     binary_sensor.TlvReadBinarySensor,
                     sensor.TlvReadSensor,
+                    sensor.LocalLegacyReadSensor,
                     event_platform.TlvReadEventEntity,
                     binary_sensor.LocalSemanticBinarySensor,
                     sensor.LocalSemanticSensor,
+                    sensor.LocalLegacySensor,
                 ),
             ):
+                # A legacy read alias is an additional registry identity, not
+                # a second canonical semantic owner. Styler state and washer
+                # child lock already have PAT/binary Local owners.
+                if isinstance(entity, sensor.LocalLegacySensor) and entity.entity_description.key in {
+                    "styler_state", "washer_child_lock"
+                }:
+                    continue
                 semantic_id = entity.semantic_id
             elif isinstance(entity, sensor.MyLgSensor):
                 semantic_id = sensor._PAT_SENSOR_SEMANTICS.get(
@@ -1187,6 +1473,8 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             "TlvReadEventEntity",
             "LocalSemanticBinarySensor",
             "LocalSemanticSensor",
+            "LocalLegacySensor",
+            "LocalLegacyReadSensor",
         }
         pat_types = {"MyLgSensor", "MyLgBinarySensor"}
         wideq_types = {"WideqDeviceSensor", "WaterTankFullSensor"}
@@ -1253,7 +1541,9 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 is_full_read = owners[key][0].startswith("TlvRead")
                 self.assertEqual(
                     owner_entities[key][0].entity_registry_enabled_default,
-                    is_full_read and expected_exposure[key] == "state",
+                    owners[key][0] == "LocalLegacyReadSensor"
+                    or ((is_full_read or owners[key][0] == "LocalLegacySensor")
+                        and expected_exposure[key] == "state"),
                 )
 
         unique_keys = {
@@ -1281,7 +1571,12 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             "dryer.cycle.state",
             "dryer.cycle.remaining_min",
         ):
-            self.assertEqual(owners[(washtower, semantic_id)], ["WideqDeviceSensor"])
+            expected_owner = (
+                "WideqDeviceSensor"
+                if semantic_id == "dryer.cycle.state"
+                else "LocalLegacySensor"
+            )
+            self.assertEqual(owners[(washtower, semantic_id)], [expected_owner])
 
 
 if __name__ == "__main__":

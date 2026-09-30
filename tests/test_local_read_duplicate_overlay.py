@@ -183,6 +183,7 @@ def _semantic_key(entity):
         (
             binary_sensor.TlvReadBinarySensor,
             sensor.TlvReadSensor,
+            sensor.LocalLegacyReadSensor,
             event_platform.TlvReadEventEntity,
             binary_sensor.LocalSemanticBinarySensor,
             sensor.LocalSemanticSensor,
@@ -289,6 +290,7 @@ class LocalReadDuplicateOverlayTests(unittest.IsolatedAsyncioTestCase):
         local_types = (
             binary_sensor.TlvReadBinarySensor,
             sensor.TlvReadSensor,
+            sensor.LocalLegacyReadSensor,
             event_platform.TlvReadEventEntity,
             binary_sensor.LocalSemanticBinarySensor,
             sensor.LocalSemanticSensor,

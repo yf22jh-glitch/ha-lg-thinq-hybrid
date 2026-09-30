@@ -25,12 +25,18 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "fan", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[FanEntity]:
     entities = [
         MyLgAirPurifierFan(coordinator, entry.runtime_data.local_control)
         for coordinator in entry.runtime_data.coordinators.values()
         if coordinator.device_type == DEVICE_TYPE_AIR_PURIFIER
     ]
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgAirPurifierFan(MyLgEntity, FanEntity):

@@ -77,6 +77,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "number", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[NumberEntity]:
     """Set up refrigerator target-temperature numbers + wideq-only numbers."""
     entities: list[NumberEntity] = []
     for coord in entry.runtime_data.coordinators.values():
@@ -143,7 +149,7 @@ async def async_setup_entry(
                     )
 
     entities.extend(local_control_entities_for_domain(entry, "number"))
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgFridgeTargetTemp(MyLgEntity, NumberEntity):

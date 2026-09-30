@@ -227,6 +227,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "select", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[SelectEntity]:
     entities: list[SelectEntity] = []
     local_control = entry.runtime_data.local_control
     primary_providers = getattr(entry.runtime_data, "local_providers", {})
@@ -319,7 +325,7 @@ async def async_setup_entry(
                     )
 
     entities.extend(local_control_entities_for_domain(entry, "select"))
-    async_add_entities(entities)
+    return entities
 
 
 class _LocalReadSelectMixin:

@@ -1295,7 +1295,12 @@ def _parse_state(
             _contract_error("Local provider semantic field value is invalid")
         if contract.allowed_values is not None and value not in contract.allowed_values:
             _contract_error("Local provider semantic field value is outside its allowlist")
-        if field["confidence"] not in contract.confidence:
+        confidence = field["confidence"]
+        if not isinstance(confidence, str) or not confidence or len(confidence) > 128:
+            _contract_error("Local provider semantic field confidence is invalid")
+        # An editable DB model can replace its decoder without matching the
+        # bundled decoder's evidence wording. This is provenance, not authority.
+        if not profile.revision_independent and confidence not in contract.confidence:
             _contract_error("Local provider semantic field confidence is unsupported")
         if field["exposure"] != contract.exposure:
             _contract_error("Local provider semantic field exposure is unsupported")
@@ -1334,7 +1339,10 @@ def _parse_state(
             invalidation = _exact_object(
                 raw_invalidation, _INVALIDATION_KEYS, f"semantic invalidation {semantic_id}"
             )
-            if invalidation["confidence"] not in contract.confidence:
+            confidence = invalidation["confidence"]
+            if not isinstance(confidence, str) or not confidence or len(confidence) > 128:
+                _contract_error("Local provider semantic invalidation confidence is invalid")
+            if not profile.revision_independent and confidence not in contract.confidence:
                 _contract_error("Local provider semantic invalidation confidence is unsupported")
             observed_at = _timestamp(
                 invalidation["observed_at"],
@@ -1755,6 +1763,35 @@ class LocalSemanticShadowProvider:
     def shadow_fields(self) -> Mapping[str, LocalSemanticShadowField]:
         """Return an immutable view of the last fully validated field set."""
         return self._shadow_fields
+
+    def update_profile(self, profile: LocalSemanticProfile, *, notify: bool = True) -> None:
+        """Adopt an editable field menu without reconnecting or resetting state."""
+        if (profile.profile_id, profile.model_id, profile.platform) != (
+            self.profile_id, self.model_id, self.platform
+        ):
+            raise ValueError("A feature edit cannot change the connected appliance")
+        if (profile.availability_policy in _AVAILABILITY_POLICIES) != self._presence_enabled:
+            raise ValueError("A feature edit cannot change subscribed presence topics")
+        fields = {
+            semantic_id: field for semantic_id, field in self._shadow_fields.items()
+            if profile.fields.get(semantic_id) == self.profile.fields.get(semantic_id)
+        }
+        if self._state_payload is not None:
+            try:
+                parsed = _parse_state(
+                    self._state_payload.encode(), self.binding_id, profile,
+                    _utc_now(self._now), self.expected_proof, self.require_identity,
+                )[3]
+            except LocalProviderContractError:
+                # Retain compatible observations; changed types/units wait for
+                # an actual matching report rather than reinterpreting values.
+                parsed = {}
+            for semantic_id, field in parsed.items():
+                fields.setdefault(semantic_id, field)
+        self.profile = profile
+        self._shadow_fields = MappingProxyType(fields)
+        if notify:
+            self._notify_listeners()
 
     def async_add_listener(
         self, update_callback: Callable[[], None]

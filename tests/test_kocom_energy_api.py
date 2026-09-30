@@ -13,7 +13,7 @@ import types
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "custom_components" / "kocom_energy"
+PACKAGE = ROOT / "extras" / "kocom_energy" / "custom_components" / "kocom_energy"
 
 custom = sys.modules.setdefault("custom_components", types.ModuleType("custom_components"))
 custom.__path__ = [str(ROOT / "custom_components")]

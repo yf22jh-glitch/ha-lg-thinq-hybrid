@@ -146,6 +146,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "button", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[ButtonEntity]:
     """Set up operation-control buttons."""
     entities: list[ButtonEntity] = []
     for coordinator in entry.runtime_data.coordinators.values():
@@ -196,7 +202,7 @@ async def async_setup_entry(
                         )
                     )
     entities.extend(local_control_entities_for_domain(entry, "button"))
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgButton(MyLgEntity, ButtonEntity):

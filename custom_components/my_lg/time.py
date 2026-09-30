@@ -79,6 +79,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "time", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[TimeEntity]:
     entities: list[TimeEntity] = []
     for coordinator in entry.runtime_data.coordinators.values():
         writable = _writable_paths(coordinator)
@@ -103,7 +109,7 @@ async def async_setup_entry(
                 )
                 for location in sorted(locations)
             )
-    async_add_entities(entities)
+    return entities
 
 
 class PatTimerEntity(MyLgEntity, TimeEntity):

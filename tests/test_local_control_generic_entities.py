@@ -23,10 +23,12 @@ from custom_components.my_lg.local_control_contract import (
     LOCAL_CONTROL_ELIGIBILITY_OPTION,
     LocalControlEligibilityError,
     LocalControlEntityDescriptor,
+    _load_bundled_local_control_entity_contract,
     load_local_control_entity_contract,
     resolve_local_control_binding_eligibility,
 )
 from custom_components.my_lg.local_control_entity import (
+    MyLgApplianceSettingSelect,
     MyLgLocalContractButton,
     MyLgLocalContractNumber,
     MyLgLocalContractSelect,
@@ -225,7 +227,9 @@ def _full_fleet_options(contract):
 
 
 def full_model_eligibility():
-    contract = load_local_control_entity_contract()
+    # Factory cardinality is a bundled-contract unit test.  The production
+    # feature DB intentionally enables a smaller, editable control menu.
+    contract = _load_bundled_local_control_entity_contract()
     options, binding_models = _full_fleet_options(contract)
     return contract, resolve_local_control_binding_eligibility(
         options, contract, binding_models
@@ -304,7 +308,7 @@ class LocalControlGenericFactoryTests(unittest.TestCase):
         )
 
     def test_partial_exact_subset_never_creates_a_generic_surface(self) -> None:
-        contract = load_local_control_entity_contract()
+        contract = _load_bundled_local_control_entity_contract()
         desc = next(
             item
             for item in contract.descriptors_by_model[MODEL]
@@ -350,6 +354,82 @@ class LocalControlGenericFactoryTests(unittest.TestCase):
 
 
 class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
+    def test_exact_cycle_power_readback_uses_only_verified_power_states(self) -> None:
+        contract = load_local_control_entity_contract()
+        cases = (
+            ("ST_R_ETH01Y_", "operation.power_requested", "power_off", False),
+            ("ST_R_ETH01Y_", "operation.power_requested", "initial", True),
+            ("WTL_KPK_BDH_KR_01", "washer.power_requested", "power off", False),
+            ("WTL_KPK_BDH_KR_01", "washer.power_requested", "initial", True),
+            ("WTL_KPK_BDH_KR_01", "dryer.power_requested", "power off", False),
+            ("WTL_KPK_BDH_KR_01", "dryer.power_requested", "initial", True),
+        )
+        for model, capability, state, expected in cases:
+            with self.subTest(model=model, capability=capability, state=state):
+                desc = next(
+                    item for item in contract.descriptors_by_model[model]
+                    if item.capability_id == capability and item.entity_domain == "switch"
+                )
+                entity = MyLgLocalContractSwitch(
+                    Coordinator(model=model), desc, Router(),
+                    PrimaryProvider({desc.exact_state_semantic: state}, model=model),
+                    ReadProvider(),
+                )
+                self.assertIs(entity.is_on, expected)
+
+        # A paused/other cycle status is not automatically treated as ON.
+        desc = next(
+            item for item in contract.descriptors_by_model["WTL_KPK_BDH_KR_01"]
+            if item.capability_id == "washer.power_requested"
+        )
+        entity = MyLgLocalContractSwitch(
+            Coordinator(model="WTL_KPK_BDH_KR_01"), desc, Router(),
+            PrimaryProvider({desc.exact_state_semantic: "pause"}, model="WTL_KPK_BDH_KR_01"),
+            ReadProvider(),
+        )
+        with self.assertLogs("custom_components.my_lg.local_control_entity", level="WARNING"):
+            self.assertIsNone(entity.is_on)
+
+    def test_aabb_boolean_and_sparse_numeric_readback_use_only_existing_options(self) -> None:
+        contract = load_local_control_entity_contract()
+        cases = (
+            ("1WPD4CMIDR__3", "auto_care.enabled", False, "OFF"),
+            ("1WPD4CMIDR__3", "auto_care.enabled", True, "ON"),
+            ("1WPD4CMIDR__3", "sterilization.schedule.hour", 18, "18"),
+            ("1WPD4CMIDR__3", "water.default_selection", "last used", "RECENT_WATER"),
+            ("1WPD4CMIDR__3", "water.default_selection", "purified water", "NORMAL_WATER"),
+            ("1WPD4CMIDR__3", "water.default_selection", "cold water", "COLD_WATER"),
+            ("2REFO1DBN3K_U", "smart_care.enabled", False, "OFF"),
+            ("2REFO1DBN3K_U", "sound.button_enabled", True, "ON"),
+            ("3REK2G03VI230D_2", "filter.one_touch_enabled", False, "OFF"),
+        )
+        for model, capability, state, expected in cases:
+            with self.subTest(model=model, capability=capability, state=state):
+                desc = next(
+                    item for item in contract.descriptors_by_model[model]
+                    if item.capability_id == capability and item.entity_domain == "select"
+                )
+                primary = PrimaryProvider({desc.exact_state_semantic: state}, model=model)
+                entity = MyLgLocalContractSelect(
+                    Coordinator(model=model), desc, Router(), primary, ReadProvider()
+                )
+                self.assertEqual(entity.current_option, expected)
+                self.assertIn(entity.current_option, entity.options)
+
+        # Out-of-domain values remain unknown; this conversion never expands
+        # the write domain or guesses a new state.
+        desc = next(
+            item for item in contract.descriptors_by_model["1WPD4CMIDR__3"]
+            if item.capability_id == "auto_care.enabled"
+        )
+        entity = MyLgLocalContractSelect(
+            Coordinator(model="1WPD4CMIDR__3"), desc, Router(),
+            PrimaryProvider({desc.exact_state_semantic: 2}, model="1WPD4CMIDR__3"),
+            ReadProvider(),
+        )
+        with self.assertLogs("custom_components.my_lg.local_control_entity", level="WARNING"):
+            self.assertIsNone(entity.current_option)
+
     def test_exact_local_state_is_used_without_cloud_or_guessing(self) -> None:
         for domain in ("switch", "select", "number"):
             desc = descriptor(domain)
@@ -371,6 +451,54 @@ class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
                         entity.native_value,
                         float(desc.value_mappings[0].home_assistant_value),
                     )
+
+    def test_reviewed_aabb_setting_reads_drive_existing_local_selects(self) -> None:
+        contract = load_local_control_entity_contract()
+        cases = (
+            ("2REFO1DBN3K_U", "compartment.fridge.setpoint_raw", 5, "5"),
+            ("2REFO1DBN3K_U", "compartment.freezer.setpoint_raw", 3, "3"),
+            ("1WPD4CMIDR__3", "water.default_amount_mode_raw", 2, "2"),
+            ("1WPD4CMIDR__3", "water.default_amount_1_raw", 12, "12"),
+            ("1WPD4CMIDR__3", "water.custom_recipe_1.temperature_raw", 40, "40"),
+        )
+        for model, capability, value, expected in cases:
+            with self.subTest(model=model, capability=capability):
+                desc = next(
+                    item for item in contract.descriptors_by_model[model]
+                    if item.capability_id == capability and item.entity_domain == "select"
+                )
+                entity = MyLgLocalContractSelect(
+                    Coordinator(model=model), desc, Router(),
+                    PrimaryProvider(model=model),
+                    ReadProvider({desc.exact_state_semantic: value}),
+                )
+                self.assertEqual(entity.current_option, expected)
+                self.assertIn(entity.current_option, entity.options)
+
+    def test_appliance_value_owner_uses_own_state_before_endpoint_cache(self) -> None:
+        model = "2REFO1DBN3K_U"
+        semantic = "compartment.fridge.setpoint_raw"
+        desc = next(
+            item for item in load_local_control_entity_contract().descriptors_by_model[model]
+            if item.capability_id == semantic
+        )
+        primary = PrimaryProvider(model=model)
+        read = ReadProvider({semantic: 5})
+        entity = MyLgApplianceSettingSelect(
+            Coordinator(model=model), desc, Router(), primary, read,
+        )
+        entity._reported_value = "4"
+        self.assertEqual(entity.current_option, "5")
+
+        # A conflicting exact source must not be masked by the old endpoint.
+        primary.values[semantic] = 4
+        primary.available.add(semantic)
+        with self.assertLogs("custom_components.my_lg.local_control_entity", level="WARNING"):
+            self.assertIsNone(entity.current_option)
+
+        primary.available.clear()
+        read.available.clear()
+        self.assertEqual(entity.current_option, "4")
 
     def test_inconsistent_or_unknown_state_logs_semantic_once_without_private_data(
         self,

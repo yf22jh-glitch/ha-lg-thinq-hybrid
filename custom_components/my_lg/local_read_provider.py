@@ -1396,8 +1396,8 @@ def load_tlv_read_catalogue_from_database(
             ):
                 raise TlvReadCatalogueError("Local feature database layout is invalid")
             rows = connection.execute(
-                "SELECT model_id, profile_id, feature_id, platform, definition_json "
-                "FROM features WHERE channel = 'full-read' AND enabled = 1 "
+                "SELECT model_id, profile_id, feature_id, platform, definition_json, enabled "
+                "FROM features WHERE channel = 'full-read' "
                 "ORDER BY model_id, feature_id"
             ).fetchall()
         finally:
@@ -1409,6 +1409,11 @@ def load_tlv_read_catalogue_from_database(
     for row in rows:
         model_id = row["model_id"]
         platform = row["platform"]
+        if not row["enabled"]:
+            if platform in ("thinq1", "thinq2"):
+                platforms.setdefault(model_id, platform)
+                grouped.setdefault(model_id, [])
+            continue
         try:
             field = json.loads(row["definition_json"])
             if (
@@ -1636,7 +1641,6 @@ class TlvReadProfile:
             raise ValueError("TLV read artifact digest is invalid")
         if (
             not isinstance(self.fields, tuple)
-            or not self.fields
             or len(self.fields) > MAX_TLV_READ_FIELDS
         ):
             raise ValueError("TLV read profile fields are invalid")
@@ -3457,6 +3461,50 @@ class TlvReadShadowProvider:
     @property
     def fields(self) -> Mapping[str, TlvReadValue]:
         return self._fields
+
+    def update_profile(self, profile: TlvReadProfile, *, notify: bool = True) -> None:
+        """Refresh visible descriptors using the already accepted current.
+
+        Subscription, presence, cursor, pending messages and energy consumers
+        stay intact. Cached observations are reused only with matching types
+        and units; an added descriptor can read a previously hidden raw field.
+        No old event is emitted again.
+        """
+        if (profile.profile_id, profile.model_id, profile.platform) != (
+            self.profile.profile_id, self.profile.model_id, self.profile.platform
+        ):
+            raise ValueError("A feature edit cannot change the connected appliance")
+        old = self.profile.fields_by_semantic_id
+        fields: dict[str, TlvReadValue] = {}
+        raw_fields = (
+            {} if self._current_canonical is None
+            else json.loads(self._current_canonical)["fields"]
+        )
+        for contract in profile.fields:
+            previous = old.get(contract.semantic_id)
+            field = self._fields.get(contract.semantic_id)
+            if field is not None and previous is not None and (
+                previous.value_types, previous.unit, previous.exposure,
+                previous.publication_mode
+            ) == (
+                contract.value_types, contract.unit, contract.exposure,
+                contract.publication_mode
+            ):
+                fields[contract.semantic_id] = field
+            elif (contract.publication_mode == "retained-current"
+                  and contract.semantic_id in raw_fields
+                  and self._current_published_at is not None):
+                try:
+                    fields[contract.semantic_id] = _parse_field(
+                        raw_fields[contract.semantic_id], contract,
+                        self._now().astimezone(timezone.utc), self._current_published_at,
+                    )
+                except TlvReadProviderContractError:
+                    pass
+        self.profile = profile
+        self._fields = MappingProxyType(fields)
+        if notify:
+            self._notify_listeners()
 
     @property
     def current_diagnostics(self) -> Mapping[str, int]:

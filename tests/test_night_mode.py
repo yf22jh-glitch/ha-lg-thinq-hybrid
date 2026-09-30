@@ -72,6 +72,30 @@ class NightModeTests(unittest.IsolatedAsyncioTestCase):
             "startTime": "21:00", "endTime": "06:00",
         }])
 
+    async def test_sunset_brightness_uses_the_active_saved_mode(self):
+        state = {"nightMode": "SUNSET_RISE", "brightness": "40"}
+        writes = []
+
+        async def read():
+            return dict(state)
+
+        async def write(body):
+            writes.append(dict(body))
+            state["brightness"] = body["brightness"]
+
+        result = await night_mode.set_night_mode_brightness(
+            expected_mode="SUNSET_RISE",
+            expected_brightness_pct=40,
+            desired_brightness_pct=50,
+            read=read,
+            write=write,
+        )
+        self.assertEqual(result.brightness_pct, 50)
+        self.assertEqual(writes, [{
+            "saveType": "SAVE", "nightMode": "SUNSET_RISE", "brightness": "50",
+            "startTime": "21:00", "endTime": "06:00",
+        }])
+
     async def test_stale_value_and_inactive_mode_send_no_write(self):
         writes = []
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -614,9 +615,171 @@ _WIDEQ_SENSOR_SEMANTICS = {
     "styler_course": "cycle.course",
     "washer_state": "washer.cycle.state",
     "washer_remain": "washer.cycle.remaining_min",
+    "washer_child_lock": "washer.lock.child_enabled",
     "dryer_state": "dryer.cycle.state",
     "dryer_remain": "dryer.cycle.remaining_min",
 }
+
+# Legacy entity IDs used by dashboards can take an exact Local state without
+# changing their registry identity. Keep this model-scoped: similar-looking
+# values from another appliance are not evidence that its wire is identical.
+_LOCAL_LEGACY_SENSOR_SEMANTICS: dict[tuple[str, str], str] = {
+    ("WTL_KPK_BDH_KR_01", "washer_state"): "washer.cycle.state",
+    ("WTL_KPK_BDH_KR_01", "washer_remain"): "washer.cycle.remaining_min",
+    ("WTL_KPK_BDH_KR_01", "washer_child_lock"): "washer.lock.child_enabled",
+    ("WTL_KPK_BDH_KR_01", "dryer_remain"): "dryer.cycle.remaining_min",
+    ("ST_R_ETH01Y_", "styler_state"): "cycle.state",
+    ("ST_R_ETH01Y_", "styler_course"): "cycle.course",
+}
+
+_LOCAL_LEGACY_SENSOR_TYPES = {
+    "washer_state": "string",
+    "washer_remain": "number",
+    "washer_child_lock": "boolean",
+    "dryer_remain": "number",
+    "styler_state": "string",
+    "styler_course": "string",
+}
+
+# The producer's reviewed local labels are not the old WideQ vocabulary.
+# Translate only exact known labels; an unknown wire code stays unavailable.
+_WASHER_LOCAL_TO_WIDEQ_STATE = {
+    "power off": "POWEROFF",
+    "initial": "INITIAL",
+    "pause": "PAUSE",
+    "detecting": "DETECTING",
+    "filling": "ADD_DRAIN",
+    "detecting detergent amount": "DETERGENT_AMOUNT",
+    "soaking": "SOAK",
+    "prewash": "PREWASH",
+    "washing": "RUNNING",
+    "rinsing": "RINSING",
+    "rinse hold": "RINSEHOLD",
+    "spinning": "SPINNING",
+    "drying": "DRYING",
+    "wash complete": "END",
+    "wrinkle care": "REFRESHING",
+    "error": "ERROR_AUTO_OFF",
+    "anti-freeze standby": "FROZEN_PREVENT_INITIAL",
+    "anti-freeze pause": "FROZEN_PREVENT_PAUSE",
+    "anti-freeze running": "FROZEN_PREVENT_RUNNING",
+    "audible diagnosis": "AUDIBLE_DIAGNOSIS",
+    "auto detergent pause": "AUTO_DT_OPEN_PAUSE",
+    "setting": "CONFIRM_START_FOR_CONTROL",
+    "recognizing garment": "CLOTHING_RECOGNITION",
+    "detergent input": "DETERGENT_INPUT",
+    "softener input": "SOFTENER_INPUT",
+    "detecting soil": "POLLUTION_DETECTING",
+    "tub cleaning": "TUB_CLEANING",
+    "complete/remote maintain": "END_REMOTE_MAINTAIN_ON",
+    "steam": "STEAM",
+    "laundry care": "LAUNDRYCARE",
+    "dispenser cleaning": "EZDISPENSE_CLEANING",
+    "awaiting completion": "END_WAITING",
+}
+
+_STYLER_LOCAL_TO_WIDEQ_STATE = {
+    "power_off": "POWEROFF",
+    "initial": "INITIAL",
+    "pause": "PAUSE",
+    "complete": "COMPLETE",
+    "reserved": "RESERVED",
+    "end_remote_maintain_on": "END_REMOTE_MAINTAIN_ON",
+    "detecting": "DETECTING",
+    "presteam": "PRESTEAM",
+    "steam_spray": "STEAM_SPRAY",
+    "drying": "DRYING",
+    "dehume": "DEHUME",
+    "steamer_running": "STEAMER_RUNNING",
+}
+
+# Full-read rows for these exact AABB locators are independently selectable in
+# the feature database. They retain the legacy unique IDs when enabled; no
+# guessed cloud value is synthesized for an unknown wire code.
+_LOCAL_LEGACY_READ_SEMANTICS: dict[tuple[str, str], str] = {
+    ("WTL_KPK_BDH_KR_01", "washer_energy"): "washer.cycle.energy_wh",
+    ("WTL_KPK_BDH_KR_01", "dryer_energy"): "dryer.cycle.energy_wh",
+    ("WTL_KPK_BDH_KR_01", "washer_course"): "diagnostic.washer.course_raw",
+    ("WTL_KPK_BDH_KR_01", "washer_spin"): "diagnostic.washer.spin_setting_raw",
+    ("WTL_KPK_BDH_KR_01", "washer_water_temp"): "diagnostic.washer.wash_temperature_raw",
+    ("WTL_KPK_BDH_KR_01", "washer_water_level"): "diagnostic.washer.water_level_raw",
+    ("WTL_KPK_BDH_KR_01", "washer_error"): "washer.error.code_raw",
+    ("WTL_KPK_BDH_KR_01", "washer_door_lock"): "diagnostic.washer.lock_detection_options_bitmap_raw",
+    ("WTL_KPK_BDH_KR_01", "dryer_state"): "diagnostic.dryer.state_raw",
+    ("WTL_KPK_BDH_KR_01", "dryer_dry_level"): "diagnostic.dryer.dry_level_raw",
+    ("WTL_KPK_BDH_KR_01", "dryer_duct_clogging"): "diagnostic.dryer.vent_blockage_raw",
+    ("WTL_KPK_BDH_KR_01", "dryer_error"): "dryer.error.code_raw",
+    ("ST_R_ETH01Y_", "styler_remain"): "cycle.remaining_min",
+    ("ST_R_ETH01Y_", "styler_door_lock"): "lock.door_enabled",
+    ("ST_R_ETH01Y_", "styler_night_dry"): "option.night_dry_enabled",
+    ("ST_R_ETH01Y_", "styler_energy"): "diagnostic.cycle.course_spend_power_raw",
+}
+_LOCAL_LEGACY_READ_TYPES = {
+    key: (("boolean",) if key in {"styler_door_lock", "styler_night_dry"} else ("number",))
+    for _model, key in _LOCAL_LEGACY_READ_SEMANTICS
+}
+
+_WASHER_COURSE_RAW_TO_WIDEQ = {
+    8: "BABYCARE", 27: "DUVET", 46: "NORMAL", 55: "RINSE_SPIN",
+    74: "SPEEDWASH", 76: "SPEEDBOIL", 78: "SPIN_ONLY", 84: "TOWELS",
+    85: "TUB_CLEAN", 94: "WOOL", 95: "SINGLE_SHIRTS", 114: "AI_COURSE",
+    6: "ANSIMCOLD", 18: "COLORCARE", 56: "RINSEONLY", 65: "SILENT",
+    70: "SOAK", 79: "SPORTS_WEARS", 89: "WASHONLY", 106: "RAINY_DAY",
+    108: "SHIRT", 109: "SINGLE_GARMENTS", 113: "SWEAT_STAIN",
+}
+_WASHER_SPIN_RAW_TO_WIDEQ = {
+    0: "NO_SPIN", 1: "SPIN_400", 2: "SPIN_600", 4: "SPIN_800",
+    6: "SPIN_1000", 8: "SPIN_1200",
+}
+_WASHER_TEMP_RAW_TO_WIDEQ = {
+    0: "NO_TEMP", 2: "TEMP_30", 3: "TEMP_40", 5: "TEMP_60",
+    6: "TEMP_95", 8: "TEMP_COLD",
+}
+_DRYER_STATE_RAW_TO_WIDEQ = {
+    0: "POWEROFF", 1: "INITIAL", 2: "RUNNING", 3: "PAUSE", 4: "END",
+    5: "ERROR", 6: "AUDIBLE_DIAGNOSIS", 7: "DRYING", 8: "COOLING",
+    9: "WRINKLECARE", 10: "RESERVED", 11: "DELAYLOAD", 12: "SPINREERVE",
+    13: "AUTOTEST", 14: "DETECTING", 15: "STEAM",
+    16: "CLOTHING_RECOGNITION", 17: "CONDENSER_CLEAN",
+    18: "BEDDINGBRUSHING", 19: "DRY_REFRESHING", 20: "ALLERGYCARE",
+    21: "CONDENSERCARE", 22: "END_REMOTE_MAINTAIN_ON", 23: "DRYREADY",
+    24: "LAUNDRYCARE", 25: "DEHUMIDIFICATION",
+    26: "DEHUMIDIFICATION_END", 27: "END_WAITING",
+}
+
+
+def _legacy_read_value(key: str, value: object) -> int | float | str | None:
+    # Historical ThinQ accumulatedEnergyData follows the same resettable
+    # course-Wh counter at roughly 15-minute boundaries. Prefer the exact
+    # Local counter rather than reproducing the delayed cloud readback; this
+    # is not lifetime energy.
+    if key in {"washer_energy", "dryer_energy", "styler_energy"}:
+        return value if type(value) is int and 0 <= value <= 0xffff else None
+    if key == "dryer_state" and type(value) is int:
+        return _DRYER_STATE_RAW_TO_WIDEQ.get(value)
+    if key == "washer_course" and type(value) is int:
+        return _WASHER_COURSE_RAW_TO_WIDEQ.get(value)
+    if key == "washer_spin" and type(value) is int:
+        return _WASHER_SPIN_RAW_TO_WIDEQ.get(value)
+    if key == "washer_water_temp" and type(value) is int:
+        return _WASHER_TEMP_RAW_TO_WIDEQ.get(value)
+    if key == "washer_water_level" and type(value) is int and value == 0:
+        return "WATERLEVEL_1"
+    if key in {"washer_error", "dryer_error"} and type(value) is int and value == 0:
+        return "ERROR_NO"
+    if key == "washer_door_lock" and type(value) is int:
+        return "DOORLOCK_ON" if value & 0x01 else "DOORLOCK_OFF"
+    if key == "dryer_dry_level" and type(value) is int and value == 0:
+        return "NO_DRYLEVEL"
+    if key == "dryer_duct_clogging" and type(value) is int and value == 0:
+        return "DUCT_CLOGGING_LEVEL_0"
+    if key == "styler_remain" and type(value) in (int, float) and value >= 0:
+        return value
+    if key == "styler_door_lock" and type(value) is bool:
+        return "DOOR_LOCK_ON" if value else "DOOR_LOCK_OFF"
+    if key == "styler_night_dry" and type(value) is bool:
+        return "NIGHTDRY_ON" if value else "NIGHTDRY_OFF"
+    return None
 
 # These are the only retained-current W measurements in the complete audited
 # 14-profile catalogue.  Both are instantaneous and therefore physically
@@ -758,6 +921,25 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "sensor", lambda: _build_entities(entry), async_add_entities)
+    data = entry.runtime_data
+    # The complete audited RAW inventory is registered disabled by default.
+    # Catalog paths make entities available before the deliberately delayed
+    # first WideQ poll; listeners add genuinely new firmware fields later
+    # without triggering any additional network request.
+    manager = RawSensorManager(
+        list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
+    )
+    manager.add_new()
+    for coordinator in data.coordinators.values():
+        entry.async_on_unload(coordinator.async_add_listener(manager.add_new))
+    if data.wideq_coordinator is not None:
+        entry.async_on_unload(data.wideq_coordinator.async_add_listener(manager.add_new))
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[SensorEntity]:
     data = entry.runtime_data
     overlay_duplicates = (
         getattr(entry, "options", {}).get(OPT_LOCAL_READ_DUPLICATE_OVERLAY) is True
@@ -765,6 +947,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
     for coordinator in data.coordinators.values():
         established_semantics: set[str] = set()
+        legacy_read_alias_semantics: set[str] = set()
         local_provider = data.local_providers.get(coordinator.device_id)
         read_provider = getattr(data, "local_read_providers", {}).get(
             coordinator.device_id
@@ -822,12 +1005,65 @@ async def async_setup_entry(
                     or _same_unit(desc, read_contracts.get(semantic_id))
                 ):
                     established_semantics.add(semantic_id)
-        # wideq-backed sensors (only if wideq is configured).
-        if data.wideq_coordinator is not None:
-            wideq_descriptions = WIDEQ_SENSORS_BY_TYPE.get(
-                coordinator.device_type, ()
-            ) + WIDEQ_SENSORS_BY_MODEL.get(coordinator.model, ())
-            for wdesc in wideq_descriptions:
+        # Exact Local replacements keep the existing WideQ sensor unique ID.
+        # They must also exist when WideQ is no longer configured. Anything
+        # without a proven Local source retains its original cloud owner.
+        wideq_descriptions = WIDEQ_SENSORS_BY_TYPE.get(
+            coordinator.device_type, ()
+        ) + WIDEQ_SENSORS_BY_MODEL.get(coordinator.model, ())
+        for wdesc in wideq_descriptions:
+            local_semantic = _LOCAL_LEGACY_SENSOR_SEMANTICS.get(
+                (coordinator.model, wdesc.key)
+            )
+            local_contract = (
+                local_provider.profile.fields.get(local_semantic)
+                if local_provider is not None and local_semantic is not None
+                else None
+            )
+            if (
+                local_provider is not None
+                and local_provider.model_id == coordinator.model
+                and local_contract is not None
+                and local_contract.exposure == "state"
+                and local_contract.value_type
+                == _LOCAL_LEGACY_SENSOR_TYPES[wdesc.key]
+                and local_contract.unit == wdesc.native_unit_of_measurement
+            ):
+                entities.append(
+                    LocalLegacySensor(
+                        local_provider,
+                        coordinator,
+                        local_semantic,
+                        local_contract,
+                        wdesc,
+                    )
+                )
+                established_semantics.add(local_semantic)
+                continue
+            read_semantic = _LOCAL_LEGACY_READ_SEMANTICS.get(
+                (coordinator.model, wdesc.key)
+            )
+            read_contract = (
+                read_contracts.get(read_semantic)
+                if read_provider is not None and read_semantic is not None
+                else None
+            )
+            if (
+                read_provider is not None
+                and read_contract is not None
+                and getattr(read_provider.profile, "model_id", None) == coordinator.model
+                and read_contract.value_types == _LOCAL_LEGACY_READ_TYPES[wdesc.key]
+                and read_contract.unit == wdesc.native_unit_of_measurement
+            ):
+                entities.append(
+                    LocalLegacyReadSensor(
+                        read_provider, coordinator, read_semantic, read_contract, wdesc
+                    )
+                )
+                established_semantics.add(read_semantic)
+                legacy_read_alias_semantics.add(read_semantic)
+                continue
+            if data.wideq_coordinator is not None:
                 entities.append(
                     WideqDeviceSensor(data.wideq_coordinator, coordinator, wdesc)
                 )
@@ -851,6 +1087,7 @@ async def async_setup_entry(
                 read_provider,
                 "sensor",
                 established_semantics=established_semantics,
+                excluded_semantics=legacy_read_alias_semantics,
                 overlay_duplicates=overlay_duplicates,
             ):
                 entities.append(
@@ -902,20 +1139,7 @@ async def async_setup_entry(
                             local_provider, coordinator, semantic_id, contract
                         )
                     )
-    async_add_entities(entities)
-
-    # The complete audited RAW inventory is registered disabled by default.
-    # Catalog paths make entities available before the deliberately delayed
-    # first WideQ poll; listeners add genuinely new firmware fields later
-    # without triggering any additional network request.
-    manager = RawSensorManager(
-        list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
-    )
-    manager.add_new()
-    for coordinator in data.coordinators.values():
-        entry.async_on_unload(coordinator.async_add_listener(manager.add_new))
-    if data.wideq_coordinator is not None:
-        entry.async_on_unload(data.wideq_coordinator.async_add_listener(manager.add_new))
+    return entities
 
 
 class MyLgSensor(MyLgEntity, SensorEntity):
@@ -934,6 +1158,102 @@ class MyLgSensor(MyLgEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return self.entity_description.value_fn(self.coordinator)
+
+
+class LocalLegacySensor(LocalSemanticEntityMixin, SensorEntity):
+    """An exact Local read retaining an established WideQ sensor identity."""
+
+    entity_description: WideqSensorDescription
+
+    def __init__(
+        self,
+        provider: LocalSemanticShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        semantic_id: str,
+        contract: LocalSemanticFieldContract,
+        description: WideqSensorDescription,
+    ) -> None:
+        expected_semantic = _LOCAL_LEGACY_SENSOR_SEMANTICS.get(
+            (pat_coordinator.model, description.key)
+        )
+        if (
+            expected_semantic != semantic_id
+            or contract.value_type != _LOCAL_LEGACY_SENSOR_TYPES[description.key]
+            or contract.exposure != "state"
+            or contract.unit != description.native_unit_of_measurement
+        ):
+            raise ValueError("Local legacy sensor requires an exact source")
+        super().__init__(provider, pat_coordinator, semantic_id, contract)
+        self.entity_description = description
+        self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
+        self._attr_name = description.name
+        self._attr_entity_registry_enabled_default = True
+
+    def _display_value(self, value: object) -> int | float | str | None:
+        key = self.entity_description.key
+        if key == "washer_state":
+            return _WASHER_LOCAL_TO_WIDEQ_STATE.get(value) if isinstance(value, str) else None
+        if key == "styler_state":
+            return _STYLER_LOCAL_TO_WIDEQ_STATE.get(value) if isinstance(value, str) else None
+        if key == "styler_course":
+            # The exact-model course code table is shared with the producer;
+            # never synthesize a label for an out-of-domain raw value.
+            return value if value == "NONE" or (
+                isinstance(value, str)
+                and re.fullmatch(r"(?:STYLING|SANITARY|DRY)_[A-Z0-9_]+_[0-9]+", value)
+            ) else None
+        if key == "washer_child_lock":
+            return ("CHILDLOCK_ON" if value else "CHILDLOCK_OFF") if type(value) is bool else None
+        if key in {"washer_remain", "dryer_remain"}:
+            return value if type(value) in (int, float) and value >= 0 else None
+        return None
+
+    @property
+    def native_value(self) -> int | float | str | None:
+        field = self._shadow_field
+        return None if field is None else self._display_value(field.value)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.native_value is not None
+
+
+class LocalLegacyReadSensor(TlvReadEntityMixin, SensorEntity):
+    """One exact complete-feed field under its existing WideQ sensor identity."""
+
+    entity_description: WideqSensorDescription
+
+    def __init__(
+        self,
+        provider: TlvReadShadowProvider,
+        pat_coordinator: PatDeviceCoordinator,
+        semantic_id: str,
+        contract: TlvReadFieldContract,
+        description: WideqSensorDescription,
+    ) -> None:
+        if (
+            _LOCAL_LEGACY_READ_SEMANTICS.get((pat_coordinator.model, description.key))
+            != semantic_id
+            or contract.value_types != _LOCAL_LEGACY_READ_TYPES[description.key]
+            or contract.unit != description.native_unit_of_measurement
+        ):
+            raise ValueError("Local legacy read requires its exact model field")
+        super().__init__(provider, pat_coordinator, semantic_id, contract)
+        self.entity_description = description
+        self._attr_unique_id = f"{pat_coordinator.device_id}_{description.key}"
+        self._attr_name = description.name
+        self._attr_entity_category = None
+        self._attr_entity_registry_enabled_default = True
+        self._attr_native_unit_of_measurement = description.native_unit_of_measurement
+
+    @property
+    def native_value(self) -> int | float | str | None:
+        field = self._read_field
+        return None if field is None else _legacy_read_value(self.entity_description.key, field.value)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.native_value is not None
 
 
 class LocalSemanticSensor(LocalSemanticEntityMixin, SensorEntity):

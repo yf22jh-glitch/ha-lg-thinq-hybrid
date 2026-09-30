@@ -78,6 +78,13 @@ UNSUPPORTED_WIDEQ_AC_FEATURES_BY_MODEL: dict[str, frozenset[str]] = {
     "CST_570004_WW": frozenset({"air_clean", "smart_care"}),
 }
 
+# AIR_2C0001_WW has neither a Web Jet toggle nor the generic WideQ
+# airUVDisinfection field. Its actual Web sterilization switch is UVnano and
+# is owned by the exact Local control surface under the old UV unique ID.
+UNSUPPORTED_WIDEQ_AIR_FEATURES_BY_MODEL: dict[str, frozenset[str]] = {
+    "AIR_2C0001_WW": frozenset({"jet_mode", "uv_disinfection"}),
+}
+
 
 SWITCHES_BY_TYPE: dict[str, tuple[MyLgSwitchDescription, ...]] = {
     DEVICE_TYPE_AIR_CONDITIONER: (
@@ -269,7 +276,15 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "switch", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[SwitchEntity]:
     entities: list[SwitchEntity] = []
+    local_contract_switches = local_control_entities_for_domain(entry, "switch")
+    local_contract_unique_ids = {entity.unique_id for entity in local_contract_switches}
     local_control = entry.runtime_data.local_control
     for coordinator in entry.runtime_data.coordinators.values():
         local_read_provider = entry.runtime_data.local_read_providers.get(
@@ -319,12 +334,18 @@ async def async_setup_entry(
             )
             for wdesc in WIDEQ_SWITCHES_BY_TYPE.get(coordinator.device_type, ()):
                 wdesc = _wideq_switch_for_model(wdesc, coordinator.model)
+                if f"{coordinator.device_id}_{wdesc.key}" in local_contract_unique_ids:
+                    continue
                 if (
                     wdesc.supported_models
                     and coordinator.model not in wdesc.supported_models
                 ):
                     continue
                 if wdesc.key in UNSUPPORTED_WIDEQ_AC_FEATURES_BY_MODEL.get(
+                    coordinator.model, frozenset()
+                ):
+                    continue
+                if wdesc.key in UNSUPPORTED_WIDEQ_AIR_FEATURES_BY_MODEL.get(
                     coordinator.model, frozenset()
                 ):
                     continue
@@ -353,8 +374,8 @@ async def async_setup_entry(
                     )
                 )
 
-    entities.extend(local_control_entities_for_domain(entry, "switch"))
-    async_add_entities(entities)
+    entities.extend(local_contract_switches)
+    return entities
 
 
 class _LocalReadSwitchMixin:
@@ -477,6 +498,10 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
 
     async def _set(self, value: Any) -> None:
         d = self.entity_description
+        if self._local_control is not None and d.local_control_semantic is not None:
+            self._local_control.ensure_feature_enabled(
+                self.coordinator.device_id, d.local_control_semantic
+            )
         payload = {d.group: {d.field: value}}
         local_write_allowed = (
             not d.local_control_on_only or value == d.on_value
