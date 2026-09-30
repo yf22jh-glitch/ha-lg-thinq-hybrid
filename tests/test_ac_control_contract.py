@@ -400,6 +400,9 @@ class FakeLocalRouter:
     def control_target_available(self, _device_id: str) -> bool:
         return self.target_available
 
+    def ensure_feature_enabled(self, _device_id: str, _capability: str) -> None:
+        """This double has no operator-disabled DB features."""
+
     def capability_authorized(self, _device_id: str, capability: str) -> bool:
         return (
             self.authorized_capabilities is None

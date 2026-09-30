@@ -173,9 +173,15 @@ class LocalSemanticEntityContractTests(unittest.TestCase):
         self.assertEqual(sensor._legacy_read_value("styler_door_lock", True), "DOOR_LOCK_ON")
         self.assertEqual(sensor._legacy_read_value("styler_night_dry", True), "NIGHTDRY_ON")
         self.assertEqual(sensor._legacy_read_value("styler_night_dry", False), "NIGHTDRY_OFF")
+        for key in ("washer_energy", "dryer_energy", "styler_energy"):
+            self.assertEqual(sensor._legacy_read_value(key, 0), 0)
+            self.assertEqual(sensor._legacy_read_value(key, 219), 219)
+            self.assertIsNone(sensor._legacy_read_value(key, -1))
+            self.assertIsNone(sensor._legacy_read_value(key, True))
+            self.assertIsNone(sensor._legacy_read_value(key, 65536))
         self.assertIsNone(sensor._legacy_read_value("dryer_error", 99))
 
-    def test_all_thirteen_legacy_read_aliases_keep_their_established_ids(self) -> None:
+    def test_all_sixteen_legacy_read_aliases_keep_their_established_ids(self) -> None:
         examples = {
             "washer_course": (114, "AI_COURSE"),
             "washer_spin": (6, "SPIN_1000"),
@@ -190,6 +196,9 @@ class LocalSemanticEntityContractTests(unittest.TestCase):
             "styler_remain": (37, 37),
             "styler_door_lock": (True, "DOOR_LOCK_ON"),
             "styler_night_dry": (True, "NIGHTDRY_ON"),
+            "washer_energy": (219, 219),
+            "dryer_energy": (219, 219),
+            "styler_energy": (219, 219),
         }
         self.assertEqual(len(sensor._LOCAL_LEGACY_READ_SEMANTICS), len(examples))
         for (model, key), semantic_id in sensor._LOCAL_LEGACY_READ_SEMANTICS.items():
@@ -206,10 +215,12 @@ class LocalSemanticEntityContractTests(unittest.TestCase):
                     semantic_id=semantic_id,
                     domain="binary_sensor" if type(value) is bool else "sensor",
                     value_types=("boolean",) if type(value) is bool else ("number",),
-                    exposure="state" if model == "ST_R_ETH01Y_" else "diagnostic",
+                    exposure=("diagnostic" if model == "WTL_KPK_BDH_KR_01"
+                              or key == "styler_energy" else "state"),
                     label_ko=key,
-                    entity_category=(None if model == "ST_R_ETH01Y_" else "diagnostic"),
-                    enabled_by_default=model == "ST_R_ETH01Y_",
+                    entity_category=("diagnostic" if model == "WTL_KPK_BDH_KR_01"
+                                     or key == "styler_energy" else None),
+                    enabled_by_default=model == "ST_R_ETH01Y_" and key != "styler_energy",
                     publication_mode="retained-current",
                     unit=description.native_unit_of_measurement,
                 )
@@ -229,6 +240,9 @@ class LocalSemanticEntityContractTests(unittest.TestCase):
                 )
                 self.assertEqual(entity.unique_id, f"{coordinator.device_id}_{key}")
                 self.assertEqual(entity.native_value, expected)
+                if key.endswith("_energy"):
+                    self.assertEqual(entity.native_unit_of_measurement, "Wh")
+                    self.assertIsNone(entity.entity_description.state_class)
 
     def test_legacy_local_sensor_keeps_entity_identity_and_rejects_unknown_state(self) -> None:
         profiles = load_local_semantic_profile_catalogue()[1]
@@ -482,6 +496,59 @@ class LocalSemanticEntityFactoryTests(unittest.IsolatedAsyncioTestCase):
             await sensor.async_setup_entry(None, entry, entities.extend)
         legacy = [item for item in entities if isinstance(item, sensor.LocalLegacyReadSensor)]
         self.assertEqual([item.entity_description.key for item in legacy], ["washer_spin"])
+
+    async def test_course_energy_uses_local_wh_under_existing_ids(self) -> None:
+        for model, device_type, semantic_id, key in (
+            ("WTL_KPK_BDH_KR_01", DEVICE_TYPE_WASHTOWER, "washer.cycle.energy_wh", "washer_energy"),
+            ("WTL_KPK_BDH_KR_01", DEVICE_TYPE_WASHTOWER, "dryer.cycle.energy_wh", "dryer_energy"),
+            ("ST_R_ETH01Y_", DEVICE_TYPE_STYLER, "diagnostic.cycle.course_spend_power_raw", "styler_energy"),
+        ):
+            with self.subTest(key=key):
+                contract = TlvReadFieldContract(
+                    descriptor_key=f"{model}|{semantic_id}",
+                    semantic_id=semantic_id,
+                    domain="sensor",
+                    value_types=("number",),
+                    exposure="diagnostic",
+                    label_ko=key,
+                    entity_category="diagnostic",
+                    enabled_by_default=False,
+                    publication_mode="retained-current",
+                    unit="Wh",
+                )
+                coordinator = SimpleNamespace(
+                    device_id=f"pilot-{key}", alias="Pilot", model=model,
+                    device_type=device_type, get=lambda *_path: None,
+                    supports=lambda _group: False,
+                    async_add_listener=lambda _listener: lambda: None,
+                )
+                provider = SimpleNamespace(
+                    profile=SimpleNamespace(model_id=model, fields_by_semantic_id={semantic_id: contract}),
+                    display_field=lambda _id: SimpleNamespace(value=219),
+                    display_field_available=lambda _id: True,
+                )
+                data = SimpleNamespace(
+                    wideq_coordinator=None,
+                    coordinators={coordinator.device_id: coordinator},
+                    local_providers={},
+                    local_read_providers={coordinator.device_id: provider},
+                )
+                entry = SimpleNamespace(runtime_data=data, async_on_unload=lambda _remove: None)
+                entities = []
+                with (
+                    patch.object(sensor, "RawSensorManager") as manager,
+                    patch.object(sensor, "iter_tlv_read_contracts", return_value=[]),
+                    patch.object(sensor, "TLV_READ_DIAGNOSTIC_KEYS", ()),
+                ):
+                    manager.return_value.add_new.return_value = None
+                    await sensor.async_setup_entry(None, entry, entities.extend)
+                aliases = [item for item in entities if isinstance(item, sensor.LocalLegacyReadSensor)]
+                self.assertEqual([item.entity_description.key for item in aliases], [key])
+                self.assertEqual(aliases[0].unique_id, f"{coordinator.device_id}_{key}")
+                self.assertEqual(aliases[0].native_value, 219)
+                self.assertTrue(aliases[0].available)
+                self.assertEqual(aliases[0].native_unit_of_measurement, "Wh")
+                self.assertIsNone(aliases[0].entity_description.state_class)
 
     async def test_legacy_local_sensors_survive_without_wideq(self) -> None:
         profile = load_local_semantic_profile_catalogue()[1][
@@ -1114,6 +1181,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 (
                     binary_sensor.TlvReadBinarySensor,
                     sensor.TlvReadSensor,
+                    sensor.LocalLegacyReadSensor,
                     event_platform.TlvReadEventEntity,
                 ),
             ):
@@ -1192,6 +1260,8 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(key=key, owner=owner):
                 if owner == "PAT":
                     self.assertEqual(owners[key], ["MyLgSensor"])
+                elif key[1] in {"washer.cycle.energy_wh", "dryer.cycle.energy_wh"}:
+                    self.assertEqual(owners[key], ["LocalLegacyReadSensor"])
                 else:
                     self.assertEqual(len(owners[key]), 1)
                     self.assertTrue(owners[key][0].startswith("TlvRead"))
@@ -1350,6 +1420,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 (
                     binary_sensor.TlvReadBinarySensor,
                     sensor.TlvReadSensor,
+                    sensor.LocalLegacyReadSensor,
                     event_platform.TlvReadEventEntity,
                     binary_sensor.LocalSemanticBinarySensor,
                     sensor.LocalSemanticSensor,
@@ -1403,6 +1474,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
             "LocalSemanticBinarySensor",
             "LocalSemanticSensor",
             "LocalLegacySensor",
+            "LocalLegacyReadSensor",
         }
         pat_types = {"MyLgSensor", "MyLgBinarySensor"}
         wideq_types = {"WideqDeviceSensor", "WaterTankFullSensor"}
@@ -1469,8 +1541,9 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 is_full_read = owners[key][0].startswith("TlvRead")
                 self.assertEqual(
                     owner_entities[key][0].entity_registry_enabled_default,
-                    (is_full_read or owners[key][0] == "LocalLegacySensor")
-                    and expected_exposure[key] == "state",
+                    owners[key][0] == "LocalLegacyReadSensor"
+                    or ((is_full_read or owners[key][0] == "LocalLegacySensor")
+                        and expected_exposure[key] == "state"),
                 )
 
         unique_keys = {

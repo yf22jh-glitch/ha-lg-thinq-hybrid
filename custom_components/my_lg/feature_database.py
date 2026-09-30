@@ -6,6 +6,7 @@ credentials, packet captures and runtime state remain outside this database.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -124,11 +125,63 @@ def all_models_enabled(path: Path) -> bool:
 
 
 def feature_change_sequence(path: Path) -> int:
-    """A committed edit counter for the HA reload watcher, not a contract pin."""
+    """Committed edit history for administrative tools, not a runtime gate."""
     with closing(_read_connection(path)) as connection:
         return int(connection.execute(
             "SELECT COALESCE(MAX(id), 0) FROM feature_changes"
         ).fetchone()[0])
+
+
+def feature_database_token(path: Path) -> str:
+    """Detect effective menu edits, including direct SQL and WAL commits.
+
+    This is only a cache-invalidation key. It is never compared with a release
+    or a device publication. Annotation/audit edits do not rebuild entities.
+    """
+    with closing(_read_connection(path)) as connection:
+        connection.execute("BEGIN")
+        rows = [tuple(row) for row in connection.execute(
+            "SELECT channel, model_id, profile_id, feature_id, platform, "
+            "definition_json, enabled FROM features "
+            "ORDER BY channel, model_id, profile_id, feature_id"
+        )]
+        models = [tuple(row) for row in connection.execute(
+            "SELECT model_id, enabled FROM model_rollout ORDER BY model_id"
+        )]
+    return hashlib.sha256(json.dumps(
+        [rows, models], ensure_ascii=False, separators=(",", ":")
+    ).encode()).hexdigest()
+
+
+def copy_feature_database(source: Path, destination: Path) -> None:
+    """Read one committed SQLite view for the menu loaders; never edit source."""
+    with closing(_read_connection(source)) as reader, closing(
+        sqlite3.connect(destination)
+    ) as writer:
+        reader.backup(writer)
+
+
+def disabled_control_capabilities(path: Path) -> frozenset[tuple[str, str]]:
+    """A disabled declaration must not be resurrected by an additive overlay."""
+    with closing(_read_connection(path)) as connection:
+        return frozenset(tuple(row) for row in connection.execute(
+            "SELECT DISTINCT f.model_id, f.feature_id FROM features f "
+            "JOIN model_rollout m ON m.model_id = f.model_id AND m.enabled = 1 "
+            "WHERE f.channel IN ('control-entity', 'confirmed-control') AND f.enabled = 0"
+        ))
+
+
+def disabled_read_semantics(path: Path) -> frozenset[tuple[str, str]]:
+    """A hidden Local read must not reappear through the other read channel."""
+    with closing(_read_connection(path)) as connection:
+        return frozenset(tuple(row) for row in connection.execute(
+            "SELECT DISTINCT f.model_id, f.feature_id FROM features f "
+            "JOIN model_rollout m ON m.model_id = f.model_id AND m.enabled = 1 "
+            "WHERE f.enabled = 0 AND (f.channel = 'full-read' OR "
+            "(f.channel = 'pilot-read' AND NOT EXISTS "
+            "(SELECT 1 FROM features r WHERE r.channel = 'full-read' "
+            "AND r.model_id = f.model_id AND r.feature_id = f.feature_id)))"
+        ))
 
 
 def create_database(

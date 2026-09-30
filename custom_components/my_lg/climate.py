@@ -126,6 +126,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "climate", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[ClimateEntity]:
     """Set up climate entities for air conditioners."""
     primary_providers = getattr(entry.runtime_data, "local_providers", {})
     read_providers = getattr(entry.runtime_data, "local_read_providers", {})
@@ -161,7 +167,7 @@ async def async_setup_entry(
                     read_providers.get(coordinator.device_id),
                 )
             )
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgLocalClimate(ClimateEntity):

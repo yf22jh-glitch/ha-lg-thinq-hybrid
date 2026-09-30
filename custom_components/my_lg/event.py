@@ -26,6 +26,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "event", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[EventEntity]:
     entities = [
         MyLgNotificationEvent(coordinator)
         for coordinator in entry.runtime_data.coordinators.values()
@@ -41,7 +47,7 @@ async def async_setup_entry(
             TlvReadEventEntity(provider, coordinator, semantic_id, contract)
             for semantic_id, contract in iter_tlv_read_contracts(provider, "event")
         )
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgNotificationEvent(CoordinatorEntity[PatDeviceCoordinator], EventEntity):

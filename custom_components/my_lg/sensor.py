@@ -697,6 +697,8 @@ _STYLER_LOCAL_TO_WIDEQ_STATE = {
 # the feature database. They retain the legacy unique IDs when enabled; no
 # guessed cloud value is synthesized for an unknown wire code.
 _LOCAL_LEGACY_READ_SEMANTICS: dict[tuple[str, str], str] = {
+    ("WTL_KPK_BDH_KR_01", "washer_energy"): "washer.cycle.energy_wh",
+    ("WTL_KPK_BDH_KR_01", "dryer_energy"): "dryer.cycle.energy_wh",
     ("WTL_KPK_BDH_KR_01", "washer_course"): "diagnostic.washer.course_raw",
     ("WTL_KPK_BDH_KR_01", "washer_spin"): "diagnostic.washer.spin_setting_raw",
     ("WTL_KPK_BDH_KR_01", "washer_water_temp"): "diagnostic.washer.wash_temperature_raw",
@@ -710,6 +712,7 @@ _LOCAL_LEGACY_READ_SEMANTICS: dict[tuple[str, str], str] = {
     ("ST_R_ETH01Y_", "styler_remain"): "cycle.remaining_min",
     ("ST_R_ETH01Y_", "styler_door_lock"): "lock.door_enabled",
     ("ST_R_ETH01Y_", "styler_night_dry"): "option.night_dry_enabled",
+    ("ST_R_ETH01Y_", "styler_energy"): "diagnostic.cycle.course_spend_power_raw",
 }
 _LOCAL_LEGACY_READ_TYPES = {
     key: (("boolean",) if key in {"styler_door_lock", "styler_night_dry"} else ("number",))
@@ -746,6 +749,12 @@ _DRYER_STATE_RAW_TO_WIDEQ = {
 
 
 def _legacy_read_value(key: str, value: object) -> int | float | str | None:
+    # Historical ThinQ accumulatedEnergyData follows the same resettable
+    # course-Wh counter at roughly 15-minute boundaries. Prefer the exact
+    # Local counter rather than reproducing the delayed cloud readback; this
+    # is not lifetime energy.
+    if key in {"washer_energy", "dryer_energy", "styler_energy"}:
+        return value if type(value) is int and 0 <= value <= 0xffff else None
     if key == "dryer_state" and type(value) is int:
         return _DRYER_STATE_RAW_TO_WIDEQ.get(value)
     if key == "washer_course" and type(value) is int:
@@ -912,6 +921,25 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "sensor", lambda: _build_entities(entry), async_add_entities)
+    data = entry.runtime_data
+    # The complete audited RAW inventory is registered disabled by default.
+    # Catalog paths make entities available before the deliberately delayed
+    # first WideQ poll; listeners add genuinely new firmware fields later
+    # without triggering any additional network request.
+    manager = RawSensorManager(
+        list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
+    )
+    manager.add_new()
+    for coordinator in data.coordinators.values():
+        entry.async_on_unload(coordinator.async_add_listener(manager.add_new))
+    if data.wideq_coordinator is not None:
+        entry.async_on_unload(data.wideq_coordinator.async_add_listener(manager.add_new))
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[SensorEntity]:
     data = entry.runtime_data
     overlay_duplicates = (
         getattr(entry, "options", {}).get(OPT_LOCAL_READ_DUPLICATE_OVERLAY) is True
@@ -919,6 +947,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
     for coordinator in data.coordinators.values():
         established_semantics: set[str] = set()
+        legacy_read_alias_semantics: set[str] = set()
         local_provider = data.local_providers.get(coordinator.device_id)
         read_provider = getattr(data, "local_read_providers", {}).get(
             coordinator.device_id
@@ -1032,6 +1061,7 @@ async def async_setup_entry(
                     )
                 )
                 established_semantics.add(read_semantic)
+                legacy_read_alias_semantics.add(read_semantic)
                 continue
             if data.wideq_coordinator is not None:
                 entities.append(
@@ -1057,6 +1087,7 @@ async def async_setup_entry(
                 read_provider,
                 "sensor",
                 established_semantics=established_semantics,
+                excluded_semantics=legacy_read_alias_semantics,
                 overlay_duplicates=overlay_duplicates,
             ):
                 entities.append(
@@ -1108,20 +1139,7 @@ async def async_setup_entry(
                             local_provider, coordinator, semantic_id, contract
                         )
                     )
-    async_add_entities(entities)
-
-    # The complete audited RAW inventory is registered disabled by default.
-    # Catalog paths make entities available before the deliberately delayed
-    # first WideQ poll; listeners add genuinely new firmware fields later
-    # without triggering any additional network request.
-    manager = RawSensorManager(
-        list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
-    )
-    manager.add_new()
-    for coordinator in data.coordinators.values():
-        entry.async_on_unload(coordinator.async_add_listener(manager.add_new))
-    if data.wideq_coordinator is not None:
-        entry.async_on_unload(data.wideq_coordinator.async_add_listener(manager.add_new))
+    return entities
 
 
 class MyLgSensor(MyLgEntity, SensorEntity):

@@ -393,7 +393,7 @@ def _validate_number_grid(values: list[Primitive], raw: Mapping[str, Any]) -> bo
     return values == expected and len(expected) <= _MAX_VALUES_PER_ENTRY
 
 
-def _descriptor(raw: object) -> LocalControlEntityDescriptor:
+def _descriptor(raw: object, *, editable_labels: bool = False) -> LocalControlEntityDescriptor:
     if not isinstance(raw, dict) or set(raw) != _ENTITY_KEYS:
         _contract_error()
     model_id = raw["modelId"]
@@ -415,7 +415,7 @@ def _descriptor(raw: object) -> LocalControlEntityDescriptor:
         or entity_key != "local_" + re.sub(r"[^a-z0-9]+", "_", capability_id).strip("_")
         or domain not in ("switch", "select", "number", "button")
         or not isinstance(raw["labelKo"], str)
-        or not re.search(r"[\uac00-\ud7a3]", raw["labelKo"])
+        or not editable_labels and not re.search(r"[\uac00-\ud7a3]", raw["labelKo"])
         or not raw["labelKo"].strip()
         or len(raw["labelKo"].encode("utf-8")) > 256
         or not isinstance(supported, list)
@@ -482,6 +482,16 @@ def _descriptor(raw: object) -> LocalControlEntityDescriptor:
             expected_ha_value = _local_request_value(supported[index])
         else:
             expected_ha_value = supported[index]
+        if editable_labels and domain == "select":
+            # Display text is editable; the exact reported/request value pair
+            # above still determines the command. Never encode the UI label.
+            label = mapping["homeAssistantValue"]
+            if (not isinstance(label, str) or not label.strip()
+                    or len(label.encode("utf-8")) > 256
+                    or any(ord(char) < 32 for char in label)
+                    or any(item.home_assistant_value == label for item in parsed_mappings)):
+                _contract_error("Local control choice labels are invalid")
+            expected_ha_value = label
         if mapping["homeAssistantValue"] != expected_ha_value:
             _contract_error("Bundled Local control HA value mapping drifted")
         parsed_mappings.append(
@@ -939,9 +949,12 @@ def load_local_control_entity_contract_from_database(
             ):
                 _contract_error("Local feature database layout is invalid")
             rows = connection.execute(
-                "SELECT model_id, feature_id, definition_json FROM features "
-                "WHERE channel = 'control-entity' AND enabled = 1 "
-                "ORDER BY model_id, feature_id"
+                "SELECT f.model_id, f.feature_id, f.definition_json FROM features f "
+                "WHERE f.channel = 'control-entity' AND f.enabled = 1 "
+                "AND NOT EXISTS (SELECT 1 FROM features d WHERE d.model_id=f.model_id "
+                "AND d.feature_id=f.feature_id AND d.enabled=0 "
+                "AND d.channel IN ('control-entity', 'confirmed-control')) "
+                "ORDER BY f.model_id, f.feature_id"
             ).fetchall()
         finally:
             connection.close()
@@ -959,7 +972,10 @@ def load_local_control_entity_contract_from_database(
                 or definition.get("capabilityId") != row["feature_id"]
             ):
                 raise ValueError("Control feature identity is invalid")
-            descriptors.append(_descriptor(definition))
+            # The bridge loads trusted model code; HA only consumes the menu.
+            # A handler filename is not an entity attribute or a new pin.
+            presentation = {k: v for k, v in definition.items() if k != "runtimeHandler"}
+            descriptors.append(_descriptor(presentation, editable_labels=True))
         except (LocalControlEntityContractError, TypeError, ValueError, KeyError):
             # A bad row cannot remove another model's already working controls.
             logging.getLogger(__name__).warning(

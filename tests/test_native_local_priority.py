@@ -21,6 +21,7 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
         router = AsyncMock()
         router.capability_authorized = Mock(return_value=True)
         router.control_target_available = Mock(return_value=True)
+        router.ensure_feature_enabled = Mock(return_value=None)
         router.async_set_value.return_value = LocalCommandResult('confirmed', {})
         if kind == 'fan':
             entity = MyLgAirPurifierFan(coordinator, router)

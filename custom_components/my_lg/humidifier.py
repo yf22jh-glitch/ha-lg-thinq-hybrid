@@ -54,12 +54,18 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "humidifier", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[HumidifierEntity]:
     entities = [
         MyLgHumidifier(coordinator, _CONFIG[coordinator.device_type], entry.runtime_data.local_control)
         for coordinator in entry.runtime_data.coordinators.values()
         if coordinator.device_type in _CONFIG
     ]
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgHumidifier(MyLgEntity, HumidifierEntity):

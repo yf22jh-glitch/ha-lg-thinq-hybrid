@@ -276,6 +276,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "switch", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[SwitchEntity]:
     entities: list[SwitchEntity] = []
     local_contract_switches = local_control_entities_for_domain(entry, "switch")
     local_contract_unique_ids = {entity.unique_id for entity in local_contract_switches}
@@ -369,7 +375,7 @@ async def async_setup_entry(
                 )
 
     entities.extend(local_contract_switches)
-    async_add_entities(entities)
+    return entities
 
 
 class _LocalReadSwitchMixin:
@@ -492,6 +498,10 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
 
     async def _set(self, value: Any) -> None:
         d = self.entity_description
+        if self._local_control is not None and d.local_control_semantic is not None:
+            self._local_control.ensure_feature_enabled(
+                self.coordinator.device_id, d.local_control_semantic
+            )
         payload = {d.group: {d.field: value}}
         local_write_allowed = (
             not d.local_control_on_only or value == d.on_value

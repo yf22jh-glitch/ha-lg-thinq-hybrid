@@ -36,6 +36,10 @@ READS = (
     (STYLER, "cycle.remaining_min", "sensor", "number", "state", "스타일러 남은 시간", "min"),
     (STYLER, "lock.door_enabled", "binary_sensor", "boolean", "state", "스타일러 문잠금", None),
     (STYLER, "option.night_dry_enabled", "binary_sensor", "boolean", "state", "스타일러 야간 건조", None),
+    (
+        STYLER, "diagnostic.cycle.course_spend_power_raw", "sensor", "number",
+        "diagnostic", "스타일러 코스 사용 전력량", "Wh",
+    ),
 )
 
 

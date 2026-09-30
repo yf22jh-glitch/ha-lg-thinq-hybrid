@@ -109,6 +109,12 @@ async def async_setup_entry(
     entry: MyLgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    from .feature_runtime import setup_feature_entities
+
+    setup_feature_entities(entry, "binary_sensor", lambda: _build_entities(entry), async_add_entities)
+
+
+def _build_entities(entry: MyLgConfigEntry) -> list[BinarySensorEntity]:
     data = entry.runtime_data
     overlay_duplicates = (
         getattr(entry, "options", {}).get(OPT_LOCAL_READ_DUPLICATE_OVERLAY) is True
@@ -194,7 +200,7 @@ async def async_setup_entry(
                         local_provider, coordinator, semantic_id, contract
                     )
                 )
-    async_add_entities(entities)
+    return entities
 
 
 class MyLgBinarySensor(MyLgEntity, BinarySensorEntity):
