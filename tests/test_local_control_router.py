@@ -158,6 +158,44 @@ def run(coro):
 
 
 class LocalControlRouterTest(unittest.TestCase):
+    def test_reported_local_value_prefers_available_read_then_primary_and_preserves_false(self):
+        from types import SimpleNamespace
+        primary_values = {'operation.power_requested': True, 'humidity.target_pct': 65}
+        primary = Provider({})
+        primary.semantic_field_available = lambda key: key in primary_values
+        primary.field_value = primary_values.get
+        read_values = {'operation.power_requested': False}
+        read = SimpleNamespace(field_available=lambda key: key in read_values,
+                               field_value=read_values.get)
+        control = LocalControlRouter(Sender(), {PAT: primary}, lambda _: BRIDGE,
+                                     read_providers={PAT: read})
+        self.assertEqual(control.reported_local_value(PAT, 'operation.power_requested'), (True, False))
+        self.assertEqual(control.reported_local_value(PAT, 'humidity.target_pct'), (True, 65))
+        self.assertEqual(control.reported_local_value(PAT, 'missing'), (False, None))
+        self.assertEqual(control.reported_local_value('other device', 'operation.power_requested'), (False, None))
+
+    def test_db_conditions_use_own_state_and_reject_before_sender_without_cloud_fallback(self):
+        provider = Provider({})
+        provider.model_id = 'HUM_056905_WW'
+        values = {'operation.power_requested': True, 'operation.mode': 'humidify+clean'}
+        provider.semantic_field_available = lambda key: key in values
+        provider.field_value = values.get
+        rules = {'hum.warm_humidification_enabled': {
+            'all': [{'semanticId': 'operation.mode', 'values': ['humidify']}], 'reasonKo': '가습 전용'}}
+        sender = Sender()
+        control = LocalControlRouter(sender, {PAT:provider}, lambda _:BRIDGE,
+            condition_policy=lambda model,capability:rules.get(capability))
+        self.assertFalse(control.feature_condition_available(PAT, 'hum.warm_humidification_enabled'))
+        with self.assertRaisesRegex(LocalCommandNotReady, '가습 전용'):
+            run(control.async_set_value(PAT, 'hum.warm_humidification_enabled', 'true'))
+        self.assertEqual(sender.sent, [])
+        values['operation.mode'] = 'humidify'
+        self.assertTrue(control.feature_condition_available(PAT, 'hum.warm_humidification_enabled'))
+        values.pop('operation.mode')
+        self.assertFalse(control.feature_condition_available(PAT, 'hum.warm_humidification_enabled'))
+        rules['hum.warm_humidification_enabled'] = {'all':[]}
+        self.assertTrue(control.feature_condition_available(PAT, 'hum.warm_humidification_enabled'))
+
     def test_strict_generic_path_surfaces_retryable_while_existing_path_keeps_fallback_contract(self) -> None:
         for retryable in (
             LocalCommandBusy("another appliance command is still being confirmed"),

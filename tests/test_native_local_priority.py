@@ -13,6 +13,19 @@ from custom_components.my_lg.button import MyLgButton, MyLgButtonDescription
 
 
 class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_db_conditions_filter_native_mode_options_and_override_cloud_availability(self):
+        entity, coordinator, router = self.setup_entity(DEVICE_TYPE_HUMIDIFIER)
+        router.feature_condition_available.side_effect = lambda device,cap,value=None: value not in ('humidify', 'humidify+clean')
+        self.assertNotIn('HUMIDIFY', entity.available_modes)
+        self.assertNotIn('HUMIDIFY_AND_AIR_CLEAN', entity.available_modes)
+        self.assertIn('AIR_CLEAN', entity.available_modes)
+        desc = next(d for d in SWITCHES_BY_TYPE[DEVICE_TYPE_HUMIDIFIER] if d.local_control_semantic)
+        switch = MyLgSwitch(coordinator, desc, router)
+        router.feature_condition_available.side_effect = None
+        router.feature_condition_available.return_value = False
+        coordinator.data['any_cloud_snapshot'] = True
+        self.assertFalse(switch.available)
+
     def setup_entity(self, kind):
         coordinator = Coordinator()
         coordinator.async_control = AsyncMock()
@@ -21,6 +34,8 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
         router = AsyncMock()
         router.capability_authorized = Mock(return_value=True)
         router.control_target_available = Mock(return_value=True)
+        router.feature_condition_available = Mock(return_value=True)
+        router.reported_local_value = Mock(return_value=(False, None))
         router.ensure_feature_enabled = Mock(return_value=None)
         router.async_set_value.return_value = LocalCommandResult('confirmed', {})
         if kind == 'fan':
@@ -28,6 +43,39 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
         else:
             entity = MyLgHumidifier(coordinator, _CONFIG[kind], router)
         return entity, coordinator, router
+
+    async def test_hydro_native_card_reads_own_power_mode_and_humidity_before_pat(self):
+        entity, coordinator, router = self.setup_entity(DEVICE_TYPE_HUMIDIFIER)
+        coordinator.get = lambda *keys, default=None: {
+            ('operation', 'humidifierOperationMode'): 'POWER_ON',
+            ('humidifierJobMode', 'currentJobMode'): 'AIR_CLEAN',
+            ('airQualitySensor', 'humidity'): 33,
+            ('humidity', 'targetHumidity'): 40,
+        }.get(keys)
+        values = {'operation.power_requested': False, 'operation.mode': 'humidify',
+                  'humidity.current_pct': 52, 'humidity.target_pct': 65}
+        router.reported_local_value.side_effect = lambda device, key: (True, values[key])
+        self.assertFalse(entity.is_on)
+        self.assertEqual(entity.mode, 'HUMIDIFY')
+        self.assertEqual(entity.current_humidity, 52)
+        self.assertEqual(entity.target_humidity, 65)
+        values['operation.mode'] = 'humidify+clean'
+        self.assertEqual(entity.mode, 'HUMIDIFY_AND_AIR_CLEAN')
+        values['operation.mode'] = 'unrecognized own mode'
+        self.assertIsNone(entity.mode)  # Do not relabel an unknown own value using stale PAT.
+
+    async def test_native_card_without_available_local_field_keeps_cloud_read(self):
+        entity, coordinator, router = self.setup_entity(DEVICE_TYPE_HUMIDIFIER)
+        coordinator.get = lambda *keys, default=None: {
+            ('operation', 'humidifierOperationMode'): 'POWER_ON',
+            ('humidifierJobMode', 'currentJobMode'): 'HUMIDIFY_AND_AIR_CLEAN',
+            ('airQualitySensor', 'humidity'): 54,
+            ('humidity', 'targetHumidity'): 70,
+        }.get(keys)
+        self.assertTrue(entity.is_on)
+        self.assertEqual(entity.mode, 'HUMIDIFY_AND_AIR_CLEAN')
+        self.assertEqual(entity.current_humidity, 54)
+        self.assertEqual(entity.target_humidity, 70)
 
     async def test_native_power_all_three_types_local_first(self):
         for kind in ('fan', DEVICE_TYPE_HUMIDIFIER, DEVICE_TYPE_DEHUMIDIFIER):
@@ -64,8 +112,8 @@ class NativeLocalPriorityTests(unittest.IsolatedAsyncioTestCase):
             coordinator.async_control.assert_not_called()
         entity, coordinator, router = self.setup_entity(DEVICE_TYPE_HUMIDIFIER)
         await entity.async_set_mode('HUMIDIFY')
-        router.async_set_value.assert_not_called()  # no invented unobserved local enum
-        coordinator.async_control.assert_awaited_once()
+        self.assertEqual(router.async_set_value.call_args.args[1:], ('operation.mode', 'humidify'))
+        coordinator.async_control.assert_not_called()
 
     async def test_only_presend_unavailable_falls_back(self):
         for kind in ('fan', DEVICE_TYPE_HUMIDIFIER, DEVICE_TYPE_DEHUMIDIFIER):

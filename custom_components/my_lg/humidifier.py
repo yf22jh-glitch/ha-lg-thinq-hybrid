@@ -16,7 +16,7 @@ from .compat import AddConfigEntryEntitiesCallback
 from .const import DEVICE_TYPE_DEHUMIDIFIER, DEVICE_TYPE_HUMIDIFIER
 from .coordinator import PatDeviceCoordinator
 from .entity import MyLgEntity
-from .local_control_native import async_native_local_control, native_local_available
+from .local_control_native import LocalConditionEntityMixin, async_native_local_control, native_local_available
 from .local_control_router import LocalControlRouter
 
 POWER_ON = "POWER_ON"
@@ -44,7 +44,7 @@ _CONFIG: dict[str, dict[str, Any]] = {
         "device_class": HumidifierDeviceClass.HUMIDIFIER,
         "modes": ["HUMIDIFY", "HUMIDIFY_AND_AIR_CLEAN", "AIR_CLEAN"],
         "current": ("airQualitySensor", "humidity"),
-        "local_modes": {"HUMIDIFY_AND_AIR_CLEAN": "humidify+clean", "AIR_CLEAN": "air clean"},
+        "local_modes": {"HUMIDIFY": "humidify", "HUMIDIFY_AND_AIR_CLEAN": "humidify+clean", "AIR_CLEAN": "air clean"},
     },
 }
 
@@ -68,7 +68,7 @@ def _build_entities(entry: MyLgConfigEntry) -> list[HumidifierEntity]:
     return entities
 
 
-class MyLgHumidifier(MyLgEntity, HumidifierEntity):
+class MyLgHumidifier(LocalConditionEntityMixin, MyLgEntity, HumidifierEntity):
     """LG (de)humidifier."""
 
     _attr_name = None
@@ -88,21 +88,45 @@ class MyLgHumidifier(MyLgEntity, HumidifierEntity):
         return native_local_available(self._local_control, self.coordinator.device_id,
                                       'operation.power_requested', 'operation.mode', 'humidity.target_pct') or super().available
 
+    def _reported_local_value(self, semantic: str) -> tuple[bool, Any]:
+        if self._local_control is None or self._cfg["device_class"] != HumidifierDeviceClass.HUMIDIFIER:
+            return False, None
+        return self._local_control.reported_local_value(self.coordinator.device_id, semantic)
+
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
+        reported, value = self._reported_local_value("operation.power_requested")
+        if reported:
+            return value if type(value) is bool else None
         return self._get("operation", self._cfg["op_key"]) == POWER_ON
 
     @property
     def current_humidity(self) -> float | None:
+        reported, value = self._reported_local_value("humidity.current_pct")
+        if reported:
+            return value
         return self._get(*self._cfg["current"])
 
     @property
     def target_humidity(self) -> float | None:
+        reported, value = self._reported_local_value("humidity.target_pct")
+        if reported:
+            return value
         return self._get("humidity", "targetHumidity")
 
     @property
     def mode(self) -> str | None:
+        reported, value = self._reported_local_value("operation.mode")
+        if reported:
+            return next((mode for mode, own in self._cfg["local_modes"].items() if own == value), None)
         return self._get(self._cfg["job_group"], "currentJobMode")
+
+    @property
+    def available_modes(self) -> list[str]:
+        if self._local_control is None:
+            return self._cfg["modes"]
+        return [mode for mode in self._cfg["modes"] if self._local_control.feature_condition_available(
+            self.coordinator.device_id, "operation.mode", self._cfg["local_modes"].get(mode))]
 
     async def _control(self, payload: dict[str, Any], capability: str, value: str | None) -> None:
         if await async_native_local_control(self._local_control, self.coordinator.device_id, capability, value):

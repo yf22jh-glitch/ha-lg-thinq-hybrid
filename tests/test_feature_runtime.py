@@ -273,9 +273,25 @@ class FeatureRuntimeTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(next(iter(platform.entities.values())).native_value, 56)
         self.assertEqual(self.reads.current_sequence, 2)
 
+    async def test_conditions_direct_sql_edits_apply_without_reload_or_entity_replacement(self) -> None:
+        identity = next(iter(self.platform.entities.values()))
+        self.update('CREATE TABLE control_conditions(model_id TEXT,capability_id TEXT,condition_json TEXT,PRIMARY KEY(model_id,capability_id))')
+        policy = {'all':[{'semanticId':'operation.power_requested','values':[True]}]}
+        self.update('INSERT INTO control_conditions VALUES(?,?,?)', (MODEL_ID, 'fan.mode', json.dumps(policy)))
+        await self.runtime.async_refresh()
+        self.assertEqual(self.data.local_control_conditions[(MODEL_ID,'fan.mode')], policy)
+        self.assertIs(next(iter(self.platform.entities.values())), identity)
+        self.update("UPDATE control_conditions SET condition_json='{}'")
+        await self.runtime.async_refresh()
+        self.assertEqual(self.data.local_control_conditions[(MODEL_ID,'fan.mode')], {})
+        self.assertIs(next(iter(self.platform.entities.values())), identity)
+        self.reload.assert_not_called()
+
     async def test_control_label_options_and_dispatch_mapping_apply_live(self) -> None:
         router = SimpleNamespace(
             control_target_available=lambda _id: True,
+            feature_condition_available=lambda *_args: True,
+            feature_condition_status=lambda *_args: (True, None),
             async_set_value_strict=AsyncMock(return_value=LocalCommandResult("confirmed", {})),
         )
         self.data.local_control = router

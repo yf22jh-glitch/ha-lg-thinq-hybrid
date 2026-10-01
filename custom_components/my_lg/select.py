@@ -41,7 +41,7 @@ from .local_command import (
 from .local_control_composite_domain import LocalControlCompositeInputDomain
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
-from .local_control_native import async_native_local_control, native_local_available
+from .local_control_native import LocalConditionEntityMixin, async_native_local_control, native_local_available
 from .local_provider import LocalSemanticShadowProvider
 from .local_read_owner import (
     local_auto_comfort_owner_configured,
@@ -529,7 +529,7 @@ class MyLgLocalAutoComfortSelect(SelectEntity):
             )
 
 
-class MyLgSelect(_LocalReadSelectMixin, MyLgEntity, SelectEntity):
+class MyLgSelect(LocalConditionEntityMixin, _LocalReadSelectMixin, MyLgEntity, SelectEntity):
     entity_description: MyLgSelectDescription
 
     def __init__(
@@ -576,7 +576,19 @@ class MyLgSelect(_LocalReadSelectMixin, MyLgEntity, SelectEntity):
         return self._get(d.group, d.field)
 
     @property
+    def options(self) -> list[str]:
+        capability = self.entity_description.local_scalar_semantic
+        if self._local_control is None or capability is None:
+            return self._attr_options
+        return [option for option in self._attr_options
+                if self._local_control.feature_condition_available(
+                    self.coordinator.device_id, capability, self.entity_description.local_scalar_values.get(option))]
+
+    @property
     def available(self) -> bool:
+        capability = self.entity_description.local_scalar_semantic
+        if self._local_control is not None and capability is not None and not self._local_control.feature_condition_available(self.coordinator.device_id, capability):
+            return False
         if self._local_read_owns_state():
             return self._local_field_available()
         return native_local_available(self._local_control, self.coordinator.device_id,
