@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from types import SimpleNamespace
 from typing import Any
 
@@ -23,6 +24,7 @@ from custom_components.my_lg.local_control_contract import (
     LOCAL_CONTROL_ELIGIBILITY_OPTION,
     LocalControlEligibilityError,
     LocalControlEntityDescriptor,
+    LocalControlValueMapping,
     _load_bundled_local_control_entity_contract,
     load_local_control_entity_contract,
     resolve_local_control_binding_eligibility,
@@ -127,6 +129,12 @@ class Router:
     def control_target_available(self, _device_id: str) -> bool:
         return self.target_available
 
+    def feature_condition_status(self, device_id, capability, value=None):
+        return True, None
+
+    def feature_condition_available(self, device_id, capability, value=None):
+        return self.feature_condition_status(device_id, capability, value)[0]
+
     async def async_set_value(self, device_id: str, capability: str, value: str):
         self.methods.append("set_value")
         self.calls.append((device_id, capability, value))
@@ -154,6 +162,60 @@ class Router:
         if isinstance(self.outcome, Exception):
             raise self.outcome
         return self.outcome
+
+
+class HydroCountdownSelectTests(unittest.IsolatedAsyncioTestCase):
+    def timer(self, value):
+        values = ('0', '30', '60', '120', '720')
+        desc = replace(descriptor('select'), model_id='HUM_056905_WW',
+                       capability_id='timer.off_remaining_min', exact_state_semantic='timer.off_remaining_min',
+                       supported_values=values, value_mappings=tuple(
+                           LocalControlValueMapping(f'{v}min', v) for v in values))
+        primary = PrimaryProvider({desc.exact_state_semantic: value}, model=desc.model_id)
+        route = Router()
+        entity = MyLgLocalContractSelect(Coordinator(model=desc.model_id), desc, route, primary, ReadProvider())
+        return entity, primary, route
+
+    async def test_remaining_minute_is_display_only_without_adding_a_write(self):
+        entity, primary, router = self.timer(59)
+        self.assertEqual(entity.current_option, '59min')
+        self.assertEqual(entity.options, ['0min', '30min', '60min', '120min', '720min', '59min'])
+        await entity.async_select_option('59min')
+        self.assertEqual(router.calls, [])
+        await entity.async_select_option('0min')
+        self.assertEqual(router.calls[-1][1:], ('timer.off_remaining_min', '0'))
+        primary.values['timer.off_remaining_min'] = 58
+        self.assertEqual(entity.current_option, '58min')
+        self.assertNotIn('59min', entity.options)
+        with self.assertRaises(HomeAssistantError):
+            await entity.async_select_option('59min')
+
+    async def test_known_preset_and_invalid_readbacks_keep_their_existing_behavior(self):
+        entity, primary, router = self.timer(60)
+        self.assertEqual(entity.current_option, '60min')
+        self.assertEqual(len(entity.options), 5)
+        with self.assertLogs('custom_components.my_lg.local_control_entity', level='WARNING'):
+            for value in (True, -1, 721, 59.5, '59', None):
+                primary.values['timer.off_remaining_min'] = value
+                self.assertIsNone(entity.current_option)
+                self.assertEqual(len(entity.options), 5)
+        self.assertEqual(router.calls, [])
+
+    async def test_a_countdown_cannot_bypass_power_or_connection_conditions(self):
+        entity, _, router = self.timer(59)
+        router.target_available = False
+        with self.assertRaises(HomeAssistantError):
+            await entity.async_select_option('59min')
+        self.assertEqual(router.calls, [])
+
+    async def test_existing_preset_labels_remain_db_editable(self):
+        entity, _, _ = self.timer(0)
+        entity._descriptor = replace(entity._descriptor, value_mappings=tuple(
+            LocalControlValueMapping('예약 취소' if item.local_request_value == '0' else item.home_assistant_value,
+                                     item.local_request_value) for item in entity._descriptor.value_mappings))
+        entity._mapping_by_option = {item.home_assistant_value: item for item in entity._descriptor.value_mappings}
+        self.assertEqual(entity.current_option, '예약 취소')
+        self.assertEqual(entity.options[0], '예약 취소')
 
 
 def descriptor(domain: str) -> LocalControlEntityDescriptor:

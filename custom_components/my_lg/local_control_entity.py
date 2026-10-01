@@ -202,6 +202,7 @@ class _LocalContractEntity(MyLgEntity):
             and self._primary_provider.model_id == self._descriptor.model_id
             and self._primary_provider.control_alive
             and self._router.control_target_available(self.coordinator.device_id)
+            and self._router.feature_condition_available(self.coordinator.device_id, self._descriptor.capability_id)
         )
 
     async def async_added_to_hass(self) -> None:
@@ -229,9 +230,14 @@ class _LocalContractEntity(MyLgEntity):
         self.async_write_ha_state()
 
     async def _async_send(self, local_request_value: str) -> None:
+        allowed, reason = self._router.feature_condition_status(
+            self.coordinator.device_id, self._descriptor.capability_id, local_request_value
+        )
+        if not allowed:
+            raise HomeAssistantError(reason)
         if not self.available:
             raise HomeAssistantError(
-                "Rethink Local 제어 연결 또는 정확한 모델 계약을 확인할 수 없어요."
+                "현재 기기 상태 또는 로컬 연결에서 제어할 수 없어요."
             )
         async with self._command_lock:
             try:
@@ -453,11 +459,41 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
         }
         self._attr_options = list(self._mapping_by_option)
 
+    def _reported_countdown_option(self) -> str | None:
+        # Hydro reports the remaining minutes, not the last preset requested.
+        # Its 60 -> 59 countdown is a valid own read, not a new writable preset.
+        if (self._descriptor.model_id != 'HUM_056905_WW'
+                or self._descriptor.capability_id != 'timer.off_remaining_min'):
+            return None
+        value = self._state_value()
+        if type(value) is not int or not 0 <= value <= 720:
+            return None
+        normalized = _exact_select_readback(value, self._descriptor.supported_values,
+                                           self._descriptor.model_id, self._descriptor.capability_id)
+        if any(_same_primitive(normalized, preset) for preset in self._descriptor.supported_values):
+            return None  # Keep the DB's editable label for existing presets.
+        return f'{value}min'
+
+    @property
+    def options(self) -> list[str]:
+        options = [option for option, mapping in self._mapping_by_option.items()
+                if self._router.feature_condition_available(
+                    self.coordinator.device_id, self._descriptor.capability_id, mapping.local_request_value)]
+        current = self._reported_countdown_option()
+        if (current is not None and current not in options
+                and self._router.feature_condition_available(
+                    self.coordinator.device_id, self._descriptor.capability_id)):
+            options.append(current)
+        return options
+
     @property
     def current_option(self) -> str | None:
         if self._descriptor.capability_id == "styler.operation.start_or_resume":
             desired = self._router.selected_styler_course(self.coordinator.device_id)
             return next((option for option, mapping in self._mapping_by_option.items() if mapping.local_request_value == desired), None)
+        countdown = self._reported_countdown_option()
+        if countdown is not None:
+            return countdown
         value = self._state_value()
         if value is None:
             return None
@@ -476,9 +512,17 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         mapping = self._mapping_by_option.get(option)
         if mapping is None:
+            if option == self._reported_countdown_option() and self.available:
+                # Selecting the currently observed countdown is display-only.
+                # Never encode an unlisted minute as an appliance command.
+                return
             raise HomeAssistantError(
                 "검증된 Rethink Local 선택지에 없는 값은 보낼 수 없어요."
             )
+        if not self._router.feature_condition_available(
+            self.coordinator.device_id, self._descriptor.capability_id, mapping.local_request_value
+        ):
+            raise HomeAssistantError("현재 기기 상태에서는 이 선택지를 사용할 수 없어요.")
         if self._descriptor.capability_id == "styler.operation.start_or_resume":
             # A course bundle can start the appliance. Selection is UI-only;
             # the existing Start button dispatches the complete producer transaction.

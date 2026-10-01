@@ -27,7 +27,7 @@ from .entity import MyLgEntity, MyLgWideqEntity
 from .local_command import LocalCommandFailed, LocalCommandPending
 from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
-from .local_control_native import async_native_local_control, native_local_available
+from .local_control_native import LocalConditionEntityMixin, async_native_local_control, native_local_available
 from .local_read_owner import (
     resolve_tlv_read_owned_field,
     tlv_read_owner_configured,
@@ -464,7 +464,7 @@ class _LocalReadSwitchMixin:
         self.async_write_ha_state()
 
 
-class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
+class MyLgSwitch(LocalConditionEntityMixin, _LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
     entity_description: MyLgSwitchDescription
 
     def __init__(
@@ -491,6 +491,9 @@ class MyLgSwitch(_LocalReadSwitchMixin, MyLgEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
+        capability = self.entity_description.local_control_semantic
+        if self._local_control is not None and capability is not None and not self._local_control.feature_condition_available(self.coordinator.device_id, capability):
+            return False
         if self._local_read_owns_state():
             return self._local_field_available()
         return native_local_available(self._local_control, self.coordinator.device_id,

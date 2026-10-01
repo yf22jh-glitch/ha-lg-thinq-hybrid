@@ -252,6 +252,7 @@ class MyLgData:
     feature_runtime: FeatureEntityRuntime | None = None
     local_disabled_controls: frozenset[tuple[str, str]] = field(default_factory=frozenset)
     local_disabled_reads: frozenset[tuple[str, str]] = field(default_factory=frozenset)
+    local_control_conditions: dict[tuple[str, str], Any] = field(default_factory=dict)
     local_confirmed_features: list[dict[str, Any]] = field(default_factory=list)
     startup_metrics: StartupMetrics | None = None
 
@@ -708,6 +709,10 @@ async def _setup_local_shadows(
             data.local_disabled_reads = await hass.async_add_executor_job(
                 disabled_read_semantics, default_database_path()
             )
+            from .feature_conditions import load_control_conditions
+            data.local_control_conditions = await hass.async_add_executor_job(
+                load_control_conditions, default_database_path()
+            )
         except (OSError, ValueError):
             _LOGGER.exception("Local feature database is invalid; shadow setup disabled")
             return
@@ -1044,6 +1049,8 @@ def _start_local_control(hass: HomeAssistant, data: MyLgData) -> None:
             (data.coordinators[device_id].model, capability) in data.local_disabled_controls
             if device_id in data.coordinators else False
         ),
+        condition_policy=lambda model, capability: data.local_control_conditions.get((model, capability)),
+        read_providers=data.local_read_providers,
     )
 
 

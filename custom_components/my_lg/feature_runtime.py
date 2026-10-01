@@ -21,6 +21,7 @@ from .feature_database import (
     copy_feature_database, disabled_control_capabilities, disabled_read_semantics,
     feature_database_token,
 )
+from .feature_conditions import load_control_conditions
 from .local_control_composite_domain import load_local_control_composite_domain_contract
 from .local_control_confirmed_features import (
     _refresh_appliance_feature_maps,
@@ -157,6 +158,7 @@ class _Menus:
     confirmed: list[dict[str, Any]]
     disabled_controls: frozenset[tuple[str, str]]
     disabled_reads: frozenset[tuple[str, str]]
+    conditions: Mapping[tuple[str, str], Any]
 
 
 def _load_menus(path: Path, options: Mapping[str, Any], binding_models: Mapping[str, str]) -> _Menus:
@@ -182,6 +184,7 @@ def _load_menus(path: Path, options: Mapping[str, Any], binding_models: Mapping[
             eligibility=eligibility, composite=composite, confirmed=confirmed,
             disabled_controls=disabled_control_capabilities(snapshot),
             disabled_reads=disabled_read_semantics(snapshot),
+            conditions=load_control_conditions(snapshot),
         )
 
 
@@ -248,6 +251,7 @@ class FeatureEntityRuntime:
                 data.local_control_entity_contract, data.local_control_binding_eligibility,
                 data.local_control_composite_domain_contract, data.local_disabled_controls,
                 getattr(data, "local_disabled_reads", frozenset()),
+                getattr(data, "local_control_conditions", {}),
             )
             confirmed_before = list(getattr(data, "local_confirmed_features", ()))
             try:
@@ -266,6 +270,7 @@ class FeatureEntityRuntime:
                 data.local_control_composite_domain_contract = menus.composite
                 data.local_disabled_controls = menus.disabled_controls
                 data.local_disabled_reads = menus.disabled_reads
+                data.local_control_conditions = menus.conditions
                 data.local_confirmed_features = menus.confirmed
                 _refresh_appliance_feature_maps(menus.confirmed)
                 # Materialize all changed menus before removing any live entity.
@@ -282,6 +287,7 @@ class FeatureEntityRuntime:
                     data.local_control_entity_contract, data.local_control_binding_eligibility,
                     data.local_control_composite_domain_contract, data.local_disabled_controls,
                     data.local_disabled_reads,
+                    data.local_control_conditions,
                 ) = control_before
                 data.local_confirmed_features = confirmed_before
                 _refresh_appliance_feature_maps(confirmed_before)

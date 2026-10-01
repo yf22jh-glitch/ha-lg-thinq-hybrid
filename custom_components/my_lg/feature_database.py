@@ -148,8 +148,13 @@ def feature_database_token(path: Path) -> str:
         models = [tuple(row) for row in connection.execute(
             "SELECT model_id, enabled FROM model_rollout ORDER BY model_id"
         )]
+        conditions = []
+        if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='control_conditions'").fetchone():
+            conditions = [tuple(row) for row in connection.execute(
+                "SELECT model_id,capability_id,condition_json FROM control_conditions ORDER BY model_id,capability_id"
+            )]
     return hashlib.sha256(json.dumps(
-        [rows, models], ensure_ascii=False, separators=(",", ":")
+        [rows, models, conditions], ensure_ascii=False, separators=(",", ":")
     ).encode()).hexdigest()
 
 

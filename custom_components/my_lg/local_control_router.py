@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
 from .local_control_confirmed_features import APPLIANCE_SETTING_MODELS, APPLIANCE_VALUE_MODELS
+from .feature_conditions import evaluate_condition
 
 from .local_command import (
     CLIMATE_POWER_ON_CAPABILITY,
@@ -171,6 +172,8 @@ class LocalControlRouter:
         capability_authorized: Callable[[str, str], bool] | None = None,
         *,
         capability_disabled: Callable[[str, str], bool] | None = None,
+        condition_policy: Callable[[str, str], Any] | None = None,
+        read_providers: Mapping[str, Any] | None = None,
     ) -> None:
         self._sender = sender
         self._providers = providers
@@ -179,6 +182,8 @@ class LocalControlRouter:
         self._authorized_values = authorized_values
         self._capability_authorized = capability_authorized
         self._capability_disabled = capability_disabled
+        self._condition_policy = condition_policy
+        self._read_providers = read_providers if read_providers is not None else {}
         # So that "the local path never serves anything" is discoverable without anyone having
         # first suspected it and raised the log level for this component.
         self._reported_refusal: set[tuple[str, str]] = set()
@@ -318,6 +323,60 @@ class LocalControlRouter:
     def ensure_feature_enabled(self, pat_device_id: str, capability_id: str) -> None:
         if self.feature_disabled(pat_device_id, capability_id):
             raise LocalFeatureDisabled("이 기능은 기능 DB에서 비활성화되어 있어요.")
+
+    def reported_local_value(self, pat_device_id: str, semantic_id: str) -> tuple[bool, Any]:
+        """Read appliance state only; False/zero are values, not missing reports."""
+        read = self._read_providers.get(pat_device_id)
+        if read is not None and read.field_available(semantic_id):
+            return True, read.field_value(semantic_id)
+        primary = self._providers.get(pat_device_id)
+        if primary is not None and primary.semantic_field_available(semantic_id):
+            return True, primary.field_value(semantic_id)
+        return False, None
+
+    def feature_condition_status(self, pat_device_id: str, capability: str, value: str | None = None) -> tuple[bool, str | None]:
+        """Use current local reads, never the PAT/cloud fallback or a cached ACK."""
+        if self._condition_policy is None:
+            return True, None
+        primary = self._providers.get(pat_device_id)
+        policy = self._condition_policy(getattr(primary, "model_id", ""), capability)
+        if policy is None:
+            return True, None
+        semantics = set()
+        if isinstance(policy, dict):
+            groups = [policy, *(policy.get("byValue", {}).values() if isinstance(policy.get("byValue"), dict) else ())]
+            for group in groups:
+                if isinstance(group, dict) and isinstance(group.get("all", []), list):
+                    semantics.update(clause["semanticId"] for clause in group.get("all", [])
+                                     if isinstance(clause, dict) and isinstance(clause.get("semanticId"), str))
+        state = {}
+        for semantic in semantics:
+            reported, own_value = self.reported_local_value(pat_device_id, semantic)
+            if reported:
+                state[semantic] = own_value
+        return evaluate_condition(policy, state, value)
+
+    def feature_condition_available(self, pat_device_id: str, capability: str, value: str | None = None) -> bool:
+        return self.feature_condition_status(pat_device_id, capability, value)[0]
+
+    def subscribe_condition_state(self, pat_device_id: str, callback: Callable[[], None]) -> Callable[[], None]:
+        removers = []
+        for provider in (self._providers.get(pat_device_id), self._read_providers.get(pat_device_id)):
+            if provider is not None:
+                removers.append(provider.async_add_listener(callback))
+        def remove() -> None:
+            for unsubscribe in removers:
+                unsubscribe()
+            removers.clear()
+        return remove
+
+    def ensure_feature_conditions(self, pat_device_id: str, capability: str, value: str) -> None:
+        available, reason = self.feature_condition_status(pat_device_id, capability, value)
+        if not available:
+            # Raising, rather than returning None, prevents a native card from
+            # bypassing the same DB condition through its cloud fallback.
+            from .local_command import LocalCommandNotReady
+            raise LocalCommandNotReady(reason)
 
     def _remember_mode_argument(
         self, pat_device_id: str, shadow: Mapping[str, Any], now: datetime
@@ -516,6 +575,7 @@ class LocalControlRouter:
         propagate_retryable: bool = False,
     ) -> LocalCommandResult | None:
         self.ensure_feature_enabled(pat_device_id, capability)
+        self.ensure_feature_conditions(pat_device_id, capability, value)
         if self._write_authorized is not None and not self._write_authorized(
             pat_device_id, capability, value
         ):
