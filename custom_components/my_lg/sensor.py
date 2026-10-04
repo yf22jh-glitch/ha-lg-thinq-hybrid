@@ -1139,6 +1139,8 @@ def _build_entities(entry: MyLgConfigEntry) -> list[SensorEntity]:
                             local_provider, coordinator, semantic_id, contract
                         )
                     )
+    from .app_setting_entity import app_setting_entities
+    entities.extend(app_setting_entities(entry, 'sensor'))
     return entities
 
 

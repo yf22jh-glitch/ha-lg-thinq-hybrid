@@ -325,6 +325,8 @@ def _build_entities(entry: MyLgConfigEntry) -> list[SelectEntity]:
                     )
 
     entities.extend(local_control_entities_for_domain(entry, "select"))
+    from .app_setting_entity import app_setting_entities
+    entities.extend(app_setting_entities(entry, 'select'))
     return entities
 
 

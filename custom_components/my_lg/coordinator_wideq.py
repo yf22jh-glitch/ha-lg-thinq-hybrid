@@ -204,6 +204,17 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """
         return self._pat_to_wideq.get(pat_device_id)
 
+    async def async_web_setting_request(self, method, path, body=None):
+        """Use the existing account rate limiter and serialized session IO."""
+        async with self._io_lock:
+            await self.rate_limiter.acquire()
+            return await self.client.async_web_setting_request(method, path, body)
+
+    async def async_pairing_context(self, device_id):
+        async with self._io_lock:
+            await self.rate_limiter.acquire()
+            return await self.client.async_pairing_context(device_id)
+
     def _schedule_device_map_save(self) -> None:
         if self._device_map_store is None:
             return

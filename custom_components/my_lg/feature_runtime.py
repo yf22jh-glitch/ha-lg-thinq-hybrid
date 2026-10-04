@@ -22,6 +22,7 @@ from .feature_database import (
     feature_database_token,
 )
 from .feature_conditions import load_control_conditions
+from .app_settings import load_app_settings
 from .local_control_composite_domain import load_local_control_composite_domain_contract
 from .local_control_confirmed_features import (
     _refresh_appliance_feature_maps,
@@ -159,6 +160,7 @@ class _Menus:
     disabled_controls: frozenset[tuple[str, str]]
     disabled_reads: frozenset[tuple[str, str]]
     conditions: Mapping[tuple[str, str], Any]
+    app_settings: tuple = ()
 
 
 def _load_menus(path: Path, options: Mapping[str, Any], binding_models: Mapping[str, str]) -> _Menus:
@@ -185,6 +187,7 @@ def _load_menus(path: Path, options: Mapping[str, Any], binding_models: Mapping[
             disabled_controls=disabled_control_capabilities(snapshot),
             disabled_reads=disabled_read_semantics(snapshot),
             conditions=load_control_conditions(snapshot),
+            app_settings=load_app_settings(snapshot),
         )
 
 
@@ -254,6 +257,8 @@ class FeatureEntityRuntime:
                 getattr(data, "local_control_conditions", {}),
             )
             confirmed_before = list(getattr(data, "local_confirmed_features", ()))
+            app_settings = getattr(data, 'app_settings', None)
+            app_before = app_settings.definitions if app_settings else ()
             try:
                 for provider, _old in primary_before:
                     profile = menus.primary.get(provider.profile_id)
@@ -272,6 +277,8 @@ class FeatureEntityRuntime:
                 data.local_disabled_reads = menus.disabled_reads
                 data.local_control_conditions = menus.conditions
                 data.local_confirmed_features = menus.confirmed
+                if app_settings is not None:
+                    app_settings.definitions = menus.app_settings
                 _refresh_appliance_feature_maps(menus.confirmed)
                 # Materialize all changed menus before removing any live entity.
                 next_entities = {
@@ -290,10 +297,14 @@ class FeatureEntityRuntime:
                     data.local_control_conditions,
                 ) = control_before
                 data.local_confirmed_features = confirmed_before
+                if app_settings is not None:
+                    app_settings.definitions = app_before
                 _refresh_appliance_feature_maps(confirmed_before)
                 raise
 
             added = removed = changed = 0
+            if app_settings is not None and app_before != menus.app_settings:
+                self.hass.async_create_task(app_settings.async_request_refresh())
             for domain, menu in self._platforms.items():
                 if self._closed:
                     raise RuntimeError("Feature runtime is unloading")

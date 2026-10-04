@@ -61,6 +61,8 @@ def _same_primitive(left: object, right: object) -> bool:
 
 
 _EXACT_SELECT_READBACK_NAMES = {
+    # The pre-hot-handler DHUM reader used this label for the same raw 0.
+    ('DHUM_056905_WW', 'air_quality.monitor_mode'): {'running only': 'operation_only'},
     # Exact 1WPD4CMIDR__3 modelJSON defaultWaterSet indexes 1/2/3 and
     # scripts/lib/aabb-water-state.mjs render the same indexes as these labels.
     ("1WPD4CMIDR__3", "water.default_selection"): {
