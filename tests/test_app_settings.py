@@ -1,5 +1,6 @@
 """DB-driven settings and display preferences do not send appliance commands."""
 import json
+from datetime import time
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -76,6 +77,37 @@ class SettingsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(app_setting_entities(self.entry,'select'),[])
         with self.assertRaisesRegex(Exception,'비활성화'):
             await self.coordinator.async_set(self.metadata,'display.temperature_format','1℃')
+
+    async def test_night_mode_entities_share_confirmed_cache_and_db_availability(self):
+        from custom_components.my_lg.night_mode import NightModeSaved
+        metadata = SimpleNamespace(device_id='fridge', model='2REFO1DBN3K_U', alias='Fridge')
+        state = NightModeSaved('CUSTOM', 40, '21:00', '06:00')
+        wideq = SimpleNamespace(config_entry=None, night_mode_for=Mock(return_value=state),
+                                async_set_night_mode_setting=AsyncMock(), circuit_open=False)
+        self.entry.runtime_data.coordinators = {'fridge':metadata}
+        self.entry.runtime_data.wideq_coordinator = wideq
+        times = app_setting_entities(self.entry, 'time')
+        self.assertEqual(len(times), 2)
+        start = next(x for x in times if x._spec['feature_id']=='night_mode.start_time')
+        self.assertTrue(start.available)
+        self.assertEqual(start.native_value, time(21))
+        await start.async_set_value(time(21, 1))
+        wideq.async_set_night_mode_setting.assert_awaited_once_with('fridge',expected=state,
+                                                                 feature='start_time',value='21:01')
+        self.assertEqual(start.native_value, time(21))  # Never optimistic.
+        with self.assertRaises(Exception):
+            await start.async_set_value(time(21, 1, 1))
+        wideq.night_mode_for.return_value = NightModeSaved('OFF',40,'21:00','06:00')
+        self.assertFalse(start.available)
+        self.assertIsNone(start.native_value)
+        with self.assertRaises(Exception):
+            await start.async_set_value(time(21, 1))
+        mode = next(x for x in app_setting_entities(self.entry,'select') if x._spec['feature_id']=='night_mode.mode')
+        self.assertEqual(mode.current_option,'꺼짐')
+        self.assertEqual(mode.extra_state_attributes['value_source'],'thinq-server')
+        self.coordinator.definitions=()
+        with self.assertRaisesRegex(Exception,'비활성화'):
+            await mode.async_select_option('사용자 지정')
 
     async def test_db_disable_enable_and_label_edit_reconcile_live_without_restart(self):
         from custom_components.my_lg.feature_database import create_database
@@ -163,8 +195,8 @@ class DatabaseTests(unittest.TestCase):
             initial=feature_database_token(path)
             self.assertEqual(install(path)['status'],'ready')
             self.assertEqual(feature_database_token(path),initial)
-            self.assertEqual(install(path,True)['new_definitions'],7)
-            self.assertEqual(len(load_app_settings(path)),7)
+            self.assertEqual(install(path,True)['new_definitions'],13)
+            self.assertEqual(len(load_app_settings(path)),13)
             registered=feature_database_token(path)
             self.assertNotEqual(initial,registered)
             with sqlite3.connect(path) as c:
@@ -172,7 +204,7 @@ class DatabaseTests(unittest.TestCase):
                 c.execute("UPDATE app_settings SET delete_requested=1 WHERE feature_id='display.temperature_summary'")
             self.assertNotEqual(feature_database_token(path),registered)
             self.assertEqual(install(path,True)['status'],'already-installed')
-            self.assertEqual(len(load_app_settings(path)),4)
+            self.assertEqual(len(load_app_settings(path)),10)
 
 
 if __name__=='__main__': unittest.main()

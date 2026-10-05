@@ -42,6 +42,7 @@ from .night_mode import (
     NightModeSaved,
     parse_night_mode,
     set_night_mode_brightness,
+    set_night_mode_setting,
 )
 from .power_save import ac_power_save_cache
 from .rate_limiter import GlobalRateLimiter
@@ -513,6 +514,25 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         identity = self._pat_devices.get(pat_id)
         if identity is None or expected_mode not in MODES_BY_MODEL.get(identity.model, ()):
             raise HomeAssistantError("night-mode brightness is not reviewed for this exact model")
+        async def change(read, write):
+            return await set_night_mode_brightness(
+                expected_mode=expected_mode, expected_brightness_pct=expected_brightness_pct,
+                desired_brightness_pct=desired_brightness_pct, read=read, write=write)
+        await self._async_change_night_mode(pat_id, change)
+
+    async def async_set_night_mode_setting(
+        self, pat_id: str, *, expected: NightModeSaved, feature: str, value: str,
+    ) -> None:
+        """Use the same per-device and I/O locks as brightness controls."""
+        async def change(read, write):
+            return await set_night_mode_setting(expected=expected, feature=feature, value=value,
+                                                read=read, write=write)
+        await self._async_change_night_mode(pat_id, change)
+
+    async def _async_change_night_mode(self, pat_id: str, change) -> None:
+        identity = self._pat_devices.get(pat_id)
+        if identity is None or identity.model not in MODES_BY_MODEL:
+            raise HomeAssistantError('night-mode is unavailable for this model')
         if self.circuit_open:
             raise HomeAssistantError("LG ThinQ wideq service is unavailable")
         lock = self._control_locks.setdefault(pat_id, asyncio.Lock())
@@ -550,13 +570,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     await self.client.async_put_night_mode(wideq_id, body)
 
                 try:
-                    saved = await set_night_mode_brightness(
-                        expected_mode=expected_mode,
-                        expected_brightness_pct=expected_brightness_pct,
-                        desired_brightness_pct=desired_brightness_pct,
-                        read=read,
-                        write=write,
-                    )
+                    saved = await change(read, write)
                 except ValueError as err:
                     self._night_mode_cache.pop(pat_id, None)
                     self.async_update_listeners()

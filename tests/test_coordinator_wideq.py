@@ -6,6 +6,7 @@ import asyncio
 from datetime import timedelta
 from pathlib import Path
 import unittest
+from unittest.mock import AsyncMock
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -110,6 +111,41 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_constructor_does_not_eager_poll(self) -> None:
         self.assertEqual(self.client.poll_calls, 0)
         self.assertEqual(self.limiter.calls, 0)
+
+    async def test_night_mode_schedule_and_brightness_share_serialization(self):
+        from custom_components.my_lg.night_mode import parse_night_mode
+        c = self.coordinator
+        c._pat_devices['device'] = PatDeviceIdentity('device','Fridge','2REFO1DBN3K_U')
+        c._pat_to_wideq['device'] = 'wideq-device'
+        c._night_mode_online_wideq_ids.add('wideq-device')
+        c.data = {'device':{}}
+        state = {'nightMode':'SUNSET_RISE','brightness':'40'}
+        async def read(_): return dict(state)
+        async def write(_, body):
+            self.assertTrue(c._control_locks['device'].locked())
+            self.assertTrue(c._io_lock.locked())
+            state.update(body)
+        self.client.async_get_night_mode = AsyncMock(side_effect=read)
+        self.client.async_put_night_mode = AsyncMock(side_effect=write)
+        await c.async_set_night_mode_setting('device', expected=parse_night_mode(state),
+                                            feature='mode',value='OFF')
+        self.assertEqual(c.night_mode_for('device').mode,'OFF')
+        self.assertEqual(self.client.async_put_night_mode.await_count,1)
+        self.assertEqual(self.client.async_get_night_mode.await_count,2)
+        with self.assertRaises(HomeAssistantError):
+            await c.async_set_night_mode_brightness('device',expected_mode='OFF',
+                                                   expected_brightness_pct=40,desired_brightness_pct=50)
+        self.assertEqual(self.client.async_put_night_mode.await_count,1)
+        await c.async_set_night_mode_setting('device',expected=c.night_mode_for('device'),
+                                            feature='mode',value='SUNSET_RISE')
+        await c.async_set_night_mode_brightness('device',expected_mode='SUNSET_RISE',
+                                               expected_brightness_pct=40,desired_brightness_pct=50)
+        self.assertEqual(c.night_mode_for('device').brightness_pct,50)
+        c._night_mode_online_wideq_ids.clear()
+        with self.assertRaises(HomeAssistantError):
+            await c.async_set_night_mode_setting('device',expected=parse_night_mode(state),
+                                                feature='mode',value='OFF')
+        self.assertEqual(self.client.async_put_night_mode.await_count,3)
 
     async def test_three_failures_open_circuit_and_keep_cached_data(self) -> None:
         cached = {"device": {"value": 7}}

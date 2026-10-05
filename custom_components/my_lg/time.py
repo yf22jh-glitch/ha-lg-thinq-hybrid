@@ -109,6 +109,8 @@ def _build_entities(entry: MyLgConfigEntry) -> list[TimeEntity]:
                 )
                 for location in sorted(locations)
             )
+    from .app_setting_entity import app_setting_entities
+    entities.extend(app_setting_entities(entry, 'time'))
     return entities
 
 

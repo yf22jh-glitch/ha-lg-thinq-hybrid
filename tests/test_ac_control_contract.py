@@ -396,6 +396,11 @@ class FakeLocalRouter:
         self.outcome = outcome
         self.target_available = True
         self.authorized_capabilities: set[str] | None = None
+        self.condition_listeners = []
+
+    def subscribe_condition_state(self, _device_id, callback):
+        self.condition_listeners.append(callback)
+        return lambda: self.condition_listeners.remove(callback)
 
     def control_target_available(self, _device_id: str) -> bool:
         return self.target_available
