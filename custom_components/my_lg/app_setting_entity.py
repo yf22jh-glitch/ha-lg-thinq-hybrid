@@ -1,6 +1,7 @@
 """Entity adapters for DB-enabled app/server settings, separate from Local."""
 from datetime import time
 
+from homeassistant.components.button import ButtonEntity
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.time import TimeEntity
@@ -16,7 +17,8 @@ def app_setting_entities(entry, domain):
     settings = getattr(entry.runtime_data, 'app_settings', None)
     if settings is None:
         return []
-    classes = {'select': AppSettingSelect, 'sensor': TemperatureDisplaySensor, 'time': NightModeTime}
+    classes = {'select': AppSettingSelect, 'sensor': TemperatureDisplaySensor,
+               'time': NightModeTime, 'button': NightModePreviewButton}
     if domain not in classes:
         return []
     return [(NightModeSelect if domain == 'select' and spec['feature_id'].startswith('night_mode.')
@@ -96,9 +98,14 @@ class _NightModeSetting(_Setting):
     @property
     def available(self):
         saved = self._saved()
-        required = self._spec.get('required_mode')
+        spec = self._settings.definition(self._metadata.model, self._spec['feature_id'])
+        if spec is None or not spec.get('write_enabled', True):
+            return False
+        required = spec.get('required_mode')
+        modes = spec.get('required_modes')
         return (saved is not None and not self.coordinator.circuit_open
-                and (required is None or saved.mode == required))
+                and (required is None or saved.mode == required)
+                and (modes is None or saved.mode in modes))
 
     async def _set(self, value):
         spec = self._settings.definition(self._metadata.model, self._spec['feature_id'])
@@ -137,6 +144,20 @@ class NightModeTime(_NightModeSetting, TimeEntity):
         if value.second or value.microsecond or value.tzinfo is not None:
             raise HomeAssistantError('야간 일정은 현지 시각의 시·분만 설정할 수 있어요.')
         await self._set(value.strftime('%H:%M'))
+
+
+class NightModePreviewButton(_NightModeSetting, ButtonEntity):
+    """Transient preview of the saved brightness; never optimistic light state."""
+    @property
+    def extra_state_attributes(self):
+        return {**super().extra_state_attributes, 'preview_seconds': 10,
+                'confirmation': 'request-acknowledged-and-saved-settings-unchanged',
+                'light_output_readback': False}
+
+    async def async_press(self):
+        if not self.available:
+            raise HomeAssistantError('활성 야간 모드와 DB의 미리보기 허용 상태를 확인해 주세요.')
+        await self.coordinator.async_preview_night_mode(self._metadata.device_id, expected=self._saved())
 
 
 class TemperatureDisplaySensor(_Setting, SensorEntity):

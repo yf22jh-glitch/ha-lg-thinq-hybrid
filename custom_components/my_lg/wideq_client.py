@@ -407,9 +407,12 @@ class WideqClient:
     async def async_put_night_mode(
         self, wideq_device_id: str, body: dict[str, str]
     ) -> None:
-        """Save one reviewed night-mode tuple; the caller must requery it."""
-        if set(body) != {"saveType", "nightMode", "brightness", "startTime", "endTime"}:
-            raise ValueError("night-mode SAVE shape is invalid")
+        """Send one SAVE/PREVIEW tuple without replay; caller verifies saved state."""
+        expected_keys = {"saveType", "nightMode", "brightness", "startTime", "endTime"}
+        if body.get('saveType') == 'PREVIEW' and body.get('nightModeEx') == 'Y':
+            expected_keys.add('nightModeEx')
+        if set(body) != expected_keys or body.get('saveType') not in ('SAVE', 'PREVIEW'):
+            raise ValueError("night-mode SAVE/PREVIEW shape is invalid")
         if self._client is None:
             await self.async_connect()
         await self._client.refresh_auth()

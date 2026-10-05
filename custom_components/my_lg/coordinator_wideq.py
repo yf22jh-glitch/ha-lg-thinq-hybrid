@@ -41,6 +41,7 @@ from .night_mode import (
     MODES_BY_MODEL,
     NightModeSaved,
     parse_night_mode,
+    preview_night_mode,
     set_night_mode_brightness,
     set_night_mode_setting,
 )
@@ -527,6 +528,16 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         async def change(read, write):
             return await set_night_mode_setting(expected=expected, feature=feature, value=value,
                                                 read=read, write=write)
+        await self._async_change_night_mode(pat_id, change)
+
+    async def async_preview_night_mode(self, pat_id: str, *, expected: NightModeSaved) -> None:
+        """Serialize PREVIEW with saved-setting writes, preserving the same cache."""
+        identity = self._pat_devices.get(pat_id)
+        if identity is None:
+            raise HomeAssistantError('night-mode target is unavailable')
+        async def change(read, write):
+            return await preview_night_mode(model=identity.model, expected=expected,
+                                            read=read, write=write)
         await self._async_change_night_mode(pat_id, change)
 
     async def _async_change_night_mode(self, pat_id: str, change) -> None:

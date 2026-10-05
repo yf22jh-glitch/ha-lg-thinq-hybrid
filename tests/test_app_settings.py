@@ -145,6 +145,35 @@ class SettingsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(next(iter(platform.entities.values())).name,'My temperature')
         await self.hass.async_block_till_done()
 
+    async def test_preview_button_is_db_owned_and_never_an_optimistic_light_sensor(self):
+        from custom_components.my_lg.night_mode import NightModeSaved
+        metadata = SimpleNamespace(device_id='fridge', model='2REFO1DBN3K_U', alias='Fridge')
+        before = NightModeSaved('CUSTOM', 40, '21:00', '06:00')
+        wideq = SimpleNamespace(config_entry=None, night_mode_for=Mock(return_value=before),
+                                async_preview_night_mode=AsyncMock(), circuit_open=False)
+        self.entry.runtime_data.coordinators = {'fridge': metadata}
+        self.entry.runtime_data.wideq_coordinator = wideq
+        buttons = app_setting_entities(self.entry, 'button')
+        self.assertEqual(len(buttons), 1)
+        button = buttons[0]
+        self.assertTrue(button.available)
+        self.assertEqual(button.extra_state_attributes['value_source'], 'thinq-server')
+        self.assertFalse(button.extra_state_attributes['light_output_readback'])
+        await button.async_press()
+        wideq.async_preview_night_mode.assert_awaited_once_with('fridge', expected=before)
+        wideq.night_mode_for.return_value = NightModeSaved('OFF',40,'21:00','06:00')
+        self.assertFalse(button.available)
+        with self.assertRaises(Exception): await button.async_press()
+        wideq.night_mode_for.return_value = before
+        spec = self.coordinator.definition(metadata.model,'night_mode.preview')
+        spec['write_enabled'] = False
+        self.assertFalse(button.available)
+        with self.assertRaises(Exception): await button.async_press()
+        self.coordinator.definitions = ()
+        self.assertFalse(button.available)
+        self.assertEqual(app_setting_entities(self.entry,'button'), [])
+        wideq.async_preview_night_mode.assert_awaited_once()
+
     async def test_pairing_rechecks_conditions_before_any_write(self):
         metadata=SimpleNamespace(device_id='test-st',model='ST_R_ETH01Y_')
         wideq=SimpleNamespace(circuit_open=False,wideq_device_id=lambda _: 'styler-one',
@@ -195,8 +224,8 @@ class DatabaseTests(unittest.TestCase):
             initial=feature_database_token(path)
             self.assertEqual(install(path)['status'],'ready')
             self.assertEqual(feature_database_token(path),initial)
-            self.assertEqual(install(path,True)['new_definitions'],13)
-            self.assertEqual(len(load_app_settings(path)),13)
+            self.assertEqual(install(path,True)['new_definitions'],15)
+            self.assertEqual(len(load_app_settings(path)),15)
             registered=feature_database_token(path)
             self.assertNotEqual(initial,registered)
             with sqlite3.connect(path) as c:
@@ -204,7 +233,7 @@ class DatabaseTests(unittest.TestCase):
                 c.execute("UPDATE app_settings SET delete_requested=1 WHERE feature_id='display.temperature_summary'")
             self.assertNotEqual(feature_database_token(path),registered)
             self.assertEqual(install(path,True)['status'],'already-installed')
-            self.assertEqual(len(load_app_settings(path)),10)
+            self.assertEqual(len(load_app_settings(path)),12)
 
 
 if __name__=='__main__': unittest.main()

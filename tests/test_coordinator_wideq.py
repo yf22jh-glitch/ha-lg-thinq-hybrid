@@ -6,7 +6,7 @@ import asyncio
 from datetime import timedelta
 from pathlib import Path
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -111,6 +111,27 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_constructor_does_not_eager_poll(self) -> None:
         self.assertEqual(self.client.poll_calls, 0)
         self.assertEqual(self.limiter.calls, 0)
+
+    async def test_preview_shares_serialization_and_keeps_the_saved_cache(self):
+        from custom_components.my_lg.night_mode import parse_night_mode, preview_night_mode
+        c = self.coordinator
+        c._pat_devices['device'] = PatDeviceIdentity('device','Fridge','2REFO1DBN3K_U')
+        c._pat_to_wideq['device'] = 'wideq-device'
+        c._night_mode_online_wideq_ids.add('wideq-device')
+        c.async_set_updated_data({'device': {}})
+        state = {'nightMode':'SUNSET_RISE','brightness':'40'}
+        self.client.async_get_night_mode = AsyncMock(return_value=state)
+        self.client.async_put_night_mode = AsyncMock()
+        async def fast_preview(**kwargs):
+            self.assertTrue(c._control_locks['device'].locked())
+            self.assertTrue(c._io_lock.locked())
+            return await preview_night_mode(**kwargs, wait=AsyncMock())
+        with patch('custom_components.my_lg.coordinator_wideq.preview_night_mode', side_effect=fast_preview):
+            await c.async_preview_night_mode('device',expected=parse_night_mode(state))
+        self.assertEqual(c.night_mode_for('device'),parse_night_mode(state))
+        self.client.async_put_night_mode.assert_awaited_once()
+        self.assertEqual(self.client.async_put_night_mode.call_args.args[1]['saveType'],'PREVIEW')
+        self.assertEqual(self.client.async_get_night_mode.await_count,2)
 
     async def test_night_mode_schedule_and_brightness_share_serialization(self):
         from custom_components.my_lg.night_mode import parse_night_mode

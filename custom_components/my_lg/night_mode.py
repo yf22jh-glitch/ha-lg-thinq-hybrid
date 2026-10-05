@@ -134,6 +134,38 @@ async def set_night_mode_setting(
     raise ValueError('saved night-mode setting was not confirmed by ThinQ Web')
 
 
+async def preview_night_mode(
+    *, model: str, expected: NightModeSaved,
+    read: Callable[[], Awaitable[dict[str, Any]]],
+    write: Callable[[dict[str, str]], Awaitable[None]],
+    wait: Callable[[], Awaitable[None]] | None = None,
+) -> NightModeSaved:
+    """Request Web's ten-second preview without modifying the saved schedule.
+
+    Confirmation means request acknowledgement and unchanged saved settings,
+    not measured light output: neither exact model reports preview brightness.
+    No SAVE/automatic restoration is sent, even if another client edits during
+    the preview. One uncertain request is never automatically retried.
+    """
+    if model not in MODES_BY_MODEL or expected.mode not in MODES_BY_MODEL[model]:
+        raise ValueError('night-mode preview requires a supported active mode')
+    before = parse_night_mode(await read())
+    if before != expected:
+        raise ValueError('saved night-mode setting changed; refresh before preview')
+    body = dict(saveType='PREVIEW', nightMode=before.mode, brightness=str(before.brightness_pct),
+                startTime='21:00', endTime='06:00')
+    if model == FRIDGE_MODEL:
+        body['nightMode'] = 'SUNSET_RISE'  # Exact REF Web converter's transient mode hint.
+    else:
+        body['nightModeEx'] = 'Y'  # Exact KM converter, not an extra saved setting.
+    await write(body)
+    await (wait or (lambda: asyncio.sleep(11)))()
+    after = parse_night_mode(await read())
+    if after != before:
+        raise ValueError('saved night-mode setting changed during preview; not overwritten')
+    return after
+
+
 async def set_night_mode_brightness(
     *,
     expected_mode: str,

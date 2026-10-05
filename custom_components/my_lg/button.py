@@ -37,6 +37,7 @@ from .local_control_entity import local_control_entities_for_domain
 from .local_control_router import LocalControlRouter
 from .local_control_native import native_local_available
 from .value_access import stable_feature_key
+from .app_setting_entity import app_setting_entities
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -202,6 +203,7 @@ def _build_entities(entry: MyLgConfigEntry) -> list[ButtonEntity]:
                         )
                     )
     entities.extend(local_control_entities_for_domain(entry, "button"))
+    entities.extend(app_setting_entities(entry, "button"))
     return entities
 
 
