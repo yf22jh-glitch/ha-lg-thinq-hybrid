@@ -23,7 +23,7 @@ def definitions():
         yield model, 'night_mode.preview', dict(domain='button', label_ko='ThinQ · 야간 조명 미리보기',
             source='thinq-server', write_enabled=True, required_modes=['CUSTOM','SUNSET_RISE'],
             meaning='Preview saved interior brightness for 10 seconds; PREVIEW only, never SAVE. Request acknowledgement and unchanged saved settings do not measure physical light output.',
-            verification_status='web-preview-wire-ack-saved-unchanged;ha-pilot-pending',
+            verification_status='web-and-ha-preview-wire-ack-saved-unchanged',
             web_source='GRM-20/GGM-20 antiGlareMode.setPreviewInsideLight; previewPeriodSec=10')
         yield model, 'night_mode.mode', dict(domain='select', label_ko='ThinQ · 야간 눈부심 방지 방식',
             source='thinq-server', options={'꺼짐':'OFF','일출·일몰':'SUNSET_RISE','사용자 지정':'CUSTOM'},
