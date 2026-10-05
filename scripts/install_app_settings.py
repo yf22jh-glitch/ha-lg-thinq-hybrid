@@ -23,14 +23,13 @@ def definitions():
         yield model, 'night_mode.mode', dict(domain='select', label_ko='ThinQ · 야간 눈부심 방지 방식',
             source='thinq-server', options={'꺼짐':'OFF','일출·일몰':'SUNSET_RISE','사용자 지정':'CUSTOM'},
             meaning='Saved ThinQ night-mode tuple; switching to CUSTOM from OFF/sunset uses Web defaults 21:00–06:00',
-            verification_status='web-save-get-and-restore-confirmed;ha-pilot-pending',
+            verification_status='ha-thinq-save-get-restore-confirmed',
             web_source='GRM-20/GGM-20 nightModes/antiGlareMode.js; service/fridge/night-mode')
         for field, label in [('start_time','시작 시각'), ('end_time','종료 시각')]:
             yield model, 'night_mode.'+field, dict(domain='time', label_ko='ThinQ · 야간 눈부심 방지 '+label,
                 source='thinq-server', required_mode='CUSTOM',
                 meaning='HH:MM in Asia/Seoul, CUSTOM only. Preserve brightness and the other clock; fresh saved GET confirms once-only SAVE',
-                verification_status=('web-save-get-and-restore-confirmed;ha-pilot-pending' if field == 'start_time'
-                                     else 'web-source-and-unit-tests;ha-pilot-pending'),
+                verification_status='ha-thinq-save-get-restore-confirmed',
                 web_source='GRM-20/GGM-20 nightModes/antiGlareMode.js; service/fridge/night-mode')
         yield model, 'food.recommended_period', dict(domain='select',
             label_ko='ThinQ · 추천 보관 기한',source='thinq-server',options={'꺼짐':'off','켜짐':'on'},
