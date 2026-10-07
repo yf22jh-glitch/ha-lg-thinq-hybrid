@@ -17,7 +17,7 @@ import re
 import sqlite3
 import threading
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal, Union
@@ -300,6 +300,9 @@ class LocalControlEntityDescriptor:
     number_step: int | float | None = None
     unit: str | None = None
     parameter_schema: str | None = None
+    draft_only: bool = False
+    request_from: str | None = None
+    parameter_pattern: str | None = None
 
     @property
     def exact_local_request_values(self) -> tuple[str, ...]:
@@ -975,7 +978,33 @@ def load_local_control_entity_contract_from_database(
             # The bridge loads trusted model code; HA only consumes the menu.
             # A handler filename is not an entity attribute or a new pin.
             presentation = {k: v for k, v in definition.items() if k != "runtimeHandler"}
-            descriptors.append(_descriptor(presentation, editable_labels=True))
+            draft = presentation.pop('draftOnly', False)
+            request_from = presentation.pop('requestFrom', None)
+            pattern = presentation.pop('parameterPattern', None)
+            if type(draft) is not bool:
+                raise ValueError('draftOnly must be boolean')
+            if draft or request_from is not None:
+                if draft and request_from is not None:
+                    raise ValueError('Draft and action must be separate')
+                if not isinstance(pattern, str) or not 1 <= len(pattern) <= 256:
+                    raise ValueError('A bounded parameter pattern is required')
+                re.compile(pattern)
+                if draft:
+                    if presentation.get('entityDomain') != 'text':
+                        raise ValueError('A draft must be a text input')
+                    # Reuse the scalar presentation validator; this row never
+                    # dispatches its example value or claims appliance state.
+                    presentation['entityDomain'] = 'select'
+                elif (presentation.get('entityDomain') != 'button'
+                      or not isinstance(request_from, str)
+                      or _SEMANTIC_ID.fullmatch(request_from) is None):
+                    raise ValueError('An action must reference a named draft')
+            elif pattern is not None:
+                raise ValueError('Parameter pattern has no draft/action')
+            descriptor = _descriptor(presentation, editable_labels=True)
+            descriptors.append(replace(descriptor,
+                entity_domain='text' if draft else descriptor.entity_domain,
+                draft_only=draft, request_from=request_from, parameter_pattern=pattern))
         except (LocalControlEntityContractError, TypeError, ValueError, KeyError):
             # A bad row cannot remove another model's already working controls.
             logging.getLogger(__name__).warning(
@@ -1224,6 +1253,15 @@ def local_control_value_authorized(
         None,
     )
     allowed = binding.values_by_capability.get(capability_id)
+    if descriptor is not None and descriptor.draft_only:
+        return False  # UI-only draft is never a device command.
+    if descriptor is not None and descriptor.request_from is not None:
+        draft = next((d for d in descriptors if d.capability_id == descriptor.request_from), None)
+        return (allowed is not None and allowed == descriptor.exact_local_request_values
+                and draft is not None and draft.draft_only
+                and isinstance(local_request_value, str) and len(local_request_value) <= 160
+                and re.fullmatch(draft.parameter_pattern, local_request_value) is not None
+                and re.fullmatch(descriptor.parameter_pattern, local_request_value) is not None)
     if descriptor is not None and descriptor.parameter_schema is not None:
         from .local_vacuum_reservation import MODEL, SCHEDULE, SCHEMA, is_canonical_schedule
         from .local_water_dnd import MODEL as WATER_MODEL, WINDOW, SCHEMA as WATER_SCHEMA, is_canonical_window

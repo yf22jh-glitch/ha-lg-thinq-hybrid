@@ -7,6 +7,7 @@ import aiohttp
 import hashlib
 import logging
 import math
+import re
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, cast
@@ -209,6 +210,9 @@ class _LocalContractEntity(MyLgEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        if self._descriptor.draft_only or self._descriptor.request_from:
+            self._remove_local_listeners.append(self._router.subscribe_feature_draft(
+                self.coordinator.device_id, self._handle_local_update))
         if self._descriptor.capability_id in (STYLER_PROGRAM, 'styler.operation.start_or_resume'):
             self._remove_local_listeners.append(
                 self._router.subscribe_styler_choice(self.coordinator.device_id, self._handle_local_update)
@@ -747,6 +751,47 @@ class MyLgStylerOptionDraftText(_LocalContractEntity, TextEntity):
         self.async_write_ha_state()
 
 
+class MyLgFeatureDraftText(_LocalContractEntity, TextEntity):
+    """Volatile parameters only. Editing never sends or starts an appliance."""
+    _attr_native_min = 0
+    _attr_native_max = 160
+
+    @property
+    def native_value(self) -> str:
+        return self._router.feature_draft(self.coordinator.device_id, self._descriptor.capability_id) or ''
+
+    async def async_set_value(self, value: str) -> None:
+        if value and (len(value) > 160 or re.fullmatch(self._descriptor.parameter_pattern, value) is None):
+            raise HomeAssistantError('입력 형식을 확인해 주세요. 모드 설정값 시:분:초 형식이에요.')
+        self._router.set_feature_draft(self.coordinator.device_id, self._descriptor.capability_id, value or None)
+        self.async_write_ha_state()
+
+
+class MyLgFeatureDraftButton(_LocalContractEntity, ButtonEntity):
+    """Send a named draft once, only on an explicit press; never auto retry."""
+    _draft_dispatching = False
+
+    @property
+    def available(self) -> bool:
+        value = self._router.feature_draft(self.coordinator.device_id, self._descriptor.request_from)
+        return super().available and (self._draft_dispatching or (value is not None
+            and self._router.value_authorized(self.coordinator.device_id, self._descriptor.capability_id, value)))
+
+    async def async_press(self) -> None:
+        value = self._router.feature_draft(self.coordinator.device_id, self._descriptor.request_from)
+        if value is None or not self.available:
+            raise HomeAssistantError('실행할 조건을 먼저 입력해 주세요.')
+        self._draft_dispatching = True
+        try:
+            # Consume before the first await: two simultaneous clicks cannot
+            # reuse a heating recipe, even when the first command is pending.
+            self._router.set_feature_draft(self.coordinator.device_id, self._descriptor.request_from, None)
+            await self._async_send(value)
+        finally:
+            self._draft_dispatching = False
+            self.async_write_ha_state()
+
+
 class MyLgLocalContractButton(_LocalContractEntity, ButtonEntity):
     """One reviewed, parameterless one-shot command."""
 
@@ -801,6 +846,12 @@ def local_control_entities_for_domain(entry, domain: LocalControlDomain) -> list
                 # per surface instead of creating duplicate registry owners.
                 continue
             seen_surfaces.add(surface)
+            if descriptor.draft_only:
+                entities.append(MyLgFeatureDraftText(coordinator, descriptor, router, primary, read))
+                continue
+            if descriptor.request_from:
+                entities.append(MyLgFeatureDraftButton(coordinator, descriptor, router, primary, read))
+                continue
             if descriptor.capability_id == STYLER_PROGRAM and domain == 'text':
                 entities.append(MyLgStylerOptionDraftText(coordinator, descriptor, router, primary, read))
                 continue
