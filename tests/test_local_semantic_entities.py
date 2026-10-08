@@ -1407,7 +1407,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 not entity.entity_registry_enabled_default
                 for entity in integrated_energy
             ),
-            4,
+            8,
         )
 
         owners = {}

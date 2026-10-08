@@ -1543,12 +1543,10 @@ class TlvIntegratedEnergySensor(RestoreSensor):
             manufacturer="LG",
             model=pat_coordinator.model or pat_coordinator.device_type,
         )
-        # Register every source, but make a shared outdoor total opt-in. Multiple
-        # indoor bindings can report the same physical meter, so enabling all of
-        # them by default would make accidental fleet summation unsafe.
-        self._attr_entity_registry_enabled_default = (
-            contract.enabled_by_default and not duplicate_prone
-        )
+        # Keep the legacy W integral available as an explicit opt-in fallback.
+        # CST models now use appliance-reported Wh via LocalCumulativeEnergySensor;
+        # automatically enabling both would expose duplicate energy totals.
+        self._attr_entity_registry_enabled_default = False
         self._energy_kwh = 0.0
         self._total_valid = False
         self._last_boundary: datetime | None = None

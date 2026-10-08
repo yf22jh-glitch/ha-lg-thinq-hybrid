@@ -321,7 +321,7 @@ class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
             self.assertLessEqual(len(entity.unique_id), 128)
 
         self.assertNotEqual(indoor.unique_id, outdoor.unique_id)
-        self.assertTrue(indoor.entity_registry_enabled_default)
+        self.assertFalse(indoor.entity_registry_enabled_default)
         self.assertFalse(outdoor.entity_registry_enabled_default)
         self.assertIn("중복 합산 금지", outdoor.name)
         self.assertEqual(

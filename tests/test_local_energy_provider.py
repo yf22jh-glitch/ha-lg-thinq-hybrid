@@ -164,6 +164,39 @@ class CumulativeEnergyProviderTests(unittest.TestCase):
         self.assertTrue(provider.field_available("energy.total_wh"))
         self.assertEqual(provider.total_wh("energy.total_wh"), 27)
 
+    def test_accepts_direct_ac_wh_totals_for_both_cst_models(self) -> None:
+        for model in ("CST_170004_WW", "CST_570004_WW"):
+            with self.subTest(model=model):
+                self.assertTrue(energy.cumulative_energy_model_supported(model))
+                provider = self.provider(model)
+                provider.set_transport_ready(True)
+                self.ingest(provider, envelope(model=model, total=100))
+                self.ingest(
+                    provider,
+                    envelope(model=model, last_counted=21, cursor=21, total=300),
+                )
+                self.assertTrue(provider.field_available("energy.total_wh"))
+                self.assertEqual(provider.total_wh("energy.total_wh"), 300)
+                # A retained replay is a level, never an additional increment.
+                self.ingest(
+                    provider,
+                    envelope(model=model, last_counted=21, cursor=21, total=300),
+                )
+                self.assertEqual(provider.total_wh("energy.total_wh"), 300)
+
+    def test_ac_counter_does_not_accept_another_model_or_a_regression(self) -> None:
+        provider = self.provider("CST_170004_WW")
+        provider.set_transport_ready(True)
+        self.ingest(provider, envelope(model="CST_170004_WW", total=300))
+        for value in (
+            envelope(model="CST_570004_WW", total=300),
+            envelope(model="CST_170004_WW", last_counted=21, cursor=21, total=299),
+        ):
+            with self.subTest(value=value["model_id"]), self.assertRaises(
+                energy.CumulativeEnergyProviderContractError
+            ):
+                self.ingest(provider, value)
+
 
 if __name__ == "__main__":
     unittest.main()
