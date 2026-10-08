@@ -1407,7 +1407,7 @@ class FullReadFactoryTests(unittest.IsolatedAsyncioTestCase):
                 not entity.entity_registry_enabled_default
                 for entity in integrated_energy
             ),
-            8,
+            4,  # Only shared outdoor W is opt-in; room W remains official.
         )
 
         owners = {}

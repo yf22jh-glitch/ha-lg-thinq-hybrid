@@ -28,6 +28,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import MyLgConfigEntry
 from .compat import AddConfigEntryEntitiesCallback, UnitOfDensity
@@ -1569,6 +1570,9 @@ class TlvIntegratedEnergySensor(RestoreSensor):
         self._total_valid = False
         self._last_boundary: datetime | None = None
         self._last_power_w: float | None = None
+        self._observation_high_water: datetime | None = None
+        self._blocked_through: datetime | None = None
+        self._resume_at: datetime | None = None
         self._integration_status = "awaiting_first_boundary"
         self._skipped_intervals = 0
         self._remove_provider_listener = None
@@ -1611,6 +1615,18 @@ class TlvIntegratedEnergySensor(RestoreSensor):
         return self._total_valid
 
     def _break_continuity(self, status: str) -> None:
+        # Keep the processed boundary even when the interpolation anchor is
+        # discarded. A carried pre-disconnect sample must not reopen a gap or
+        # an interval already included in the restored cumulative total.
+        boundaries = [dt_util.utcnow()]
+        for value in (
+            self._observation_high_water,
+            self._blocked_through,
+            self._provider.current_published_at,
+        ):
+            if value is not None:
+                boundaries.append(value)
+        self._blocked_through = max(boundaries)
         self._last_boundary = None
         self._last_power_w = None
         self._integration_status = status
@@ -1625,6 +1641,17 @@ class TlvIntegratedEnergySensor(RestoreSensor):
             )
             return
         published_at, power_w = sample
+        if (
+            (self._resume_at is not None and published_at < self._resume_at)
+            or (self._blocked_through is not None and published_at <= self._blocked_through)
+        ):
+            self._integration_status = "awaiting_fresh_observation"
+            return
+        if self._observation_high_water is not None and published_at < self._observation_high_water:
+            self._skipped_intervals += 1
+            self._break_continuity("non_monotonic_boundary")
+            return
+        self._observation_high_water = published_at
         if self._last_boundary is None or self._last_power_w is None:
             self._last_boundary = published_at
             self._last_power_w = power_w
@@ -1662,6 +1689,7 @@ class TlvIntegratedEnergySensor(RestoreSensor):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        self._resume_at = dt_util.utcnow()
         restored = await self.async_get_last_sensor_data()
         if restored is None:
             # A newly created meter deliberately adopts a zero baseline. This
