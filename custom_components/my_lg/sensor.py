@@ -791,6 +791,7 @@ AC_POWER_SEMANTICS = frozenset(
         "power.outdoor_unit_total_w",
     }
 )
+AC_REPORTED_ENERGY_REFERENCE_MODELS = frozenset({"CST_170004_WW", "CST_570004_WW"})
 
 # The bridge refreshes an active AC at roughly 28 seconds and falls back to a
 # 15-minute status query while quiescent.  Twenty minutes admits that documented
@@ -1364,11 +1365,21 @@ class LocalCumulativeEnergySensor(SensorEntity):
             raise ValueError("Cumulative-energy semantic is not authorized")
         self._provider = provider
         self._semantic_id = semantic_id
+        self._reference_only = (
+            pat_coordinator.model in AC_REPORTED_ENERGY_REFERENCE_MODELS
+        )
         label = {
             "energy.total_wh": "Local cumulative energy",
             "washer.energy.total_wh": "Washer local cumulative energy",
             "dryer.energy.total_wh": "Dryer local cumulative energy",
         }[semantic_id]
+        if self._reference_only:
+            label = "Local · 기기 보고 누적 전력량 (참고)"
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_registry_enabled_default = False
+            # Keep the coarse appliance report separate from official W integrals.
+            # No energy statistics: this reference must not be summed a second time.
+            self._attr_state_class = None
         self._attr_name = label
         self._attr_unique_id = local_semantic_unique_id(
             pat_coordinator.device_id, f"cumulative.{semantic_id}"
@@ -1399,6 +1410,11 @@ class LocalCumulativeEnergySensor(SensorEntity):
             "last_counted_generation": self._provider.last_counted_generation,
             "published_at": self._provider.published_at,
             "durability": "producer_fsynced_monotonic_ledger",
+            **(
+                {"usage_role": "reference_only", "excluded_from_official_energy": True}
+                if self._reference_only
+                else {}
+            ),
         }
 
     async def async_added_to_hass(self) -> None:
@@ -1543,10 +1559,12 @@ class TlvIntegratedEnergySensor(RestoreSensor):
             manufacturer="LG",
             model=pat_coordinator.model or pat_coordinator.device_type,
         )
-        # Keep the legacy W integral available as an explicit opt-in fallback.
-        # CST models now use appliance-reported Wh via LocalCumulativeEnergySensor;
-        # automatically enabling both would expose duplicate energy totals.
-        self._attr_entity_registry_enabled_default = False
+        # The source-observed-time W integral is the official AC energy source.
+        # Shared outdoor readings may be duplicated across indoor bindings and
+        # must not be added to the indoor reading, which already includes its share.
+        self._attr_entity_registry_enabled_default = (
+            contract.enabled_by_default and not duplicate_prone
+        )
         self._energy_kwh = 0.0
         self._total_valid = False
         self._last_boundary: datetime | None = None

@@ -290,6 +290,40 @@ class TlvMeasurementMetadataTests(unittest.TestCase):
         )
 
 
+class AcReportedEnergyReferenceTests(unittest.TestCase):
+    def make_entity(self, model: str):
+        owner = FakePatCoordinator()
+        owner.model = model
+        provider = SimpleNamespace(
+            semantic_ids=("energy.total_wh",),
+            field_available=lambda _: True,
+            total_wh=lambda _: 300,
+            baseline_generation=1,
+            last_counted_generation=2,
+            published_at=NOW,
+        )
+        return sensor.LocalCumulativeEnergySensor(provider, owner, "energy.total_wh")
+
+    def test_both_ac_native_wh_sensors_are_opt_in_references(self):
+        for model in ("CST_170004_WW", "CST_570004_WW"):
+            with self.subTest(model=model):
+                entity = self.make_entity(model)
+                self.assertEqual(entity.native_value, 0.3)
+                self.assertTrue(entity.available)
+                self.assertEqual(entity.entity_category.value, "diagnostic")
+                self.assertFalse(entity.entity_registry_enabled_default)
+                self.assertIsNone(entity.state_class)
+                self.assertIn("참고", entity.name)
+                self.assertTrue(entity.extra_state_attributes["excluded_from_official_energy"])
+
+    def test_other_appliance_cumulative_energy_is_unchanged(self):
+        entity = self.make_entity("WBEF3")
+        self.assertEqual(entity.state_class, SensorStateClass.TOTAL_INCREASING)
+        self.assertTrue(entity.entity_registry_enabled_default)
+        self.assertIsNone(entity.entity_category)
+        self.assertNotIn("excluded_from_official_energy", entity.extra_state_attributes)
+
+
 class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
     def make_entity(
         self, semantic_id: str = "power.indoor_compressor_share_w"
@@ -321,7 +355,7 @@ class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
             self.assertLessEqual(len(entity.unique_id), 128)
 
         self.assertNotEqual(indoor.unique_id, outdoor.unique_id)
-        self.assertFalse(indoor.entity_registry_enabled_default)
+        self.assertTrue(indoor.entity_registry_enabled_default)
         self.assertFalse(outdoor.entity_registry_enabled_default)
         self.assertIn("중복 합산 금지", outdoor.name)
         self.assertEqual(
