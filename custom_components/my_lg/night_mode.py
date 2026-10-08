@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import math
+import re
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -69,8 +70,8 @@ def parse_night_mode(raw: dict[str, Any], *, time_zone: str = DEVICE_TIME_ZONE) 
     if not isinstance(raw, dict):
         raise ValueError("night-mode response is not an object")
     mode = raw.get("nightMode")
-    if mode not in ("CUSTOM", "SUNSET_RISE"):
-        raise ValueError("night-mode is not an active saved mode")
+    if mode not in ("OFF", "CUSTOM", "SUNSET_RISE"):
+        raise ValueError("night-mode has an unknown saved mode")
     for field in (
         "brightnessKnockOn", "periodKnockOn", "brightnessDispenser",
         "brightnessScreen", "brightnessWelcomeLight",
@@ -86,6 +87,83 @@ def parse_night_mode(raw: dict[str, Any], *, time_zone: str = DEVICE_TIME_ZONE) 
         # Web's SAVE converter uses placeholders; the server owns sunrise/sunset.
         start, end = "21:00", "06:00"
     return NightModeSaved(mode, brightness, start, end)
+
+
+async def set_night_mode_setting(
+    *, expected: NightModeSaved, feature: str, value: str,
+    read: Callable[[], Awaitable[dict[str, Any]]],
+    write: Callable[[dict[str, str]], Awaitable[None]],
+    wait: Callable[[], Awaitable[None]] | None = None, attempts: int = 5,
+) -> NightModeSaved:
+    """Edit one Web schedule setting, preserving brightness and other fields.
+
+    OFF/sunset do not store custom times. Entering CUSTOM from either uses the
+    Web defaults, 21:00–06:00. Time entities only edit an active CUSTOM schedule.
+    """
+    if feature == 'mode':
+        if value not in ('OFF', 'SUNSET_RISE', 'CUSTOM'):
+            raise ValueError('unknown night mode')
+    elif feature in ('start_time', 'end_time'):
+        if not isinstance(value, str) or not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]', value):
+            raise ValueError('night-mode time must be HH:MM')
+        if expected.mode != 'CUSTOM':
+            raise ValueError('night-mode time requires CUSTOM mode')
+    else:
+        raise ValueError('unknown night-mode setting')
+    if not 1 <= attempts <= 10:
+        raise ValueError('night-mode confirmation budget is invalid')
+    before = parse_night_mode(await read())
+    if before != expected:
+        raise ValueError('saved night-mode setting changed; refresh before editing')
+    desired = replace(before, **{feature: value})
+    if desired == before:
+        return before
+    if desired.mode != 'CUSTOM':
+        desired = replace(desired, start_time='21:00', end_time='06:00')
+    await write(dict(saveType='SAVE', nightMode=desired.mode,
+                     brightness=str(desired.brightness_pct), startTime=desired.start_time,
+                     endTime=desired.end_time))
+    for attempt in range(attempts):
+        if attempt:
+            await (wait or (lambda: asyncio.sleep(1)))()
+        after = parse_night_mode(await read())
+        if after == desired:
+            return after
+        if after.brightness_pct != before.brightness_pct:
+            raise ValueError('brightness changed outside the requested schedule edit')
+    raise ValueError('saved night-mode setting was not confirmed by ThinQ Web')
+
+
+async def preview_night_mode(
+    *, model: str, expected: NightModeSaved,
+    read: Callable[[], Awaitable[dict[str, Any]]],
+    write: Callable[[dict[str, str]], Awaitable[None]],
+    wait: Callable[[], Awaitable[None]] | None = None,
+) -> NightModeSaved:
+    """Request Web's ten-second preview without modifying the saved schedule.
+
+    Confirmation means request acknowledgement and unchanged saved settings,
+    not measured light output: neither exact model reports preview brightness.
+    No SAVE/automatic restoration is sent, even if another client edits during
+    the preview. One uncertain request is never automatically retried.
+    """
+    if model not in MODES_BY_MODEL or expected.mode not in MODES_BY_MODEL[model]:
+        raise ValueError('night-mode preview requires a supported active mode')
+    before = parse_night_mode(await read())
+    if before != expected:
+        raise ValueError('saved night-mode setting changed; refresh before preview')
+    body = dict(saveType='PREVIEW', nightMode=before.mode, brightness=str(before.brightness_pct),
+                startTime='21:00', endTime='06:00')
+    if model == FRIDGE_MODEL:
+        body['nightMode'] = 'SUNSET_RISE'  # Exact REF Web converter's transient mode hint.
+    else:
+        body['nightModeEx'] = 'Y'  # Exact KM converter, not an extra saved setting.
+    await write(body)
+    await (wait or (lambda: asyncio.sleep(11)))()
+    after = parse_night_mode(await read())
+    if after != before:
+        raise ValueError('saved night-mode setting changed during preview; not overwritten')
+    return after
 
 
 async def set_night_mode_brightness(

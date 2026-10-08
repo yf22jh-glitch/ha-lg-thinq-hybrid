@@ -290,7 +290,44 @@ class TlvMeasurementMetadataTests(unittest.TestCase):
         )
 
 
+class AcReportedEnergyReferenceTests(unittest.TestCase):
+    def make_entity(self, model: str):
+        owner = FakePatCoordinator()
+        owner.model = model
+        provider = SimpleNamespace(
+            semantic_ids=("energy.total_wh",),
+            field_available=lambda _: True,
+            total_wh=lambda _: 300,
+            baseline_generation=1,
+            last_counted_generation=2,
+            published_at=NOW,
+        )
+        return sensor.LocalCumulativeEnergySensor(provider, owner, "energy.total_wh")
+
+    def test_both_ac_native_wh_sensors_are_opt_in_references(self):
+        for model in ("CST_170004_WW", "CST_570004_WW"):
+            with self.subTest(model=model):
+                entity = self.make_entity(model)
+                self.assertEqual(entity.native_value, 0.3)
+                self.assertTrue(entity.available)
+                self.assertEqual(entity.entity_category.value, "diagnostic")
+                self.assertFalse(entity.entity_registry_enabled_default)
+                self.assertIsNone(entity.state_class)
+                self.assertIn("참고", entity.name)
+                self.assertTrue(entity.extra_state_attributes["excluded_from_official_energy"])
+
+    def test_other_appliance_cumulative_energy_is_unchanged(self):
+        entity = self.make_entity("WBEF3")
+        self.assertEqual(entity.state_class, SensorStateClass.TOTAL_INCREASING)
+        self.assertTrue(entity.entity_registry_enabled_default)
+        self.assertIsNone(entity.entity_category)
+        self.assertNotIn("excluded_from_official_energy", entity.extra_state_attributes)
+
+
 class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        self.enterContext(patch("custom_components.my_lg.sensor.dt_util.utcnow", return_value=NOW))
+
     def make_entity(
         self, semantic_id: str = "power.indoor_compressor_share_w"
     ) -> tuple[FakeReadProvider, sensor.TlvIntegratedEnergySensor]:
@@ -483,7 +520,7 @@ class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
                     other.extra_state_attributes["integration_status"],
                     "restore_rejected",
                 )
-                other_provider.publish(other.source_semantic_id, 1000, NOW)
+                other_provider.publish(other.source_semantic_id, 1000, NOW + timedelta(seconds=1))
                 self.assertTrue(other.available)
                 self.assertEqual(other.native_value, 0)
                 self.assertEqual(
@@ -502,6 +539,49 @@ class TlvIntegratedAcEnergyTests(unittest.IsolatedAsyncioTestCase):
             entity.extra_state_attributes["integration_status"],
             "source_unavailable_or_invalid",
         )
+
+    async def test_retained_pre_disconnect_sample_cannot_reopen_the_gap(self) -> None:
+        provider, entity = self.make_entity()
+        entity.async_get_last_sensor_data = AsyncMock(return_value=None)
+        provider.publish(entity.source_semantic_id, 1000, NOW)
+        await entity.async_added_to_hass()
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=1))
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(seconds=65), available=False)
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=2), observed_at=NOW + timedelta(minutes=1))
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=10))
+        self.assertAlmostEqual(entity.native_value, 1 / 60)
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=11))
+        self.assertAlmostEqual(entity.native_value, 2 / 60)
+
+    async def test_multiple_regressed_samples_never_recount_a_counted_interval(self) -> None:
+        provider, entity = self.make_entity()
+        entity.async_get_last_sensor_data = AsyncMock(return_value=None)
+        provider.publish(entity.source_semantic_id, 1000, NOW)
+        await entity.async_added_to_hass()
+        for seconds in (60, 30, 40, 60, 90):
+            provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(seconds=seconds))
+        self.assertAlmostEqual(entity.native_value, 1 / 60)
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(seconds=120))
+        self.assertAlmostEqual(entity.native_value, 1.5 / 60)
+
+    async def test_same_boundary_collision_cannot_be_repaired_by_replay(self) -> None:
+        provider, entity = self.make_entity()
+        entity.async_get_last_sensor_data = AsyncMock(return_value=None)
+        provider.publish(entity.source_semantic_id, 1000, NOW)
+        await entity.async_added_to_hass()
+        for seconds, watts in ((60, 1000), (60, 2000), (60, 1000), (120, 1000)):
+            provider.publish(entity.source_semantic_id, watts, NOW + timedelta(seconds=seconds))
+        self.assertAlmostEqual(entity.native_value, 1 / 60)
+
+    async def test_restore_does_not_integrate_from_a_retained_pre_start_sample(self) -> None:
+        provider, entity = self.make_entity()
+        entity.async_get_last_sensor_data = AsyncMock(return_value=SensorExtraStoredData(12.5, UnitOfEnergy.KILO_WATT_HOUR))
+        provider.publish(entity.source_semantic_id, 1000, NOW - timedelta(minutes=2))
+        await entity.async_added_to_hass()
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=1))
+        self.assertEqual(entity.native_value, 12.5)
+        provider.publish(entity.source_semantic_id, 1000, NOW + timedelta(minutes=2))
+        self.assertAlmostEqual(entity.native_value, 12.5 + 1 / 60)
 
 
 class CanonicalAcLocalLeafTests(unittest.IsolatedAsyncioTestCase):

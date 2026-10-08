@@ -250,6 +250,7 @@ class MyLgData:
     ] = field(default_factory=dict)
     local_control: LocalControlRouter | None = None
     feature_runtime: FeatureEntityRuntime | None = None
+    app_settings: Any = None
     local_disabled_controls: frozenset[tuple[str, str]] = field(default_factory=frozenset)
     local_disabled_reads: frozenset[tuple[str, str]] = field(default_factory=frozenset)
     local_control_conditions: dict[tuple[str, str], Any] = field(default_factory=dict)
@@ -528,6 +529,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     # inside the shadow setup made that function require a fully built Home Assistant.
     _start_local_control(hass, data)
     entry.runtime_data = data
+    from .app_settings import AppSettingsCoordinator, load_app_settings
+    definitions = await hass.async_add_executor_job(load_app_settings, feature_db_path) if feature_db_path.is_file() else ()
+    data.app_settings = AppSettingsCoordinator(hass, entry, definitions)
+    await data.app_settings.async_restore()
     remove_stop_listener = _register_local_shutdown(hass, entry, data)
     if feature_db_sequence is not None:
         data.feature_runtime = FeatureEntityRuntime(hass, entry, feature_db_path)
@@ -535,6 +540,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     try:
         async_register_services(hass)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        if definitions:
+            hass.async_create_task(data.app_settings.async_request_refresh())
         entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
         if feature_db_sequence is not None:
             _watch_feature_database(hass, entry, feature_db_sequence)

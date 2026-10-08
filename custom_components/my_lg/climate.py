@@ -167,10 +167,18 @@ def _build_entities(entry: MyLgConfigEntry) -> list[ClimateEntity]:
                     read_providers.get(coordinator.device_id),
                 )
             )
+    settings = getattr(entry.runtime_data, 'app_settings', None)
+    for entity in entities:
+        metadata = getattr(entity, '_metadata', None) or getattr(entity, 'coordinator', None)
+        if settings is not None and metadata.model in ('CST_170004_WW', 'CST_570004_WW'):
+            entity.configure_temperature_presentation(settings, metadata.device_id)
     return entities
 
 
-class MyLgLocalClimate(ClimateEntity):
+from .temperature_presentation import TemperaturePresentationMixin
+
+
+class _LocalClimateState(ClimateEntity):
     """AC climate whose live state and every offered command are Local-only."""
 
     _attr_has_entity_name = True
@@ -704,7 +712,11 @@ class MyLgLocalClimate(ClimateEntity):
             raise failures[0]
 
 
-class MyLgClimate(MyLgEntity, ClimateEntity):
+class MyLgLocalClimate(TemperaturePresentationMixin, _LocalClimateState):
+    """Presentation-only settings wrap the unchanged local Celsius implementation."""
+
+
+class _PatClimateState(MyLgEntity, ClimateEntity):
     """LG air conditioner."""
 
     _attr_name = None  # use the device name
@@ -1252,3 +1264,7 @@ class MyLgClimate(MyLgEntity, ClimateEntity):
             # failure's own cause, which is what says what the bridge actually answered.
             raise failures[0] from failures[1]
         raise failures[0]
+
+
+class MyLgClimate(TemperaturePresentationMixin, _PatClimateState):
+    """Compatibility climate with the same opt-in HA display preference."""

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 import unittest
+from unittest.mock import AsyncMock
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -33,6 +34,119 @@ def saved(mode="CUSTOM", brightness="30"):
 
 
 class NightModeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_preview_is_transient_exact_model_and_never_saves(self):
+        for model, mode in [(night_mode.FRIDGE_MODEL, 'SUNSET_RISE'),
+                            (night_mode.FRIDGE_MODEL, 'CUSTOM'),
+                            (night_mode.KIMCHI_MODEL, 'CUSTOM')]:
+            state = saved(mode)
+            writes = []
+            async def read(): return dict(state)
+            async def write(body): writes.append(body)
+            wait = AsyncMock()
+            before = night_mode.parse_night_mode(state)
+            result = await night_mode.preview_night_mode(model=model, expected=before,
+                                                        read=read, write=write, wait=wait)
+            self.assertEqual(result, before)
+            body = dict(saveType='PREVIEW', nightMode=mode, brightness='30',
+                        startTime='21:00', endTime='06:00')
+            if model == night_mode.KIMCHI_MODEL:
+                body['nightModeEx'] = 'Y'
+            else:
+                body['nightMode'] = 'SUNSET_RISE'
+            self.assertEqual(writes, [body])
+            wait.assert_awaited_once()
+
+    async def test_preview_stale_off_unknown_model_never_sends(self):
+        writes = []
+        async def read(): return saved()
+        async def write(body): writes.append(body)
+        for model, before in [('unknown', saved()), (night_mode.FRIDGE_MODEL, saved('OFF')),
+                              (night_mode.FRIDGE_MODEL, saved(brightness='40'))]:
+            with self.assertRaises(ValueError):
+                await night_mode.preview_night_mode(model=model, expected=night_mode.parse_night_mode(before),
+                                                    read=read, write=write)
+        self.assertEqual(writes, [])
+
+    async def test_preview_does_not_retry_or_overwrite_concurrent_changes(self):
+        before = night_mode.parse_night_mode(saved())
+        state = saved()
+        writes = []
+        async def read(): return state
+        async def write(body):
+            writes.append(body)
+            state['brightness'] = '40'
+        async def wait(): pass
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            await night_mode.preview_night_mode(model=night_mode.KIMCHI_MODEL, expected=before,
+                                                read=read, write=write, wait=wait)
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(state['brightness'], '40')
+        async def failed_write(body):
+            writes.append(body)
+            raise TimeoutError('uncertain acknowledgement')
+        state = saved()
+        with self.assertRaises(TimeoutError):
+            await night_mode.preview_night_mode(model=night_mode.FRIDGE_MODEL, expected=before,
+                                                read=read, write=failed_write, wait=wait)
+        self.assertEqual(len(writes), 2)
+
+    def test_off_is_saved_state_but_not_an_active_brightness_mode(self):
+        value = night_mode.parse_night_mode(saved('OFF'))
+        self.assertEqual(value.mode, 'OFF')
+
+    async def test_schedule_edits_preserve_other_fields_and_restore(self):
+        state = saved()
+        writes = []
+        async def read(): return dict(state)
+        async def write(body):
+            writes.append(body)
+            state.update(body)
+            zone = ZoneInfo('Asia/Seoul')
+            for clock, epoch in [('startTime', 'startDate'), ('endTime', 'endDate')]:
+                hour, minute = map(int, body[clock].split(':'))
+                state[epoch] = int(datetime(2026, 9, 23, hour, minute, tzinfo=zone).timestamp())
+        for feature, value in [('start_time','21:01'), ('end_time','06:02'),
+                               ('mode','OFF'), ('mode','SUNSET_RISE'), ('mode','CUSTOM')]:
+            before = night_mode.parse_night_mode(await read())
+            result = await night_mode.set_night_mode_setting(expected=before, feature=feature,
+                value=value, read=read, write=write)
+            self.assertEqual(result.brightness_pct, 30)
+            self.assertEqual(getattr(result, feature), value)
+            if feature != 'mode':
+                untouched = 'end_time' if feature == 'start_time' else 'start_time'
+                self.assertEqual(getattr(result, untouched), getattr(before, untouched))
+        self.assertEqual(len(writes), 5)
+
+    async def test_schedule_rejects_bad_clock_stale_state_and_inactive_time_without_writing(self):
+        writes = []
+        async def read(): return saved()
+        async def write(body): writes.append(body)
+        before = night_mode.parse_night_mode(saved())
+        for feature, value in [('start_time','25:00'), ('end_time','1:00'),
+                               ('start_time','12:00:01'), ('mode','AUTO'), ('other','21:00')]:
+            with self.assertRaises(ValueError):
+                await night_mode.set_night_mode_setting(expected=before, feature=feature,
+                    value=value, read=read, write=write)
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            await night_mode.set_night_mode_setting(expected=night_mode.parse_night_mode(saved(brightness='40')),
+                feature='mode', value='OFF', read=read, write=write)
+        async def read_off(): return saved('OFF')
+        with self.assertRaisesRegex(ValueError, 'CUSTOM'):
+            await night_mode.set_night_mode_setting(expected=night_mode.parse_night_mode(saved('OFF')),
+                feature='start_time', value='21:01', read=read_off, write=write)
+        self.assertEqual(writes, [])
+
+    async def test_schedule_ack_only_never_confirms_or_retries_write(self):
+        writes = []
+        async def read(): return saved()
+        async def write(body): writes.append(body)
+        async def no_wait(): pass
+        with self.assertRaisesRegex(ValueError, 'not confirmed'):
+            await night_mode.set_night_mode_setting(expected=night_mode.parse_night_mode(saved()),
+                feature='start_time', value='21:01', read=read, write=write,
+                wait=no_wait, attempts=2)
+        self.assertEqual(len(writes), 1)
+
     def test_custom_clock_comes_from_saved_epoch(self):
         value = night_mode.parse_night_mode(saved())
         self.assertEqual((value.mode, value.brightness_pct), ("CUSTOM", 30))

@@ -562,21 +562,24 @@ class AcLocalSelectReadTests(unittest.IsolatedAsyncioTestCase):
             "windStrengthDetail"
         ] = "LOW"
         provider = FakeReadProvider({"fan.mode": "low"})
+        router = FakeLocalRouter()
         entity = MyLgSelect(
             coordinator,
             _pat_select_description("wind_strength_detail"),
-            local_control=FakeLocalRouter(),
+            local_control=router,
             local_read_provider=provider,
         )
         writes: list[str | None] = []
         entity.async_write_ha_state = lambda: writes.append(entity.current_option)
 
         await entity.async_added_to_hass()
+        self.assertEqual(len(router.condition_listeners), 1)
         provider.values["fan.mode"] = "high"
         provider.emit()
         self.assertEqual(writes, ["HIGH"])
 
         await entity.async_will_remove_from_hass()
+        self.assertEqual(router.condition_listeners, [])
         provider.values["fan.mode"] = "auto"
         provider.emit()
         self.assertEqual(writes, ["HIGH"])

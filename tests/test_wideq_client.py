@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 from types import ModuleType
 import unittest
+from unittest.mock import AsyncMock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,6 +114,26 @@ class _EnergySession:
 
 
 class WideqControlReconnectTests(unittest.IsolatedAsyncioTestCase):
+    async def test_night_preview_exact_transport_does_not_save_or_retry(self):
+        subject = wideq_client.WideqClient(None, 'token', 'KR', 'ko-KR', None)
+        session = _Session([])
+        session.put2 = AsyncMock()
+        subject._client = _Client(session)
+        body = dict(saveType='PREVIEW', nightMode='CUSTOM', brightness='30',
+                    startTime='21:00', endTime='06:00', nightModeEx='Y')
+        await subject.async_put_night_mode('example', body)
+        session.put2.assert_awaited_once_with(subject._night_mode_path('example'),
+                                            {**body, 'deviceId':'example'})
+        session.put2.side_effect = _HttpError(504)
+        with self.assertRaises(_HttpError):
+            await subject.async_put_night_mode('example', body)
+        self.assertEqual(session.put2.await_count, 2)
+        for bad in ({**body,'saveType':'SAVE'}, {**body,'nightModeEx':'N'},
+                    {**body,'saveType':'RESET'}, {**body,'extra':True}):
+            with self.assertRaises(ValueError):
+                await subject.async_put_night_mode('example', bad)
+        self.assertEqual(session.put2.await_count, 2)
+
     def _subject(self, errors: list[BaseException | None]):
         subject = wideq_client.WideqClient(None, "token", "KR", "ko-KR", None)
         session = _Session(errors)

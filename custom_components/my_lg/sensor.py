@@ -28,6 +28,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import MyLgConfigEntry
 from .compat import AddConfigEntryEntitiesCallback, UnitOfDensity
@@ -791,6 +792,7 @@ AC_POWER_SEMANTICS = frozenset(
         "power.outdoor_unit_total_w",
     }
 )
+AC_REPORTED_ENERGY_REFERENCE_MODELS = frozenset({"CST_170004_WW", "CST_570004_WW"})
 
 # The bridge refreshes an active AC at roughly 28 seconds and falls back to a
 # 15-minute status query while quiescent.  Twenty minutes admits that documented
@@ -1139,6 +1141,8 @@ def _build_entities(entry: MyLgConfigEntry) -> list[SensorEntity]:
                             local_provider, coordinator, semantic_id, contract
                         )
                     )
+    from .app_setting_entity import app_setting_entities
+    entities.extend(app_setting_entities(entry, 'sensor'))
     return entities
 
 
@@ -1362,11 +1366,21 @@ class LocalCumulativeEnergySensor(SensorEntity):
             raise ValueError("Cumulative-energy semantic is not authorized")
         self._provider = provider
         self._semantic_id = semantic_id
+        self._reference_only = (
+            pat_coordinator.model in AC_REPORTED_ENERGY_REFERENCE_MODELS
+        )
         label = {
             "energy.total_wh": "Local cumulative energy",
             "washer.energy.total_wh": "Washer local cumulative energy",
             "dryer.energy.total_wh": "Dryer local cumulative energy",
         }[semantic_id]
+        if self._reference_only:
+            label = "Local · 기기 보고 누적 전력량 (참고)"
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_registry_enabled_default = False
+            # Keep the coarse appliance report separate from official W integrals.
+            # No energy statistics: this reference must not be summed a second time.
+            self._attr_state_class = None
         self._attr_name = label
         self._attr_unique_id = local_semantic_unique_id(
             pat_coordinator.device_id, f"cumulative.{semantic_id}"
@@ -1397,6 +1411,11 @@ class LocalCumulativeEnergySensor(SensorEntity):
             "last_counted_generation": self._provider.last_counted_generation,
             "published_at": self._provider.published_at,
             "durability": "producer_fsynced_monotonic_ledger",
+            **(
+                {"usage_role": "reference_only", "excluded_from_official_energy": True}
+                if self._reference_only
+                else {}
+            ),
         }
 
     async def async_added_to_hass(self) -> None:
@@ -1541,9 +1560,9 @@ class TlvIntegratedEnergySensor(RestoreSensor):
             manufacturer="LG",
             model=pat_coordinator.model or pat_coordinator.device_type,
         )
-        # Register every source, but make a shared outdoor total opt-in. Multiple
-        # indoor bindings can report the same physical meter, so enabling all of
-        # them by default would make accidental fleet summation unsafe.
+        # The source-observed-time W integral is the official AC energy source.
+        # Shared outdoor readings may be duplicated across indoor bindings and
+        # must not be added to the indoor reading, which already includes its share.
         self._attr_entity_registry_enabled_default = (
             contract.enabled_by_default and not duplicate_prone
         )
@@ -1551,6 +1570,9 @@ class TlvIntegratedEnergySensor(RestoreSensor):
         self._total_valid = False
         self._last_boundary: datetime | None = None
         self._last_power_w: float | None = None
+        self._observation_high_water: datetime | None = None
+        self._blocked_through: datetime | None = None
+        self._resume_at: datetime | None = None
         self._integration_status = "awaiting_first_boundary"
         self._skipped_intervals = 0
         self._remove_provider_listener = None
@@ -1593,6 +1615,18 @@ class TlvIntegratedEnergySensor(RestoreSensor):
         return self._total_valid
 
     def _break_continuity(self, status: str) -> None:
+        # Keep the processed boundary even when the interpolation anchor is
+        # discarded. A carried pre-disconnect sample must not reopen a gap or
+        # an interval already included in the restored cumulative total.
+        boundaries = [dt_util.utcnow()]
+        for value in (
+            self._observation_high_water,
+            self._blocked_through,
+            self._provider.current_published_at,
+        ):
+            if value is not None:
+                boundaries.append(value)
+        self._blocked_through = max(boundaries)
         self._last_boundary = None
         self._last_power_w = None
         self._integration_status = status
@@ -1607,6 +1641,17 @@ class TlvIntegratedEnergySensor(RestoreSensor):
             )
             return
         published_at, power_w = sample
+        if (
+            (self._resume_at is not None and published_at < self._resume_at)
+            or (self._blocked_through is not None and published_at <= self._blocked_through)
+        ):
+            self._integration_status = "awaiting_fresh_observation"
+            return
+        if self._observation_high_water is not None and published_at < self._observation_high_water:
+            self._skipped_intervals += 1
+            self._break_continuity("non_monotonic_boundary")
+            return
+        self._observation_high_water = published_at
         if self._last_boundary is None or self._last_power_w is None:
             self._last_boundary = published_at
             self._last_power_w = power_w
@@ -1644,6 +1689,7 @@ class TlvIntegratedEnergySensor(RestoreSensor):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        self._resume_at = dt_util.utcnow()
         restored = await self.async_get_last_sensor_data()
         if restored is None:
             # A newly created meter deliberately adopts a zero baseline. This

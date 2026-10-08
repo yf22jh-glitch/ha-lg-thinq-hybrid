@@ -207,6 +207,29 @@ class LocalControlRouter:
         self._styler_course_choices: dict[str, str] = {}
         self._styler_option_choices: dict[str, str] = {}
         self._styler_choice_listeners: dict[str, set[Callable[[], None]]] = {}
+        self._feature_drafts: dict[tuple[str, str], str] = {}
+        self._feature_draft_listeners: dict[str, set[Callable[[], None]]] = {}
+
+    def feature_draft(self, device_id: str, capability: str) -> str | None:
+        return self._feature_drafts.get((device_id, capability))
+
+    def set_feature_draft(self, device_id: str, capability: str, value: str | None) -> None:
+        self.ensure_feature_enabled(device_id, capability)
+        if value is None:
+            self._feature_drafts.pop((device_id, capability), None)
+        else:
+            self._feature_drafts[(device_id, capability)] = value
+        for listener in tuple(self._feature_draft_listeners.get(device_id, ())):
+            listener()
+
+    def subscribe_feature_draft(self, device_id: str, listener: Callable[[], None]) -> Callable[[], None]:
+        listeners = self._feature_draft_listeners.setdefault(device_id, set())
+        listeners.add(listener)
+        def remove() -> None:
+            listeners.discard(listener)
+            if not listeners:
+                self._feature_draft_listeners.pop(device_id, None)
+        return remove
 
     def subscribe_styler_choice(self, device_id: str, listener: Callable[[], None]) -> Callable[[], None]:
         listeners = self._styler_choice_listeners.setdefault(device_id, set())

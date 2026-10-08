@@ -1,6 +1,19 @@
 # 기존 WideQ 엔티티 30개: 로컬 교체 실사
 
-2026-09-29 기준. 여기서 `key`는 기존 HA `unique_id`의 접미사다. 실제 기기 ID·엔티티 ID·캡처는 이 문서에 넣지 않는다. **소스 구현/테스트와 운영 배포는 별개**다. 아래 운영 현황은 16:38 KST 사후 확인 시점이며, 전 항목 전환 완료를 주장하지 않는다.
+소스·과거 패킷 근거는 2026-09-29 기준이며, 최신 운영 확인은 아래 **2026-10-01 DB 활성화** 절에 별도로 기록한다. 여기서 `key`는 기존 HA `unique_id`의 접미사다. 실제 기기 ID·엔티티 ID·캡처는 이 문서에 넣지 않는다. **소스 구현/테스트, DB 등록, 운영 값 확인은 별개**이며, 전 항목 전환 완료를 주장하지 않는다.
+
+## 2026-10-01 DB 활성화
+
+| 대상 | 수 | 실제 적용·확인 결과 |
+| --- | ---: | --- |
+| WTL의 등록된 로컬 읽기 | 10 | 세탁 코스·탈수·수온·수위·오류·문잠금, 건조 상태·단계·배기 막힘·오류를 `enabled=1`로 전환. 기존 HA 센서 ID 모두 `value_source=full-read`이고 정상 값 확인 |
+| Styler의 등록된 로컬 읽기 | 3 | 남은 시간·문잠금·야간 건조를 `enabled=1`로 전환. 기존 HA 센서 ID 모두 `value_source=full-read`이고 정상 값 확인 |
+| Styler 코스 사용 전력량 | 1 | `diagnostic.cycle.course_spend_power_raw`를 `producer_registered=1`로 신규 등록. 아직 retained 로컬 보고에 이 필드가 없으므로 **HA 활성화는 대기** (`enabled=0`). 기존 코스 전력 센서의 WideQ 소유를 유지하며, 수신 전 값을 0이나 누적 전력량으로 채우지 않음 |
+
+- Styler 3개부터 실제 HA 전환을 확인한 뒤 WTL 10개에 확대했다. 통합·HA·읽기 서비스 재시작 및 기기 제어 명령은 없었다.
+- 기존 엔티티 ID·단위와 누적 전력 상태를 유지했다. 기존 WTL 세탁·건조 코스 전력 센서도 계속 로컬 `Wh`를 사용한다.
+- 13개의 잘못된 `retired-from-current-source` 표기를 `db-reviewed-extension`으로 교정했다. 신규 코스 전력 행에는 기존 후보의 해독·관측 근거를 보존하고, `producer-registered-awaiting-local-report`를 명시했다. 이 표기들은 설명용이며 발행·수용 게이트가 아니다.
+- 다음 단계는 **Styler의 실제 상태 보고에서 코스 Wh 수신 → 해당 행만 활성화 → 기존 코스 전력 ID의 로컬 값 확인**이다. 등록만으로 이 단계가 완료됐다고 세지 않는다. 미확정 어린이 잠금·오류 2개와 사용자 제외 항목은 변경하지 않았다.
 
 ## 판정
 
@@ -54,7 +67,7 @@
 | 냉장고 | 일몰 안티글레어 밝기 number | Web 예외 | F010 brightness write 형식 및 Web 저장/재조회 확인. own-state 밝기 readback 없음 |
 | 김치냉장고 | 사용자 안티글레어 밝기 number | Web 예외 | 동일. 기존 cloud-confirmed number가 동작을 담당 |
 
-## 운영 전환 경계
+## 2026-09-29 당시 운영 전환 경계 (이력)
 
 1. Styler와 WTL 읽기 서비스는 세 필드 해독기가 포함된 불변 릴리스로 전환했다. 기존 Styler `state`/`course`와 WTL `washer_state`/`washer_remain`/`washer_child_lock`/`dryer_remain`의 로컬값이 운영 HA의 기존 ID에 도달했다.
 2. 운영 feature DB에는 Styler 3개와 WTL 10개를 `producer_registered=1`, `enabled=0`으로 등록했다. 새 own-state 패킷이 아직 없어 publication에 값이 없으므로 HA 전환은 대기한다. 값 없이 먼저 켜면 기존 ID가 `unavailable`이 된다. 기기 명령은 보내지 않았다.

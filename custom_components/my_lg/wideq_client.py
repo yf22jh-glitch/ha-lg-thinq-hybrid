@@ -356,6 +356,44 @@ class WideqClient:
             raise ValueError("exact night-mode device identity is invalid")
         return f"service/fridge/{wideq_device_id}/night-mode"
 
+    async def async_web_setting_request(self, method: str, path: str, body=None):
+        """Account settings only, not a generic device-control HTTP escape hatch."""
+        identity = r'[A-Za-z0-9_-]{4,128}'
+        allowed = {
+            'GET': rf'service/(?:fridge/{identity}/push/config/expired-food-v2|devices/{identity}/available-pairing-devices\?deviceType=201,221,223)',
+            'PUT': rf'service/fridge/{identity}/stored-food/keep-recommand-use',
+            'POST': rf'service/devices/{identity}/pairing-devices/{identity}',
+            'DELETE': rf'service/devices/{identity}/pairing-devices/{identity}',
+        }
+        if method not in allowed or not re.fullmatch(allowed[method], path):
+            raise ValueError('Unsupported ThinQ account setting endpoint')
+        if self._client is None:
+            await self.async_connect()
+        await self._client.refresh_auth()
+        session = self._client.session
+        if method == 'GET':
+            return await session.get2(path)
+        if method == 'PUT':
+            return await session.put2(path, body)
+        return await session.account_write2(method, path, body)
+
+    async def async_pairing_context(self, device_id):
+        """Fresh appliance conditions, using the same model support as Web."""
+        from .wideq.web_settings import PAIRING_MODEL
+        devices = await self.async_get_snapshots()
+        exact = next((x for x in devices if x.device_id == device_id and x.model == PAIRING_MODEL), None)
+        if exact is None:
+            return {}
+        device = next(x for x in self._client.devices if x.device_id == device_id)
+        model = await self._client.model_url_info(device.model_info_url)
+        snapshot = exact.snapshot
+        styler = snapshot.get('styler', {})
+        return dict(online=exact.online, state=styler.get('state',snapshot.get('styler.state')),
+                    child_lock=styler.get('childLock',snapshot.get('styler.childLock')),
+                    error=styler.get('error',snapshot.get('styler.error')),
+                    config=(model or {}).get('Config', {}),
+                    activated=snapshot.get('deviceContentsStatus', {}).get('activated', []))
+
     async def async_get_night_mode(self, wideq_device_id: str) -> dict[str, Any]:
         """Read the saved ThinQ Web state, not an appliance ACK or cached snapshot."""
         if self._client is None:
@@ -369,9 +407,12 @@ class WideqClient:
     async def async_put_night_mode(
         self, wideq_device_id: str, body: dict[str, str]
     ) -> None:
-        """Save one reviewed night-mode tuple; the caller must requery it."""
-        if set(body) != {"saveType", "nightMode", "brightness", "startTime", "endTime"}:
-            raise ValueError("night-mode SAVE shape is invalid")
+        """Send one SAVE/PREVIEW tuple without replay; caller verifies saved state."""
+        expected_keys = {"saveType", "nightMode", "brightness", "startTime", "endTime"}
+        if body.get('saveType') == 'PREVIEW' and body.get('nightModeEx') == 'Y':
+            expected_keys.add('nightModeEx')
+        if set(body) != expected_keys or body.get('saveType') not in ('SAVE', 'PREVIEW'):
+            raise ValueError("night-mode SAVE/PREVIEW shape is invalid")
         if self._client is None:
             await self.async_connect()
         await self._client.refresh_auth()
