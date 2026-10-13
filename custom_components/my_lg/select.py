@@ -46,6 +46,7 @@ from .local_provider import LocalSemanticShadowProvider
 from .local_read_owner import (
     local_auto_comfort_owner_configured,
     local_climate_control_domain,
+    local_climate_state_available,
     resolve_tlv_read_owned_field,
     tlv_read_owner_configured,
 )
@@ -455,7 +456,7 @@ class MyLgLocalAutoComfortSelect(SelectEntity):
             else CLIMATE_POWER_ON_CAPABILITY
         )
         return (
-            self._provider.shadow_healthy
+            local_climate_state_available(self._provider)
             and power is not None
             and router is not None
             and router.control_target_available(self._metadata.device_id)

@@ -53,6 +53,7 @@ from .local_control_composite_domain import (
 )
 from .local_read_owner import (
     local_climate_control_domain,
+    local_climate_state_available,
     resolve_tlv_read_owned_field,
     tlv_read_owner_configured,
 )
@@ -299,7 +300,7 @@ class _LocalClimateState(ClimateEntity):
         router = self._router
         return (
             self._domain is not None
-            and self._local_read.shadow_healthy
+            and local_climate_state_available(self._local_read)
             and router is not None
             and router.control_target_available(self._metadata.device_id)
             and router.capability_authorized(

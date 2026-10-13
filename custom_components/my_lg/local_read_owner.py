@@ -32,6 +32,21 @@ class TlvReadOwnedField:
     value: object | None
 
 
+def local_climate_state_available(provider: LocalSemanticShadowProvider) -> bool:
+    """수집 묶음 종료와 기기 연결을 구분해 검증된 전원 상태를 표시해요.
+
+    연결 신호의 세대와 현재 상태의 세대가 일치해야 해요. 필드 유효성은
+    제공자가, 실제 명령 허용 여부와 연결 신호 만료는 라우터가 검사해요.
+    """
+    authority = provider.read_publication_authority
+    return (
+        authority is not None
+        and provider.binding_generation == authority[0]
+        and provider.semantic_field_available("operation.power_requested")
+        and type(provider.field_value("operation.power_requested")) is bool
+    )
+
+
 def tlv_read_owner_configured(
     provider: TlvReadShadowProvider | None,
     semantic_id: str | None,

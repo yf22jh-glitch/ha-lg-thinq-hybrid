@@ -73,6 +73,8 @@ class FakeReadProvider:
             fields_by_semantic_id=contracts,
         )
         self.shadow_healthy = True
+        self.binding_generation = 1
+        self.read_publication_authority = (1, "synthetic_service")
         self.listeners: list[Callable[[], None]] = []
         self.remove_calls = 0
 
