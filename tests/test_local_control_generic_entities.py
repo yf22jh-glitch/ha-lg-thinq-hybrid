@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -70,6 +71,7 @@ class PrimaryProvider:
         self.model_id = model
         self.control_alive = alive
         self.values = dict(values or {})
+        self.shadow_fields = {}
         self.available = set(self.values)
         self.listeners: list[Any] = []
 
@@ -96,6 +98,7 @@ class PrimaryProvider:
 class ReadProvider:
     def __init__(self, values=None) -> None:
         self.values = dict(values or {})
+        self.fields = {}
         self.available = set(self.values)
         self.listeners: list[Any] = []
 
@@ -216,6 +219,32 @@ class HydroCountdownSelectTests(unittest.IsolatedAsyncioTestCase):
         entity._mapping_by_option = {item.home_assistant_value: item for item in entity._descriptor.value_mappings}
         self.assertEqual(entity.current_option, '예약 취소')
         self.assertEqual(entity.options[0], '예약 취소')
+
+    async def test_ac_sleep_countdowns_do_not_expand_the_command_domain(self):
+        for model in ('CST_170004_WW', 'CST_570004_WW'):
+            entity, primary, router = self.timer(29)
+            entity._descriptor = replace(entity._descriptor, model_id=model,
+                capability_id='timer.sleep_remaining_min', exact_state_semantic='timer.sleep_remaining_min')
+            entity.coordinator.model = model
+            primary.model_id = model
+            primary.values = {'timer.sleep_remaining_min': 29}
+            primary.available = set(primary.values)
+            self.assertEqual(entity.current_option, '29min')
+            self.assertIn('29min', entity.options)
+            await entity.async_select_option('29min')
+            self.assertEqual(router.calls, [])
+            with self.assertRaises(HomeAssistantError):
+                await entity.async_select_option('28min')
+            with self.assertLogs('custom_components.my_lg.local_control_entity', level='WARNING'):
+                for bad in (True, -1, 481, 29.5, '29'):
+                    primary.values['timer.sleep_remaining_min'] = bad
+                    self.assertIsNone(entity.current_option)
+
+    async def test_unknown_model_is_not_given_countdown_fallback(self):
+        entity, _, _ = self.timer(59)
+        entity._descriptor = replace(entity._descriptor, model_id='unknown')
+        with self.assertLogs('custom_components.my_lg.local_control_entity', level='WARNING'):
+            self.assertIsNone(entity.current_option)
 
 
 def descriptor(domain: str) -> LocalControlEntityDescriptor:
@@ -416,6 +445,32 @@ class LocalControlGenericFactoryTests(unittest.TestCase):
 
 
 class LocalControlGenericEntityTests(unittest.IsolatedAsyncioTestCase):
+    def test_newest_field_observation_wins_while_local_feeds_catch_up(self):
+        desc = descriptor('select')
+        first, second = desc.supported_values[:2]
+        entity, primary, read, router = entity_for('select', state=first, read_state=second)
+        semantic = desc.exact_state_semantic
+        now = datetime(2026, 10, 14, tzinfo=timezone.utc)
+        primary.shadow_fields[semantic] = SimpleNamespace(observed_at=now)
+        read.fields[semantic] = SimpleNamespace(observed_at=now + timedelta(seconds=1))
+        with self.assertNoLogs('custom_components.my_lg.local_control_entity', level='WARNING'):
+            self.assertEqual(entity.current_option, desc.value_mappings[1].home_assistant_value)
+            # A later publication containing an old carried value is not newer.
+            primary.current_published_at = now + timedelta(seconds=10)
+            self.assertEqual(entity.current_option, desc.value_mappings[1].home_assistant_value)
+            primary.shadow_fields[semantic] = SimpleNamespace(observed_at=now + timedelta(seconds=2))
+            self.assertEqual(entity.current_option, desc.value_mappings[0].home_assistant_value)
+        self.assertEqual(router.calls, [])
+
+    def test_same_observation_conflict_still_has_no_guessed_state(self):
+        desc = descriptor('select')
+        entity, primary, read, _ = entity_for('select', state=desc.supported_values[0], read_state=desc.supported_values[1])
+        now = datetime(2026, 10, 14, tzinfo=timezone.utc)
+        primary.shadow_fields[desc.exact_state_semantic] = SimpleNamespace(observed_at=now)
+        read.fields[desc.exact_state_semantic] = SimpleNamespace(observed_at=now)
+        with self.assertLogs('custom_components.my_lg.local_control_entity', level='WARNING'):
+            self.assertIsNone(entity.current_option)
+
     def test_exact_cycle_power_readback_uses_only_verified_power_states(self) -> None:
         contract = load_local_control_entity_contract()
         cases = (

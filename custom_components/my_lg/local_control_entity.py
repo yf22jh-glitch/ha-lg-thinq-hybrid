@@ -9,6 +9,7 @@ import logging
 import math
 import re
 from collections.abc import Callable
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, cast
 
@@ -71,6 +72,17 @@ _EXACT_SELECT_READBACK_NAMES = {
         "purified water": "NORMAL_WATER",
         "cold water": "COLD_WATER",
     },
+}
+
+# These are remaining-minute reports, not last-requested presets. Bounds match
+# the corresponding ThinQ setting domains; no new writable option is created.
+_COUNTDOWN_READBACK_MAX = {
+    ('HUM_056905_WW', 'timer.off_remaining_min'): 720,
+    ('DHUM_056905_WW', 'timer.off_remaining_min'): 1440,
+    ('AIR_2C0001_WW', 'timer.sleep_remaining_min'): 720,
+    ('AIR_910604_WW', 'timer.sleep_remaining_min'): 720,
+    ('CST_170004_WW', 'timer.sleep_remaining_min'): 480,
+    ('CST_570004_WW', 'timer.sleep_remaining_min'): 480,
 }
 
 
@@ -178,21 +190,29 @@ class _LocalContractEntity(MyLgEntity):
         semantic_id = self._descriptor.exact_state_semantic
         if semantic_id is None:
             return None
-        candidates: list[object] = []
+        candidates: list[tuple[object, datetime | None]] = []
         read = self._read_provider
         if read is not None and read.field_available(semantic_id):
             value = read.field_value(semantic_id)
             if value is not None:
-                candidates.append(value)
+                field = getattr(read, 'fields', {}).get(semantic_id)
+                candidates.append((value, getattr(field, 'observed_at', None)))
         primary = self._primary_provider
         if primary.semantic_field_available(semantic_id):
             value = primary.field_value(semantic_id)
             if value is not None:
-                candidates.append(value)
+                field = getattr(primary, 'shadow_fields', {}).get(semantic_id)
+                candidates.append((value, getattr(field, 'observed_at', None)))
         if not candidates:
             return None
-        first = candidates[0]
-        if any(not _same_primitive(first, candidate) for candidate in candidates[1:]):
+        # Independent Local feeds do not arrive atomically. Compare the field's
+        # observation time, never the enclosing publication time (which can
+        # carry an older unchanged value). Same-time conflicts remain visible.
+        if all(isinstance(at, datetime) and at.utcoffset() is not None for _, at in candidates):
+            latest = max(at for _, at in candidates if at is not None)
+            candidates = [(value, at) for value, at in candidates if at == latest]
+        first = candidates[0][0]
+        if any(not _same_primitive(first, value) for value, _ in candidates[1:]):
             self._report_state_diagnostic("inconsistent across exact Local sources")
             return None
         return first
@@ -466,13 +486,12 @@ class MyLgLocalContractSelect(_LocalContractEntity, SelectEntity):
         self._attr_options = list(self._mapping_by_option)
 
     def _reported_countdown_option(self) -> str | None:
-        # Hydro reports the remaining minutes, not the last preset requested.
-        # Its 60 -> 59 countdown is a valid own read, not a new writable preset.
-        if (self._descriptor.model_id != 'HUM_056905_WW'
-                or self._descriptor.capability_id != 'timer.off_remaining_min'):
+        maximum = _COUNTDOWN_READBACK_MAX.get(
+            (self._descriptor.model_id, self._descriptor.capability_id))
+        if maximum is None:
             return None
         value = self._state_value()
-        if type(value) is not int or not 0 <= value <= 720:
+        if type(value) is not int or not 0 <= value <= maximum:
             return None
         normalized = _exact_select_readback(value, self._descriptor.supported_values,
                                            self._descriptor.model_id, self._descriptor.capability_id)

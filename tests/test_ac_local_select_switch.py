@@ -73,6 +73,8 @@ class FakeReadProvider:
             fields_by_semantic_id=contracts,
         )
         self.shadow_healthy = True
+        self.read_publication_authority = (1, 'test-session')
+        self.binding_generation = 1
         self.listeners: list[Callable[[], None]] = []
         self.remove_calls = 0
 

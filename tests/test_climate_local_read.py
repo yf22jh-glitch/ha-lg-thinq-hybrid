@@ -136,6 +136,8 @@ class FakeTlvReadProvider:
             fields_by_semantic_id=contracts,
         )
         self.shadow_healthy = event_available
+        self.read_publication_authority = (1, 'test-session') if event_available else None
+        self.binding_generation = 1
         self.listeners: list[Callable[[], None]] = []
 
     def field_available(self, semantic_id: str) -> bool:
