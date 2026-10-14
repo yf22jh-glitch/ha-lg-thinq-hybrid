@@ -68,6 +68,7 @@ from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
 from .feature_catalog import load_catalogs
 from .feature_database import (
+    FeatureDatabaseTokenCache,
     default_database_path,
     disabled_control_capabilities,
     disabled_read_semantics,
@@ -560,13 +561,15 @@ def _watch_feature_database(
     checking = asyncio.Lock()
     path = default_database_path()
 
+    token_cache = FeatureDatabaseTokenCache(feature_database_token)
+
     async def check(_now: object) -> None:
         nonlocal sequence
         if checking.locked():
             return
         async with checking:
             try:
-                current = await hass.async_add_executor_job(feature_database_token, path)
+                current = await hass.async_add_executor_job(token_cache.read, path)
             except (OSError, ValueError, sqlite3.Error):
                 _LOGGER.exception("Local feature database edit check failed")
                 return

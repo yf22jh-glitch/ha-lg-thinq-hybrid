@@ -42,6 +42,7 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
         with (
             patch.object(my_lg, "default_database_path", return_value=Path("/tmp/test-features.sqlite3")),
             patch.object(my_lg, "feature_database_token", side_effect=lambda _path: sequence),
+            patch.object(my_lg.FeatureDatabaseTokenCache, "_files", side_effect=lambda _path: (sequence,)),
             patch.object(my_lg, "async_track_time_interval", side_effect=track),
         ):
             my_lg._watch_feature_database(Hass(), Entry(), sequence)

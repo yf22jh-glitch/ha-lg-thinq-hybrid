@@ -10,7 +10,8 @@ import hashlib
 import json
 import os
 import sqlite3
-from collections.abc import Iterable, Mapping
+import time
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -161,6 +162,48 @@ def feature_database_token(path: Path) -> str:
     return hashlib.sha256(json.dumps(
         [rows, models, conditions, app_settings], ensure_ascii=False, separators=(",", ":")
     ).encode()).hexdigest()
+
+
+class FeatureDatabaseTokenCache:
+    """Watcher-local optimization; no release pin or extra DB write required.
+
+    WAL/journal and inode changes cover direct SQL and atomic replacements.
+    A periodic full read also covers filesystems with coarse timestamps. Failed
+    reads never advance the cache, and writes during a read force another check.
+    """
+
+    def __init__(self, reader: Callable[[Path], str] = feature_database_token):
+        self._reader = reader
+        self._stamp: tuple | None = None
+        self._token: str | None = None
+        self._checked_at = 0.0
+
+    @staticmethod
+    def _files(path: Path) -> tuple:
+        values = []
+        for suffix in ("", "-wal", "-journal"):
+            try:
+                stat = Path(str(path) + suffix).lstat()
+                values.append((stat.st_dev, stat.st_ino, stat.st_size,
+                               stat.st_mtime_ns, stat.st_ctime_ns))
+            except FileNotFoundError:
+                if not suffix:
+                    raise
+                values.append(None)
+        return (str(path), *values)
+
+    def read(self, path: Path) -> str:
+        before = self._files(path)
+        now = time.monotonic()
+        if (self._token is not None and self._stamp == before
+                and now - self._checked_at < 60):
+            return self._token
+        token = self._reader(path)
+        after = self._files(path)
+        self._token = token
+        self._stamp = after if before == after else None
+        self._checked_at = now
+        return token
 
 
 def copy_feature_database(source: Path, destination: Path) -> None:
