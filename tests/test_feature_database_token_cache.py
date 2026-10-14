@@ -1,5 +1,6 @@
 """Live-edit detection without a full menu read on every idle poll."""
 import importlib.util
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -44,7 +45,7 @@ class TokenCacheTest(unittest.TestCase):
         before = self.cache.read(self.path)
         replacement = self.path.with_suffix(".new")
         database.copy_feature_database(self.path, replacement)
-        with sqlite3.connect(replacement) as writer:
+        with closing(sqlite3.connect(replacement)) as writer, writer:
             writer.execute("UPDATE features SET enabled=0")
         replacement.replace(self.path)
         self.assertNotEqual(self.cache.read(self.path), before)
@@ -55,7 +56,7 @@ class TokenCacheTest(unittest.TestCase):
 
     def test_read_failure_retries_and_edit_during_read_does_not_get_cached(self):
         token = self.cache.read(self.path)
-        with sqlite3.connect(self.path) as writer:
+        with closing(sqlite3.connect(self.path)) as writer, writer:
             writer.execute("UPDATE features SET enabled=0")
         self.reader.side_effect = sqlite3.OperationalError("busy")
         with self.assertRaises(sqlite3.OperationalError):
@@ -65,7 +66,7 @@ class TokenCacheTest(unittest.TestCase):
         self.cache._stamp = None
         def editing_reader(path):
             previous = database.feature_database_token(path)
-            with sqlite3.connect(path) as writer:
+            with closing(sqlite3.connect(path)) as writer, writer:
                 writer.execute("UPDATE features SET enabled=1")
             return previous
         self.reader.side_effect = editing_reader
