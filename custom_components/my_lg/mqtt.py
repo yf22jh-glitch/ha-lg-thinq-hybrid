@@ -21,6 +21,7 @@ from .coordinator import PatDeviceCoordinator
 from .rethink_event_relay import normalize_lifecycle_event
 
 _LOGGER = logging.getLogger(__name__)
+MQTT_SHUTDOWN_CALL_TIMEOUT = 5
 
 # Client registration body used by thinqconnect (verified against the SDK).
 CLIENT_BODY = {
@@ -64,6 +65,9 @@ class MyLgMqtt:
         self._device_lifecycle_subscribed = False
         self._subscription_failures = 0
         self._subscription_timeouts = 0
+        self._stopping = False
+        self._shutdown_task: asyncio.Task | None = None
+        self._client_deregistered = False
 
     async def _async_subscribe_device(
         self, device_id: str, semaphore: asyncio.Semaphore
@@ -156,6 +160,8 @@ class MyLgMqtt:
 
     def _on_message(self, *args: Any, **kwargs: Any) -> None:
         """Runs in the MQTT client thread — hop to the event loop."""
+        if self._stopping:
+            return
         payload = _extract_payload(args, kwargs)
         if payload is None:
             return
@@ -173,7 +179,7 @@ class MyLgMqtt:
         )
 
         if lifecycle_event is not None and self._on_lifecycle is not None:
-            self.hass.loop.call_soon_threadsafe(
+            self._post_to_hass(
                 self._on_lifecycle, lifecycle_event
             )
 
@@ -182,7 +188,7 @@ class MyLgMqtt:
             if coordinator is None:
                 return
             report = message.get("report") or {}
-            self.hass.loop.call_soon_threadsafe(coordinator.handle_mqtt_status, report)
+            self._post_to_hass(coordinator.handle_mqtt_status, report)
         elif (
             lifecycle_event is None
             and push_type == PUSH_TYPE_DEVICE_PUSH
@@ -190,10 +196,47 @@ class MyLgMqtt:
             and device_id
         ):
             code = message.get("pushCode") or ""
-            self.hass.loop.call_soon_threadsafe(self._on_push, device_id, code)
+            self._post_to_hass(self._on_push, device_id, code)
+
+    def _post_to_hass(self, callback: Callable, *args: Any) -> None:
+        """Fence SDK-thread and already-queued deliveries when HA shuts down."""
+        loop = self.hass.loop
+        if self._stopping or loop.is_closed():
+            return
+
+        def deliver() -> None:
+            if not self._stopping and not getattr(self.hass, 'is_stopping', False):
+                callback(*args)
+
+        try:
+            loop.call_soon_threadsafe(deliver)
+        except RuntimeError:
+            # Closure can race the is_closed check on the SDK's callback thread.
+            if not self._stopping and not loop.is_closed():
+                raise
+
+    async def async_shutdown(self) -> None:
+        """Detach the cloud push client before HA closes its loop, once."""
+        self._stopping = True
+        if self._shutdown_task is None:
+            self._shutdown_task = asyncio.create_task(self._async_disconnect())
+        await asyncio.shield(self._shutdown_task)
+
+    async def _async_disconnect(self) -> None:
+        client, self._client = self._client, None
+        if client is None:
+            return
+        try:
+            # Use the SDK lifecycle API; it unsubscribes its topic and removes
+            # its client registration. No appliance registration is removed.
+            await asyncio.wait_for(client.async_disconnect(), timeout=MQTT_SHUTDOWN_CALL_TIMEOUT)
+            self._client_deregistered = True
+        except Exception as err:  # noqa: BLE001 - stopping must remain bounded
+            _LOGGER.debug('ThinQ MQTT disconnect during shutdown: %s', type(err).__name__)
 
     async def async_stop(self) -> None:
         """Clean up: delete our event subscriptions and deregister the client."""
+        await self.async_shutdown()
         async def _delete_event(device_id: str) -> None:
             try:
                 await asyncio.wait_for(
@@ -222,11 +265,13 @@ class MyLgMqtt:
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("delete device lifecycle subscription: %s", err)
             self._device_lifecycle_subscribed = False
-        try:
-            await asyncio.wait_for(
-                self.api.async_delete_client_register(payload=CLIENT_BODY),
-                timeout=MQTT_SETUP_CALL_TIMEOUT,
-            )
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("deregister client: %s", err)
+        if not self._client_deregistered:
+            try:
+                await asyncio.wait_for(
+                    self.api.async_delete_client_register(payload=CLIENT_BODY),
+                    timeout=MQTT_SETUP_CALL_TIMEOUT,
+                )
+                self._client_deregistered = True
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("deregister client: %s", err)
         self._client = None
