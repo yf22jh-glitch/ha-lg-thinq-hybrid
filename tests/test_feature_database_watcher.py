@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from custom_components import my_lg
 
@@ -14,12 +14,16 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
     async def test_committed_edit_applies_once_without_reload(self) -> None:
         sequence = "before"
         callback = None
-        cancel = lambda: None
+        cancel = Mock()
+        remove_stop = Mock()
+        listen_stop = Mock(return_value=remove_stop)
         unload_callbacks = []
         reload_entry = AsyncMock()
         refresh = AsyncMock(side_effect=lambda: sequence)
 
         class Hass:
+            is_stopping = False
+            bus = SimpleNamespace(async_listen_once=listen_stop)
             config_entries = SimpleNamespace(async_reload=reload_entry)
 
             async def async_add_executor_job(self, function, *args):
@@ -45,8 +49,9 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
             patch.object(my_lg.FeatureDatabaseTokenCache, "_files", side_effect=lambda _path: (sequence,)),
             patch.object(my_lg, "async_track_time_interval", side_effect=track),
         ):
-            my_lg._watch_feature_database(Hass(), Entry(), sequence)
-            self.assertEqual(unload_callbacks, [cancel])
+            hass = Hass()
+            my_lg._watch_feature_database(hass, Entry(), sequence)
+            self.assertEqual(len(unload_callbacks), 2)
             self.assertIsNotNone(callback)
             await callback(None)
             reload_entry.assert_not_awaited()
@@ -65,6 +70,22 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
             await callback(None)
             self.assertEqual(refresh.await_count, 3)
             reload_entry.assert_not_awaited()
+            # Whole-core stop doesn't unload config entries. Cancel the timer
+            # there as well, and reject a tick already queued before cancellation.
+            hass.is_stopping = True
+            sequence = "edit-during-stop"
+            await callback(None)
+            self.assertEqual(refresh.await_count, 3)
+            listen_stop.assert_called_once()
+            self.assertEqual(listen_stop.call_args.args[0], my_lg.EVENT_HOMEASSISTANT_STOP)
+            listen_stop.call_args.args[1](None)
+            for cleanup in unload_callbacks:
+                cleanup()
+            cancel.assert_called_once()
+            remove_stop.assert_called_once()
+            hass.is_stopping = False
+            await callback(None)
+            self.assertEqual(refresh.await_count, 3)
 
 
 if __name__ == "__main__":

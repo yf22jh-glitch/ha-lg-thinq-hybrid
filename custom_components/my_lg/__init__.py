@@ -12,7 +12,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
-from homeassistant.core import Event, HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import (
     async_create_clientsession,
@@ -562,10 +562,11 @@ def _watch_feature_database(
     path = default_database_path()
 
     token_cache = FeatureDatabaseTokenCache(feature_database_token)
+    stopped = False
 
     async def check(_now: object) -> None:
         nonlocal sequence
-        if checking.locked():
+        if stopped or hass.is_stopping or checking.locked():
             return
         async with checking:
             try:
@@ -573,7 +574,7 @@ def _watch_feature_database(
             except (OSError, ValueError, sqlite3.Error):
                 _LOGGER.exception("Local feature database edit check failed")
                 return
-            if current == sequence:
+            if stopped or hass.is_stopping or current == sequence:
                 return
             runtime = entry.runtime_data.feature_runtime
             if runtime is None:
@@ -585,9 +586,19 @@ def _watch_feature_database(
             except (OSError, ValueError, RuntimeError, sqlite3.Error):
                 _LOGGER.exception("Local feature database live update failed; retrying")
 
-    entry.async_on_unload(async_track_time_interval(
+    cancel_interval = async_track_time_interval(
         hass, check, timedelta(seconds=2), name="my_lg feature database"
-    ))
+    )
+
+    @callback
+    def stop(_event: object = None) -> None:
+        nonlocal stopped
+        if not stopped:
+            stopped = True
+            cancel_interval()
+
+    entry.async_on_unload(stop)
+    entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop))
 
 
 async def _setup_wideq(
