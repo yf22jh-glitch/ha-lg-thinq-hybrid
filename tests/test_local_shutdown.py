@@ -24,6 +24,8 @@ class LocalShutdownTests(unittest.IsolatedAsyncioTestCase):
     async def test_ha_stop_drains_connections_once_without_entry_unload(self) -> None:
         runtime = integration.MyLgData(api=object())
         stop = AsyncMock()
+        cloud_stop = AsyncMock()
+        runtime.mqtt = SimpleNamespace(async_shutdown=cloud_stop)
         runtime.local_mqtt_subscribers["synthetic-binding"] = SimpleNamespace(
             async_stop=stop,
         )
@@ -35,6 +37,7 @@ class LocalShutdownTests(unittest.IsolatedAsyncioTestCase):
         await self.hass.async_block_till_done()
 
         stop.assert_awaited_once_with()
+        cloud_stop.assert_awaited_once_with()
         self.assertEqual(runtime.local_mqtt_subscribers, {})
 
     async def test_entry_unload_removes_its_shutdown_listener(self) -> None:

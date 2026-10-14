@@ -1067,7 +1067,10 @@ def _register_local_shutdown(
     """Drain Local MQTT while HA's loop is alive, including whole-core restarts."""
 
     async def _async_stop(_event: Event) -> None:
-        await _stop_local_shadows(data)
+        stops = [_stop_local_shadows(data)]
+        if data.mqtt is not None:
+            stops.append(data.mqtt.async_shutdown())
+        await asyncio.gather(*stops)
 
     # HA shutdown does not call async_unload_entry.  Entry unload must also
     # remove this listener so an old entry cannot stop a later runtime.

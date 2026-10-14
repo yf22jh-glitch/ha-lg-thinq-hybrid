@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 import unittest
 
 from custom_components.my_lg.mqtt import MyLgMqtt
@@ -50,7 +50,9 @@ class _Api:
 
 class _MqttClient:
     def __init__(self, api, client_id, callback) -> None:
+        self.api = api
         self.callback = callback
+        self.disconnect_calls = 0
 
     async def async_init(self) -> None:
         return None
@@ -61,8 +63,50 @@ class _MqttClient:
     async def async_connect_mqtt(self) -> None:
         return None
 
+    async def async_disconnect(self) -> None:
+        self.disconnect_calls += 1
+        await self.api.async_delete_client_register(payload={})
+
 
 class MqttStartupTests(unittest.IsolatedAsyncioTestCase):
+    async def test_shutdown_disconnects_once_and_drops_already_queued_messages(self):
+        hass = SimpleNamespace(loop=asyncio.get_running_loop())
+        callback = Mock()
+        manager = MyLgMqtt(hass, _Api(), 'client', {'test': SimpleNamespace(handle_mqtt_status=callback)})
+        client = _MqttClient(manager.api, 'client', manager._on_message)
+        manager._client = client
+        payload = json.dumps({'pushType': 'DEVICE_STATUS', 'deviceId': 'test', 'report': {'x': 1}}).encode()
+        manager._on_message(payload)
+        await manager.async_shutdown()
+        await asyncio.gather(manager.async_shutdown(), manager.async_shutdown())
+        manager._on_message(payload)
+        await asyncio.sleep(0)
+        self.assertEqual(client.disconnect_calls, 1)
+        callback.assert_not_called()
+
+    async def test_callback_racing_with_loop_close_is_ignored_but_other_runtime_errors_are_not(self):
+        loop = Mock()
+        loop.is_closed.side_effect = [False, True]
+        loop.call_soon_threadsafe.side_effect = RuntimeError('Event loop is closed')
+        manager = MyLgMqtt(SimpleNamespace(loop=loop), _Api(), 'client', {}, on_lifecycle=Mock())
+        payload = json.dumps({'pushType': 'DEVICE_REGISTERED', 'deviceId': 'test'}).encode()
+        manager._on_message(payload)
+        loop.is_closed.side_effect = None
+        loop.is_closed.return_value = False
+        loop.call_soon_threadsafe.side_effect = RuntimeError('unexpected scheduler failure')
+        with self.assertRaisesRegex(RuntimeError, 'unexpected scheduler'):
+            manager._on_message(payload)
+
+    async def test_slow_sdk_disconnect_is_bounded_and_late_callbacks_stay_fenced(self):
+        async def slow():
+            await asyncio.sleep(60)
+        manager = MyLgMqtt(SimpleNamespace(loop=asyncio.get_running_loop()), _Api(), 'client', {})
+        manager._client = SimpleNamespace(async_disconnect=AsyncMock(side_effect=slow))
+        with patch('custom_components.my_lg.mqtt.MQTT_SHUTDOWN_CALL_TIMEOUT', .01):
+            await asyncio.wait_for(manager.async_shutdown(), .5)
+        self.assertTrue(manager._stopping)
+        self.assertIsNone(manager._client)
+
     async def test_device_subscriptions_are_bounded(self) -> None:
         api = _Api(delay=0.005)
         manager = MyLgMqtt(
