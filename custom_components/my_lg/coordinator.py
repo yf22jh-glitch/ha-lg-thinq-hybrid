@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from datetime import timedelta
 from typing import Any
 
@@ -62,6 +63,8 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.alias: str = info.get("alias") or self.device_id
         self.model: str = info.get("modelName", "")
         self.profile: dict | None = None
+        self._refresh_active = False
+        self._refresh_push = None
 
         super().__init__(
             hass,
@@ -73,18 +76,35 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self):
         """Low-frequency REST fallback (MQTT push handles realtime)."""
+        self._refresh_active = True
+        self._refresh_push = None
         try:
-            status = await self.api.async_get_device_status(self.device_id)
-        except Exception as err:  # noqa: BLE001 - surface as UpdateFailed
-            raise UpdateFailed(f"{self.alias}: {err}") from err
-        # Oven/cooktop status is a top-level list of cavities/zones — replace.
-        if isinstance(status, list):
-            return status
-        if not isinstance(status, dict):
-            raise UpdateFailed(f"{self.alias}: unexpected status {status!r}")
-        # Merge onto any state we already have (keeps push-only fields).
-        base = dict(self.data) if isinstance(self.data, dict) else {}
-        return deep_merge(base, status)
+            try:
+                status = await self.api.async_get_device_status(self.device_id)
+                if not isinstance(status, (dict, list)):
+                    raise UpdateFailed(f"{self.alias}: unexpected status {status!r}")
+            except Exception as err:  # noqa: BLE001 - surface as UpdateFailed
+                # A fresh push during the fallback is still a successful
+                # observation; a failed poll must not mark it unavailable.
+                if self._refresh_push is not None:
+                    return deepcopy(self.data)
+                raise UpdateFailed(f"{self.alias}: {err}") from err
+            if isinstance(status, dict):
+                base = deepcopy(self.data) if isinstance(self.data, dict) else {}
+                merged = deep_merge(base, deepcopy(status))
+            else:
+                merged = deepcopy(status)
+            # Only fields pushed after the request began override its reply.
+            # Untouched fields can still be refreshed by REST. Lists are full
+            # zone snapshots in the existing push contract, not dict deltas.
+            if self._refresh_push is not None:
+                if isinstance(merged, dict) and isinstance(self._refresh_push, dict):
+                    return deep_merge(merged, deepcopy(self._refresh_push))
+                return deepcopy(self.data)
+            return merged
+        finally:
+            self._refresh_active = False
+            self._refresh_push = None
 
     @property
     def value(self):
@@ -95,13 +115,18 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Apply an MQTT DEVICE_STATUS report (delta) onto current state."""
         if not report:
             return
+        if not isinstance(report, (dict, list)):
+            return
+        if self._refresh_active:
+            if isinstance(report, dict) and isinstance(self._refresh_push, dict):
+                deep_merge(self._refresh_push, deepcopy(report))
+            else:
+                self._refresh_push = deepcopy(report)
         if isinstance(report, list):  # oven/cooktop cavity/zone list
-            self.async_set_updated_data(report)
+            self.async_set_updated_data(deepcopy(report))
             return
-        if not isinstance(report, dict):
-            return
-        base = dict(self.data) if isinstance(self.data, dict) else {}
-        self.async_set_updated_data(deep_merge(base, report))
+        base = deepcopy(self.data) if isinstance(self.data, dict) else {}
+        self.async_set_updated_data(deep_merge(base, deepcopy(report)))
 
     def get(self, *path: str, default=None):
         """Read a nested value by resource-group path, e.g. get('temperature', 'targetTemperature')."""
