@@ -129,5 +129,21 @@ Home Assistant + 최신 ThinQ Connect다.
   `data_stale`로 유지한다. 3회 연속 실패 후 일반 폴링을 멈추고 15분마다
   snapshot 1회만 복구 probe로 실행하며, 성공 즉시 MQTT 기반 정상 주기로 복귀한다.
 
+## 생산자 계약과 회귀 검사
+
+LG 생산자 체크아웃이 함께 있으면 현재 golden 발행 입력과 MQTT prefix를
+대조한다. 이전 semantics revision 33의 golden도 별도 회귀 입력으로 유지한다.
+
+HA의 레거시 fallback 프로필과 동결된 제어 영역은 현재 생산자 파일을 그대로
+덮어쓰는 대상이 아니다. 현재 운영은 편집 가능한 기능 DB를 사용하며, CST170의
+추가 모드는 확인된 기능 overlay가 기존 온도와 제어 제한을 보존하면서 제공한다.
+`tests/producer-contract-compatibility.v1.json`은 검토한 두 파일 쌍의 SHA-256과
+모든 의미 차이를 고정한다. 새 차이·권한 확대·sidecar 불일치는 검사에 실패한다.
+이 목록은 자동 갱신하지 않는다.
+
+계약을 변경할 때는 CST invalidation 거부, native climate, 동결 제어 제한,
+완전한 DB rollout 검사를 함께 통과해야 한다. 비교 기준 자체를 고친 경우에는
+이전 실패와 검토 근거를 보존하고 새 고정 시험으로 MCP 검증을 시작한다.
+
 ## 라이선스
 MIT

@@ -1,0 +1,132 @@
+{
+  "pat_device_id": "aaaaaaaabbbbbbbbccccccccddddddddeeeeeeeeffffffff0000000011111111",
+  "binding_id": "local_golden_publication_fixture",
+  "profile_id": "dhum-water-tank-v1",
+  "v1": [
+    {
+      "topic": "state/local_golden_publication_fixture",
+      "payload": {
+        "schema_version": 1,
+        "semantics_revision": 33,
+        "binding_id": "local_golden_publication_fixture",
+        "model_id": "DHUM_056905_WW",
+        "platform": "thinq2",
+        "session_id": "session_golden_publication",
+        "sequence": 1,
+        "published_at": "2026-08-13T01:00:00.000Z",
+        "fields": {
+          "water_tank.full": {
+            "value": true,
+            "value_type": "boolean",
+            "observed_at": "2026-08-13T00:59:59.900Z",
+            "confidence": "confirmed-exact-device-bidirectional-local-interlock-correlation",
+            "exposure": "state"
+          }
+        },
+        "diagnostics": {
+          "rejected_frames": 0,
+          "unresolved_fields": 0,
+          "invalid_values": 0,
+          "unsupported_frames": 0
+        }
+      }
+    },
+    {
+      "topic": "availability/local_golden_publication_fixture",
+      "payload": {
+        "status": "online",
+        "session_id": "session_golden_publication",
+        "observed_at": "2026-08-13T01:00:00.000Z"
+      }
+    }
+  ],
+  "v2": [
+    {
+      "topic": "state/local_golden_publication_fixture",
+      "payload": {
+        "schema_version": 2,
+        "semantics_revision": 33,
+        "binding_id": "local_golden_publication_fixture",
+        "model_id": "DHUM_056905_WW",
+        "platform": "thinq2",
+        "session_id": "session_golden_publication",
+        "sequence": 1,
+        "published_at": "2026-08-13T01:00:00.000Z",
+        "fields": {
+          "water_tank.full": {
+            "value": true,
+            "value_type": "boolean",
+            "observed_at": "2026-08-13T00:59:59.900Z",
+            "confidence": "confirmed-exact-device-bidirectional-local-interlock-correlation",
+            "exposure": "state"
+          }
+        },
+        "diagnostics": {
+          "rejected_frames": 0,
+          "unresolved_fields": 0,
+          "invalid_values": 0,
+          "unsupported_frames": 0
+        },
+        "binding_generation": 4,
+        "pat_device_id_proof_sha256": "2d35766331b67ceefd04bbcc0af0167ad688599fdf860a19052c646b78bf98a0"
+      }
+    },
+    {
+      "topic": "availability/local_golden_publication_fixture",
+      "payload": {
+        "status": "online",
+        "session_id": "session_golden_publication",
+        "observed_at": "2026-08-13T01:00:00.000Z",
+        "binding_generation": 4,
+        "pat_device_id_proof_sha256": "2d35766331b67ceefd04bbcc0af0167ad688599fdf860a19052c646b78bf98a0",
+        "state_sequence": 1
+      }
+    }
+  ],
+  "v3": [
+    {
+      "topic": "state/local_golden_publication_fixture",
+      "payload": {
+        "schema_version": 3,
+        "semantics_revision": 33,
+        "binding_id": "local_golden_publication_fixture",
+        "model_id": "DHUM_056905_WW",
+        "platform": "thinq2",
+        "session_id": "99999999999999999999999999999999",
+        "sequence": 1,
+        "published_at": "2026-08-13T01:00:00.000Z",
+        "fields": {
+          "water_tank.full": {
+            "value": true,
+            "value_type": "boolean",
+            "observed_at": "2026-08-13T00:59:59.900Z",
+            "confidence": "confirmed-exact-device-bidirectional-local-interlock-correlation",
+            "exposure": "state"
+          }
+        },
+        "diagnostics": {
+          "rejected_frames": 0,
+          "unresolved_fields": 0,
+          "invalid_values": 0,
+          "unsupported_frames": 0
+        },
+        "binding_generation": 4,
+        "cohort_generation": 8,
+        "pat_device_id_proof_sha256": "2d35766331b67ceefd04bbcc0af0167ad688599fdf860a19052c646b78bf98a0"
+      }
+    },
+    {
+      "topic": "availability/local_golden_publication_fixture",
+      "payload": {
+        "status": "online",
+        "session_id": "99999999999999999999999999999999",
+        "observed_at": "2026-08-13T01:00:00.000Z",
+        "binding_generation": 4,
+        "pat_device_id_proof_sha256": "2d35766331b67ceefd04bbcc0af0167ad688599fdf860a19052c646b78bf98a0",
+        "state_sequence": 1,
+        "schema_version": 3,
+        "cohort_generation": 8
+      }
+    }
+  ]
+}

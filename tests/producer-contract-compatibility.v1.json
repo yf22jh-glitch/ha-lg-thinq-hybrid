@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-10-20",
+  "runtime_artifacts_modified": false,
+  "automatic_sync_allowed": false,
+  "policy": "Any byte or semantic change requires compatibility review; never copy producer authority over a frozen consumer baseline.",
+  "contracts": {
+    "pilot_profiles": {
+      "consumer_sha256": "64a9d1fc8c7fc7bf66d38f7e3daed54980c38a0693c3fbb3760f8669fd11f5d9",
+      "producer_sha256": "1de94b2a905b7244fbc8d6367651be3fbd536962519237432ad5d834036ff074",
+      "review_reason": "Legacy sem34 fallback rejects CST carrier tombstones; current editable-DB rollout authorizes handler invalidation. Washer TCLCount confidence changed with record28/payload30 evidence. Existing fallback rejection and complete-DB-rollout tests remain unchanged.",
+      "differences": [
+        {
+          "path": "/profiles/13/authoritative_invalidations",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": true
+          }
+        },
+        {
+          "path": "/profiles/14/authoritative_invalidations",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": true
+          }
+        },
+        {
+          "path": "/profiles/15/fields/8/confidence/0",
+          "consumer": {
+            "exists": true,
+            "value": "confirmed-exact-own-state+3514-quiescent-pairs+TCLCount-identity-purity-1.0-20260917"
+          },
+          "producer": {
+            "exists": true,
+            "value": "confirmed-washer-record-28-combined-payload-30+950-stable-TCLCount-pairs-20261002"
+          }
+        }
+      ]
+    },
+    "composite_domain": {
+      "consumer_sha256": "38ddc6d601c9955e823c1b22be9aaa7dc7aa4c44f3c9d244f0d9b77a88f94766",
+      "producer_sha256": "502998dfdade8fb88f08b4ca63d9705b56d333eee4ca3f8627c411aad91ffe07",
+      "review_reason": "HA intentionally retains frozen CST170 auto/cool authority. Confirmed-feature overlay adds dry/fan-only while preserving setpoint and denying power fan. Do not replace/reseal the HA base with the broader producer contract. Existing native-climate and frozen-denial tests remain unchanged.",
+      "differences": [
+        {
+          "path": "/models/0/capabilities/0/inputDomain/components/mode/values",
+          "consumer": {
+            "exists": true,
+            "value": [
+              "auto",
+              "cool"
+            ]
+          },
+          "producer": {
+            "exists": true,
+            "value": [
+              "auto",
+              "cool",
+              "dry",
+              "fan_only"
+            ]
+          }
+        },
+        {
+          "path": "/models/0/capabilities/0/inputDomain/components/targetC/appliesToModes",
+          "consumer": {
+            "exists": true,
+            "value": [
+              "cool"
+            ]
+          },
+          "producer": {
+            "exists": true,
+            "value": [
+              "cool",
+              "dry",
+              "fan_only"
+            ]
+          }
+        },
+        {
+          "path": "/models/0/capabilities/0/inputDomain/components/targetC/rangesByMode/dry",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": {
+              "max": 30,
+              "min": 16,
+              "step": 0.5
+            }
+          }
+        },
+        {
+          "path": "/models/0/capabilities/0/inputDomain/components/targetC/rangesByMode/fan_only",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": {
+              "max": 30,
+              "min": 16,
+              "step": 0.5
+            }
+          }
+        },
+        {
+          "path": "/models/0/capabilities/1/inputDomain/components/mode/values",
+          "consumer": {
+            "exists": true,
+            "value": [
+              "auto",
+              "cool"
+            ]
+          },
+          "producer": {
+            "exists": true,
+            "value": [
+              "auto",
+              "cool",
+              "dry",
+              "fan_only"
+            ]
+          }
+        },
+        {
+          "path": "/models/0/capabilities/1/inputDomain/components/targetC/appliesToModes",
+          "consumer": {
+            "exists": true,
+            "value": [
+              "cool"
+            ]
+          },
+          "producer": {
+            "exists": true,
+            "value": [
+              "cool",
+              "dry",
+              "fan_only"
+            ]
+          }
+        },
+        {
+          "path": "/models/0/capabilities/1/inputDomain/components/targetC/rangesByMode/dry",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": {
+              "max": 30,
+              "min": 16,
+              "step": 0.5
+            }
+          }
+        },
+        {
+          "path": "/models/0/capabilities/1/inputDomain/components/targetC/rangesByMode/fan_only",
+          "consumer": {
+            "exists": false
+          },
+          "producer": {
+            "exists": true,
+            "value": {
+              "max": 30,
+              "min": 16,
+              "step": 0.5
+            }
+          }
+        },
+        {
+          "path": "/revision",
+          "consumer": {
+            "exists": true,
+            "value": "ha-local-control-composite-domain-v1:f5c7d3ce49c8bdad"
+          },
+          "producer": {
+            "exists": true,
+            "value": "ha-local-control-composite-domain-v1:d67d70a12695c120"
+          }
+        },
+        {
+          "path": "/rootSha256",
+          "consumer": {
+            "exists": true,
+            "value": "f5c7d3ce49c8bdad27b596793a7743fa6db8a8af432ef5def920bcfb4d7e4ded"
+          },
+          "producer": {
+            "exists": true,
+            "value": "d67d70a12695c120877e21f3669fccfcac76a3aaa204ee312d9cc99b0c6cb209"
+          }
+        }
+      ]
+    }
+  }
+}

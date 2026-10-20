@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from tests.test_local_provider import local
+from tests.producer_contract_compatibility import verify_reviewed_pair, verify_sidecar
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 BUNDLED_DIRECTORY = REPOSITORY / "custom_components" / "my_lg"
@@ -248,7 +249,7 @@ class LocalProfileCatalogueTests(unittest.TestCase):
         self.assertEqual(profiles["dhum-water-tank-v1"].freshness_max_age_ms, 90_000)
         self.assertIsNone(profiles["dhum-water-tank-v1"].availability_policy)
 
-    def test_bundled_artifacts_are_byte_identical_to_rethink_when_present(
+    def test_fallback_and_producer_have_only_reviewed_contract_differences(
         self,
     ) -> None:
         sibling_catalogue = SIBLING_DIRECTORY / BUNDLED_CATALOGUE.name
@@ -256,8 +257,11 @@ class LocalProfileCatalogueTests(unittest.TestCase):
         if not sibling_catalogue.is_file() or not sibling_digest.is_file():
             self.skipTest("Rethink sibling repository is not present")
 
-        self.assertEqual(BUNDLED_CATALOGUE.read_bytes(), sibling_catalogue.read_bytes())
-        self.assertEqual(BUNDLED_DIGEST.read_bytes(), sibling_digest.read_bytes())
+        verify_sidecar(BUNDLED_CATALOGUE.read_bytes(), BUNDLED_DIGEST.read_bytes())
+        verify_sidecar(sibling_catalogue.read_bytes(), sibling_digest.read_bytes())
+        verify_reviewed_pair(
+            "pilot_profiles", BUNDLED_CATALOGUE.read_bytes(), sibling_catalogue.read_bytes()
+        )
 
 
 if __name__ == "__main__":

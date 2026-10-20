@@ -122,6 +122,14 @@ class GoldenPublicationTests(unittest.TestCase):
         with self.assertRaises(local.LocalProviderContractError):
             self.ingest(provider, "v2")
 
+    def test_previous_revision_remains_accepted_with_the_same_fields(self) -> None:
+        self.golden = json.loads(
+            GOLDEN_PATH.with_name("golden-publications.revision33.json").read_text()
+        )
+        self.test_accepts_every_schema_the_publisher_can_emit()
+        self.test_the_availability_marker_belongs_to_the_snapshot_it_arrived_with()
+        self.test_an_identity_bound_publication_is_refused_for_another_appliance()
+
     def test_the_golden_matches_the_publisher_checkout_when_present(self) -> None:
         if not SIBLING_GOLDEN.exists():
             self.skipTest("sibling lg_rethink_local checkout is not present")

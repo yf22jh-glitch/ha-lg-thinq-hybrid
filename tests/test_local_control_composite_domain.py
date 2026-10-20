@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 import unittest
 from pathlib import Path
+from tests.producer_contract_compatibility import (
+    verify_composite_domain_sidecar,
+    verify_reviewed_pair,
+)
 
 from custom_components.my_lg.local_control_composite_domain import (
     EXPECTED_LOCAL_CONTROL_COMPOSITE_DOMAIN_ROOT_SHA256,
@@ -28,11 +32,16 @@ BRIDGE_SIDECAR = BRIDGE_ARTIFACT.with_suffix(".sha256")
 
 
 class LocalControlCompositeDomainTests(unittest.TestCase):
-    def test_bundled_authority_is_byte_identical_to_the_bridge_artifact(self) -> None:
+    def test_frozen_base_and_bridge_have_only_reviewed_contract_differences(self) -> None:
         if not BRIDGE_ARTIFACT.is_file() or not BRIDGE_SIDECAR.is_file():
             self.skipTest("sibling lg_rethink_local checkout is not present")
-        self.assertEqual(ARTIFACT.read_bytes(), BRIDGE_ARTIFACT.read_bytes())
-        self.assertEqual(SIDECAR.read_bytes(), BRIDGE_SIDECAR.read_bytes())
+        verify_composite_domain_sidecar(ARTIFACT.read_bytes(), SIDECAR.read_bytes())
+        verify_composite_domain_sidecar(
+            BRIDGE_ARTIFACT.read_bytes(), BRIDGE_SIDECAR.read_bytes()
+        )
+        verify_reviewed_pair(
+            "composite_domain", ARTIFACT.read_bytes(), BRIDGE_ARTIFACT.read_bytes()
+        )
 
     def test_exact_artifact_exposes_decoder_domain_without_cartesian_values(self) -> None:
         contract = load_local_control_composite_domain_contract()
