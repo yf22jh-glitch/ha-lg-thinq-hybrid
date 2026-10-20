@@ -23,6 +23,8 @@ class TokenCacheTest(unittest.TestCase):
             "feature_id": "state.example", "platform": "thinq2", "definition": {"name": "before"}}])
         self.reader = Mock(wraps=database.feature_database_token)
         self.cache = database.FeatureDatabaseTokenCache(self.reader)
+        if hasattr(self.cache, "close"):
+            self.addCleanup(self.cache.close)
 
     def test_idle_poll_does_not_read_menu_and_direct_wal_edit_does(self):
         writer = sqlite3.connect(self.path)
@@ -53,6 +55,22 @@ class TokenCacheTest(unittest.TestCase):
         with patch.object(database.time, "monotonic", return_value=self.cache._checked_at + 61):
             self.cache.read(self.path)
         self.reader.assert_called_once()
+
+    def test_wal_permission_change_does_not_invalidate_unchanged_content(self):
+        writer = sqlite3.connect(self.path)
+        self.addCleanup(writer.close)
+        writer.execute("PRAGMA journal_mode=WAL").fetchall()
+        writer.execute("UPDATE features SET enabled=1")
+        writer.commit()
+        before = self.cache.read(self.path)
+        self.cache.read(self.path)
+        self.reader.reset_mock()
+        wal = Path(str(self.path) + "-wal")
+        modified_at = wal.stat().st_mtime_ns
+        wal.chmod(wal.stat().st_mode ^ 0o020)
+        self.assertEqual(wal.stat().st_mtime_ns, modified_at)
+        self.assertEqual(self.cache.read(self.path), before)
+        self.reader.assert_not_called()
 
     def test_read_failure_retries_and_edit_during_read_does_not_get_cached(self):
         token = self.cache.read(self.path)

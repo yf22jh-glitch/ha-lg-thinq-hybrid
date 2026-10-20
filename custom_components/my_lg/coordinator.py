@@ -63,6 +63,9 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.alias: str = info.get("alias") or self.device_id
         self.model: str = info.get("modelName", "")
         self.profile: dict | None = None
+        # MQTT reports can be partial. Only a full REST observation completes
+        # boot recovery; a push must not suppress the missing snapshot retry.
+        self.startup_status_ready = False
         self._refresh_active = False
         self._refresh_push = None
 
@@ -89,6 +92,8 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if self._refresh_push is not None:
                     return deepcopy(self.data)
                 raise UpdateFailed(f"{self.alias}: {err}") from err
+            if status:
+                self.startup_status_ready = True
             if isinstance(status, dict):
                 base = deepcopy(self.data) if isinstance(self.data, dict) else {}
                 merged = deep_merge(base, deepcopy(status))

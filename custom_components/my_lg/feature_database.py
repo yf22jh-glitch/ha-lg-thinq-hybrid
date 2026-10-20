@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import closing
@@ -61,18 +62,22 @@ def default_database_path() -> Path:
     return Path(__file__).resolve().parents[2] / DATABASE_NAME
 
 
-def _read_connection(path: Path) -> sqlite3.Connection:
+def _read_connection(path: Path, *, check_same_thread: bool = True) -> sqlite3.Connection:
     if not path.is_file() or path.is_symlink():
         raise FileNotFoundError(f"Local feature database is missing: {path}")
-    connection = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA query_only = ON")
-    if connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID:
+    connection = sqlite3.connect(
+        f"{path.as_uri()}?mode=ro", uri=True, check_same_thread=check_same_thread
+    )
+    try:
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA query_only = ON")
+        if connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID:
+            raise ValueError("Local feature database identity is invalid")
+        if connection.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+            raise ValueError("Local feature database layout is unsupported")
+    except BaseException:
         connection.close()
-        raise ValueError("Local feature database identity is invalid")
-    if connection.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
-        connection.close()
-        raise ValueError("Local feature database layout is unsupported")
+        raise
     return connection
 
 
@@ -167,9 +172,10 @@ def feature_database_token(path: Path) -> str:
 class FeatureDatabaseTokenCache:
     """Watcher-local optimization; no release pin or extra DB write required.
 
-    WAL/journal and inode changes cover direct SQL and atomic replacements.
-    A periodic full read also covers filesystems with coarse timestamps. Failed
-    reads never advance the cache, and writes during a read force another check.
+    A persistent read-only SQLite connection detects commits even when file
+    timestamps collide. File identity also detects atomic replacement. No read
+    transaction is held between polls; the watcher must close this cache when
+    it stops. HA executor calls may use different threads, so access is serialized.
     """
 
     def __init__(self, reader: Callable[[Path], str] = feature_database_token):
@@ -177,6 +183,10 @@ class FeatureDatabaseTokenCache:
         self._stamp: tuple | None = None
         self._token: str | None = None
         self._checked_at = 0.0
+        self._lock = threading.Lock()
+        self._connection: sqlite3.Connection | None = None
+        self._identity: tuple | None = None
+        self._closed = False
 
     @staticmethod
     def _files(path: Path) -> tuple:
@@ -184,8 +194,11 @@ class FeatureDatabaseTokenCache:
         for suffix in ("", "-wal", "-journal"):
             try:
                 stat = Path(str(path) + suffix).lstat()
+                # SQLite can chmod the WAL when opening a read-only connection.
+                # That changes ctime without changing its data and would make
+                # every watcher poll invalidate its own cached token.
                 values.append((stat.st_dev, stat.st_ino, stat.st_size,
-                               stat.st_mtime_ns, stat.st_ctime_ns))
+                               stat.st_mtime_ns))
             except FileNotFoundError:
                 if not suffix:
                     raise
@@ -193,17 +206,49 @@ class FeatureDatabaseTokenCache:
         return (str(path), *values)
 
     def read(self, path: Path) -> str:
-        before = self._files(path)
-        now = time.monotonic()
-        if (self._token is not None and self._stamp == before
-                and now - self._checked_at < 60):
-            return self._token
-        token = self._reader(path)
-        after = self._files(path)
-        self._token = token
-        self._stamp = after if before == after else None
-        self._checked_at = now
-        return token
+        with self._lock:
+            if self._closed:
+                raise ValueError("Local feature database cache is closed")
+            files = self._files(path)
+            identity = (files[0], files[1][0], files[1][1])
+            if self._connection is None or identity != self._identity:
+                self._disconnect()
+                self._connection = _read_connection(path, check_same_thread=False)
+                self._identity = identity
+            connection = self._connection
+            try:
+                version = connection.execute("PRAGMA data_version").fetchone()[0]
+                before = (files, version)
+                now = time.monotonic()
+                if (self._token is not None and self._stamp == before
+                        and now - self._checked_at < 60):
+                    return self._token
+                token = self._reader(path)
+                after = (
+                    self._files(path),
+                    connection.execute("PRAGMA data_version").fetchone()[0],
+                )
+            except BaseException:
+                # A failed check cannot authorize a later cached return.
+                self._stamp = None
+                raise
+            self._token = token
+            self._stamp = after if before == after else None
+            self._checked_at = now
+            return token
+
+    def _disconnect(self) -> None:
+        if self._connection is not None:
+            self._connection.close()
+        self._connection = None
+        self._identity = None
+        self._stamp = None
+
+    def close(self) -> None:
+        """Release the observer connection from an executor after polling stops."""
+        with self._lock:
+            self._closed = True
+            self._disconnect()
 
 
 def copy_feature_database(source: Path, destination: Path) -> None:

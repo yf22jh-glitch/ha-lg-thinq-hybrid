@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+import inspect
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -20,6 +21,7 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
         unload_callbacks = []
         reload_entry = AsyncMock()
         refresh = AsyncMock(side_effect=lambda: sequence)
+        cache = SimpleNamespace(read=Mock(side_effect=lambda _path: sequence), close=Mock())
 
         class Hass:
             is_stopping = False
@@ -45,8 +47,7 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch.object(my_lg, "default_database_path", return_value=Path("/tmp/test-features.sqlite3")),
-            patch.object(my_lg, "feature_database_token", side_effect=lambda _path: sequence),
-            patch.object(my_lg.FeatureDatabaseTokenCache, "_files", side_effect=lambda _path: (sequence,)),
+            patch.object(my_lg, "FeatureDatabaseTokenCache", return_value=cache),
             patch.object(my_lg, "async_track_time_interval", side_effect=track),
         ):
             hass = Hass()
@@ -78,9 +79,13 @@ class FeatureDatabaseWatcherTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(refresh.await_count, 3)
             listen_stop.assert_called_once()
             self.assertEqual(listen_stop.call_args.args[0], my_lg.EVENT_HOMEASSISTANT_STOP)
-            listen_stop.call_args.args[1](None)
+            result = listen_stop.call_args.args[1](None)
+            if inspect.isawaitable(result):
+                await result
             for cleanup in unload_callbacks:
-                cleanup()
+                result = cleanup()
+                if inspect.isawaitable(result):
+                    await result
             cancel.assert_called_once()
             remove_stop.assert_called_once()
             hass.is_stopping = False

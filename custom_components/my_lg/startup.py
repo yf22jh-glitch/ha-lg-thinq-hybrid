@@ -130,3 +130,63 @@ async def async_prepare_coordinators(
         preparation_seconds=round(monotonic() - started, 3),
     )
     return by_device, metrics
+
+
+async def async_recover_startup(
+    data: Any,
+    *,
+    delays: tuple[float, ...] = (30, 60, 120),
+    concurrency: int = 3,
+    call_timeout: float = 15,
+) -> None:
+    """Recover cold-start reads without changing the normal polling cadence.
+
+    PAT may report NOT_CONNECTED_DEVICE while the server reconnects. Retry
+    only missing initial snapshots/profiles, with the same bounded fan-out as
+    setup. WideQ gets one shared initial read through its existing limiter,
+    instead of waiting a full idle interval before showing any live values.
+    The config entry owns this task and cancels it on unload or HA shutdown.
+    """
+    if concurrency < 1 or call_timeout <= 0 or any(delay < 0 for delay in delays):
+        raise ValueError("Recovery needs positive limits and nonnegative delays")
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def recover(coordinator: Any) -> None:
+        async with semaphore:
+            if not isinstance(coordinator.profile, dict):
+                try:
+                    if await asyncio.wait_for(
+                        coordinator.async_load_profile(), timeout=call_timeout
+                    ):
+                        coordinator.async_update_listeners()
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.debug("%s: startup profile read failed: %s", coordinator.alias, err)
+            try:
+                if not coordinator.startup_status_ready:
+                    await asyncio.wait_for(
+                        coordinator.async_refresh(), timeout=call_timeout
+                    )
+            except Exception as err:  # noqa: BLE001 - one device cannot block others
+                _LOGGER.debug("%s: startup recovery read failed: %s", coordinator.alias, err)
+
+    async def warm_wideq() -> None:
+        coordinator = data.wideq_coordinator
+        if coordinator is not None and not coordinator.data:
+            # Its account-wide read can include rate-limited history requests;
+            # preserve its own timeouts, quota and cancellation semantics.
+            try:
+                await coordinator.async_request_refresh()
+            except Exception:  # noqa: BLE001 - normal periodic refresh remains
+                _LOGGER.exception("Initial WideQ refresh failed")
+
+    for attempt, delay in enumerate(delays):
+        pending = [coordinator for coordinator in data.coordinators.values()
+                   if not coordinator.startup_status_ready
+                   or not isinstance(coordinator.profile, dict)]
+        if not pending and (attempt or data.wideq_coordinator is None):
+            return
+        await asyncio.sleep(delay)
+        jobs = [recover(coordinator) for coordinator in pending]
+        if attempt == 0:
+            jobs.append(warm_wideq())
+        await asyncio.gather(*jobs)

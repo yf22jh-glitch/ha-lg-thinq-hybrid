@@ -201,10 +201,17 @@ class FeatureEntityRuntime:
         self._platforms: dict[str, _PlatformMenu] = {}
         self._lock = asyncio.Lock()
         self._closed = False
+        self._startup_listeners: dict[str, Callable[[], None]] = {}
+        self._discovery_tasks: set[asyncio.Task] = set()
 
     def close(self) -> None:
         """Do not add entities after the entry starts unloading."""
         self._closed = True
+        for remove in self._startup_listeners.values():
+            remove()
+        self._startup_listeners.clear()
+        for task in self._discovery_tasks:
+            task.cancel()
         self._platforms.clear()
 
     async def async_unload(self, unload: Callable[[], Awaitable[bool]]) -> bool:
@@ -231,6 +238,54 @@ class FeatureEntityRuntime:
             platform, build, indexed,
             {unique_id: _entity_definition(entity) for unique_id, entity in indexed.items()},
         )
+        for coordinator in self.entry.runtime_data.coordinators.values():
+            if (getattr(coordinator, "startup_status_ready", True)
+                    and isinstance(getattr(coordinator, "profile", {}), dict)):
+                continue
+            if coordinator.device_id in self._startup_listeners:
+                continue
+            self._watch_startup_coordinator(coordinator)
+
+    def _watch_startup_coordinator(self, coordinator) -> None:
+        observed = (coordinator.startup_status_ready, isinstance(coordinator.profile, dict))
+
+        def recovered() -> None:
+            nonlocal observed
+            ready = (coordinator.startup_status_ready, isinstance(coordinator.profile, dict))
+            if self._closed or ready == observed:
+                return
+            observed = ready
+            if all(ready):
+                self._startup_listeners.pop(coordinator.device_id)()
+            task = self.hass.async_create_task(
+                self.async_discover(), "my_lg late startup entities", eager_start=False
+            )
+            self._discovery_tasks.add(task)
+            task.add_done_callback(self._discovery_tasks.discard)
+
+        self._startup_listeners[coordinator.device_id] = coordinator.async_add_listener(recovered)
+
+    async def async_discover(self) -> None:
+        """Add entities omitted by a failed first read, retaining existing ones.
+
+        Use the same factories/disable filters and HA registry as setup. A
+        later snapshot must never remove entities, rewrite IDs or reset values.
+        Serialize with feature DB edits and platform unload.
+        """
+        async with self._lock:
+            if self._closed:
+                return
+            for menu in tuple(self._platforms.values()):
+                if self._closed:
+                    return
+                candidates = _indexed_entities(_build_enabled_entities(self.entry, menu.build))
+                additions = {key: entity for key, entity in candidates.items()
+                             if key not in menu.entities}
+                if additions:
+                    await menu.platform.async_add_entities(list(additions.values()))
+                    menu.entities.update(additions)
+                    menu.definitions.update({key: _entity_definition(entity)
+                                             for key, entity in additions.items()})
 
     async def async_refresh(self) -> str:
         """Load committed definitions and update only changed entities."""

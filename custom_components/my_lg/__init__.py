@@ -125,7 +125,7 @@ from .mqtt import MyLgMqtt
 from .rate_limiter import GlobalRateLimiter
 from .rethink_event_relay import CONF_RETHINK_EVENT_TOKEN, RethinkEventRelay
 from .services import async_register_services
-from .startup import StartupMetrics, async_prepare_coordinators
+from .startup import StartupMetrics, async_prepare_coordinators, async_recover_startup
 from .wideq_client import WideqClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -535,9 +535,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
     data.app_settings = AppSettingsCoordinator(hass, entry, definitions)
     await data.app_settings.async_restore()
     remove_stop_listener = _register_local_shutdown(hass, entry, data)
-    if feature_db_sequence is not None:
-        data.feature_runtime = FeatureEntityRuntime(hass, entry, feature_db_path)
-        entry.async_on_unload(data.feature_runtime.close)
+    data.feature_runtime = FeatureEntityRuntime(hass, entry, feature_db_path)
+    entry.async_on_unload(data.feature_runtime.close)
     try:
         async_register_services(hass)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -546,6 +545,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
         if feature_db_sequence is not None:
             _watch_feature_database(hass, entry, feature_db_sequence)
+        entry.async_create_background_task(
+            hass, async_recover_startup(data), "my_lg startup recovery"
+        )
     except Exception:
         remove_stop_listener()
         await _stop_local_shadows(data)
@@ -590,12 +592,15 @@ def _watch_feature_database(
         hass, check, timedelta(seconds=2), name="my_lg feature database"
     )
 
-    @callback
-    def stop(_event: object = None) -> None:
+    async def stop(_event: object = None) -> None:
         nonlocal stopped
         if not stopped:
             stopped = True
             cancel_interval()
+        # Wait for an in-flight check/apply before closing its SQLite
+        # observer. Concurrent stop/unload callers both wait for cleanup.
+        async with checking:
+            await hass.async_add_executor_job(token_cache.close)
 
     entry.async_on_unload(stop)
     entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop))
@@ -700,8 +705,8 @@ async def _setup_wideq(
         entry.async_on_unload(
             coordinator.async_add_listener(data.wideq_coordinator.reconcile_interval)
         )
-    # No first_refresh: wideq must not eager-poll on setup (restart-burst
-    # avoidance). The first poll fires one interval after entities subscribe.
+    # Setup remains nonblocking. The entry's bounded startup task seeds the
+    # shared snapshot after a delay, through the same global rate limiter.
 
 
 async def _setup_local_shadows(
@@ -1081,6 +1086,8 @@ def _register_local_shutdown(
     """Drain Local MQTT while HA's loop is alive, including whole-core restarts."""
 
     async def _async_stop(_event: Event) -> None:
+        if runtime := getattr(data, "feature_runtime", None):
+            runtime.close()
         stops = [_stop_local_shadows(data)]
         if data.mqtt is not None:
             stops.append(data.mqtt.async_shutdown())
