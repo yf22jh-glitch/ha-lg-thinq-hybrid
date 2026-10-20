@@ -13,3 +13,10 @@ Connect (PAT) API does not expose (e.g. air-conditioner realtime power
 All credit for this client goes to the upstream authors. Please refer to the
 upstream projects for licensing. This copy is used unmodified where possible;
 any local changes are noted in comments.
+
+Upstream updates use `scripts/wideq-upstream.json` as their exact base and
+`scripts/sync_wideq.py` to create a separate three-way merge candidate.
+Local additions, including `web_settings.py`, and the lazy SSL initialization
+and account-setting request methods in `core_async.py` must be preserved.
+Overlapping edits and delete/modify conflicts stop the update for review.
+Do not replace this directory directly with an upstream `rsync --delete`.

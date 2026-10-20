@@ -1,9 +1,7 @@
 name: Sync vendored wideq
 
-# Keeps custom_components/my_lg/wideq/ in sync with the upstream
-# ollo69/ha-smartthinq-sensors. Runs on GitHub's servers (no local host needed).
-# It only opens a PR when upstream changed; our Validate workflow then import-tests
-# the PR against the latest Home Assistant before you merge.
+# Merge the pinned upstream baseline, local changes and upstream HEAD.
+# Run the full integration tests here: bot PRs do not trigger Validate.
 
 on:
   workflow_dispatch:
@@ -11,8 +9,7 @@ on:
     - cron: "0 5 * * 1" # weekly, Monday
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 # NOTE: track af950833, NOT ollo69. Verified 2026-07-03: ollo69's core_async
 # has a stale V2_APP_VER (5.0.1200) that LG's KR OAuth rejects (TokenError),
@@ -26,51 +23,56 @@ env:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Fetch upstream wideq
-        run: |
-          git clone --depth 1 "https://github.com/${UPSTREAM_REPO}.git" /tmp/upstream
-          test -d "/tmp/upstream/${UPSTREAM_PATH}" || {
-            echo "upstream wideq path not found"; exit 1; }
-
-      - name: Sync into vendored copy (preserve our NOTICE.md)
-        run: |
-          rsync -a --delete \
-            --exclude='__pycache__' \
-            --exclude='NOTICE.md' \
-            "/tmp/upstream/${UPSTREAM_PATH}/" "${VENDOR_PATH}/"
-
-      - name: Record upstream commit
         id: up
         run: |
-          echo "sha=$(git -C /tmp/upstream rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          git clone --filter=blob:none --no-checkout "https://github.com/${UPSTREAM_REPO}.git" /tmp/upstream
+          sha="$(git -C /tmp/upstream rev-parse HEAD)"
+          [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-      # Bot-created PRs don't trigger the Validate workflow (GitHub loop guard),
-      # so import-test the synced wideq here. If it fails, no PR is opened.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Import-test synced wideq
+      - name: Merge upstream without losing local modules or patches
+        env:
+          UPSTREAM_SHA: ${{ steps.up.outputs.sha }}
         run: |
-          pip install --upgrade homeassistant thinqconnect xmltodict
-          export PYTHONPATH="$PWD/custom_components"
-          python - <<'PY'
-          import importlib
-          for m in [
-              "my_lg", "my_lg.wideq.core_async", "my_lg.wideq.device",
-              "my_lg.wideq.device_info", "my_lg.wideq.model_info",
-              "my_lg.wideq.devices.ac", "my_lg.wideq.devices.dehumidifier",
-              "my_lg.wideq.devices.washerDryer", "my_lg.wideq.devices.styler",
-          ]:
-              importlib.import_module(m); print("OK", m)
-          print("synced wideq imports OK")
+          python3 scripts/sync_wideq.py --upstream /tmp/upstream \
+            --revision "$UPSTREAM_SHA" --output /tmp/wideq-candidate
+          rsync -a --delete --exclude='__pycache__' \
+            /tmp/wideq-candidate/wideq/ "${VENDOR_PATH}/"
+          cp /tmp/wideq-candidate/wideq-upstream.json scripts/wideq-upstream.json
+
+      - name: Build pinned local validation image
+        run: docker build -t wideq-validation -f scripts/test-integration.Dockerfile scripts
+
+      # Upstream Python executes without a network, host credentials or a Docker
+      # socket. The checkout has no persisted token and remains read-only.
+      - name: Test merged integration in isolation
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 256 --memory 1536m \
+            --tmpfs /tmp:rw,nosuid,nodev,size=768m,mode=1777 \
+            --mount "type=bind,src=$PWD,dst=/source,readonly" \
+            -i wideq-validation python - <<'PY'
+          import os, shutil, subprocess, sys
+          shutil.copytree("/source", "/tmp/repo",
+                          ignore=shutil.ignore_patterns(".git", "__pycache__", ".venv"))
+          os.chdir("/tmp/repo")
+          subprocess.run([sys.executable, "-m", "unittest", "discover", "-v", "-s", "tests"],
+                         check=True)
           PY
 
       - name: Open PR if changed
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
           branch: sync/wideq-upstream
           commit-message: "chore(wideq): sync from ${{ env.UPSTREAM_REPO }}@${{ steps.up.outputs.sha }}"
@@ -79,9 +81,10 @@ jobs:
             Automated sync of `${{ env.VENDOR_PATH }}` from
             `${{ env.UPSTREAM_REPO }}` @ `${{ steps.up.outputs.sha }}`.
 
-            ⚠️ Review the diff — upstream changes to the LG internal API decoding
-            land here. The Validate workflow import-tests this PR against the latest
-            Home Assistant. Merge only if it is green and the fields we rely on
-            (AC power, dehumidifier water tank, washer/styler details) still decode.
+            Local extensions and patches were merged against the recorded upstream
+            baseline. Conflicts stop the sync before any source is replaced.
+            This workflow ran the full integration tests against HA 2026.9.4 in
+            an isolated container. Bot-created PRs do not trigger Validate.
+            Review decoding changes and device coverage before merging.
           labels: automated, wideq
           delete-branch: true
