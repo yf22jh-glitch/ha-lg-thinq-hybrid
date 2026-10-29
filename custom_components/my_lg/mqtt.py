@@ -140,9 +140,14 @@ class MyLgMqtt:
                 self._subscription_failures += 1
                 _LOGGER.debug("device lifecycle subscription failed: %s", err)
 
+        if self._stopping:
+            return False
+        gate = getattr(self.api, "gate", None)
+        if gate is not None:
+            gate.check()
         try:
             await asyncio.wait_for(
-                self._client.async_connect_mqtt(), timeout=MQTT_SETUP_CALL_TIMEOUT
+                self._async_connect_sdk(), timeout=MQTT_SETUP_CALL_TIMEOUT
             )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("my_lg MQTT connect failed (falling back to REST): %s", err)
@@ -157,6 +162,32 @@ class MyLgMqtt:
         if self._device_lifecycle_subscribed and self._on_lifecycle is not None:
             self._on_lifecycle({"kind": "subscription_ready"})
         return True
+
+    async def _async_connect_sdk(self) -> None:
+        """Keep SDK blocking AWS Future.result calls off HA's event loop.
+
+        This SDK method does no aiohttp I/O; REST preparation remains on HA's
+        loop. A cancelled/late worker closes its socket itself, even after HA
+        has stopped accepting callbacks.
+        """
+        client = self._client
+
+        def connect() -> None:
+            try:
+                asyncio.run(client.async_connect_mqtt())
+            finally:
+                if self._stopping:
+                    connection = getattr(client, '_mqtt_connection', None)
+                    if connection is not None:
+                        try:
+                            connection.disconnect().result(timeout=MQTT_SHUTDOWN_CALL_TIMEOUT)
+                        except Exception:
+                            pass
+        try:
+            await asyncio.to_thread(connect)
+        except BaseException:
+            self._stopping = True
+            raise
 
     def _on_message(self, *args: Any, **kwargs: Any) -> None:
         """Runs in the MQTT client thread — hop to the event loop."""
@@ -233,6 +264,17 @@ class MyLgMqtt:
             self._client_deregistered = True
         except Exception as err:  # noqa: BLE001 - stopping must remain bounded
             _LOGGER.debug('ThinQ MQTT disconnect during shutdown: %s', type(err).__name__)
+        finally:
+            # thinqconnect async_disconnect only unsubscribes and deletes its
+            # REST registration. Close the AWS socket even when that REST call
+            # is fenced by cloud protection; otherwise SDK reconnects survive.
+            connection = getattr(client, '_mqtt_connection', None)
+            if connection is not None:
+                try:
+                    await asyncio.wait_for(asyncio.wrap_future(connection.disconnect()),
+                                           timeout=MQTT_SHUTDOWN_CALL_TIMEOUT)
+                except Exception as err:
+                    _LOGGER.debug('ThinQ MQTT socket close: %s', type(err).__name__)
 
     async def async_stop(self) -> None:
         """Clean up: delete our event subscriptions and deregister the client."""

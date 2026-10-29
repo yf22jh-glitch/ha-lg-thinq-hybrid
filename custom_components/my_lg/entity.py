@@ -36,7 +36,7 @@ class MyLgEntity(CoordinatorEntity[PatDeviceCoordinator]):
     def available(self) -> bool:
         # PAT REST is only an hourly fallback. A transient fallback failure must
         # not invalidate a valid state previously received through MQTT.
-        return bool(self.coordinator.data)
+        return not self.coordinator.cloud_paused and bool(self.coordinator.data)
 
     def _get(self, *path: str, default: Any = None) -> Any:
         return self.coordinator.get(*path, default=default)
@@ -77,7 +77,7 @@ class MyLgWideqEntity(CoordinatorEntity[WideqCoordinator]):
     def available(self) -> bool:
         # Keep the last good snapshot available during LG maintenance. Shared
         # diagnostic attributes explicitly mark it stale until a probe succeeds.
-        return bool(self._snapshot)
+        return not self.coordinator.cloud_paused and bool(self._snapshot)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

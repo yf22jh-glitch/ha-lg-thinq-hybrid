@@ -32,6 +32,7 @@ from tests.test_ac_control_contract import FakeLocalRouter
 
 
 class FakePatCoordinator:
+    cloud_paused = False
     """PAT coordinator with deliberately different fallback values."""
 
     def __init__(

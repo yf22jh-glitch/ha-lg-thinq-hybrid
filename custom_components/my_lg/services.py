@@ -28,6 +28,30 @@ from .local_read_provider import (
     TlvReadConsumerStatePushError,
     tlv_read_consumer_binding_state_json,
 )
+from .cloud_runtime import SERVICE_CLOUD_CONNECTION, SOURCES
+
+_CLOUD_SCHEMA = vol.Schema({
+    vol.Required('entry_id'): cv.string,
+    vol.Required('operation'): vol.In(('inspect', 'pause', 'resume')),
+    vol.Optional('source', default='all'): vol.In((*SOURCES, 'all')),
+    vol.Optional('reason', default='manual'): vol.In(('manual', 'authentication')),
+})
+
+
+async def _handle_cloud_connection(hass, call):
+    await _require_admin_service_user(hass, call)
+    entry = hass.config_entries.async_get_entry(call.data['entry_id'])
+    runtime = getattr(entry, 'runtime_data', None)
+    if entry is None or entry.domain != DOMAIN or runtime is None or runtime.cloud is None:
+        raise HomeAssistantError('LG 연결이 아직 준비되지 않았어요.')
+    cloud = runtime.cloud
+    source = call.data['source']
+    sources = SOURCES if source == 'all' else (source,)
+    if call.data['operation'] == 'pause':
+        return await cloud.async_pause(sources, call.data['reason'])
+    if call.data['operation'] == 'resume':
+        return await cloud.async_resume(sources)
+    return cloud.status()
 
 
 _SERVICE_SCHEMA = vol.Schema(
@@ -264,6 +288,12 @@ async def _handle_local_read_consumer_transition(
 
 def async_register_services(hass: HomeAssistant) -> None:
     """Register the reload-safe domain service exactly once."""
+    if not hass.services.has_service(DOMAIN, SERVICE_CLOUD_CONNECTION):
+        async def handle_cloud(call):
+            return await _handle_cloud_connection(hass, call)
+
+        hass.services.async_register(DOMAIN, SERVICE_CLOUD_CONNECTION, handle_cloud,
+            schema=_CLOUD_SCHEMA, supports_response=SupportsResponse.ONLY)
     if not hass.services.has_service(DOMAIN, SERVICE_WIDEQ_COMMAND):
 
         async def handle(call: ServiceCall) -> None:

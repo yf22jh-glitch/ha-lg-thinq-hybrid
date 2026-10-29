@@ -76,3 +76,39 @@ local_read_consumer_transition:
       description: JIT CAS token from inspect or the preceding transition.
       selector:
         text:
+cloud_connection:
+  name: 클라우드 연결 보호·재개
+  description: PAT 또는 WideQ 연결만 보호하거나 다시 연결해요. 로컬 수집과 제어는 유지해요.
+  fields:
+    entry_id:
+      name: 통합 항목
+      required: true
+      selector:
+        config_entry:
+          integration: my_lg
+    operation:
+      name: 작업
+      required: true
+      selector:
+        select:
+          options:
+            - inspect
+            - pause
+            - resume
+    source:
+      name: 연결
+      default: all
+      selector:
+        select:
+          options:
+            - pat
+            - wideq
+            - all
+    reason:
+      name: 보호 사유
+      default: manual
+      selector:
+        select:
+          options:
+            - manual
+            - authentication

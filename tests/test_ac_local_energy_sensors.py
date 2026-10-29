@@ -32,6 +32,7 @@ MODEL = "CST_170004_WW"
 
 
 class FakePatCoordinator:
+    cloud_paused = False
     """Minimum PAT owner with deliberately different fallback readings."""
 
     def __init__(self, device_id: str = "test-ac") -> None:

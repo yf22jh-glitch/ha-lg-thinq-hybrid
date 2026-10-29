@@ -934,6 +934,7 @@ async def async_setup_entry(
     manager = RawSensorManager(
         list(data.coordinators.values()), data.wideq_coordinator, async_add_entities
     )
+    data.raw_sensor_manager = manager
     manager.add_new()
     for coordinator in data.coordinators.values():
         entry.async_on_unload(coordinator.async_add_listener(manager.add_new))

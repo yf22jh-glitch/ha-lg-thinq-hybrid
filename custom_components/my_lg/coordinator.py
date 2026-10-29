@@ -66,6 +66,7 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # MQTT reports can be partial. Only a full REST observation completes
         # boot recovery; a push must not suppress the missing snapshot retry.
         self.startup_status_ready = False
+        self.cloud_paused = False
         self._refresh_active = False
         self._refresh_push = None
 
@@ -92,6 +93,7 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if self._refresh_push is not None:
                     return deepcopy(self.data)
                 raise UpdateFailed(f"{self.alias}: {err}") from err
+            self.cloud_paused = False
             if status:
                 self.startup_status_ready = True
             if isinstance(status, dict):
@@ -118,10 +120,12 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def handle_mqtt_status(self, report) -> None:
         """Apply an MQTT DEVICE_STATUS report (delta) onto current state."""
-        if not report:
+        gate = getattr(self.api, "gate", None)
+        if not report or (gate.reason is not None if gate is not None else self.cloud_paused):
             return
         if not isinstance(report, (dict, list)):
             return
+        self.cloud_paused = False
         if self._refresh_active:
             if isinstance(report, dict) and isinstance(self._refresh_push, dict):
                 deep_merge(self._refresh_push, deepcopy(report))
@@ -179,7 +183,7 @@ class PatDeviceCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.profile = await self.api.async_get_device_profile(self.device_id)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("%s: profile load failed: %s", self.alias, err)
-            self.profile = None
+            # A cloud outage must not erase previously verified capabilities.
             return False
         return isinstance(self.profile, dict)
 

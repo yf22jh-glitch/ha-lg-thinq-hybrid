@@ -63,6 +63,7 @@ from .const import (
     WIDEQ_MIN_CALL_SPACING,
     WIDEQ_POWER_SAVE_STORE_VERSION,
 )
+from .cloud_runtime import CloudRuntime, GuardedCloudApi, CloudPausedError
 from .coordinator import PatDeviceCoordinator
 from .coordinator_wideq import WideqCoordinator
 from .device_identity import PatDeviceIdentity
@@ -257,6 +258,8 @@ class MyLgData:
     local_control_conditions: dict[tuple[str, str], Any] = field(default_factory=dict)
     local_confirmed_features: list[dict[str, Any]] = field(default_factory=list)
     startup_metrics: StartupMetrics | None = None
+    cloud: CloudRuntime | None = None
+    raw_sensor_manager: Any = None
 
     async def async_transition_local_read_consumer_state(
         self,
@@ -436,45 +439,37 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         client_id=client_id,
     )
 
-    try:
-        devices = await asyncio.wait_for(
-            api.async_get_device_list(), timeout=PAT_DEVICE_LIST_TIMEOUT
-        )
-    except Exception as err:
-        raise ConfigEntryNotReady(f"device list failed: {err}") from err
-
     data = MyLgData(api=api)
+    data.cloud = CloudRuntime(hass, entry, data)
+    await data.cloud.async_restore()
+    api = data.api = GuardedCloudApi(api, data.cloud.gates["pat"])
+    cached = bool(data.cloud.inventory['devices'])
+    devices = data.cloud.inventory['devices']
+    if not cached:
+        # A first install still verifies its account/identities. Once a verified
+        # inventory exists, network work is deferred until Local is running.
+        try:
+            devices = await asyncio.wait_for(
+                api.async_get_device_list(), timeout=PAT_DEVICE_LIST_TIMEOUT
+            )
+        except Exception as err:
+            await data.cloud.async_close()
+            raise ConfigEntryNotReady(f"device list failed: {err}") from err
 
     for device in devices or []:
         info = device.get("deviceInfo", {})
         if info.get("deviceType") not in SUPPORTED_DEVICE_TYPES:
-            continue  # everything else stays on official lg_thinq
+            continue
         coordinator = PatDeviceCoordinator(hass, entry, api, device)
+        coordinator.profile = data.cloud.inventory['profiles'].get(coordinator.device_id)
+        coordinator.cloud_paused = data.cloud.gates['pat'].reason is not None
         data.coordinators[coordinator.device_id] = coordinator
-
-    # Seed initial PAT state/profile with a small bounded fan-out.  One offline
-    # or stalled appliance is non-fatal and later recovers through MQTT push or
-    # the hourly REST fallback.  WideQ still performs no eager setup poll.
-    _, data.startup_metrics = await async_prepare_coordinators(
-        list(data.coordinators.values()),
-        concurrency=PAT_PREPARE_CONCURRENCY,
-        call_timeout=PAT_PREPARE_CALL_TIMEOUT,
-    )
-    _LOGGER.info(
-        "my_lg PAT prepared %d devices in %.3fs "
-        "(status=%d, profile=%d, timeouts=%d/%d)",
-        data.startup_metrics.supported_devices,
-        data.startup_metrics.preparation_seconds,
-        data.startup_metrics.status_ready,
-        data.startup_metrics.profile_ready,
-        data.startup_metrics.status_timeouts,
-        data.startup_metrics.profile_timeouts,
-    )
-
-    if not data.coordinators:
-        _LOGGER.warning(
-            "my_lg: no supported devices found (Stage 1 = air conditioners)"
+    if not cached:
+        _, data.startup_metrics = await async_prepare_coordinators(
+            list(data.coordinators.values()), concurrency=PAT_PREPARE_CONCURRENCY,
+            call_timeout=PAT_PREPARE_CALL_TIMEOUT,
         )
+        await data.cloud.async_save_inventory()
 
     # Dispatch DEVICE_PUSH notifications to that device's event entity, and on a
     # water-tank push also refresh wideq promptly (rate-limited).
@@ -499,7 +494,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         on_push=_on_push,
         on_lifecycle=_on_lifecycle if rethink_relay.enabled else None,
     )
-    await mqtt.async_start()
     data.mqtt = mqtt
 
     # wideq (optional): AC realtime power/energy, dehumidifier water tank, etc.
@@ -521,10 +515,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         except (OSError, ValueError, sqlite3.Error):
             _LOGGER.exception("Local feature database edit watcher is unavailable")
 
-    # Rethink Local is a shadow first: it reads, and every entity's state still comes from
-    # LG. It also offers a write path for the few commands the bridge has observed on the
-    # wire, which entities try before the cloud and fall back from silently. Started after
-    # every potentially blocking setup read, immediately before entity setup.
+    # Local starts from verified device identities, independently of cloud I/O.
+    # Its own authenticated reports remain the authority for fresh local state.
     await _setup_local_shadows(hass, entry, data)
     # Separate from the shadows themselves: this needs the HTTP session, and reaching for it
     # inside the shadow setup made that function require a fully built Home Assistant.
@@ -545,12 +537,92 @@ async def async_setup_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> bool
         entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
         if feature_db_sequence is not None:
             _watch_feature_database(hass, entry, feature_db_sequence)
-        entry.async_create_background_task(
-            hass, async_recover_startup(data), "my_lg startup recovery"
-        )
+        cloud_locks = {source: asyncio.Lock() for source in ('pat', 'wideq')}
+
+        initial_list_ready = not cached
+
+        async def start_cloud(source: str) -> bool:
+            nonlocal initial_list_ready
+            async with cloud_locks[source]:
+                if data.cloud.gates[source].reason is not None:
+                    return
+                try:
+                    if source == 'pat':
+                        if not initial_list_ready:
+                            live = await asyncio.wait_for(
+                                api.async_get_device_list(), timeout=PAT_DEVICE_LIST_TIMEOUT
+                            )
+                            for device in live or []:
+                                info = device.get('deviceInfo', {})
+                                if info.get('deviceType') not in SUPPORTED_DEVICE_TYPES:
+                                    continue
+                                device_id = device['deviceId']
+                                if device_id not in data.coordinators:
+                                    coordinator = PatDeviceCoordinator(hass, entry, api, device)
+                                    data.coordinators[device_id] = coordinator
+                                    data.feature_runtime.watch_startup_coordinator(coordinator)
+                                    if data.raw_sensor_manager is not None:
+                                        data.raw_sensor_manager.add_coordinator(coordinator)
+                                        entry.async_on_unload(coordinator.async_add_listener(
+                                            data.raw_sensor_manager.add_new))
+                                    if data.wideq_coordinator is not None:
+                                        entry.async_on_unload(coordinator.async_add_listener(
+                                            data.wideq_coordinator.reconcile_interval))
+                            _, data.startup_metrics = await async_prepare_coordinators(
+                                list(data.coordinators.values()),
+                                concurrency=PAT_PREPARE_CONCURRENCY,
+                                call_timeout=PAT_PREPARE_CALL_TIMEOUT,
+                            )
+                        initial_list_ready = False
+                        await data.cloud.async_save_inventory()
+                        if data.wideq_coordinator is not None:
+                            data.wideq_coordinator.add_pat_devices({
+                                c.device_id: PatDeviceIdentity(c.device_id, c.alias, c.model)
+                                for c in data.coordinators.values()},
+                                {c.device_id: target for c in data.coordinators.values()
+                                 if (target := _energy_history_appliance(c.device_type, c.model)) is not None})
+                        await data.feature_runtime.async_discover()
+                        if data.mqtt is not None:
+                            await data.mqtt.async_shutdown()
+                        data.mqtt = MyLgMqtt(hass, api, client_id, data.coordinators,
+                            on_push=_on_push,
+                            on_lifecycle=_on_lifecycle if rethink_relay.enabled else None)
+                        return await data.cloud.gates['pat'].call(data.mqtt.async_start)
+                    elif data.wideq_coordinator is not None:
+                        await data.wideq_coordinator.async_refresh()
+                        return data.wideq_coordinator.last_update_success
+                except asyncio.CancelledError:
+                    raise
+                except Exception as error:
+                    # Preserve source-specific failure state; no entry reload.
+                    _LOGGER.warning('LG %s startup remains unavailable: %s', source, type(error).__name__)
+                return False
+
+        data.cloud.start_source = start_cloud
+        async def start_pat():
+            for delay in (0, 30, 60, 120):
+                if data.cloud.gates['pat'].reason is not None:
+                    return
+                if delay:
+                    await asyncio.sleep(delay)
+                if await start_cloud('pat'):
+                    break
+            await async_recover_startup(data, sources=('pat',))
+            await data.cloud.async_save_inventory()
+
+        data.cloud._task(start_pat(), 'my_lg PAT startup')
+        # WideQ retains its own 30s initial delay and global rate limiter. A
+        # slow or failed PAT bootstrap never delays this independent task.
+        data.cloud._task(async_recover_startup(data, sources=('wideq',)),
+                         'my_lg WideQ startup')
     except Exception:
         remove_stop_listener()
+        await data.cloud.async_close()
         await _stop_local_shadows(data)
+        if data.mqtt is not None:
+            await data.mqtt.async_stop()
+        if data.wideq_client is not None:
+            await data.wideq_client.async_close()
         raise
     return True
 
@@ -652,12 +724,14 @@ async def _setup_wideq(
     def interval_fn() -> int:
         # Device activity comes from PAT/MQTT; wideq only collects missing data.
         return _wideq_interval(
-            coordinators,
+            list(data.coordinators.values()),
             ac_active_interval,
             appliance_active_interval,
             idle_interval,
         )
 
+    if data.cloud is not None:
+        client = GuardedCloudApi(client, data.cloud.gates['wideq'])
     data.wideq_client = client
     energy_history_store: Store[dict[str, Any]] = Store(
         hass,
@@ -698,6 +772,8 @@ async def _setup_wideq(
         previous_energy_history_store=previous_energy_history_store,
         power_save_store=power_save_store,
     )
+    if data.cloud is not None:
+        data.wideq_coordinator.cloud_paused = data.cloud.gates['wideq'].reason is not None
     await data.wideq_coordinator.async_restore_device_map()
     await data.wideq_coordinator.async_restore_power_save()
     await data.wideq_coordinator.async_restore_energy_history()
@@ -1088,6 +1164,8 @@ def _register_local_shutdown(
     async def _async_stop(_event: Event) -> None:
         if runtime := getattr(data, "feature_runtime", None):
             runtime.close()
+        if data.cloud is not None:
+            await data.cloud.async_close()
         stops = [_stop_local_shadows(data)]
         if data.mqtt is not None:
             stops.append(data.mqtt.async_shutdown())
@@ -1139,6 +1217,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: MyLgConfigEntry) -> boo
     if not unload_ok:
         return False
     if data:
+        if data.cloud is not None:
+            await data.cloud.async_close()
         await _stop_local_shadows(data)
     if data and data.mqtt:
         await data.mqtt.async_stop()

@@ -108,6 +108,21 @@ class WideqCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             pat_devices=self.pat_devices,
         )
 
+    async def test_auth_failure_in_optional_energy_read_fences_snapshot_success(self):
+        from custom_components.my_lg.cloud_runtime import CloudGate, GuardedCloudApi
+        class InvalidCredentialError(Exception): pass
+        gate=CloudGate('wideq',lambda _:None)
+        self.coordinator.client=GuardedCloudApi(self.client,gate)
+        self.coordinator._energy_history_targets={'device':'aircon'}
+        self.client.energy_error=InvalidCredentialError('fixture')
+        with self.assertRaises(UpdateFailed):
+            await self.coordinator._async_update_data()
+        self.assertEqual(gate.reason,'authentication')
+        polls=self.client.poll_calls
+        with self.assertRaises(UpdateFailed):
+            await self.coordinator._async_update_data()
+        self.assertEqual(self.client.poll_calls,polls)
+
     async def test_constructor_does_not_eager_poll(self) -> None:
         self.assertEqual(self.client.poll_calls, 0)
         self.assertEqual(self.limiter.calls, 0)

@@ -136,6 +136,7 @@ async def async_recover_startup(
     data: Any,
     *,
     delays: tuple[float, ...] = (30, 60, 120),
+    sources: tuple[str, ...] = ("pat", "wideq"),
     concurrency: int = 3,
     call_timeout: float = 15,
 ) -> None:
@@ -181,12 +182,12 @@ async def async_recover_startup(
 
     for attempt, delay in enumerate(delays):
         pending = [coordinator for coordinator in data.coordinators.values()
-                   if not coordinator.startup_status_ready
-                   or not isinstance(coordinator.profile, dict)]
-        if not pending and (attempt or data.wideq_coordinator is None):
+                   if "pat" in sources and (not coordinator.startup_status_ready
+                   or not isinstance(coordinator.profile, dict))]
+        if not pending and (attempt or "wideq" not in sources or data.wideq_coordinator is None):
             return
         await asyncio.sleep(delay)
         jobs = [recover(coordinator) for coordinator in pending]
-        if attempt == 0:
+        if attempt == 0 and "wideq" in sources:
             jobs.append(warm_wideq())
         await asyncio.gather(*jobs)

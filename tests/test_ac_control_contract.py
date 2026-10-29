@@ -79,6 +79,7 @@ class FakePatCoordinator:
 
 
 class FakeWideqCoordinator:
+    cloud_paused = False
     """WideQ double that keeps power-save state separate from normal data."""
 
     def __init__(self) -> None:

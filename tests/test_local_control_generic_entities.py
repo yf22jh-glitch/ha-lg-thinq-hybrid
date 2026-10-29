@@ -46,6 +46,7 @@ DEVICE_ID = "test-generic-control-device-001"
 
 
 class Coordinator:
+    cloud_paused = False
     alias = "Synthetic appliance"
     device_type = "TEST_DEVICE"
 

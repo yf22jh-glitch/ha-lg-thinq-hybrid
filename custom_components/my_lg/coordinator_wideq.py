@@ -75,6 +75,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.client = client
         self.rate_limiter = rate_limiter
         self._interval_fn = interval_fn
+        self.cloud_paused = False
         self._fail_count = 0
         self._failure_started_at: datetime | None = None
         self._last_success_at: datetime | None = None
@@ -115,7 +116,15 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             config_entry=entry,
         )
 
+    def add_pat_devices(self, devices: dict[str, PatDeviceIdentity], energy_targets: dict[str, str]) -> None:
+        """Add freshly discovered metadata without replacing current state."""
+        self._pat_devices.update(devices)
+        self._energy_history_targets.update(energy_targets)
+
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
+        gate = getattr(self.client, 'gate', None)
+        if gate is not None and gate.reason is not None:
+            raise UpdateFailed('WideQ cloud protection is active')
         try:
             # Do not overlap a dashboard refresh with a device command. The
             # limiter spaces request starts; this lock also serializes their
@@ -139,6 +148,8 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 if self._fail_count == 0:
                     await self._async_refresh_energy_history()
                     await self._async_refresh_night_modes(snapshots)
+                if gate is not None:
+                    gate.check()
         except Exception as err:  # noqa: BLE001
             self._fail_count += 1
             if self._failure_started_at is None:
@@ -187,6 +198,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 self._fail_count,
                 self.outage_seconds,
             )
+        self.cloud_paused = False
         self._fail_count = 0
         self._failure_started_at = None
         self._last_success_at = datetime.now(timezone.utc)
@@ -422,7 +434,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     @property
     def data_stale(self) -> bool:
         """Return whether the retained snapshot predates a failed refresh."""
-        return self._fail_count > 0
+        return self.cloud_paused or self._fail_count > 0
 
     @property
     def outage_seconds(self) -> int:
@@ -437,6 +449,7 @@ class WideqCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Attributes shared by entities backed by this snapshot."""
         return {
             "data_stale": self.data_stale,
+            "cloud_paused": self.cloud_paused,
             "wideq_consecutive_failures": self._fail_count,
             "wideq_last_success": (
                 self._last_success_at.isoformat() if self._last_success_at else None

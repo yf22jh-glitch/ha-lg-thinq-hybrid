@@ -37,7 +37,7 @@ class PatRawSensor(MyLgEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        return is_meaningful(read_path(self.coordinator.data, self._path))
+        return super().available and is_meaningful(read_path(self.coordinator.data, self._path))
 
     @property
     def native_value(self) -> Any:
@@ -67,7 +67,7 @@ class WideqRawSensor(MyLgWideqEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        return is_meaningful(read_path(self._snapshot, self._path))
+        return super().available and is_meaningful(read_path(self._snapshot, self._path))
 
     @property
     def native_value(self) -> Any:
@@ -93,6 +93,11 @@ class RawSensorManager:
         self._wideq = wideq
         self._add = async_add_entities
         self._known: set[tuple[str, str, tuple[str, ...]]] = set()
+
+    def add_coordinator(self, coordinator: PatDeviceCoordinator) -> None:
+        if coordinator not in self._coordinators:
+            self._coordinators.append(coordinator)
+        self.add_new()
 
     def _paths(self, source: str, model: str, data: Any) -> set[tuple[str, ...]]:
         paths = set(catalog_paths(source, model))

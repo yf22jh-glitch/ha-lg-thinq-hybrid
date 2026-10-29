@@ -107,6 +107,20 @@ class MqttStartupTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(manager._stopping)
         self.assertIsNone(manager._client)
 
+    async def test_paused_rest_registration_still_disconnects_actual_sdk_socket(self):
+        from concurrent.futures import Future
+        from custom_components.my_lg.cloud_runtime import CloudGate, GuardedCloudApi
+        gate=CloudGate('pat',lambda _:None)
+        api=GuardedCloudApi(_Api(),gate)
+        manager=MyLgMqtt(SimpleNamespace(loop=asyncio.get_running_loop()),api,'client',{})
+        client=_MqttClient(api,'client',manager._on_message)
+        done=Future(); done.set_result(None)
+        client._mqtt_connection=SimpleNamespace(disconnect=Mock(return_value=done))
+        manager._client=client; gate.block('authentication')
+        await manager.async_shutdown()
+        client._mqtt_connection.disconnect.assert_called_once()
+        self.assertEqual(api.wrapped.client_delete_calls,0)
+
     async def test_device_subscriptions_are_bounded(self) -> None:
         api = _Api(delay=0.005)
         manager = MyLgMqtt(

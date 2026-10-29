@@ -244,9 +244,11 @@ class FeatureEntityRuntime:
                 continue
             if coordinator.device_id in self._startup_listeners:
                 continue
-            self._watch_startup_coordinator(coordinator)
+            self.watch_startup_coordinator(coordinator)
 
-    def _watch_startup_coordinator(self, coordinator) -> None:
+    def watch_startup_coordinator(self, coordinator) -> None:
+        if coordinator.device_id in self._startup_listeners:
+            return
         observed = (coordinator.startup_status_ready, isinstance(coordinator.profile, dict))
 
         def recovered() -> None:
